@@ -258,6 +258,7 @@ const Statistics: FC = () => {
                           
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-foreground text-sm sm:text-base truncate">
+                              {(player as any).is_banned && <span className="text-red-500 mr-1">[BANNED]</span>}
                               {(player as any).status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
                             </p>
                             <p className="text-xs sm:text-sm text-muted-foreground truncate">

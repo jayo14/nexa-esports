@@ -259,7 +259,7 @@ const undoAttendanceMutation = useMutation({
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.ign.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || player.role === roleFilter;
-    return matchesSearch && matchesRole;
+    return matchesSearch && matchesRole && !player.is_banned;
   });
 
   const filteredRecords = attendanceRecords.filter(record =>

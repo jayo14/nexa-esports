@@ -1133,7 +1133,7 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
                                                     <SelectValue placeholder="Select a player..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {players && players.map((player) => (
+                                                    {players && players.filter(p => !p.is_banned).map((player) => (
                                                         <SelectItem key={player.id} value={player.ign}>
                                                             {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
                                                         </SelectItem>

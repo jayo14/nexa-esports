@@ -28,6 +28,9 @@ interface UserProfile {
   mp_class?: string;
   best_gun?: string;
   status?: string;
+  is_banned?: boolean;
+  ban_reason?: string;
+  ban_expires_at?: string;
 }
 
 interface AuthContextType {
@@ -82,6 +85,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (error) {
         console.error("Profile fetch error:", error);
         return;
+      }
+
+      // Check for ban
+      if (data.is_banned) {
+        const banExpiresAt = data.ban_expires_at ? new Date(data.ban_expires_at) : null;
+        const now = new Date();
+
+        if (banExpiresAt && now > banExpiresAt) {
+          // Ban expired, unban user
+          console.log("Ban expired, unbanning user...");
+          await supabase
+            .from("profiles")
+            .update({ 
+              is_banned: false, 
+              ban_reason: null, 
+              banned_at: null, 
+              ban_expires_at: null 
+            } as any)
+            .eq("id", userId);
+            
+          data.is_banned = false;
+        } else {
+          // Active ban
+          console.log("User is banned");
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          
+          let description = `Reason: ${data.ban_reason || 'Violation of rules'}.`;
+          if (banExpiresAt) {
+            const diffTime = Math.abs(banExpiresAt.getTime() - now.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            description += ` Ban expires in ${diffDays} day(s).`;
+          } else {
+            description += " This ban is permanent.";
+          }
+
+          toast({
+            title: "Account Banned",
+            description: description,
+            variant: "destructive",
+            duration: 10000,
+          });
+          return;
+        }
       }
 
       setProfile({

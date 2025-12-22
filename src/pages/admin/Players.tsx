@@ -8,11 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAdminPlayers, useUpdatePlayer, useDeletePlayer } from '@/hooks/useAdminPlayers';
 import { useAuth } from '@/contexts/AuthContext';
 import { logPlayerBan, logPlayerUnban, logRoleChange } from '@/lib/activityLogger';
-import { Search, Edit, Trash2, Eye, UserPlus } from 'lucide-react';
+import { Search, Edit, Trash2, Eye, UserPlus, CalendarIcon } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 type Player = Database['public']['Tables']['profiles']['Row'];
 
@@ -29,7 +35,8 @@ export const AdminPlayers: React.FC = () => {
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [banningPlayer, setBanningPlayer] = useState<Player | null>(null);
   const [banReason, setBanReason] = useState('');
-  const [banDuration, setBanDuration] = useState('7');
+  const [banType, setBanType] = useState<'temporary' | 'permanent'>('temporary');
+  const [banDate, setBanDate] = useState<Date | undefined>(new Date(new Date().setDate(new Date().getDate() + 7)));
 
   const filteredPlayers = players?.filter(player => {
     const matchesSearch = player.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,13 +75,16 @@ export const AdminPlayers: React.FC = () => {
 
   const handleBanPlayer = (player: Player) => {
     setBanningPlayer(player);
+    setBanReason('');
+    setBanType('temporary');
+    setBanDate(new Date(new Date().setDate(new Date().getDate() + 7)));
   };
 
   const handleConfirmBan = async () => {
     if (!banningPlayer || !banReason) return;
+    if (banType === 'temporary' && !banDate) return;
 
-    const banUntil = new Date();
-    banUntil.setDate(banUntil.getDate() + parseInt(banDuration));
+    const banExpiresAt = banType === 'temporary' ? banDate?.toISOString() : null;
 
     await updatePlayer.mutateAsync({
       id: banningPlayer.id,
@@ -82,7 +92,8 @@ export const AdminPlayers: React.FC = () => {
         is_banned: true,
         banned_at: new Date().toISOString(),
         ban_reason: banReason,
-        ban_until: banUntil.toISOString(),
+        ban_expires_at: banExpiresAt,
+        banned_by: profile?.id
       }
     });
     
@@ -98,7 +109,9 @@ export const AdminPlayers: React.FC = () => {
         updates: {
           is_banned: false,
           banned_at: null,
-          ban_reason: null
+          ban_reason: null,
+          ban_expires_at: null,
+          banned_by: null
         }
       });
       
@@ -311,6 +324,20 @@ export const AdminPlayers: React.FC = () => {
                                   <label className="text-gray-300 text-sm">Grade</label>
                                   <p className="text-white">{selectedPlayer.grade || 'N/A'}</p>
                                 </div>
+                                {selectedPlayer.is_banned && (
+                                  <div className="col-span-2 bg-red-500/10 p-3 rounded-md border border-red-500/30">
+                                    <h4 className="text-red-400 font-bold mb-1">Ban Information</h4>
+                                    <p className="text-gray-300 text-sm">
+                                      <span className="text-gray-400">Reason:</span> {selectedPlayer.ban_reason}
+                                    </p>
+                                    <p className="text-gray-300 text-sm">
+                                      <span className="text-gray-400">Date:</span> {selectedPlayer.banned_at ? new Date(selectedPlayer.banned_at).toLocaleDateString() : 'N/A'}
+                                    </p>
+                                    <p className="text-gray-300 text-sm">
+                                      <span className="text-gray-400">Expires:</span> {selectedPlayer.ban_expires_at ? new Date(selectedPlayer.ban_expires_at).toLocaleDateString() : 'Permanent'}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -358,7 +385,7 @@ export const AdminPlayers: React.FC = () => {
                       )}
                       
 
-                      {(profile?.role === 'admin' || profile?.role === 'moderator') && (
+                      {(profile?.role === 'admin' || profile?.role === 'moderator' || profile?.role === 'clan_master') && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -511,34 +538,70 @@ export const AdminPlayers: React.FC = () => {
               <DialogTitle className="text-white">Ban Player</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p>Are you sure you want to ban {banningPlayer.ign}?</p>
+              <p className="text-gray-300">Are you sure you want to ban <span className="font-bold text-white">{banningPlayer.ign}</span>?</p>
+              
+              <div>
+                <label className="text-gray-300 text-sm block mb-2">Ban Type</label>
+                <RadioGroup value={banType} onValueChange={(value: 'temporary' | 'permanent') => setBanType(value)} className="flex space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="temporary" id="temporary" />
+                    <Label htmlFor="temporary" className="text-white">Temporary</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="permanent" id="permanent" />
+                    <Label htmlFor="permanent" className="text-white">Permanent</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {banType === 'temporary' && (
+                <div>
+                  <label className="text-gray-300 text-sm block mb-2">Ban Until</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-gray-800 border-gray-600 text-white",
+                          !banDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {banDate ? format(banDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={banDate}
+                        onSelect={setBanDate}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
               <div>
                 <label className="text-gray-300 text-sm">Reason</label>
                 <Input
                   value={banReason}
                   onChange={(e) => setBanReason(e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white"
+                  className="bg-gray-800 border-gray-600 text-white mt-1"
                   placeholder="Enter ban reason"
                 />
               </div>
-              <div>
-                <label className="text-gray-300 text-sm">Duration</label>
-                <Select value={banDuration} onValueChange={setBanDuration}>
-                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2">2 Days</SelectItem>
-                    <SelectItem value="3">3 Days</SelectItem>
-                    <SelectItem value="7">7 Days (1 Week)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end space-x-2">
+
+              <div className="flex justify-end space-x-2 pt-2">
                 <Button variant="outline" onClick={() => setBanningPlayer(null)}>
                   Cancel
                 </Button>
-                <Button onClick={handleConfirmBan} className="bg-red-600 hover:bg-red-700">
+                <Button 
+                  onClick={handleConfirmBan} 
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={!banReason || (banType === 'temporary' && !banDate)}
+                >
                   Confirm Ban
                 </Button>
               </div>
