@@ -86,6 +86,14 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 80%;
     --sidebar-ring: 355 100% 56%;
   }
+
+  /* Christmas Theme Overrides */
+  .theme-christmas {
+    /* More saturated background for festive feel? Or keep it dark. */
+    /* Let's make borders slightly more festive (green/red hint) but subtle */
+    /* Actually, prompt says "Do NOT change primary red". */
+    /* We can add subtle background patterns via CSS if we want. */
+  }
 }
 
 @layer base {
@@ -120,6 +128,44 @@ All colors MUST be HSL.
 
   .mobile-sidebar-trigger {
     @apply fixed top-4 left-4 z-50 md:hidden bg-card/90 backdrop-blur-sm border border-border/50 rounded-lg p-2;
+  }
+
+  /* Festive Utilities */
+  .theme-christmas .festive-border {
+    @apply border-transparent bg-gradient-to-r from-red-500/20 via-green-500/20 to-red-500/20 bg-clip-border;
+    position: relative;
+  }
+  
+  .theme-christmas .festive-card {
+    @apply relative overflow-hidden;
+  }
+  
+  .theme-christmas .festive-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 31, 68, 0.5), transparent);
+    opacity: 0.5;
+  }
+
+  /* Santa Hat for Avatars */
+  .theme-christmas .santa-hat-wrapper {
+    position: relative;
+  }
+  
+  .theme-christmas .santa-hat-wrapper::after {
+    content: '🎅';
+    position: absolute;
+    top: -10px;
+    right: -5px;
+    font-size: 1.2rem;
+    transform: rotate(15deg);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+    pointer-events: none;
+    z-index: 10;
   }
 }
 

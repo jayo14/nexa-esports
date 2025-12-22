@@ -61,15 +61,17 @@ export const Header: React.FC<HeaderProps> = ({ onSidebarToggle }) => {
           onClick={handleProfileClick}
           className="flex items-center space-x-2 hover:bg-muted/50"
         >
-          <Avatar className="w-8 h-8">
-            <AvatarImage 
-              src={profile.avatar_url || '/placeholder.svg'} 
-              alt={profile.username} 
-            />
-            <AvatarFallback>
-              {profile.username?.charAt(0).toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          <div className="santa-hat-wrapper">
+            <Avatar className="w-8 h-8">
+              <AvatarImage 
+                src={profile.avatar_url || '/placeholder.svg'} 
+                alt={profile.username} 
+              />
+              <AvatarFallback>
+                {profile.username?.charAt(0).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+          </div>
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-foreground">{profile.username}</p>
             <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>

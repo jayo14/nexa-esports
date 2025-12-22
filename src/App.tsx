@@ -54,10 +54,15 @@ import Earnings from '@/pages/Earnings';
 import InstallPrompt from '@/components/InstallPrompt';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 
+import { SnowEffect } from '@/components/effects/SnowEffect';
+import { FestiveLights } from '@/components/effects/FestiveLights';
+
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <SnowEffect />
+        <FestiveLights />
         <AppRoutes />
       </AuthProvider>
     </ThemeProvider>

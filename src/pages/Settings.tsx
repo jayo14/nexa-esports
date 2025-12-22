@@ -41,7 +41,9 @@ import {
   XCircle,
   BellRing,
   BellOff,
+  Palette,
 } from "lucide-react";
+import { ThemeSettingsPanel } from "@/components/ThemeSettingsPanel";
 
 // Device and brand data
 const deviceData = {
@@ -408,6 +410,9 @@ export const Settings: React.FC = () => {
     { id: "social", label: "Social", icon: TrendingUp },
     { id: "banking", label: "Banking", icon: CreditCard },
     { id: "notifications", label: "Notifications", icon: Bell },
+    ...(profile?.role === "admin" || profile?.role === "clan_master"
+      ? [{ id: "appearance", label: "Appearance", icon: Palette }]
+      : []),
     { id: "account", label: "Account", icon: SettingsIcon },
   ];
 
@@ -1115,6 +1120,9 @@ export const Settings: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Appearance Tab */}
+        {activeTab === "appearance" && <ThemeSettingsPanel />}
 
         {/* Account Tab */}
         {activeTab === "account" && (
