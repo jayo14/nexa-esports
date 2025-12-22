@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useToast } from '@/hooks/use-toast';
 import { useAdminPlayers, useUpdatePlayer, useDeletePlayer } from '@/hooks/useAdminPlayers';
 import { useAuth } from '@/contexts/AuthContext';
 import { logPlayerBan, logPlayerUnban, logRoleChange } from '@/lib/activityLogger';
@@ -37,6 +38,8 @@ export const AdminPlayers: React.FC = () => {
   const [banReason, setBanReason] = useState('');
   const [banType, setBanType] = useState<'temporary' | 'permanent'>('temporary');
   const [banDate, setBanDate] = useState<Date | undefined>(new Date(new Date().setDate(new Date().getDate() + 7)));
+
+  const { toast } = useToast();
 
   const filteredPlayers = players?.filter(player => {
     const matchesSearch = player.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,7 +84,18 @@ export const AdminPlayers: React.FC = () => {
   };
 
   const handleConfirmBan = async () => {
-    if (!banningPlayer || !banReason) return;
+    if (!banningPlayer) return;
+
+    if (banningPlayer.role === 'clan_master') {
+      toast({
+        title: "Permission Denied",
+        description: "The Clan Master cannot be banned.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!banReason) return;
     if (banType === 'temporary' && !banDate) return;
 
     const banExpiresAt = banType === 'temporary' ? banDate?.toISOString() : null;
@@ -389,10 +403,11 @@ export const AdminPlayers: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
+                          disabled={player.role === 'clan_master'}
                           className={`${player.is_banned 
                             ? 'border-green-500/50 text-green-400 hover:bg-green-500/10' 
                             : 'border-orange-500/50 text-orange-400 hover:bg-orange-500/10'
-                          }`}
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
                           onClick={() => player.is_banned ? handleUnbanPlayer(player) : handleBanPlayer(player)}
                         >
                           {player.is_banned ? 'Unban' : 'Ban'}
