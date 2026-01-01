@@ -104,9 +104,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const adminMenuItems = [
     { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
     { icon: Users, label: 'Players', path: '/admin/players' },
-
-    { icon: BarChart3, label: 'Statistics', path: '/statistics' },
-    { icon: UserCog, label: 'Profiles', path: '/admin/profiles' },
   // Wallet placed right after Profiles for admins as well
   { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: Package, label: 'My Loadouts', path: '/loadouts' },

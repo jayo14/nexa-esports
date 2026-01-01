@@ -8,13 +8,20 @@ export const useAdminPlayers = () => {
   return useQuery({
     queryKey: ['admin-players'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('get-all-player-data');
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error invoking get-all-player-data function:', error);
+        throw error;
+      }
+      
+      // The edge function should return an array of augmented profiles
+      // If data.data is null or not an array, handle it gracefully
+      if (!data || !Array.isArray(data.data)) {
+        throw new Error('Invalid data received from get-all-player-data function');
+      }
+
+      return data.data;
     },
   });
 };

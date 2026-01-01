@@ -20,7 +20,9 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-type Player = Database['public']['Tables']['profiles']['Row'];
+type Player = Database['public']['Tables']['profiles']['Row'] & {
+  email?: string | null;
+};
 
 const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails }) => {
   const { profile } = useAuth();
@@ -38,8 +40,9 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails }) => 
 
   return (
     <Card className={cn(
-      "bg-card/50 border-border/30 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-lg",
-      player.is_banned && "opacity-60"
+      "bg-background/30 backdrop-blur-md border border-white/10 shadow-lg relative overflow-hidden", // Glassmorphic effect
+      "transition-all duration-300 hover:border-primary/50 hover:shadow-xl",
+      player.is_banned && "opacity-60 grayscale" // Desaturate and reduce opacity for banned players
     )}>
       <CardHeader className="p-4 flex flex-row items-start justify-between">
         <div className="flex items-center gap-4">
@@ -52,6 +55,7 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails }) => 
           <div>
             <h3 className="text-lg font-bold text-foreground">{player.ign}</h3>
             <p className="text-sm text-muted-foreground">@{player.username}</p>
+            {player.email && <p className="text-xs text-muted-foreground/70">{player.email}</p>}
           </div>
         </div>
         <DropdownMenu>

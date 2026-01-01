@@ -129,7 +129,6 @@ function AppRoutes() {
         <Route path="/admin" element={<Layout showSidebar><AdminDashboard /></Layout>} />
         <Route path="/admin/players" element={<Layout showSidebar><AdminPlayers /></Layout>} />
 
-        <Route path="/admin/profiles" element={<Layout showSidebar><AdminProfiles /></Layout>} />
         <Route path="/admin/loadouts" element={<Layout showSidebar><AdminLoadouts /></Layout>} />
         <Route path="/admin/weapon-layouts" element={<Layout showSidebar><AdminWeaponLayouts /></Layout>} />
         <Route path="/admin/scrims" element={<Layout showSidebar><AdminScrimsManagement /></Layout>} />
