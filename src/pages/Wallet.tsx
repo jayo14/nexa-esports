@@ -642,6 +642,19 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
     const [isProcessing, setIsProcessing] = useState(false);
     const withdrawalInProgressRef = useRef(false);
     const { toast } = useToast();
+    const [isMobile, setIsMobile] = useState(false);
+    const [showPinVerify, setShowPinVerify] = useState(false);
+    const [pendingWithdrawal, setPendingWithdrawal] = useState(false);
+
+    // Check screen size for responsive dialog/sheet
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         if (profile?.banking_info) {
@@ -681,6 +694,54 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         return () => { mounted = false; };
     }, [profile?.id]);
 
+    const handleWithdrawClick = () => {
+        // Validate before showing PIN
+        if (amount > walletBalance) {
+            toast({
+                title: "Insufficient funds",
+                description: "You do not have enough funds in your wallet to complete this transaction.",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (amount < 500) {
+            toast({
+                title: "Minimum Withdrawal",
+                description: "Minimum withdrawal amount is ₦500",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (amount > 30000) {
+            toast({
+                title: "Maximum Withdrawal",
+                description: "Maximum withdrawal amount is ₦30,000",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (!bankCode) {
+            toast({
+                title: "Bank not selected",
+                description: "Please select a bank",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (!/^[0-9]{10}$/.test(accountNumber)) {
+            toast({
+                title: "Invalid Account Number",
+                description: "Please enter a valid 10-digit account number",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Show PIN verification dialog
+        setPendingWithdrawal(true);
+        setShowPinVerify(true);
+    };
+
     const handleWithdraw = async () => {
         // Idempotency check: prevent multiple simultaneous withdrawal requests
         if (withdrawalInProgressRef.current || isProcessing) {
@@ -705,52 +766,6 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         const idempotencyKey = `withdraw_${profile?.id}_${amount}_${bankCode}_${accountNumber}`;
 
         try {
-            if (amount > walletBalance) {
-                console.error("Validation failed: Insufficient funds.");
-                toast({
-                    title: "Insufficient funds",
-                    description: "You do not have enough funds in your wallet to complete this transaction.",
-                    variant: "destructive",
-                });
-                return;
-            }
-            if (amount < 500) {
-                console.error("Validation failed: Amount less than 500.");
-                toast({
-                    title: "Minimum Withdrawal",
-                    description: "Minimum withdrawal amount is ₦500",
-                    variant: "destructive",
-                });
-                return;
-            }
-            if (amount > 30000) {
-                console.error("Validation failed: Amount greater than 30000.");
-                toast({
-                    title: "Maximum Withdrawal",
-                    description: "Maximum withdrawal amount is ₦30,000",
-                    variant: "destructive",
-                });
-                return;
-            }
-            if (!bankCode) {
-                console.error("Validation failed: Bank not selected.");
-                toast({
-                    title: "Bank not selected",
-                    description: "Please select a bank",
-                    variant: "destructive",
-                });
-                return;
-            }
-            if (!/^[0-9]{10}$/.test(accountNumber)) {
-                console.error("Validation failed: Invalid account number.");
-                toast({
-                    title: "Invalid Account Number",
-                    description: "Please enter a valid 10-digit account number",
-                    variant: "destructive",
-                });
-                return;
-            }
-
             console.log("Validation passed. Creating transfer recipient...");
             const recipientPayload = {
                 endpoint: 'create-transfer-recipient',
