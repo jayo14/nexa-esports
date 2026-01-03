@@ -1,17 +1,68 @@
+# NeXa Esports - Robots.txt for SEO Optimization
+# Allow search engines to index public pages
+
 User-agent: *
+Allow: /
+Allow: /landing
+Allow: /profile/*
+Allow: /public-profile/*
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.svg$
+Allow: /*.webp$
+
+# Disallow private/auth pages
 Disallow: /auth/
 Disallow: /admin/
 Disallow: /dashboard
-Disallow: /profile
+Disallow: /settings
+Disallow: /wallet
+Disallow: /api/
+Disallow: /*.json$
+
+# Allow specific public pages
+Allow: /scrims
+Allow: /weapon-layouts
+Allow: /loadouts
+Allow: /announcements
+Allow: /statistics
+
+# Sitemap locations
+Sitemap: https://nexa-esports.vercel.app/sitemap.xml
+
+# Specific crawlers optimization
+User-agent: Googlebot
+Allow: /
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /dashboard
 Disallow: /settings
 
-Disallow: /scrims
-Disallow: /weapon-layouts
-Disallow: /loadouts
-Disallow: /announcements
-
-Allow: /landing
-Allow: /public-profile/
+User-agent: Googlebot-Image
 Allow: /
 
-Sitemap: https://nexa-esports.vercel.app/sitemap.xml
+User-agent: Bingbot
+Allow: /
+Disallow: /auth/
+Disallow: /admin/
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# Crawl delay
+User-agent: *
+Crawl-delay: 5
+
