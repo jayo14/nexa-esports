@@ -38,12 +38,10 @@ export const MobileMenu: React.FC = () => {
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'clan_master';
 
-  // Secondary pages for hamburger menu
+  // Secondary pages for hamburger menu (Wallet and Statistics moved to dock navigation)
   const playerSecondaryPages = [
-    { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
-    { icon: BarChart3, label: 'Statistics', path: '/statistics' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
