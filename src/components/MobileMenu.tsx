@@ -90,8 +90,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open: externalOpen, onOp
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent
-        side="right"
-        className="w-80 bg-gradient-to-br from-background/98 to-background/95 backdrop-blur-xl border-l-2 border-[#FF1F44]/30 overflow-y-auto"
+        side="left"
+        className="w-80 bg-gradient-to-br from-background/98 to-background/95 backdrop-blur-xl border-r-2 border-[#FF1F44]/30 overflow-y-auto"
       >
         <SheetHeader className="border-b border-white/10 pb-4">
           <SheetTitle className="text-white font-orbitron">

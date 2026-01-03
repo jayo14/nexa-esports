@@ -26,6 +26,9 @@ import { useTransactionPin } from '@/hooks/useTransactionPin';
 import { SetupPinDialog } from '@/components/SetupPinDialog';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { PinSetupAlert } from '@/components/PinSetupAlert';
+import { MobileWithdrawFlow } from '@/components/wallet/MobileWithdrawFlow';
+import { MobileTransferFlow } from '@/components/wallet/MobileTransferFlow';
+import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
@@ -421,251 +424,59 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
     if (isMobile) {
         return (
             <>
-                <Sheet open={open} onOpenChange={setOpen}>
-                    <SheetTrigger asChild>
-                        <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                              <Gift className="h-6 w-6 text-primary" />
-                            </div>
-                            <span className="font-semibold text-sm">Giveaway</span>
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-                        <SheetHeader className="text-left">
-                            <SheetTitle>🎁 Giveaway</SheetTitle>
-                            <SheetDescription>
-                                {isAuthenticated 
-                                    ? 'Create, view, or redeem giveaway codes.' 
-                                    : 'Enter a code to instantly credit your wallet.'}
-                            </SheetDescription>
-                        </SheetHeader>
-
-                        {isAuthenticated ? (
-                            <Tabs defaultValue="redeem" className="w-full mt-4">
-                                <TabsList className="grid w-full grid-cols-3">
-                                    <TabsTrigger value="create">Create New</TabsTrigger>
-                                    <TabsTrigger value="history">My Giveaways</TabsTrigger>
-                                    <TabsTrigger value="redeem">Redeem</TabsTrigger>
-                                </TabsList>
-                                
-                                <TabsContent value="create" className="space-y-4 mt-4">
-                                    <div className="grid gap-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="m-title">Giveaway Title *</Label>
-                                            <Input
-                                                id="m-title"
-                                                placeholder="e.g., Weekend Bonus"
-                                                value={title}
-                                                onChange={(e) => setTitle(e.target.value)}
-                                            />
-                                        </div>
-                                        
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="m-message">Message (Optional)</Label>
-                                            <Textarea
-                                                id="m-message"
-                                                placeholder="Add a message for your clan..."
-                                                value={message}
-                                                onChange={(e) => setMessage(e.target.value)}
-                                                rows={2}
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="m-codeValue">Value per Code</Label>
-                                                <Select value={codeValue} onValueChange={setCodeValue}>
-                                                    <SelectTrigger id="m-codeValue">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="100">₦100</SelectItem>
-                                                        <SelectItem value="200">₦200</SelectItem>
-                                                        <SelectItem value="500">₦500</SelectItem>
-                                                        <SelectItem value="1000">₦1,000</SelectItem>
-                                                        <SelectItem value="2000">₦2,000</SelectItem>
-                                                        <SelectItem value="5000">₦5,000</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="m-totalCodes">Number of Codes</Label>
-                                                <Input
-                                                    id="m-totalCodes"
-                                                    type="number"
-                                                    min="1"
-                                                    max="100"
-                                                    value={totalCodes}
-                                                    onChange={(e) => setTotalCodes(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="m-expiresIn">Expires In</Label>
-                                            <Select value={expiresIn} onValueChange={setExpiresIn}>
-                                                <SelectTrigger id="m-expiresIn">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="0.166667">10 minutes</SelectItem>
-                                                    <SelectItem value="0.25">15 minutes</SelectItem>
-                                                    <SelectItem value="0.5">30 minutes</SelectItem>
-                                                    <SelectItem value="6">6 hours</SelectItem>
-                                                    <SelectItem value="12">12 hours</SelectItem>
-                                                    <SelectItem value="24">24 hours</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/30">
-                                            <input
-                                                type="checkbox"
-                                                id="m-isPrivate"
-                                                checked={isPrivate}
-                                                onChange={(e) => setIsPrivate(e.target.checked)}
-                                                className="h-4 w-4 rounded border-border"
-                                            />
-                                            <div className="flex-1">
-                                                <Label htmlFor="m-isPrivate" className="cursor-pointer">
-                                                    Private Giveaway
-                                                </Label>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Codes will be generated but won't appear in notifications
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <Alert>
-                                            <AlertTitle>Total Cost</AlertTitle>
-                                            <AlertDescription>
-                                                <div className="flex justify-between items-center">
-                                                    <span>₦{codeValue} × {totalCodes} codes</span>
-                                                    <span className="font-bold text-lg">
-                                                        = ₦{(Number(codeValue) * Number(totalCodes)).toLocaleString()}
-                                                    </span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground mt-2">
-                                                    Your balance: ₦{walletBalance.toLocaleString()}
-                                                </div>
-                                            </AlertDescription>
-                                        </Alert>
-                                    </div>
-
-                                    <SheetFooter className="mt-4">
-                                        <Button 
-                                            onClick={handleCreateGiveawayClick}
-                                            disabled={isLoading || !title.trim()}
-                                            className="w-full"
-                                        >
-                                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Create Giveaway
-                                        </Button>
-                                    </SheetFooter>
-                                </TabsContent>
-
-                                <TabsContent value="history" className="mt-4">
-                                    <div className="space-y-4 max-h-[50vh] overflow-y-auto pb-4">
-                                        {myGiveaways.length === 0 ? (
-                                            <div className="text-center py-8 text-muted-foreground">
-                                                No giveaways created yet
-                                            </div>
-                                        ) : (
-                                            myGiveaways.map((giveaway) => (
-                                                <Card key={giveaway.id} className="p-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h4 className="font-semibold">{giveaway.title}</h4>
-                                                            <div className="flex gap-4 mt-2 text-sm">
-                                                                <span>₦{Number(giveaway.code_value).toLocaleString()} per code</span>
-                                                                <span>•</span>
-                                                                <span>{giveaway.total_codes} codes</span>
-                                                            </div>
-                                                        </div>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                setSelectedGiveaway(giveaway);
-                                                                setShowCodesDialog(true);
-                                                            }}
-                                                        >
-                                                            View
-                                                        </Button>
-                                                    </div>
-                                                </Card>
-                                            ))
-                                        )}
-                                    </div>
-                                </TabsContent>
-                                <TabsContent value="redeem" className="mt-4">
-                                    {redeemUI}
-                                </TabsContent>
-                            </Tabs>
-                        ) : (
-                            <div className="mt-4">
-                                {redeemUI}
-                            </div>
-                        )}
-                    </SheetContent>
-                </Sheet>
-
-                {/* Codes Dialog - Sheet for mobile */}
-                <Sheet open={showCodesDialog} onOpenChange={setShowCodesDialog}>
-                    <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
-                        <SheetHeader className="text-left">
-                            <SheetTitle>Giveaway Codes</SheetTitle>
-                            <SheetDescription>
-                                {selectedGiveaway?.title}
-                            </SheetDescription>
-                        </SheetHeader>
-                        <div className="space-y-2 mt-4 pb-8">
-                            {selectedGiveaway?.giveaway_codes?.map((codeObj: any, index: number) => (
-                                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                    <div className="flex items-center gap-2">
-                                        <code className="font-mono font-bold">{codeObj.code}</code>
-                                        {codeObj.is_redeemed && (
-                                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                                                Redeemed
-                                            </span>
-                                        )}
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => copyCode(codeObj.code)}
-                                        disabled={codeObj.is_redeemed}
-                                    >
-                                        <Copy className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    </SheetContent>
-                </Sheet>
+                <Button 
+                    variant="outline" 
+                    className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
+                    onClick={() => setOpen(true)}
+                >
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                      <Gift className="h-6 w-6 text-primary" />
+                    </div>
+                    <span className="font-semibold text-sm">Giveaway</span>
+                </Button>
                 
-                {/* PIN Verification Dialog */}
-                <VerifyPinDialog
-                    open={showPinVerify}
-                    onOpenChange={(open) => {
-                        setShowPinVerify(open);
-                        if (!open) {
-                            setPendingGiveaway(false);
+                <MobileGiveawayFlow
+                    open={open}
+                    onOpenChange={setOpen}
+                    walletBalance={walletBalance}
+                    onGiveawayCreate={async (data) => {
+                        try {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const { data: responseData, error } = await supabase.functions.invoke('create-giveaway', {
+                                headers: {
+                                    'Authorization': `Bearer ${session?.access_token}`,
+                                },
+                                body: {
+                                    title: data.title,
+                                    message: data.message,
+                                    code_value: data.codeValue,
+                                    total_codes: data.totalCodes,
+                                    expires_in_hours: data.expiresInHours,
+                                    is_private: data.isPrivate,
+                                },
+                            });
+
+                            if (error) throw error;
+
+                            // Update local state
+                            setWalletBalance((prev: number) => prev - (data.codeValue * data.totalCodes));
+                            await fetchMyGiveaways();
+                            
+                            return {
+                                success: true,
+                                codes: responseData.giveaway.giveaway_codes.map((c: any) => c.code)
+                            };
+                        } catch (error: any) {
+                            console.error('Error creating giveaway:', error);
+                            toast({
+                                title: "Error",
+                                description: error?.message || "Failed to create giveaway",
+                                variant: "destructive",
+                            });
+                            return { success: false };
                         }
                     }}
-                    onSuccess={() => {
-                        setShowPinVerify(false);
-                        setPendingGiveaway(false);
-                        handleCreateGiveaway();
-                    }}
-                    onCancel={() => {
-                        setShowPinVerify(false);
-                        setPendingGiveaway(false);
-                    }}
-                    title="Verify PIN for Giveaway"
-                    description="Enter your 4-digit PIN to authorize this giveaway creation."
-                    actionLabel="giveaway"
+                    isProcessing={isLoading}
                 />
             </>
         );
@@ -1194,27 +1005,25 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         }
     }
 
-    return (
-        <>
-        {isMobile ? (
-            <Sheet open={open} onOpenChange={setOpen}>
+    if (isMobile) {
+        return (
+            <>
                 {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
-                    <SheetTrigger asChild>
-                        <Button 
-                            variant="outline" 
-                            className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
-                            disabled={cooldown > 0}
-                        >
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                              <ArrowDown className="h-6 w-6 text-red-500" />
-                            </div>
-                            <span className="font-semibold text-sm">
-                              {cooldown > 0 
-                                  ? `Cooldown: ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
-                                  : 'Withdraw'}
-                            </span>
-                        </Button>
-                    </SheetTrigger>
+                    <Button 
+                        variant="outline" 
+                        className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
+                        disabled={cooldown > 0}
+                        onClick={() => setOpen(true)}
+                    >
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
+                          <ArrowDown className="h-6 w-6 text-red-500" />
+                        </div>
+                        <span className="font-semibold text-sm">
+                          {cooldown > 0 
+                              ? `Cooldown: ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
+                              : 'Withdraw'}
+                        </span>
+                    </Button>
                 ) : (
                     <TooltipProvider>
                         <Tooltip>
@@ -1232,88 +1041,71 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                         </Tooltip>
                     </TooltipProvider>
                 )}
-                <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
-                    <SheetHeader className="text-left">
-                        <SheetTitle>Withdraw</SheetTitle>
-                        <SheetDescription>Withdraw funds from your wallet to your bank account.</SheetDescription>
-                    </SheetHeader>
-                    <div className="py-4 grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="m-bankName">Bank Name</Label>
-                            <Input 
-                                id="m-bankName"
-                                placeholder="Bank Name"
-                                value={bankName}
-                                readOnly
-                                className="bg-muted/50"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="m-accountNumber">Account Number</Label>
-                            <Input 
-                                id="m-accountNumber"
-                                placeholder="Account Number"
-                                value={accountNumber}
-                                readOnly
-                                className="bg-muted/50"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="m-accountName">Account Name</Label>
-                            <Input 
-                                id="m-accountName"
-                                placeholder="Account Name"
-                                value={accountName}
-                                readOnly
-                                className="bg-muted/50"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="m-amount">Amount</Label>
-                            <Input 
-                                id="m-amount"
-                                type="number"
-                                placeholder="₦0.00"
-                                value={amount}
-                                onChange={(e) => setAmount(Number(e.target.value))}
-                            />
-                        </div>
-                        <Alert>
-                            <Coins className="h-4 w-4" />
-                            <AlertTitle>Transaction Fee</AlertTitle>
-                            <AlertDescription>
-                                {amount > 0 ? (
-                                    <>
-                                        A fee of 4% (₦{(amount * 0.04).toFixed(2)}) will be deducted.
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            You will receive ₦{(amount * 0.96).toFixed(2)}.
-                                        </div>
-                                    </>
-                                ) : (
-                                    'A fee of 4% will be deducted for this transaction.'
-                                )}
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                    <SheetFooter className="mt-4 pb-8">
-                        <Button 
-                            onClick={handleWithdrawClick}
-                            disabled={cooldown > 0 || isProcessing}
-                            className="w-full"
-                        >
-                            {isProcessing ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Processing...
-                                </>
-                            ) : cooldown > 0 
-                                ? `Wait ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
-                                : 'Submit Withdrawal'}
-                        </Button>
-                    </SheetFooter>
-                </SheetContent>
-            </Sheet>
-        ) : (
+
+                <MobileWithdrawFlow
+                    open={open}
+                    onOpenChange={setOpen}
+                    walletBalance={walletBalance}
+                    accountName={accountName}
+                    accountNumber={accountNumber}
+                    bankName={bankName}
+                    cooldown={cooldown}
+                    onWithdrawSubmit={async (withdrawAmount) => {
+                         const idempotencyKey = `withdraw_${profile?.id}_${withdrawAmount}_${bankCode}_${accountNumber}`;
+                         
+                         try {
+                            const recipientPayload = {
+                                endpoint: 'create-transfer-recipient',
+                                name: accountName,
+                                account_number: accountNumber,
+                                bank_code: bankCode,
+                            };
+                            
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const { data: recipientData, error: recipientError } = await supabase.functions.invoke('paystack-transfer', {
+                                headers: { 'Authorization': `Bearer ${session?.access_token}` },
+                                body: recipientPayload,
+                            });
+                            
+                            if (recipientError || !recipientData.status) throw new Error(recipientData?.message || recipientError?.message);
+                            
+                            const transferPayload = {
+                                endpoint: 'initiate-transfer',
+                                amount: Number(withdrawAmount),
+                                recipient_code: recipientData.data.recipient_code,
+                                idempotency_key: idempotencyKey,
+                            };
+                            
+                            const { data: transferData, error: transferError } = await supabase.functions.invoke('paystack-transfer', {
+                                headers: { 'Authorization': `Bearer ${session?.access_token}` },
+                                body: transferPayload,
+                            });
+                            
+                            if (transferError || !transferData.status) {
+                                let message = transferData?.message || transferError?.message;
+                                if (transferData?.error === 'withdrawals_disabled_today') message = 'Withdrawals disabled on Sundays.';
+                                throw new Error(message || 'Withdrawal failed');
+                            }
+                            
+                            toast({
+                                title: "Withdrawal Submitted",
+                                description: `Your request to withdraw ₦${Number(withdrawAmount).toLocaleString()} has been submitted.`,
+                            });
+                            onWithdrawalComplete?.();
+                         } catch (e: any) {
+                             console.error(e);
+                             toast({ title: "Withdrawal Failed", description: e.message, variant: "destructive" });
+                             throw e;
+                         }
+                    }}
+                    isProcessing={isProcessing}
+                />
+            </>
+        );
+    }
+
+    return (
+        <>
             <Dialog open={open} onOpenChange={setOpen}>
                 {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
                     <DialogTrigger asChild>
@@ -1463,7 +1255,6 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        )}
         
         {/* PIN Verification Dialog */}
         <VerifyPinDialog
@@ -1491,7 +1282,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
     )
 }
 
-const TransferDialog = ({ walletBalance, onTransferComplete }) => {
+const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) => {
     const [amount, setAmount] = useState(0);
     const [recipient, setRecipient] = useState('');
     const [open, setOpen] = useState(false);
@@ -1557,7 +1348,7 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
                 return;
             }
 
-            const { error } = await supabase.functions.invoke('transfer-funds', {
+            const { data, error } = await supabase.functions.invoke('transfer-funds', {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`,
                 },
@@ -1576,6 +1367,21 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
                 description: `₦${amount.toLocaleString()} has been sent to ${recipient} (₦${TRANSFER_FEE} fee deducted)`,
             });
             
+            // Show receipt immediately
+            if (onViewReceipt) {
+                onViewReceipt({
+                    id: 'temp-' + Date.now(),
+                    type: 'Transfer Out',
+                    amount: -amount,
+                    description: `Transfer to ${recipient}`,
+                    status: 'success',
+                    date: new Date().toLocaleDateString(),
+                    created_at: new Date().toISOString(),
+                    reference: `transfer_to_${recipient}_${Date.now()}`,
+                    currency: 'NGN'
+                });
+            }
+
             // Reset form
             setAmount(0);
             setRecipient('');
@@ -1594,75 +1400,73 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
         }
     }
 
+    if (isMobile) {
+        return (
+            <>
+                <Button 
+                    variant="outline" 
+                    className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
+                    onClick={() => setOpen(true)}
+                >
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                      <ArrowUpDown className="h-6 w-6 text-primary" />
+                    </div>
+                    <span className="font-semibold text-sm">Transfer</span>
+                </Button>
+                
+                <MobileTransferFlow
+                    open={open}
+                    onOpenChange={setOpen}
+                    walletBalance={walletBalance}
+                    players={players || []}
+                    isProcessing={isTransferring}
+                    onTransferSubmit={async (recipientIgn, transferAmount) => {
+                        try {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const { error } = await supabase.functions.invoke('transfer-funds', {
+                                headers: { 'Authorization': `Bearer ${session?.access_token}` },
+                                body: { recipient_ign: recipientIgn, amount: Number(transferAmount) },
+                            });
+
+                            if (error) throw new Error(error.message);
+
+                            toast({
+                                title: "Transfer Successful!",
+                                description: `₦${Number(transferAmount).toLocaleString()} sent to ${recipientIgn}`,
+                            });
+
+                            // Show receipt immediately
+                            if (onViewReceipt) {
+                                onViewReceipt({
+                                    id: 'temp-' + Date.now(),
+                                    type: 'Transfer Out',
+                                    amount: -Number(transferAmount),
+                                    description: `Transfer to ${recipientIgn}`,
+                                    status: 'success',
+                                    date: new Date().toLocaleDateString(),
+                                    created_at: new Date().toISOString(),
+                                    reference: `transfer_to_${recipientIgn}_${Date.now()}`,
+                                    currency: 'NGN'
+                                });
+                            }
+
+                            onTransferComplete?.();
+                        } catch (err: any) {
+                            toast({
+                                title: "Transfer Failed",
+                                description: err.message,
+                                variant: "destructive",
+                            });
+                            throw err;
+                        }
+                    }}
+                />
+            </>
+        );
+    }
+
     return (
         <>
-        {isMobile ? (
-            <Sheet open={open} onOpenChange={setOpen}>
-                <SheetTrigger asChild>
-                    <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                          <ArrowUpDown className="h-6 w-6 text-primary" />
-                        </div>
-                        <span className="font-semibold text-sm">Transfer</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
-                    <SheetHeader className="text-left">
-                        <SheetTitle>Transfer</SheetTitle>
-                        <SheetDescription>Transfer funds to another player's wallet.</SheetDescription>
-                    </SheetHeader>
-                    <div className="py-4 grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="m-recipient">Recipient</Label>
-                            <Select onValueChange={setRecipient} value={recipient}>
-                                <SelectTrigger id="m-recipient">
-                                    <SelectValue placeholder="Select a player..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {players && players.filter(p => !p.is_banned).map((player) => (
-                                        <SelectItem key={player.id} value={player.ign}>
-                                            {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="m-transfer-amount">Amount</Label>
-                            <Input 
-                                id="m-transfer-amount"
-                                type="number"
-                                placeholder="₦0.00"
-                                value={amount}
-                                onChange={(e) => setAmount(Number(e.target.value))}
-                            />
-                        </div>
-                        <Alert>
-                            <Coins className="h-4 w-4" />
-                            <AlertTitle>Transaction Fee</AlertTitle>
-                            <AlertDescription>
-                                {amount > 0 ? (
-                                    <>
-                                        A flat fee of ₦{TRANSFER_FEE.toFixed(2)} will be deducted.
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            Total: ₦{(amount + TRANSFER_FEE).toFixed(2)}.
-                                        </div>
-                                    </>
-                                ) : (
-                                    `A flat fee of ₦${TRANSFER_FEE.toFixed(2)} will be deducted.`
-                                )}
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                    <SheetFooter className="mt-4 pb-8">
-                        <Button onClick={handleTransferClick} disabled={isTransferring} className="w-full">
-                            {isTransferring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isTransferring ? "Processing..." : "Transfer Funds"}
-                        </Button>
-                    </SheetFooter>
-                </SheetContent>
-            </Sheet>
-        ) : (
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                     <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
@@ -1731,7 +1535,6 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        )}
         
         {/* PIN Verification Dialog */}
         <VerifyPinDialog
@@ -2214,7 +2017,11 @@ const Wallet: React.FC = () => {
           isWithdrawalServiceAvailable={walletSettings.withdrawals_enabled}
           cooldown={withdrawCooldown}
         />
-        <TransferDialog walletBalance={walletBalance} onTransferComplete={fetchWalletData} />
+        <TransferDialog 
+          walletBalance={walletBalance} 
+          onTransferComplete={fetchWalletData} 
+          onViewReceipt={handleViewReceipt}
+        />
         <GiveawayDialog 
           setWalletBalance={setWalletBalance} 
           walletBalance={walletBalance} 
