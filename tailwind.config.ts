@@ -22,6 +22,8 @@ export default {
 			fontFamily: {
 				'orbitron': ['Orbitron', 'sans-serif'],
 				'rajdhani': ['Rajdhani', 'sans-serif'],
+				'oswald': ['Oswald', 'sans-serif'],
+				'roboto-condensed': ['"Roboto Condensed"', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -72,6 +74,15 @@ export default {
 					dark: '#0E0E0E',
 					'red-dark': '#CC1936',
 					'red-light': '#FF4D70'
+				},
+				// Military theme colors
+				military: {
+					'army-green': '#2F3E34',
+					'charcoal': '#1C1F22',
+					'desert-tan': '#C2B280',
+					'steel-gray': '#6B7280',
+					'tactical-red': '#B11226',
+					'military-orange': '#D97706',
 				}
 			},
 			borderRadius: {
