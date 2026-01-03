@@ -31,7 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ onSidebarToggle }) => {
             variant="ghost"
             size="sm"
             onClick={onSidebarToggle}
-            className="text-muted-foreground hover:text-foreground lg:hidden"
+            className="text-muted-foreground hover:text-foreground"
           >
             <Menu className="w-5 h-5" />
           </Button>

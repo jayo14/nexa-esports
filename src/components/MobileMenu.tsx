@@ -30,13 +30,21 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export const MobileMenu: React.FC = () => {
-  const [open, setOpen] = useState(false);
+interface MobileMenuProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const MobileMenu: React.FC<MobileMenuProps> = ({ open: externalOpen, onOpenChange: externalOnOpenChange }) => {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'clan_master';
+
+  // Use external control for open state
+  const open = externalOpen;
+  const setOpen = externalOnOpenChange;
 
   // Secondary pages for hamburger menu (Wallet and Statistics moved to dock navigation)
   const playerSecondaryPages = [
@@ -81,15 +89,6 @@ export const MobileMenu: React.FC = () => {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border border-[#FF1F44]/30 hover:bg-[#FF1F44]/20"
-        >
-          <Menu className="w-5 h-5 text-white" />
-        </Button>
-      </SheetTrigger>
       <SheetContent
         side="right"
         className="w-80 bg-gradient-to-br from-background/98 to-background/95 backdrop-blur-xl border-l-2 border-[#FF1F44]/30 overflow-y-auto"

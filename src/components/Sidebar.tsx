@@ -141,8 +141,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
       
       <div className={`
-        fixed left-0 top-0 h-full bg-card border-r border-border z-50
-        transition-all duration-300 overflow-y-auto flex flex-col
+        fixed left-0 top-0 h-full bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl border-r-2 border-border/50 z-50
+        transition-all duration-300 overflow-y-auto flex flex-col shadow-2xl
         ${isMobile 
           ? (isCollapsed ? '-translate-x-full' : 'w-64 translate-x-0')
           : isMediumScreen 
@@ -152,20 +152,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       `}>
 
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border/30 bg-gradient-to-r from-primary/10 to-primary/5">
         <div className="flex items-center justify-between">
           {!isCollapsed && !isMediumScreen && (
             <div className="flex items-center space-x-3">
-              <img
-                src={profile?.avatar_url || '/placeholder.svg'}
-                alt="Avatar"
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              <div className="relative">
+                <img
+                  src={profile?.avatar_url || '/placeholder.svg'}
+                  alt="Avatar"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-primary/30 shadow-lg"
+                />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-card"></div>
+              </div>
               <div>
-                <p className="text-sm font-medium text-foreground">
-  {profile?.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}
-  {profile?.ign}
-</p>
+                <p className="text-sm font-bold text-foreground">
+                  {profile?.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}
+                  {profile?.ign}
+                </p>
                 <p className="text-xs text-muted-foreground capitalize">{profile?.role}</p>
               </div>
             </div>
@@ -174,7 +177,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all"
           >
             {(isCollapsed || isMediumScreen) ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </Button>
@@ -182,16 +185,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 space-y-6">
         <div className="space-y-2">
           {/* Player Menu - Only show for players */}
           {isPlayer && (
             <>
               {!isCollapsed && !isMediumScreen && (
-                <div className="pb-2">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="pb-2 mb-2">
+                  <h3 className="text-xs font-bold text-primary uppercase tracking-wider px-2">
                     Player Menu
                   </h3>
+                  <div className="h-px bg-gradient-to-r from-primary/50 to-transparent mt-2"></div>
                 </div>
               )}
               {playerMenuItems.map((item) => (
@@ -212,10 +216,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isModerator && (
             <>
               {!isCollapsed && !isMediumScreen && (
-                <div className="pb-2">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="pb-2 mb-2">
+                  <h3 className="text-xs font-bold text-primary uppercase tracking-wider px-2">
                     Moderator Menu
                   </h3>
+                  <div className="h-px bg-gradient-to-r from-primary/50 to-transparent mt-2"></div>
                 </div>
               )}
               {moderatorMenuItems.map((item) => (
@@ -236,10 +241,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isAdmin && (
             <>
               {!isCollapsed && !isMediumScreen && (
-                <div className="pb-2">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="pb-2 mb-2">
+                  <h3 className="text-xs font-bold text-primary uppercase tracking-wider px-2">
                     Admin Menu
                   </h3>
+                  <div className="h-px bg-gradient-to-r from-primary/50 to-transparent mt-2"></div>
                 </div>
               )}
               {adminMenuItems.map((item) => (
@@ -259,16 +265,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border/30 bg-gradient-to-r from-red-500/5 to-red-600/5">
         <Button
           variant="ghost"
           onClick={handleLogout}
-          className={`w-full justify-start text-muted-foreground hover:text-foreground ${
+          className={`w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all ${
             (isCollapsed || isMediumScreen) ? 'px-0 justify-center' : ''
           }`}
         >
           <LogOut className="w-4 h-4" />
-          {!isCollapsed && !isMediumScreen && <span className="ml-2">Logout</span>}
+          {!isCollapsed && !isMediumScreen && <span className="ml-2 font-medium">Logout</span>}
         </Button>
       </div>
       </div>

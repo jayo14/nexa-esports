@@ -19,6 +19,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const { user, loading } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Handle responsive sidebar behavior
   useEffect(() => {
@@ -39,7 +40,13 @@ export const Layout: React.FC<LayoutProps> = ({
   }, []);
 
   const handleSidebarToggle = () => {
-    setIsCollapsed(!isCollapsed);
+    if (isMobile) {
+      // On mobile, toggle the MobileMenu sheet
+      setMobileMenuOpen(!mobileMenuOpen);
+    } else {
+      // On desktop, toggle sidebar collapse
+      setIsCollapsed(!isCollapsed);
+    }
   };
 
   if (loading) {
@@ -73,7 +80,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
       
       {/* Mobile Menu - Hamburger menu for secondary pages */}
-      {isMobile && <MobileMenu />}
+      {isMobile && <MobileMenu open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />}
       
       <div className={`
         min-h-screen transition-all duration-300

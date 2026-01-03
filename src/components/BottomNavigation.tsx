@@ -38,13 +38,13 @@ export const BottomNavigation: React.FC = () => {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4"
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4 flex justify-center"
       role="navigation"
       aria-label="Main navigation"
     >
-      {/* Dock Navigation - Responsive with rounded edges and adequate spacing */}
+      {/* Dock Navigation - Width grows with components */}
       <div className="bg-gradient-to-t from-background/98 via-background/95 to-background/90 backdrop-blur-xl border-2 border-[#FF1F44]/30 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] rounded-3xl">
-        <div className="flex items-center justify-around px-3 py-3 max-w-md mx-auto gap-2">
+        <div className="flex items-center justify-center gap-2 px-3 py-3">
           {majorPages.map((item) => {
             const Icon = item.icon;
             const isActive = isActivePath(item.path);
@@ -56,7 +56,7 @@ export const BottomNavigation: React.FC = () => {
                 aria-label={`Navigate to ${item.label} page`}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 min-w-[70px]',
+                  'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all duration-300',
                   isActive
                     ? 'bg-gradient-to-br from-[#FF1F44]/30 to-red-600/20 border border-[#FF1F44]/50 shadow-lg scale-105'
                     : 'hover:bg-white/5 active:scale-95'
@@ -78,7 +78,7 @@ export const BottomNavigation: React.FC = () => {
                 </div>
                 <span
                   className={cn(
-                    'text-xs font-medium transition-colors duration-300',
+                    'text-xs font-medium transition-colors duration-300 whitespace-nowrap',
                     isActive ? 'text-white' : 'text-gray-500'
                   )}
                 >
