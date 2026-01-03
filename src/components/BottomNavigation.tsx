@@ -37,7 +37,11 @@ export const BottomNavigation: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       {/* Dock Navigation - Responsive with rounded edges and adequate spacing */}
       <div className="bg-gradient-to-t from-background/98 via-background/95 to-background/90 backdrop-blur-xl border-2 border-[#FF1F44]/30 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] rounded-3xl">
         <div className="flex items-center justify-around px-3 py-3 max-w-md mx-auto gap-2">
@@ -49,6 +53,8 @@ export const BottomNavigation: React.FC = () => {
               <button
                 key={item.path}
                 onClick={() => handleNavigation(item.path)}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 min-w-[70px]',
                   isActive
@@ -83,6 +89,6 @@ export const BottomNavigation: React.FC = () => {
           })}
         </div>
       </div>
-    </div>
+    </nav>
   );
 };
