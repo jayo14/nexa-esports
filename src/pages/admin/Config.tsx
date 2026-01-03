@@ -12,20 +12,48 @@ import { useTheme, SeasonalTheme } from '@/contexts/ThemeContext';
 import { logKillReset, logAttendanceReset } from "@/lib/activityLogger";
 import { cn } from '@/lib/utils';
 
-// Mock theme data with online image URLs
+// Enhanced theme data with high-quality preview images from Unsplash
 const themes = [
   {
     id: 'default',
     name: 'NeXa Default',
-    image: 'https://i.imgur.com/3gXnBfF.png', // A generic dark/red theme image
+    description: 'Dark military theme with red accents',
+    image: 'https://images.unsplash.com/photo-1614854262340-ab1ca7d079c7?w=800&q=80', // Tech/gaming dark red
+    preview: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&q=80',
+    color: '#FF1F44',
   },
   {
     id: 'christmas',
     name: 'Festive Christmas',
-    image: 'https://i.imgur.com/sC4gT6C.jpeg',
+    description: 'Holiday spirit with snow and festive lights',
+    image: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=800&q=80', // Christmas ornaments
+    preview: 'https://images.unsplash.com/photo-1482517967863-00e15c9b44be?w=400&q=80',
+    color: '#DC2626',
   },
-  // Add more themes here in the future
-  // { id: 'halloween', name: 'Spooky Halloween', image: '...' },
+  {
+    id: 'cyber',
+    name: 'Cyberpunk Neon',
+    description: 'Futuristic neon with cyberpunk aesthetics',
+    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80', // Neon lights
+    preview: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80',
+    color: '#06B6D4',
+  },
+  {
+    id: 'military',
+    name: 'Military Ops',
+    description: 'Tactical military operations theme',
+    image: 'https://images.unsplash.com/photo-1526920929362-5b26677c148c?w=800&q=80', // Military tactical
+    preview: 'https://images.unsplash.com/photo-1491528323818-fdd1faba62cc?w=400&q=80',
+    color: '#059669',
+  },
+  {
+    id: 'dark-purple',
+    name: 'Royal Purple',
+    description: 'Elite royal purple theme',
+    image: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&q=80', // Purple abstract
+    preview: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&q=80',
+    color: '#9333EA',
+  },
 ];
 
 const ThemeCarousel = () => {
@@ -41,38 +69,145 @@ const ThemeCarousel = () => {
     const selectedTheme = themes[selectedIndex];
     setTheme(selectedTheme.id as SeasonalTheme);
     toast({
-      title: "Theme Applied!",
-      description: `The ${selectedTheme.name} theme has been activated.`,
+      title: "🎨 Theme Applied!",
+      description: `The ${selectedTheme.name} theme is now active for all users.`,
     });
   };
 
   const nextSlide = () => setSelectedIndex(prev => (prev + 1) % themes.length);
   const prevSlide = () => setSelectedIndex(prev => (prev - 1 + themes.length) % themes.length);
 
+  const currentThemeData = themes[selectedIndex];
+  const isCurrentTheme = currentThemeData.id === currentTheme;
+
   return (
-    <div className="space-y-4">
-      <div className="relative w-full max-w-xl mx-auto">
-        <div className="overflow-hidden rounded-lg">
-          <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${selectedIndex * 100}%)` }}>
-            {themes.map(theme => (
-              <img key={theme.id} src={theme.image} alt={theme.name} className="w-full flex-shrink-0 object-cover aspect-video" />
-            ))}
+    <div className="space-y-6">
+      {/* Main Preview */}
+      <div className="relative w-full mx-auto">
+        <div className="relative overflow-hidden rounded-xl border-2 border-border/50 shadow-2xl group">
+          {/* Theme Preview Image */}
+          <div className="relative aspect-video bg-gradient-to-br from-background to-background/50">
+            <img 
+              src={currentThemeData.image} 
+              alt={currentThemeData.name} 
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+            />
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            
+            {/* Active Theme Badge */}
+            {isCurrentTheme && (
+              <div className="absolute top-4 right-4 px-4 py-2 bg-green-500/90 backdrop-blur-sm rounded-full flex items-center gap-2 shadow-lg animate-pulse">
+                <CheckCircle className="w-4 h-4 text-white" />
+                <span className="text-white font-bold text-sm">ACTIVE</span>
+              </div>
+            )}
+            
+            {/* Theme Info Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-6 h-6 rounded-full border-2 border-white shadow-lg" 
+                    style={{ backgroundColor: currentThemeData.color }}
+                  ></div>
+                  <h3 className="text-2xl font-bold text-white font-orbitron">
+                    {currentThemeData.name}
+                  </h3>
+                </div>
+                <p className="text-white/90 text-sm">
+                  {currentThemeData.description}
+                </p>
+              </div>
+            </div>
           </div>
+          
+          {/* Navigation Buttons */}
+          <Button 
+            onClick={prevSlide} 
+            variant="outline" 
+            size="icon" 
+            className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/50 backdrop-blur-md border-white/20 hover:bg-black/70 text-white shadow-xl"
+          >
+            <ChevronLeft className="w-6 h-6"/>
+          </Button>
+          <Button 
+            onClick={nextSlide} 
+            variant="outline" 
+            size="icon" 
+            className="absolute top-1/2 right-4 -translate-y-1/2 bg-black/50 backdrop-blur-md border-white/20 hover:bg-black/70 text-white shadow-xl"
+          >
+            <ChevronRight className="w-6 h-6"/>
+          </Button>
         </div>
-        <Button onClick={prevSlide} variant="outline" size="icon" className="absolute top-1/2 left-2 -translate-y-1/2 bg-background/50 backdrop-blur-sm"><ChevronLeft/></Button>
-        <Button onClick={nextSlide} variant="outline" size="icon" className="absolute top-1/2 right-2 -translate-y-1/2 bg-background/50 backdrop-blur-sm"><ChevronRight/></Button>
+
+        {/* Theme Indicators */}
+        <div className="flex justify-center gap-2 mt-4">
+          {themes.map((theme, index) => (
+            <button
+              key={theme.id}
+              onClick={() => handleSelect(index)}
+              className={cn(
+                "w-3 h-3 rounded-full transition-all duration-300",
+                index === selectedIndex 
+                  ? "bg-primary w-8" 
+                  : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              )}
+              aria-label={`Select ${theme.name}`}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="text-center">
-        <h4 className="text-lg font-semibold text-foreground">{themes[selectedIndex].name}</h4>
-        <p className="text-sm text-muted-foreground">ID: {themes[selectedIndex].id}</p>
+      {/* Theme Gallery Thumbnails */}
+      <div className="grid grid-cols-5 gap-3">
+        {themes.map((theme, index) => (
+          <button
+            key={theme.id}
+            onClick={() => handleSelect(index)}
+            className={cn(
+              "relative aspect-video rounded-lg overflow-hidden border-2 transition-all duration-300",
+              index === selectedIndex 
+                ? "border-primary ring-2 ring-primary/50 scale-105" 
+                : "border-border/30 hover:border-primary/50 opacity-70 hover:opacity-100"
+            )}
+          >
+            <img 
+              src={theme.preview} 
+              alt={theme.name} 
+              className="w-full h-full object-cover" 
+            />
+            {theme.id === currentTheme && (
+              <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+            )}
+          </button>
+        ))}
       </div>
 
+      {/* Apply Button */}
       <div className="flex justify-center">
-        <Button onClick={handleApplyTheme} className="gap-2">
-          <CheckCircle className="w-4 h-4"/>
-          Apply "{themes[selectedIndex].name}" Theme
+        <Button 
+          onClick={handleApplyTheme} 
+          disabled={isCurrentTheme}
+          className={cn(
+            "gap-2 px-8 py-6 text-lg font-bold shadow-lg transition-all duration-300",
+            isCurrentTheme 
+              ? "bg-muted text-muted-foreground cursor-not-allowed"
+              : "bg-gradient-to-r from-primary to-red-600 hover:from-red-600 hover:to-primary hover:scale-105 hover:shadow-xl"
+          )}
+        >
+          <Palette className="w-5 h-5"/>
+          {isCurrentTheme ? "Currently Active" : `Apply "${currentThemeData.name}" Theme`}
         </Button>
+      </div>
+
+      {/* Info Notice */}
+      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+        <p className="text-sm text-blue-400 text-center">
+          <strong>Global Theme:</strong> This change will be applied instantly to all users across the application.
+        </p>
       </div>
     </div>
   );

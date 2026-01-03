@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type ThemeMode = 'dark' | 'light';
-export type SeasonalTheme = 'default' | 'christmas';
+export type SeasonalTheme = 'default' | 'christmas' | 'cyber' | 'military' | 'dark-purple';
 
 interface ThemeSettings {
   enableSnow: boolean;
