@@ -76,36 +76,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const playerMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: User, label: 'Profile', path: '/profile' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
-    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: BarChart3, label: 'Statistics', path: '/statistics' },
+    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   const moderatorMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: User, label: 'Profile', path: '/profile' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
     { icon: Clock, label: 'Attendance', path: '/admin/attendance' },
-    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: BarChart3, label: 'Statistics', path: '/statistics' },
+    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   const adminMenuItems = [
     { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
-    { icon: Users, label: 'Players', path: '/admin/players' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: Users, label: 'Players', path: '/admin/players' },
+    { icon: Crosshair, label: 'Scrims', path: '/admin/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
-    { icon: Crosshair, label: 'Scrims', path: '/admin/scrims' },
     { icon: Calendar, label: 'Events', path: '/admin/events' },
     { icon: Clock, label: 'Attendance', path: '/admin/attendance' },
     { icon: Megaphone, label: 'Announcements', path: '/admin/announcements' },
@@ -190,14 +190,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Player Menu - Only show for players */}
           {isPlayer && (
             <>
-              {!isCollapsed && !isMediumScreen && (
-                <div className="pb-2 mb-2">
-                  <h3 className="text-xs font-bold text-primary uppercase tracking-wider px-2">
-                    Player Menu
-                  </h3>
-                  <div className="h-px bg-gradient-to-r from-primary/50 to-transparent mt-2"></div>
-                </div>
-              )}
               {playerMenuItems.map((item) => (
                 <NavItem
                   key={item.path}
@@ -215,14 +207,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Moderator Menu - Only show for moderators */}
           {isModerator && (
             <>
-              {!isCollapsed && !isMediumScreen && (
-                <div className="pb-2 mb-2">
-                  <h3 className="text-xs font-bold text-primary uppercase tracking-wider px-2">
-                    Moderator Menu
-                  </h3>
-                  <div className="h-px bg-gradient-to-r from-primary/50 to-transparent mt-2"></div>
-                </div>
-              )}
               {moderatorMenuItems.map((item) => (
                 <NavItem
                   key={item.path}
@@ -240,14 +224,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Admin Menu - Only show for admins */}
           {isAdmin && (
             <>
-              {!isCollapsed && !isMediumScreen && (
-                <div className="pb-2 mb-2">
-                  <h3 className="text-xs font-bold text-primary uppercase tracking-wider px-2">
-                    Admin Menu
-                  </h3>
-                  <div className="h-px bg-gradient-to-r from-primary/50 to-transparent mt-2"></div>
-                </div>
-              )}
               {adminMenuItems.map((item) => (
                 <NavItem
                   key={item.path}
