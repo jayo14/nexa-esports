@@ -53,7 +53,7 @@ export const BottomNavigation: React.FC = () => {
               <button
                 key={item.path}
                 onClick={() => handleNavigation(item.path)}
-                aria-label={item.label}
+                aria-label={`Navigate to ${item.label} page`}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 min-w-[70px]',
