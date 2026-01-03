@@ -66,6 +66,7 @@ export const Loadouts: React.FC = () => {
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [weaponTypeFilter, setWeaponTypeFilter] = useState<string>("all");
   const [showCommunity, setShowCommunity] = useState(false);
+  const [viewFilter, setViewFilter] = useState<'my' | 'all'>('my'); // New filter for my/all loadouts
 
   const [formData, setFormData] = useState({
     weapon_name: "",
@@ -204,10 +205,19 @@ export const Loadouts: React.FC = () => {
     setIsViewing(true);
   };
 
-  // Filter loadouts
+  // Filter loadouts based on view filter
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'clan_master';
+  
   const myLoadouts = loadouts.filter(
     (loadout) =>
       loadout.player_id === profile?.id &&
+      loadout.weapon_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (modeFilter === "all" || loadout.mode === modeFilter) &&
+      (weaponTypeFilter === "all" || loadout.weapon_type === weaponTypeFilter)
+  );
+
+  const allLoadouts = loadouts.filter(
+    (loadout) =>
       loadout.weapon_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (modeFilter === "all" || loadout.mode === modeFilter) &&
       (weaponTypeFilter === "all" || loadout.weapon_type === weaponTypeFilter)
@@ -221,6 +231,8 @@ export const Loadouts: React.FC = () => {
       (modeFilter === "all" || loadout.mode === modeFilter) &&
       (weaponTypeFilter === "all" || loadout.weapon_type === weaponTypeFilter)
   );
+
+  const displayLoadouts = viewFilter === 'my' ? myLoadouts : allLoadouts;
 
   const getModeColor = (mode: string) => {
     switch (mode) {
@@ -272,16 +284,36 @@ export const Loadouts: React.FC = () => {
             Loadouts
           </h1>
           <p className="text-muted-foreground font-rajdhani">
-            Create and manage your weapon loadouts
+            {viewFilter === 'my' ? 'Create and manage your weapon loadouts' : 'View and manage all player loadouts'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isAdmin && (
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setViewFilter('my')}
+                variant={viewFilter === 'my' ? 'default' : 'outline'}
+                className="font-rajdhani"
+              >
+                <User className="w-4 h-4 mr-2" />
+                My Loadouts
+              </Button>
+              <Button
+                onClick={() => setViewFilter('all')}
+                variant={viewFilter === 'all' ? 'default' : 'outline'}
+                className="font-rajdhani"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                All Loadouts
+              </Button>
+            </div>
+          )}
           <Button
             onClick={() => setShowCommunity(!showCommunity)}
             variant="outline"
             className="font-rajdhani"
           >
-            {showCommunity ? "My Loadouts" : "Browse Community"}
+            {showCommunity ? "Hide Community" : "Browse Community"}
           </Button>
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
             <DialogTrigger asChild>
@@ -484,20 +516,20 @@ export const Loadouts: React.FC = () => {
           <>
             <div>
               <h2 className="text-xl font-semibold text-foreground font-orbitron mb-4">
-                My Loadouts ({myLoadouts.length})
+                {viewFilter === 'my' ? `My Loadouts (${displayLoadouts.length})` : `All Loadouts (${displayLoadouts.length})`}
               </h2>
-              {myLoadouts.length === 0 ? (
+              {displayLoadouts.length === 0 ? (
                 <Card className="bg-card/50 border-border/30">
                   <CardContent className="p-8 text-center">
                     <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground font-rajdhani">
-                      No loadouts created yet.
+                      {viewFilter === 'my' ? 'No loadouts created yet.' : 'No loadouts found.'}
                     </p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {myLoadouts.map((loadout) => (
+                  {displayLoadouts.map((loadout) => (
                     <Card
                       key={loadout.id}
                       className="bg-card/50 border-border/30 hover:border-primary/30 transition-colors"

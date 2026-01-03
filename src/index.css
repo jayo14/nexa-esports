@@ -87,12 +87,27 @@ All colors MUST be HSL.
     --sidebar-ring: 355 100% 56%;
   }
 
-  /* Christmas Theme Overrides */
+  /* Theme Overrides */
   .theme-christmas {
-    /* More saturated background for festive feel? Or keep it dark. */
-    /* Let's make borders slightly more festive (green/red hint) but subtle */
-    /* Actually, prompt says "Do NOT change primary red". */
-    /* We can add subtle background patterns via CSS if we want. */
+    /* Christmas festive theme with red and green accents */
+  }
+
+  .theme-cyber {
+    --primary: 190 100% 42%; /* Cyan */
+    --primary-foreground: 0 0% 100%;
+    --ring: 190 100% 42%;
+  }
+
+  .theme-military {
+    --primary: 142 76% 36%; /* Green */
+    --primary-foreground: 0 0% 100%;
+    --ring: 142 76% 36%;
+  }
+
+  .theme-dark-purple {
+    --primary: 271 91% 65%; /* Purple */
+    --primary-foreground: 0 0% 100%;
+    --ring: 271 91% 65%;
   }
 }
 
@@ -195,6 +210,20 @@ All colors MUST be HSL.
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
+/* Sci-Fi Scan Line Animation */
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.animate-scan-line {
+  animation: scan-line 3s linear infinite;
 }
 
 
