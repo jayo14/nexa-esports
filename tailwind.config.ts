@@ -24,6 +24,7 @@ export default {
 				'rajdhani': ['Rajdhani', 'sans-serif'],
 				'oswald': ['Oswald', 'sans-serif'],
 				'roboto-condensed': ['"Roboto Condensed"', 'sans-serif'],
+				'roboto': ['Roboto', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
