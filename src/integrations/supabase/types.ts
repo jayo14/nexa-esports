@@ -803,6 +803,41 @@ export type Database = {
           },
         ]
       }
+      pin_attempts: {
+        Row: {
+          attempt_time: string
+          created_at: string | null
+          id: string
+          locked_until: string | null
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          attempt_time?: string
+          created_at?: string | null
+          id?: string
+          locked_until?: string | null
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          attempt_time?: string
+          created_at?: string | null
+          id?: string
+          locked_until?: string | null
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pin_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           attendance: number | null
@@ -825,6 +860,8 @@ export type Database = {
           last_giveaway_redeemed_at: string | null
           mp_class: string | null
           mp_kills: number | null
+          pin_created_at: string | null
+          pin_last_changed_at: string | null
           player_type: Database["public"]["Enums"]["player_type"] | null
           player_uid: string | null
           preferred_mode: string | null
@@ -833,6 +870,7 @@ export type Database = {
           status: string
           tier: string | null
           tiktok_handle: string | null
+          transaction_pin_hash: string | null
           updated_at: string | null
           username: string
         }
@@ -857,6 +895,8 @@ export type Database = {
           last_giveaway_redeemed_at?: string | null
           mp_class?: string | null
           mp_kills?: number | null
+          pin_created_at?: string | null
+          pin_last_changed_at?: string | null
           player_type?: Database["public"]["Enums"]["player_type"] | null
           player_uid?: string | null
           preferred_mode?: string | null
@@ -865,6 +905,7 @@ export type Database = {
           status?: string
           tier?: string | null
           tiktok_handle?: string | null
+          transaction_pin_hash?: string | null
           updated_at?: string | null
           username: string
         }
@@ -889,6 +930,8 @@ export type Database = {
           last_giveaway_redeemed_at?: string | null
           mp_class?: string | null
           mp_kills?: number | null
+          pin_created_at?: string | null
+          pin_last_changed_at?: string | null
           player_type?: Database["public"]["Enums"]["player_type"] | null
           player_uid?: string | null
           preferred_mode?: string | null
@@ -897,6 +940,7 @@ export type Database = {
           status?: string
           tier?: string | null
           tiktok_handle?: string | null
+          transaction_pin_hash?: string | null
           updated_at?: string | null
           username?: string
         }
