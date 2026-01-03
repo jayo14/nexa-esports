@@ -105,6 +105,21 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
     const [myGiveaways, setMyGiveaways] = useState<any[]>([]);
     const [selectedGiveaway, setSelectedGiveaway] = useState<any>(null);
     const [showCodesDialog, setShowCodesDialog] = useState(false);
+    
+    // PIN verification states
+    const [isMobile, setIsMobile] = useState(false);
+    const [showPinVerify, setShowPinVerify] = useState(false);
+    const [pendingGiveaway, setPendingGiveaway] = useState(false);
+
+    // Check screen size for responsive dialog/sheet
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         if (open && isAuthenticated) {
@@ -130,9 +145,10 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
         }
     };
 
-    const handleCreateGiveaway = async () => {
+    const handleCreateGiveawayClick = () => {
         const totalCost = Number(codeValue) * Number(totalCodes);
         
+        // Validate before showing PIN
         if (!title.trim()) {
             toast({
                 title: "Title required",
@@ -151,6 +167,14 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
             return;
         }
 
+        // Show PIN verification dialog
+        setPendingGiveaway(true);
+        setShowPinVerify(true);
+    };
+
+    const handleCreateGiveaway = async () => {
+        const totalCost = Number(codeValue) * Number(totalCodes);
+        
         setIsLoading(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -530,7 +554,7 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
 
                                 <DialogFooter>
                                     <Button 
-                                        onClick={handleCreateGiveaway}
+                                        onClick={handleCreateGiveawayClick}
                                         disabled={isLoading || !title.trim()}
                                         className="w-full"
                                     >
@@ -625,6 +649,29 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
                     </div>
                 </DialogContent>
             </Dialog>
+            
+            {/* PIN Verification Dialog */}
+            <VerifyPinDialog
+                open={showPinVerify}
+                onOpenChange={(open) => {
+                    setShowPinVerify(open);
+                    if (!open) {
+                        setPendingGiveaway(false);
+                    }
+                }}
+                onSuccess={() => {
+                    setShowPinVerify(false);
+                    setPendingGiveaway(false);
+                    handleCreateGiveaway();
+                }}
+                onCancel={() => {
+                    setShowPinVerify(false);
+                    setPendingGiveaway(false);
+                }}
+                title="Verify PIN for Giveaway"
+                description="Enter your 4-digit PIN to authorize this giveaway creation."
+                actionLabel="giveaway"
+            />
         </>
     );
 };
@@ -895,6 +942,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
     }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={setOpen}>
             {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
                 <DialogTrigger asChild>
@@ -1029,7 +1077,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                 </div>
                 <DialogFooter>
                     <Button 
-                        onClick={handleWithdraw}
+                        onClick={handleWithdrawClick}
                         disabled={cooldown > 0 || isProcessing}
                     >
                         {isProcessing ? (
@@ -1044,6 +1092,30 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        
+        {/* PIN Verification Dialog */}
+        <VerifyPinDialog
+            open={showPinVerify}
+            onOpenChange={(open) => {
+                setShowPinVerify(open);
+                if (!open) {
+                    setPendingWithdrawal(false);
+                }
+            }}
+            onSuccess={() => {
+                setShowPinVerify(false);
+                setPendingWithdrawal(false);
+                handleWithdraw();
+            }}
+            onCancel={() => {
+                setShowPinVerify(false);
+                setPendingWithdrawal(false);
+            }}
+            title="Verify PIN for Withdrawal"
+            description="Enter your 4-digit PIN to authorize this withdrawal."
+            actionLabel="withdrawal"
+        />
+    </>
     )
 }
 
@@ -1055,13 +1127,27 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
     const { data: players, isLoading } = useAdminPlayers();
 
     const [isTransferring, setIsTransferring] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [showPinVerify, setShowPinVerify] = useState(false);
+    const [pendingTransfer, setPendingTransfer] = useState(false);
 
     const TRANSFER_FEE = 50;
     const totalCost = amount + TRANSFER_FEE;
 
-    const handleTransfer = async () => {
+    // Check screen size for responsive dialog/sheet
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const handleTransferClick = () => {
         const totalDeduction = amount + TRANSFER_FEE;
         
+        // Validate before showing PIN
         if (amount <= 0) {
             toast({ title: "Invalid Amount", description: "Transfer amount must be positive.", variant: "destructive" });
             return;
@@ -1079,6 +1165,12 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
             return;
         }
 
+        // Show PIN verification dialog
+        setPendingTransfer(true);
+        setShowPinVerify(true);
+    };
+
+    const handleTransfer = async () => {
         setIsTransferring(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -1131,6 +1223,7 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
     }
 
     return (
+        <>
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
@@ -1192,13 +1285,37 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
                     </Alert>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleTransfer} disabled={isTransferring}>
+                    <Button onClick={handleTransferClick} disabled={isTransferring}>
                         {isTransferring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isTransferring ? "Processing..." : "Transfer Funds"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        
+        {/* PIN Verification Dialog */}
+        <VerifyPinDialog
+            open={showPinVerify}
+            onOpenChange={(open) => {
+                setShowPinVerify(open);
+                if (!open) {
+                    setPendingTransfer(false);
+                }
+            }}
+            onSuccess={() => {
+                setShowPinVerify(false);
+                setPendingTransfer(false);
+                handleTransfer();
+            }}
+            onCancel={() => {
+                setShowPinVerify(false);
+                setPendingTransfer(false);
+            }}
+            title="Verify PIN for Transfer"
+            description="Enter your 4-digit PIN to authorize this transfer."
+            actionLabel="transfer"
+        />
+    </>
     )
 }
 
