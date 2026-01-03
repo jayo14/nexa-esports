@@ -3,11 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard,
+  Home,
   User,
-  Crosshair,
-  Package,
-  Menu,
+  Trophy,
+  Wallet,
 } from 'lucide-react';
 
 interface BottomNavItem {
@@ -21,12 +20,12 @@ export const BottomNavigation: React.FC = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  // Four major pages for dock navigation
+  // Four major pages for dock navigation: Home, Statistics, Wallet, Profile
   const majorPages: BottomNavItem[] = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: Home, label: 'Home', path: '/dashboard' },
+    { icon: Trophy, label: 'Statistics', path: '/statistics' },
+    { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: User, label: 'Profile', path: '/profile' },
-    { icon: Crosshair, label: 'Scrims', path: '/scrims' },
-    { icon: Package, label: 'Loadouts', path: '/loadouts' },
   ];
 
   const isActivePath = (path: string) => {
@@ -38,10 +37,10 @@ export const BottomNavigation: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-      {/* Dock Navigation */}
-      <div className="bg-gradient-to-t from-background/98 via-background/95 to-background/90 backdrop-blur-xl border-t-2 border-[#FF1F44]/30 shadow-[0_-4px_30px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center justify-around px-2 py-2 max-w-lg mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4">
+      {/* Dock Navigation - Responsive with rounded edges and adequate spacing */}
+      <div className="bg-gradient-to-t from-background/98 via-background/95 to-background/90 backdrop-blur-xl border-2 border-[#FF1F44]/30 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] rounded-3xl">
+        <div className="flex items-center justify-around px-3 py-3 max-w-md mx-auto gap-2">
           {majorPages.map((item) => {
             const Icon = item.icon;
             const isActive = isActivePath(item.path);
@@ -83,9 +82,6 @@ export const BottomNavigation: React.FC = () => {
             );
           })}
         </div>
-        
-        {/* Safe area padding for devices with home indicator */}
-        <div className="h-safe-area-inset-bottom"></div>
       </div>
     </div>
   );
