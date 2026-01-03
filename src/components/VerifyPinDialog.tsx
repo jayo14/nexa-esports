@@ -14,10 +14,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input'; // Using standard Input
 import { useTransactionPin } from '@/hooks/useTransactionPin';
 import { Lock, AlertCircle, CheckCircle2, Timer } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 interface VerifyPinDialogProps {
   open: boolean;
@@ -28,6 +29,78 @@ interface VerifyPinDialogProps {
   description?: string;
   actionLabel?: string;
 }
+
+const CustomPinInput = ({ value, onChange, onComplete, disabled, error }: {
+  value: string;
+  onChange: (value: string) => void;
+  onComplete: (value: string) => void;
+  disabled: boolean;
+  error: string;
+}) => {
+  const inputs = Array.from({ length: 4 });
+
+  const handleChange = (index: number, digit: string) => {
+    const newValue = [...value.split('')]; // Ensure it's an array
+    newValue[index] = digit;
+    const finalValue = newValue.join('');
+    onChange(finalValue);
+
+    // Auto-focus next input if current is filled and there's a next one
+    if (digit && index < 3) {
+      const nextInput = document.getElementById(`pin-input-${index + 1}`);
+      if (nextInput) {
+        (nextInput as HTMLInputElement).focus();
+      }
+    }
+
+    if (finalValue.length === 4) {
+      onComplete(finalValue);
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      const newValue = [...value.split('')]; // Ensure it's an array
+      if (newValue[index]) { // Only clear if there's a digit
+        newValue[index] = '';
+        onChange(newValue.join(''));
+      }
+      
+      // Auto-focus previous input if current is empty and there's a previous one
+      if (index > 0) {
+        const prevInput = document.getElementById(`pin-input-${index - 1}`);
+        if (prevInput) {
+          (prevInput as HTMLInputElement).focus();
+        }
+      }
+    }
+  };
+
+  return (
+    <div className="flex justify-center items-center space-x-4">
+      {inputs.map((_, index) => (
+        <input
+          key={index}
+          id={`pin-input-${index}`}
+          type="password" // Masked input
+          maxLength={1}
+          value={value[index] || ''}
+          onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ''))} // Allow only digits
+          onKeyDown={(e) => handleKeyDown(index, e)}
+          disabled={disabled}
+          className={cn(
+            "w-16 h-16 text-3xl font-bold text-center rounded-lg border-2 transition-all duration-300 focus:outline-none focus:ring-2 disabled:opacity-50",
+            error ? "border-destructive focus:ring-destructive shadow-destructive/20" : "border-primary/30 focus:ring-primary shadow-primary/20",
+            value[index] ? "bg-primary/10" : "bg-transparent"
+          )}
+          autoFocus={index === 0}
+          inputMode="decimal" // Suggests numeric keyboard on mobile
+        />
+      ))}
+    </div>
+  );
+};
+
 
 const PinVerifyContent: React.FC<{
   pin: string;
@@ -65,24 +138,19 @@ const PinVerifyContent: React.FC<{
           </Alert>
         )}
 
-        {/* PIN Input */}
-        <div className="flex justify-center">
-          <InputOTP
-            maxLength={4}
-            value={pin}
-            onChange={onPinChange}
-            onComplete={onPinComplete}
-            disabled={isLoading || isLocked}
-            autoFocus
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} className="w-14 h-14 text-2xl" />
-              <InputOTPSlot index={1} className="w-14 h-14 text-2xl" />
-              <InputOTPSlot index={2} className="w-14 h-14 text-2xl" />
-              <InputOTPSlot index={3} className="w-14 h-14 text-2xl" />
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
+        {/* PIN Input - Using Custom Component */}
+        <CustomPinInput 
+          pin={pin}
+          error={error}
+          verified={verified}
+          isLocked={isLocked}
+          isLoading={isLoading}
+          remainingTime={remainingTime}
+          onPinChange={onPinChange}
+          onPinComplete={onComplete}
+          onCancel={onCancel}
+          actionLabel={actionLabel}
+        />
 
         {/* Error message */}
         {error && !isLocked && (
@@ -105,7 +173,8 @@ const PinVerifyContent: React.FC<{
         {/* Security reminder */}
         {!isLocked && !verified && (
           <div className="text-sm text-muted-foreground text-center">
-            <p>3 attempts allowed before 1-minute lockout</p>
+            <p>Enter your 4-digit PIN.</p>
+            <p>3 attempts allowed before 1-minute lockout.</p>
           </div>
         )}
       </div>
@@ -245,7 +314,7 @@ export const VerifyPinDialog: React.FC<VerifyPinDialogProps> = ({
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
+        <SheetContent side="bottom" className="h-[70vh] overflow-y-auto custom-scrollbar"> {/* Added custom-scrollbar */}
           <SheetHeader>
             {headerContent}
           </SheetHeader>

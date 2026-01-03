@@ -280,13 +280,26 @@ All colors MUST be HSL.
   background-color: rgba(100, 116, 139, 0.6); /* Slightly darker on hover */
 }
 
-/* Firefox Support */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 31, 68, 0.3);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 31, 68, 0.1);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 31, 68, 0.5);
+    box-shadow: 0 0 10px rgba(255, 31, 68, 0.4);
+  }
 }
 
-/* Sci-Fi Scan Line Animation */
 @keyframes scan-line {
   0% {
     transform: translateY(-100%);
@@ -298,6 +311,16 @@ All colors MUST be HSL.
 
 .animate-scan-line {
   animation: scan-line 3s linear infinite;
+}
+
+@keyframes glitch {
+  2%, 64% { transform: translate(2px, 0) skew(0deg); }
+  4%, 60% { transform: translate(-2px, 0) skew(0deg); }
+  62% { transform: translate(0, 0) skew(5deg); }
+}
+
+.animate-glitch {
+  animation: glitch 1s linear infinite;
 }
 
 

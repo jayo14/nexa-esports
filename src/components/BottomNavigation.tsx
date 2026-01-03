@@ -43,8 +43,8 @@ export const BottomNavigation: React.FC = () => {
       aria-label="Main navigation"
     >
       {/* Dock Navigation - Width grows with components */}
-      <div className="bg-gradient-to-t from-background/98 via-background/95 to-background/90 backdrop-blur-xl border-2 border-[#FF1F44]/30 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] rounded-3xl">
-        <div className="flex items-center justify-center gap-2 px-3 py-3">
+      <div className="bg-gradient-to-t from-background/98 via-background/95 to-background/90 backdrop-blur-xl border-2 border-primary/30 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] rounded-full">
+        <div className="flex items-center justify-center gap-4 px-4 py-3">
           {majorPages.map((item) => {
             const Icon = item.icon;
             const isActive = isActivePath(item.path);

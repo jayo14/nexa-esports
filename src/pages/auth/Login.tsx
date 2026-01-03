@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +17,10 @@ export const Login: React.FC = () => {
   
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +29,7 @@ export const Login: React.FC = () => {
     try {
       let loginEmail = emailOrUsername;
       
-      // If in username mode, we need to look up the user
       if (isUsernameMode) {
-        // For username login, we'll need to try a different approach
-        // Since we can't directly get email from username on client side,
-        // we'll show an error for now and recommend using email
         toast({
           title: "Username Login Not Available",
           description: "Please use your email address to log in, or contact admin for assistance.",
@@ -47,7 +45,7 @@ export const Login: React.FC = () => {
           title: "Welcome back, warrior!",
           description: "Successfully logged into NeXa_Esports",
         });
-        navigate('/dashboard');
+        navigate(from, { replace: true });
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -161,15 +159,6 @@ export const Login: React.FC = () => {
             </div>
           </div>
         </form>
-
-        {/* Demo Credentials */}
-        {/* <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-          <p className="text-yellow-300 text-sm font-medium mb-2 font-rajdhani">Demo Credentials:</p>
-          <div className="text-xs text-yellow-200 space-y-1 font-rajdhani">
-            <p><strong>Player:</strong> slayer@nexa.gg / 12345678</p>
-            <p><strong>Admin:</strong> admin@nexa.gg / adminmode123</p>
-          </div>
-        </div> */}
 
         {/* Links */}
         <div className="mt-6 text-center space-y-2">

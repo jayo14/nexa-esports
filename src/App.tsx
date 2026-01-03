@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Layout } from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute'; // Import ProtectedRoute
 
 // Public pages
 import Index from '@/pages/Index';
@@ -34,7 +34,8 @@ import Statistics from '@/pages/Statistics';
 // Admin pages
 import { AdminPlayers } from '@/pages/admin/Players';
 
-import { AdminProfiles } from '@/pages/admin/Profiles';
+// Note: AdminProfiles is not used, but keeping it commented in case it's needed later
+// import { AdminProfiles } from '@/pages/admin/Profiles';
 import { AdminLoadouts } from '@/pages/admin/Loadouts';
 import { AdminWeaponLayouts } from '@/pages/admin/WeaponLayouts';
 import { AdminScrimsManagement } from '@/pages/admin/ScrimsManagement';
@@ -97,51 +98,33 @@ function AppRoutes() {
         <Route path="/auth/onboarding" element={<Onboarding />} />
 
         {/* Protected routes */}
-        <Route path="/dashboard" element={<Layout showSidebar><Dashboard /></Layout>} />
-        <Route path="/profile" element={<Layout showSidebar><Profile /></Layout>} />
-        <Route path="/settings" element={<Layout showSidebar><Settings /></Layout>} />
-
-        <Route path="/scrims" element={<Layout showSidebar><Scrims /></Layout>} />
-        <Route path="/weapon-layouts" element={<Layout showSidebar><WeaponLoadouts /></Layout>} />
-        <Route path="/loadouts" element={<Layout showSidebar><Loadouts /></Layout>} />
-        <Route path="/announcements" element={<Layout showSidebar><Announcements /></Layout>} />
-        <Route path="/statistics" element={<Layout showSidebar><Statistics /></Layout>} />
-
-        {/* Wallet route with feature flag and role-based access */}
-        <Route
-          path="/wallet"
-          element={
-            <Layout showSidebar>
-              <Wallet />
-            </Layout>
-          }
-        />
-        <Route
-          path="/payment-success"
-          element={
-            <Layout showSidebar>
-              <PaymentSuccess />
-            </Layout>
-          }
-        />
+        <Route path="/dashboard" element={<ProtectedRoute><Layout showSidebar><Dashboard /></Layout></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Layout showSidebar><Profile /></Layout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Layout showSidebar><Settings /></Layout></ProtectedRoute>} />
+        <Route path="/scrims" element={<ProtectedRoute><Layout showSidebar><Scrims /></Layout></ProtectedRoute>} />
+        <Route path="/weapon-layouts" element={<ProtectedRoute><Layout showSidebar><WeaponLoadouts /></Layout></ProtectedRoute>} />
+        <Route path="/loadouts" element={<ProtectedRoute><Layout showSidebar><Loadouts /></Layout></ProtectedRoute>} />
+        <Route path="/announcements" element={<ProtectedRoute><Layout showSidebar><Announcements /></Layout></ProtectedRoute>} />
+        <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
+        <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
+        <Route path="/payment-success" element={<ProtectedRoute><Layout showSidebar><PaymentSuccess /></Layout></ProtectedRoute>} />
 
         {/* Admin routes */}
-        <Route path="/admin" element={<Layout showSidebar><AdminDashboard /></Layout>} />
-        <Route path="/admin/players" element={<Layout showSidebar><AdminPlayers /></Layout>} />
-
-        <Route path="/admin/loadouts" element={<Layout showSidebar><AdminLoadouts /></Layout>} />
-        <Route path="/admin/weapon-layouts" element={<Layout showSidebar><AdminWeaponLayouts /></Layout>} />
-        <Route path="/admin/scrims" element={<Layout showSidebar><AdminScrimsManagement /></Layout>} />
-        <Route path="/admin/events" element={<Layout showSidebar><AdminEventsManagement /></Layout>} />
-        <Route path="/admin/events/:eventId/assign" element={<Layout showSidebar><EventAssignment /></Layout>} />
-        <Route path="/admin/event-assignment" element={<Layout showSidebar><EventAssignment /></Layout>} />
-        <Route path="/admin/attendance" element={<Layout showSidebar><AdminAttendance /></Layout>} />
-        <Route path="/admin/announcements" element={<Layout showSidebar><AdminAnnouncementsManagement /></Layout>} />
-        <Route path="/admin/notifications" element={<Layout showSidebar><AdminNotifications /></Layout>} />
-        <Route path="/admin/activities" element={<Layout showSidebar><Activities /></Layout>} />
-        <Route path="/admin/config" element={<Layout showSidebar><AdminConfig /></Layout>} />
-        <Route path="/admin/feedback" element={<Layout showSidebar><Feedback /></Layout>} />
-        <Route path="/admin/earnings" element={<Layout showSidebar><Earnings /></Layout>} />
+        <Route path="/admin" element={<ProtectedRoute><Layout showSidebar><AdminDashboard /></Layout></ProtectedRoute>} />
+        <Route path="/admin/players" element={<ProtectedRoute><Layout showSidebar><AdminPlayers /></Layout></ProtectedRoute>} />
+        <Route path="/admin/loadouts" element={<ProtectedRoute><Layout showSidebar><AdminLoadouts /></Layout></ProtectedRoute>} />
+        <Route path="/admin/weapon-layouts" element={<ProtectedRoute><Layout showSidebar><AdminWeaponLayouts /></Layout></ProtectedRoute>} />
+        <Route path="/admin/scrims" element={<ProtectedRoute><Layout showSidebar><AdminScrimsManagement /></Layout></ProtectedRoute>} />
+        <Route path="/admin/events" element={<ProtectedRoute><Layout showSidebar><AdminEventsManagement /></Layout></ProtectedRoute>} />
+        <Route path="/admin/events/:eventId/assign" element={<ProtectedRoute><Layout showSidebar><EventAssignment /></Layout></ProtectedRoute>} />
+        <Route path="/admin/event-assignment" element={<ProtectedRoute><Layout showSidebar><EventAssignment /></Layout></ProtectedRoute>} />
+        <Route path="/admin/attendance" element={<ProtectedRoute><Layout showSidebar><AdminAttendance /></Layout></ProtectedRoute>} />
+        <Route path="/admin/announcements" element={<ProtectedRoute><Layout showSidebar><AdminAnnouncementsManagement /></Layout></ProtectedRoute>} />
+        <Route path="/admin/notifications" element={<ProtectedRoute><Layout showSidebar><AdminNotifications /></Layout></ProtectedRoute>} />
+        <Route path="/admin/activities" element={<ProtectedRoute><Layout showSidebar><Activities /></Layout></ProtectedRoute>} />
+        <Route path="/admin/config" element={<ProtectedRoute><Layout showSidebar><AdminConfig /></Layout></ProtectedRoute>} />
+        <Route path="/admin/feedback" element={<ProtectedRoute><Layout showSidebar><Feedback /></Layout></ProtectedRoute>} />
+        <Route path="/admin/earnings" element={<ProtectedRoute><Layout showSidebar><Earnings /></Layout></ProtectedRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
