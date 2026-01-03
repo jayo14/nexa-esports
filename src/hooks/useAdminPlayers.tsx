@@ -15,13 +15,12 @@ export const useAdminPlayers = () => {
         throw error;
       }
       
-      // The edge function should return an array of augmented profiles
-      // If data.data is null or not an array, handle it gracefully
-      if (!data || !Array.isArray(data.data)) {
+      // The edge function returns an array of augmented profiles directly
+      if (!data || !Array.isArray(data)) {
         throw new Error('Invalid data received from get-all-player-data function');
       }
 
-      return data.data;
+      return data;
     },
   });
 };

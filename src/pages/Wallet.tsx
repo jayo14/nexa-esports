@@ -418,6 +418,259 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
         </div>
     );
 
+    if (isMobile) {
+        return (
+            <>
+                <Sheet open={open} onOpenChange={setOpen}>
+                    <SheetTrigger asChild>
+                        <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                              <Gift className="h-6 w-6 text-primary" />
+                            </div>
+                            <span className="font-semibold text-sm">Giveaway</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+                        <SheetHeader className="text-left">
+                            <SheetTitle>🎁 Giveaway</SheetTitle>
+                            <SheetDescription>
+                                {isAuthenticated 
+                                    ? 'Create, view, or redeem giveaway codes.' 
+                                    : 'Enter a code to instantly credit your wallet.'}
+                            </SheetDescription>
+                        </SheetHeader>
+
+                        {isAuthenticated ? (
+                            <Tabs defaultValue="redeem" className="w-full mt-4">
+                                <TabsList className="grid w-full grid-cols-3">
+                                    <TabsTrigger value="create">Create New</TabsTrigger>
+                                    <TabsTrigger value="history">My Giveaways</TabsTrigger>
+                                    <TabsTrigger value="redeem">Redeem</TabsTrigger>
+                                </TabsList>
+                                
+                                <TabsContent value="create" className="space-y-4 mt-4">
+                                    <div className="grid gap-4">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="m-title">Giveaway Title *</Label>
+                                            <Input
+                                                id="m-title"
+                                                placeholder="e.g., Weekend Bonus"
+                                                value={title}
+                                                onChange={(e) => setTitle(e.target.value)}
+                                            />
+                                        </div>
+                                        
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="m-message">Message (Optional)</Label>
+                                            <Textarea
+                                                id="m-message"
+                                                placeholder="Add a message for your clan..."
+                                                value={message}
+                                                onChange={(e) => setMessage(e.target.value)}
+                                                rows={2}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="m-codeValue">Value per Code</Label>
+                                                <Select value={codeValue} onValueChange={setCodeValue}>
+                                                    <SelectTrigger id="m-codeValue">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="100">₦100</SelectItem>
+                                                        <SelectItem value="200">₦200</SelectItem>
+                                                        <SelectItem value="500">₦500</SelectItem>
+                                                        <SelectItem value="1000">₦1,000</SelectItem>
+                                                        <SelectItem value="2000">₦2,000</SelectItem>
+                                                        <SelectItem value="5000">₦5,000</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="m-totalCodes">Number of Codes</Label>
+                                                <Input
+                                                    id="m-totalCodes"
+                                                    type="number"
+                                                    min="1"
+                                                    max="100"
+                                                    value={totalCodes}
+                                                    onChange={(e) => setTotalCodes(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="m-expiresIn">Expires In</Label>
+                                            <Select value={expiresIn} onValueChange={setExpiresIn}>
+                                                <SelectTrigger id="m-expiresIn">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0.166667">10 minutes</SelectItem>
+                                                    <SelectItem value="0.25">15 minutes</SelectItem>
+                                                    <SelectItem value="0.5">30 minutes</SelectItem>
+                                                    <SelectItem value="6">6 hours</SelectItem>
+                                                    <SelectItem value="12">12 hours</SelectItem>
+                                                    <SelectItem value="24">24 hours</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/30">
+                                            <input
+                                                type="checkbox"
+                                                id="m-isPrivate"
+                                                checked={isPrivate}
+                                                onChange={(e) => setIsPrivate(e.target.checked)}
+                                                className="h-4 w-4 rounded border-border"
+                                            />
+                                            <div className="flex-1">
+                                                <Label htmlFor="m-isPrivate" className="cursor-pointer">
+                                                    Private Giveaway
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Codes will be generated but won't appear in notifications
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <Alert>
+                                            <AlertTitle>Total Cost</AlertTitle>
+                                            <AlertDescription>
+                                                <div className="flex justify-between items-center">
+                                                    <span>₦{codeValue} × {totalCodes} codes</span>
+                                                    <span className="font-bold text-lg">
+                                                        = ₦{(Number(codeValue) * Number(totalCodes)).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                <div className="text-sm text-muted-foreground mt-2">
+                                                    Your balance: ₦{walletBalance.toLocaleString()}
+                                                </div>
+                                            </AlertDescription>
+                                        </Alert>
+                                    </div>
+
+                                    <SheetFooter className="mt-4">
+                                        <Button 
+                                            onClick={handleCreateGiveawayClick}
+                                            disabled={isLoading || !title.trim()}
+                                            className="w-full"
+                                        >
+                                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Create Giveaway
+                                        </Button>
+                                    </SheetFooter>
+                                </TabsContent>
+
+                                <TabsContent value="history" className="mt-4">
+                                    <div className="space-y-4 max-h-[50vh] overflow-y-auto pb-4">
+                                        {myGiveaways.length === 0 ? (
+                                            <div className="text-center py-8 text-muted-foreground">
+                                                No giveaways created yet
+                                            </div>
+                                        ) : (
+                                            myGiveaways.map((giveaway) => (
+                                                <Card key={giveaway.id} className="p-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="font-semibold">{giveaway.title}</h4>
+                                                            <div className="flex gap-4 mt-2 text-sm">
+                                                                <span>₦{Number(giveaway.code_value).toLocaleString()} per code</span>
+                                                                <span>•</span>
+                                                                <span>{giveaway.total_codes} codes</span>
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedGiveaway(giveaway);
+                                                                setShowCodesDialog(true);
+                                                            }}
+                                                        >
+                                                            View
+                                                        </Button>
+                                                    </div>
+                                                </Card>
+                                            ))
+                                        )}
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="redeem" className="mt-4">
+                                    {redeemUI}
+                                </TabsContent>
+                            </Tabs>
+                        ) : (
+                            <div className="mt-4">
+                                {redeemUI}
+                            </div>
+                        )}
+                    </SheetContent>
+                </Sheet>
+
+                {/* Codes Dialog - Sheet for mobile */}
+                <Sheet open={showCodesDialog} onOpenChange={setShowCodesDialog}>
+                    <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
+                        <SheetHeader className="text-left">
+                            <SheetTitle>Giveaway Codes</SheetTitle>
+                            <SheetDescription>
+                                {selectedGiveaway?.title}
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="space-y-2 mt-4 pb-8">
+                            {selectedGiveaway?.giveaway_codes?.map((codeObj: any, index: number) => (
+                                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                        <code className="font-mono font-bold">{codeObj.code}</code>
+                                        {codeObj.is_redeemed && (
+                                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                                Redeemed
+                                            </span>
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copyCode(codeObj.code)}
+                                        disabled={codeObj.is_redeemed}
+                                    >
+                                        <Copy className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </SheetContent>
+                </Sheet>
+                
+                {/* PIN Verification Dialog */}
+                <VerifyPinDialog
+                    open={showPinVerify}
+                    onOpenChange={(open) => {
+                        setShowPinVerify(open);
+                        if (!open) {
+                            setPendingGiveaway(false);
+                        }
+                    }}
+                    onSuccess={() => {
+                        setShowPinVerify(false);
+                        setPendingGiveaway(false);
+                        handleCreateGiveaway();
+                    }}
+                    onCancel={() => {
+                        setShowPinVerify(false);
+                        setPendingGiveaway(false);
+                    }}
+                    title="Verify PIN for Giveaway"
+                    description="Enter your 4-digit PIN to authorize this giveaway creation."
+                    actionLabel="giveaway"
+                />
+            </>
+        );
+    }
+
     return (
         <>
             <Dialog open={open} onOpenChange={setOpen}>
@@ -943,155 +1196,274 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
 
     return (
         <>
-        <Dialog open={open} onOpenChange={setOpen}>
-            {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
-                <DialogTrigger asChild>
-                    <Button 
-                        variant="outline" 
-                        className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
-                        disabled={cooldown > 0}
-                    >
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                          <ArrowDown className="h-6 w-6 text-red-500" />
-                        </div>
-                        <span className="font-semibold text-sm">
-                          {cooldown > 0 
-                              ? `Cooldown: ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
-                              : 'Withdraw'}
-                        </span>
-                    </Button>
-                </DialogTrigger>
-            ) : (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 opacity-50" disabled>
-                                <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
-                                  <ArrowDown className="h-6 w-6 text-red-500" />
-                                </div>
-                                <span className="font-semibold text-sm">Withdraw</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Withdrawals are currently unavailable.</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Withdraw</DialogTitle>
-                    <DialogDescription>Withdraw funds from your wallet to your bank account.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 grid gap-4">
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="bankName">Bank Name</Label>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Input 
-                                        id="bankName"
-                                        placeholder="Bank Name"
-                                        value={bankName}
-                                        readOnly
-                                    />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>To edit, go to your settings page.</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="accountNumber">Account Number</Label>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Input 
-                                        id="accountNumber"
-                                        placeholder="Account Number"
-                                        value={accountNumber}
-                                        readOnly
-                                    />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>To edit, go to your settings page.</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="accountName">Account Name</Label>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Input 
-                                        id="accountName"
-                                        placeholder="Account Name"
-                                        value={accountName}
-                                        readOnly
-                                    />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>To edit, go to your settings page.</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="amount">Amount</Label>
-                        <Input 
-                            id="amount"
-                            type="number"
-                            placeholder="₦0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                        />
-                    </div>
-                    <Alert>
-                        <Coins className="h-4 w-4" />
-                        <AlertTitle>Transaction Fee</AlertTitle>
-                        <AlertDescription>
-                            {amount > 0 ? (
-                                <>
-                                    A fee of ₦{(amount * 0.04).toFixed(2)} (4%) will be deducted from the withdrawal.
-                                    <div className="text-sm text-muted-foreground mt-1">
-                                        You will receive ₦{(amount * 0.96).toFixed(2)} after fees.
+        {isMobile ? (
+            <Sheet open={open} onOpenChange={setOpen}>
+                {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
+                    <SheetTrigger asChild>
+                        <Button 
+                            variant="outline" 
+                            className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
+                            disabled={cooldown > 0}
+                        >
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
+                              <ArrowDown className="h-6 w-6 text-red-500" />
+                            </div>
+                            <span className="font-semibold text-sm">
+                              {cooldown > 0 
+                                  ? `Cooldown: ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
+                                  : 'Withdraw'}
+                            </span>
+                        </Button>
+                    </SheetTrigger>
+                ) : (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 opacity-50" disabled>
+                                    <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
+                                      <ArrowDown className="h-6 w-6 text-red-500" />
                                     </div>
-                                </>
-                            ) : (
-                                'A fee of 4% will be deducted for this transaction.'
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                    <div className="grid gap-2">
-                        <Label htmlFor="notes">Transaction Notes</Label>
-                        <Textarea 
-                            id="notes"
-                            placeholder="Transaction Notes"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                        />
+                                    <span className="font-semibold text-sm">Withdraw</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Withdrawals are currently unavailable.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
+                <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+                    <SheetHeader className="text-left">
+                        <SheetTitle>Withdraw</SheetTitle>
+                        <SheetDescription>Withdraw funds from your wallet to your bank account.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-4 grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="m-bankName">Bank Name</Label>
+                            <Input 
+                                id="m-bankName"
+                                placeholder="Bank Name"
+                                value={bankName}
+                                readOnly
+                                className="bg-muted/50"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="m-accountNumber">Account Number</Label>
+                            <Input 
+                                id="m-accountNumber"
+                                placeholder="Account Number"
+                                value={accountNumber}
+                                readOnly
+                                className="bg-muted/50"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="m-accountName">Account Name</Label>
+                            <Input 
+                                id="m-accountName"
+                                placeholder="Account Name"
+                                value={accountName}
+                                readOnly
+                                className="bg-muted/50"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="m-amount">Amount</Label>
+                            <Input 
+                                id="m-amount"
+                                type="number"
+                                placeholder="₦0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(Number(e.target.value))}
+                            />
+                        </div>
+                        <Alert>
+                            <Coins className="h-4 w-4" />
+                            <AlertTitle>Transaction Fee</AlertTitle>
+                            <AlertDescription>
+                                {amount > 0 ? (
+                                    <>
+                                        A fee of 4% (₦{(amount * 0.04).toFixed(2)}) will be deducted.
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            You will receive ₦{(amount * 0.96).toFixed(2)}.
+                                        </div>
+                                    </>
+                                ) : (
+                                    'A fee of 4% will be deducted for this transaction.'
+                                )}
+                            </AlertDescription>
+                        </Alert>
                     </div>
-                </div>
-                <DialogFooter>
-                    <Button 
-                        onClick={handleWithdrawClick}
-                        disabled={cooldown > 0 || isProcessing}
-                    >
-                        {isProcessing ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Processing...
-                            </>
-                        ) : cooldown > 0 
-                            ? `Wait ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m ${cooldown % 60}s`
-                            : 'Submit Withdrawal'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <SheetFooter className="mt-4 pb-8">
+                        <Button 
+                            onClick={handleWithdrawClick}
+                            disabled={cooldown > 0 || isProcessing}
+                            className="w-full"
+                        >
+                            {isProcessing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : cooldown > 0 
+                                ? `Wait ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
+                                : 'Submit Withdrawal'}
+                        </Button>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+        ) : (
+            <Dialog open={open} onOpenChange={setOpen}>
+                {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
+                    <DialogTrigger asChild>
+                        <Button 
+                            variant="outline" 
+                            className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
+                            disabled={cooldown > 0}
+                        >
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
+                              <ArrowDown className="h-6 w-6 text-red-500" />
+                            </div>
+                            <span className="font-semibold text-sm">
+                              {cooldown > 0 
+                                  ? `Cooldown: ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
+                                  : 'Withdraw'}
+                            </span>
+                        </Button>
+                    </DialogTrigger>
+                ) : (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 opacity-50" disabled>
+                                    <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
+                                      <ArrowDown className="h-6 w-6 text-red-500" />
+                                    </div>
+                                    <span className="font-semibold text-sm">Withdraw</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Withdrawals are currently unavailable.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Withdraw</DialogTitle>
+                        <DialogDescription>Withdraw funds from your wallet to your bank account.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 grid gap-4">
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="bankName">Bank Name</Label>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Input 
+                                            id="bankName"
+                                            placeholder="Bank Name"
+                                            value={bankName}
+                                            readOnly
+                                        />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>To edit, go to your settings page.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="accountNumber">Account Number</Label>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Input 
+                                            id="accountNumber"
+                                            placeholder="Account Number"
+                                            value={accountNumber}
+                                            readOnly
+                                        />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>To edit, go to your settings page.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="accountName">Account Name</Label>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Input 
+                                            id="accountName"
+                                            placeholder="Account Name"
+                                            value={accountName}
+                                            readOnly
+                                        />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>To edit, go to your settings page.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="amount">Amount</Label>
+                            <Input 
+                                id="amount"
+                                type="number"
+                                placeholder="₦0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(Number(e.target.value))}
+                            />
+                        </div>
+                        <Alert>
+                            <Coins className="h-4 w-4" />
+                            <AlertTitle>Transaction Fee</AlertTitle>
+                            <AlertDescription>
+                                {amount > 0 ? (
+                                    <>
+                                        A fee of ₦{(amount * 0.04).toFixed(2)} (4%) will be deducted from the withdrawal.
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            You will receive ₦{(amount * 0.96).toFixed(2)} after fees.
+                                        </div>
+                                    </>
+                                ) : (
+                                    'A fee of 4% will be deducted for this transaction.'
+                                )}
+                            </AlertDescription>
+                        </Alert>
+                        <div className="grid gap-2">
+                            <Label htmlFor="notes">Transaction Notes</Label>
+                            <Textarea 
+                                id="notes"
+                                placeholder="Transaction Notes"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            onClick={handleWithdrawClick}
+                            disabled={cooldown > 0 || isProcessing}
+                        >
+                            {isProcessing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : cooldown > 0 
+                                ? `Wait ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m ${cooldown % 60}s`
+                                : 'Submit Withdrawal'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        )}
         
         {/* PIN Verification Dialog */}
         <VerifyPinDialog
@@ -1224,74 +1596,142 @@ const TransferDialog = ({ walletBalance, onTransferComplete }) => {
 
     return (
         <>
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                      <ArrowUpDown className="h-6 w-6 text-primary" />
-                    </div>
-                    <span className="font-semibold text-sm">Transfer</span>
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Transfer</DialogTitle>
-                    <DialogDescription>Transfer funds to another player's wallet.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 grid gap-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="recipient">Recipient</Label>
-                                            <Select onValueChange={setRecipient} value={recipient}>
-                                                <SelectTrigger id="recipient">
-                                                    <SelectValue placeholder="Select a player..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {players && players.filter(p => !p.is_banned).map((player) => (
-                                                        <SelectItem key={player.id} value={player.ign}>
-                                                            {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="amount">Amount</Label>
-                        <Input 
-                            id="amount"
-                            type="number"
-                            placeholder="₦0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                        />
-                    </div>
-                    <Alert>
-                        <Coins className="h-4 w-4" />
-                        <AlertTitle>Transaction Fee</AlertTitle>
-                        <AlertDescription>
-                            {amount > 0 ? (
-                                <>
-                                    A flat fee of ₦{TRANSFER_FEE.toFixed(2)} will be deducted from your wallet.
-                                    <div className="text-sm text-muted-foreground mt-1">
-                                        Total deduction: ₦{(amount + TRANSFER_FEE).toFixed(2)} (₦{amount.toFixed(2)} transfer + ₦{TRANSFER_FEE.toFixed(2)} fee)
-                                    </div>
-                                    <div className="text-sm text-green-600 mt-1">
-                                        Recipient will receive: ₦{amount.toFixed(2)}
-                                    </div>
-                                </>
-                            ) : (
-                                `A flat fee of ₦${TRANSFER_FEE.toFixed(2)} will be deducted for this transaction.`
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                </div>
-                <DialogFooter>
-                    <Button onClick={handleTransferClick} disabled={isTransferring}>
-                        {isTransferring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isTransferring ? "Processing..." : "Transfer Funds"}
+        {isMobile ? (
+            <Sheet open={open} onOpenChange={setOpen}>
+                <SheetTrigger asChild>
+                    <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                          <ArrowUpDown className="h-6 w-6 text-primary" />
+                        </div>
+                        <span className="font-semibold text-sm">Transfer</span>
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
+                    <SheetHeader className="text-left">
+                        <SheetTitle>Transfer</SheetTitle>
+                        <SheetDescription>Transfer funds to another player's wallet.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-4 grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="m-recipient">Recipient</Label>
+                            <Select onValueChange={setRecipient} value={recipient}>
+                                <SelectTrigger id="m-recipient">
+                                    <SelectValue placeholder="Select a player..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {players && players.filter(p => !p.is_banned).map((player) => (
+                                        <SelectItem key={player.id} value={player.ign}>
+                                            {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="m-transfer-amount">Amount</Label>
+                            <Input 
+                                id="m-transfer-amount"
+                                type="number"
+                                placeholder="₦0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(Number(e.target.value))}
+                            />
+                        </div>
+                        <Alert>
+                            <Coins className="h-4 w-4" />
+                            <AlertTitle>Transaction Fee</AlertTitle>
+                            <AlertDescription>
+                                {amount > 0 ? (
+                                    <>
+                                        A flat fee of ₦{TRANSFER_FEE.toFixed(2)} will be deducted.
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            Total: ₦{(amount + TRANSFER_FEE).toFixed(2)}.
+                                        </div>
+                                    </>
+                                ) : (
+                                    `A flat fee of ₦${TRANSFER_FEE.toFixed(2)} will be deducted.`
+                                )}
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                    <SheetFooter className="mt-4 pb-8">
+                        <Button onClick={handleTransferClick} disabled={isTransferring} className="w-full">
+                            {isTransferring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isTransferring ? "Processing..." : "Transfer Funds"}
+                        </Button>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+        ) : (
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                          <ArrowUpDown className="h-6 w-6 text-primary" />
+                        </div>
+                        <span className="font-semibold text-sm">Transfer</span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Transfer</DialogTitle>
+                        <DialogDescription>Transfer funds to another player's wallet.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 grid gap-4">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="recipient">Recipient</Label>
+                                                <Select onValueChange={setRecipient} value={recipient}>
+                                                    <SelectTrigger id="recipient">
+                                                        <SelectValue placeholder="Select a player..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {players && players.filter(p => !p.is_banned).map((player) => (
+                                                            <SelectItem key={player.id} value={player.ign}>
+                                                                {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="amount">Amount</Label>
+                            <Input 
+                                id="amount"
+                                type="number"
+                                placeholder="₦0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(Number(e.target.value))}
+                            />
+                        </div>
+                        <Alert>
+                            <Coins className="h-4 w-4" />
+                            <AlertTitle>Transaction Fee</AlertTitle>
+                            <AlertDescription>
+                                {amount > 0 ? (
+                                    <>
+                                        A flat fee of ₦{TRANSFER_FEE.toFixed(2)} will be deducted from your wallet.
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            Total deduction: ₦{(amount + TRANSFER_FEE).toFixed(2)} (₦{amount.toFixed(2)} transfer + ₦{TRANSFER_FEE.toFixed(2)} fee)
+                                        </div>
+                                        <div className="text-sm text-green-600 mt-1">
+                                            Recipient will receive: ₦{amount.toFixed(2)}
+                                        </div>
+                                    </>
+                                ) : (
+                                    `A flat fee of ₦${TRANSFER_FEE.toFixed(2)} will be deducted for this transaction.`
+                                )}
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleTransferClick} disabled={isTransferring}>
+                            {isTransferring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isTransferring ? "Processing..." : "Transfer Funds"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        )}
         
         {/* PIN Verification Dialog */}
         <VerifyPinDialog
