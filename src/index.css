@@ -197,6 +197,20 @@ All colors MUST be HSL.
   scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
 }
 
+/* Sci-Fi Scan Line Animation */
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.animate-scan-line {
+  animation: scan-line 3s linear infinite;
+}
+
 
 label {
   text-align: left;
