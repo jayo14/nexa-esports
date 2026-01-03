@@ -99,9 +99,45 @@ All colors MUST be HSL.
   }
 
   .theme-military {
-    --primary: 142 76% 36%; /* Green */
-    --primary-foreground: 0 0% 100%;
-    --ring: 142 76% 36%;
+    /* Military Theme - Tactical and Professional */
+    --background: 140 13% 12%; /* Dark Charcoal #1C1F22 */
+    --foreground: 40 23% 85%; /* Off-white/Light Gray */
+
+    --card: 140 13% 15%; /* Slightly lighter charcoal */
+    --card-foreground: 40 23% 85%;
+
+    --popover: 140 13% 15%;
+    --popover-foreground: 40 23% 85%;
+
+    --primary: 140 13% 22%; /* Matte Army Green #2F3E34 */
+    --primary-foreground: 40 35% 65%; /* Desert Tan #C2B280 */
+
+    --secondary: 220 13% 43%; /* Steel Gray #6B7280 */
+    --secondary-foreground: 40 23% 85%;
+
+    --muted: 220 13% 43%;
+    --muted-foreground: 220 13% 60%;
+
+    --accent: 31 93% 44%; /* Military Orange #D97706 */
+    --accent-foreground: 40 23% 85%;
+
+    --destructive: 350 77% 39%; /* Tactical Red #B11226 */
+    --destructive-foreground: 40 23% 85%;
+
+    --border: 220 13% 43%;
+    --input: 220 13% 43%;
+    --ring: 31 93% 44%; /* Military Orange */
+
+    --radius: 0rem; /* Sharp edges for military theme */
+
+    --sidebar-background: 140 13% 11%;
+    --sidebar-foreground: 40 23% 85%;
+    --sidebar-primary: 140 13% 22%;
+    --sidebar-primary-foreground: 40 35% 65%;
+    --sidebar-accent: 140 13% 18%;
+    --sidebar-accent-foreground: 40 23% 85%;
+    --sidebar-border: 220 13% 43%;
+    --sidebar-ring: 31 93% 44%;
   }
 
   .theme-dark-purple {
@@ -123,6 +159,24 @@ All colors MUST be HSL.
   h1, h2, h3, h4, h5, h6 {
     @apply font-orbitron font-bold;
   }
+  
+  /* Military theme specific typography */
+  .theme-military body {
+    @apply font-roboto;
+    background-image: 
+      linear-gradient(rgba(47, 62, 52, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(47, 62, 52, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .theme-military h1, 
+  .theme-military h2, 
+  .theme-military h3, 
+  .theme-military h4, 
+  .theme-military h5, 
+  .theme-military h6 {
+    @apply font-oswald uppercase tracking-wider;
+  }
 }
 
 @layer components {
@@ -143,6 +197,26 @@ All colors MUST be HSL.
 
   .mobile-sidebar-trigger {
     @apply fixed top-4 left-4 z-50 md:hidden bg-card/90 backdrop-blur-sm border border-border/50 rounded-lg p-2;
+  }
+
+  /* Military Theme Component Styles */
+  .theme-military .nexa-button,
+  .theme-military button {
+    @apply rounded-none uppercase tracking-wide font-bold;
+    @apply border border-primary-foreground/20 active:scale-95;
+    @apply hover:shadow-[0_0_10px_rgba(217,119,6,0.3)];
+  }
+
+  .theme-military input,
+  .theme-military textarea,
+  .theme-military select {
+    @apply rounded-none border-2;
+    @apply focus-visible:ring-accent focus-visible:border-accent;
+    @apply focus-visible:shadow-[inset_0_0_8px_rgba(217,119,6,0.2)];
+  }
+
+  .theme-military .nexa-card {
+    @apply rounded-none border-2;
   }
 
   /* Festive Utilities */
