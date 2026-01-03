@@ -57,21 +57,38 @@ const themes = [
 ];
 
 const ThemeCarousel = () => {
-  const { currentTheme, setTheme, themeSettings, updateSettings } = useTheme();
+  const { currentTheme, setTheme, isGlobalThemeLoading } = useTheme();
   const [selectedIndex, setSelectedIndex] = useState(() => themes.findIndex(t => t.id === currentTheme));
+  const [isApplying, setIsApplying] = useState(false);
   const { toast } = useToast();
+
+  // Update selected index when current theme changes
+  React.useEffect(() => {
+    const index = themes.findIndex(t => t.id === currentTheme);
+    if (index !== -1) {
+      setSelectedIndex(index);
+    }
+  }, [currentTheme]);
 
   const handleSelect = (index: number) => {
     setSelectedIndex(index);
   };
 
-  const handleApplyTheme = () => {
+  const handleApplyTheme = async () => {
     const selectedTheme = themes[selectedIndex];
-    setTheme(selectedTheme.id as SeasonalTheme);
-    toast({
-      title: "🎨 Theme Applied!",
-      description: `The ${selectedTheme.name} theme is now active for all users.`,
-    });
+    setIsApplying(true);
+    try {
+      await setTheme(selectedTheme.id as SeasonalTheme);
+    } catch (error) {
+      console.error('Error applying theme:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply theme. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   const nextSlide = () => setSelectedIndex(prev => (prev + 1) % themes.length);
@@ -190,7 +207,7 @@ const ThemeCarousel = () => {
       <div className="flex justify-center">
         <Button 
           onClick={handleApplyTheme} 
-          disabled={isCurrentTheme}
+          disabled={isCurrentTheme || isApplying || isGlobalThemeLoading}
           className={cn(
             "gap-2 px-8 py-6 text-lg font-bold shadow-lg transition-all duration-300",
             isCurrentTheme 
@@ -198,8 +215,17 @@ const ThemeCarousel = () => {
               : "bg-gradient-to-r from-primary to-red-600 hover:from-red-600 hover:to-primary hover:scale-105 hover:shadow-xl"
           )}
         >
-          <Palette className="w-5 h-5"/>
-          {isCurrentTheme ? "Currently Active" : `Apply "${currentThemeData.name}" Theme`}
+          {isApplying ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin"/>
+              Applying Theme...
+            </>
+          ) : (
+            <>
+              <Palette className="w-5 h-5"/>
+              {isCurrentTheme ? "Currently Active" : `Apply "${currentThemeData.name}" Theme`}
+            </>
+          )}
         </Button>
       </div>
 

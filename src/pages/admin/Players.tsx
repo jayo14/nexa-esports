@@ -26,6 +26,9 @@ type Player = Database['public']['Tables']['profiles']['Row'] & {
   email?: string | null;
 };
 
+// Constants
+const TOP_RANKS_THRESHOLD = 10;
+
 const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails, leaderboardRank }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -104,7 +107,7 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails, leade
                 </div>
               )}
               {/* Leaderboard rank badge */}
-              {leaderboardRank && leaderboardRank <= 10 && (
+              {leaderboardRank && leaderboardRank <= TOP_RANKS_THRESHOLD && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-400 to-orange-500 text-black rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold shadow-lg">
                   #{leaderboardRank}
                 </div>
@@ -263,6 +266,9 @@ export const AdminPlayers: React.FC = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterGrade, setFilterGrade] = useState('all');
+  const [sortBy, setSortBy] = useState('kills');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -286,13 +292,52 @@ export const AdminPlayers: React.FC = () => {
                          player.ign?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          player.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || player.role === filterRole;
-    return matchesSearch && matchesRole;
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'active' && !player.is_banned) ||
+                         (filterStatus === 'banned' && player.is_banned);
+    const matchesGrade = filterGrade === 'all' || player.grade === filterGrade;
+    return matchesSearch && matchesRole && matchesStatus && matchesGrade;
   }).sort((a, b) => {
-    if (sortOrder === 'asc') {
-      return (a.kills || 0) - (b.kills || 0);
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case 'kills':
+        aValue = a.kills || 0;
+        bValue = b.kills || 0;
+        break;
+      case 'br_kills':
+        aValue = a.br_kills || 0;
+        bValue = b.br_kills || 0;
+        break;
+      case 'mp_kills':
+        aValue = a.mp_kills || 0;
+        bValue = b.mp_kills || 0;
+        break;
+      case 'attendance':
+        aValue = a.attendance || 0;
+        bValue = b.attendance || 0;
+        break;
+      case 'name':
+        aValue = a.ign?.toLowerCase() || '';
+        bValue = b.ign?.toLowerCase() || '';
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      case 'date_joined':
+        aValue = new Date(a.date_joined || 0).getTime();
+        bValue = new Date(b.date_joined || 0).getTime();
+        break;
+      case 'rank':
+        aValue = leaderboardRankMap.get(a.id) || 9999;
+        bValue = leaderboardRankMap.get(b.id) || 9999;
+        break;
+      default:
+        aValue = a.kills || 0;
+        bValue = b.kills || 0;
     }
-    return (b.kills || 0) - (a.kills || 0);
-  }) || [], [players, searchTerm, filterRole, sortOrder]);
+    
+    return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+  }) || [], [players, searchTerm, filterRole, filterStatus, filterGrade, sortBy, sortOrder, leaderboardRankMap]);
 
   const handleUpdatePlayer = async (updates: Partial<Player>) => {
     if (!editingPlayer) return;
@@ -375,19 +420,22 @@ export const AdminPlayers: React.FC = () => {
 
       <Card className="bg-card/50 border-border/30 backdrop-blur-sm">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative col-span-1 md:col-span-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Search */}
+            <div className="relative lg:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 bg-background/50 border-border/50 text-foreground"
-                placeholder="Search by username or IGN..."
+                placeholder="Search by name, username, or email..."
               />
             </div>
+            
+            {/* Role Filter */}
             <Select value={filterRole} onValueChange={setFilterRole}>
               <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
-                <SelectValue />
+                <SelectValue placeholder="Filter by Role" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
@@ -397,13 +445,111 @@ export const AdminPlayers: React.FC = () => {
                 <SelectItem value="clan_master">Clan Master</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Status Filter */}
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active Only</SelectItem>
+                <SelectItem value="banned">Banned Only</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Grade Filter */}
+            <Select value={filterGrade} onValueChange={setFilterGrade}>
+              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
+                <SelectValue placeholder="Filter by Grade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Grades</SelectItem>
+                <SelectItem value="Legendary">Legendary</SelectItem>
+                <SelectItem value="Master">Master</SelectItem>
+                <SelectItem value="Pro">Pro</SelectItem>
+                <SelectItem value="Elite">Elite</SelectItem>
+                <SelectItem value="Rookie">Rookie</SelectItem>
+                <SelectItem value="S">S</SelectItem>
+                <SelectItem value="A">A</SelectItem>
+                <SelectItem value="B">B</SelectItem>
+                <SelectItem value="C">C</SelectItem>
+                <SelectItem value="D">D</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Sort Options - Second Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {/* Sort By */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="kills">
+                  <div className="flex items-center">
+                    <Target className="w-4 h-4 mr-2" />
+                    Total Kills
+                  </div>
+                </SelectItem>
+                <SelectItem value="br_kills">
+                  <div className="flex items-center">
+                    <Target className="w-4 h-4 mr-2 text-blue-400" />
+                    BR Kills
+                  </div>
+                </SelectItem>
+                <SelectItem value="mp_kills">
+                  <div className="flex items-center">
+                    <Target className="w-4 h-4 mr-2 text-green-400" />
+                    MP Kills
+                  </div>
+                </SelectItem>
+                <SelectItem value="attendance">
+                  <div className="flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Attendance Score
+                  </div>
+                </SelectItem>
+                <SelectItem value="rank">
+                  <div className="flex items-center">
+                    <Trophy className="w-4 h-4 mr-2 text-yellow-400" />
+                    Leaderboard Rank
+                  </div>
+                </SelectItem>
+                <SelectItem value="name">
+                  <div className="flex items-center">
+                    <User className="w-4 h-4 mr-2" />
+                    Name (A-Z)
+                  </div>
+                </SelectItem>
+                <SelectItem value="date_joined">
+                  <div className="flex items-center">
+                    <CalendarIcon className="w-4 h-4 mr-2" />
+                    Date Joined
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Sort Order */}
             <Select value={sortOrder} onValueChange={setSortOrder}>
               <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="desc"><div className='flex items-center'><ArrowDown className='w-4 h-4 mr-2'/> Kills: High to Low</div></SelectItem>
-                <SelectItem value="asc"><div className='flex items-center'><ArrowUp className='w-4 h-4 mr-2'/> Kills: Low to High</div></SelectItem>
+                <SelectItem value="desc">
+                  <div className="flex items-center">
+                    <ArrowDown className="w-4 h-4 mr-2" />
+                    Descending (High to Low)
+                  </div>
+                </SelectItem>
+                <SelectItem value="asc">
+                  <div className="flex items-center">
+                    <ArrowUp className="w-4 h-4 mr-2" />
+                    Ascending (Low to High)
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -627,6 +773,7 @@ export const AdminPlayers: React.FC = () => {
                   tier: editingPlayer.tier,
                   br_kills: editingPlayer.br_kills,
                   mp_kills: editingPlayer.mp_kills,
+                  kills: (editingPlayer.br_kills || 0) + (editingPlayer.mp_kills || 0),
                   attendance: editingPlayer.attendance,
                   br_class: editingPlayer.br_class,
                   mp_class: editingPlayer.mp_class,
@@ -759,7 +906,7 @@ export const AdminPlayers: React.FC = () => {
                         <span className="text-7xl font-bold text-[#FF1F44]">{selectedPlayer.ign.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
-                    {leaderboardRankMap.get(selectedPlayer.id) && leaderboardRankMap.get(selectedPlayer.id) <= 10 && (
+                    {leaderboardRankMap.get(selectedPlayer.id) && leaderboardRankMap.get(selectedPlayer.id) <= TOP_RANKS_THRESHOLD && (
                       <div className="absolute -top-4 -right-4 bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 text-black rounded-full w-16 h-16 flex flex-col items-center justify-center text-sm font-bold shadow-2xl border-4 border-black/50 z-20">
                         <div className="text-xs">RANK</div>
                         <div className="text-2xl">#{leaderboardRankMap.get(selectedPlayer.id)}</div>

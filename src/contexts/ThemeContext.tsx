@@ -1,6 +1,6 @@
 
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useGlobalTheme } from '@/hooks/useGlobalTheme';
 
 type ThemeMode = 'dark' | 'light';
 export type SeasonalTheme = 'default' | 'christmas' | 'cyber' | 'military' | 'dark-purple';
@@ -17,6 +17,7 @@ interface ThemeContextType {
   setTheme: (theme: SeasonalTheme) => void;
   themeSettings: ThemeSettings;
   updateSettings: (settings: Partial<ThemeSettings>) => void;
+  isGlobalThemeLoading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -37,14 +38,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     enableLights: true,
   });
 
-  // Load saved preferences
+  // Use global theme hook
+  const { globalTheme, isLoading: isGlobalThemeLoading, updateGlobalTheme } = useGlobalTheme();
+
+  // Load saved local preferences (mode only, theme comes from database)
   useEffect(() => {
     const savedMode = localStorage.getItem('nexa-mode') as ThemeMode | null;
-    const savedTheme = localStorage.getItem('nexa-theme') as SeasonalTheme | null;
     const savedSettings = localStorage.getItem('nexa-theme-settings');
 
     if (savedMode) setMode(savedMode);
-    if (savedTheme) setCurrentTheme(savedTheme);
     if (savedSettings) {
       try {
         setThemeSettings(JSON.parse(savedSettings));
@@ -53,6 +55,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
   }, []);
+
+  // Sync global theme from database
+  useEffect(() => {
+    if (globalTheme) {
+      setCurrentTheme(globalTheme as SeasonalTheme);
+    }
+  }, [globalTheme]);
 
   // Apply Mode (Light/Dark)
   useEffect(() => {
@@ -75,8 +84,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (currentTheme !== 'default') {
       root.classList.add(`theme-${currentTheme}`);
     }
-    
-    localStorage.setItem('nexa-theme', currentTheme);
   }, [currentTheme]);
 
   // Persist Settings
@@ -88,8 +95,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMode(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  const setTheme = (theme: SeasonalTheme) => {
-    setCurrentTheme(theme);
+  const setTheme = async (theme: SeasonalTheme) => {
+    // Update global theme in database
+    await updateGlobalTheme(theme);
+    // Local state will be updated automatically via the useEffect watching globalTheme
   };
 
   const updateSettings = (settings: Partial<ThemeSettings>) => {
@@ -103,7 +112,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       currentTheme, 
       setTheme, 
       themeSettings, 
-      updateSettings 
+      updateSettings,
+      isGlobalThemeLoading
     }}>
       {children}
     </ThemeContext.Provider>
