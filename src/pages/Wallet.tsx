@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TransactionReceipt } from '@/components/TransactionReceipt';
 import { useWalletSettings } from '@/hooks/useWalletSettings';
+import { useTransactionPin } from '@/hooks/useTransactionPin';
+import { SetupPinDialog } from '@/components/SetupPinDialog';
+import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { PinSetupAlert } from '@/components/PinSetupAlert';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
@@ -1321,11 +1326,27 @@ const Wallet: React.FC = () => {
   const [transferInfo, setTransferInfo] = useState<any>(null);
   const receiptShownRef = useRef<string | null>(null);
   
+  // PIN management states
+  const { checkPinExists } = useTransactionPin();
+  const [hasPinSet, setHasPinSet] = useState<boolean | null>(null);
+  const [showPinSetup, setShowPinSetup] = useState(false);
+  
   // Fetch wallet settings from database
   const { settings: walletSettings, loading: walletSettingsLoading } = useWalletSettings();
   
   const WITHDRAW_COOLDOWN_SECONDS = 43200; // 12 hours
   const REDEEM_COOLDOWN_SECONDS = 600; // 10 minutes
+
+  // Check if user has PIN set
+  useEffect(() => {
+    const checkPin = async () => {
+      if (user?.id) {
+        const pinExists = await checkPinExists();
+        setHasPinSet(pinExists);
+      }
+    };
+    checkPin();
+  }, [user?.id, checkPinExists]);
 
   const fetchWalletData = async (page = 1) => {
     if (!user?.id) return;
@@ -1603,6 +1624,11 @@ const Wallet: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* PIN Setup Alert - Show if PIN not set */}
+      {hasPinSet === false && (
+        <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <FundWalletDialog isDepositsEnabled={walletSettings.deposits_enabled} />
         <WithdrawDialog 
@@ -1774,6 +1800,16 @@ const Wallet: React.FC = () => {
           transferInfo={transferInfo}
         />
       )}
+
+      {/* PIN Setup Dialog */}
+      <SetupPinDialog 
+        open={showPinSetup}
+        onOpenChange={setShowPinSetup}
+        onSuccess={() => {
+          setHasPinSet(true);
+          setShowPinSetup(false);
+        }}
+      />
     </div>
   );
 };
