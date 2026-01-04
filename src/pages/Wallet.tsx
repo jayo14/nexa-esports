@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone } from 'lucide-react';
+import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone, Wifi } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -30,9 +30,12 @@ import { MobileWithdrawFlow } from '@/components/wallet/MobileWithdrawFlow';
 import { MobileTransferFlow } from '@/components/wallet/MobileTransferFlow';
 import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
 import { AirtimePurchaseFlow } from '@/components/wallet/AirtimePurchaseFlow';
+import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
+import { DataPurchaseFlow } from '@/components/wallet/DataPurchaseFlow';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
+
 
 const TransactionItem = ({ transaction, onViewReceipt }) => (
   <div 
@@ -432,13 +435,13 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
             <>
                 <Button 
                     variant="outline" 
-                    className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
+                    className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
                     onClick={() => setOpen(true)}
                 >
                     <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                      <Gift className="h-6 w-6 text-primary" />
+                      <Gift className="h-5 w-5 text-primary" />
                     </div>
-                    <span className="font-semibold text-sm">Giveaway</span>
+                    <span className="font-semibold text-xs">Giveaway</span>
                 </Button>
                 
                 <MobileGiveawayFlow
@@ -492,11 +495,11 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
         <>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
+                    <Button variant="outline" className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
                         <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                          <Gift className="h-6 w-6 text-primary" />
+                          <Gift className="h-5 w-5 text-primary" />
                         </div>
-                        <span className="font-semibold text-sm">Giveaway</span>
+                        <span className="font-semibold text-xs">Giveaway</span>
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1017,16 +1020,16 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                 {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
                     <Button 
                         variant="outline" 
-                        className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
+                        className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
                         disabled={cooldown > 0}
                         onClick={() => setOpen(true)}
                     >
                         <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                          <ArrowDown className="h-6 w-6 text-red-500" />
+                          <ArrowDown className="h-5 w-5 text-red-500" />
                         </div>
-                        <span className="font-semibold text-sm">
+                        <span className="font-semibold text-xs">
                           {cooldown > 0 
-                              ? `Cooldown: ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
+                              ? `Wait: ${Math.floor(cooldown / 3600)}h`
                               : 'Withdraw'}
                         </span>
                     </Button>
@@ -1034,11 +1037,11 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 opacity-50" disabled>
+                                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
                                     <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
-                                      <ArrowDown className="h-6 w-6 text-red-500" />
+                                      <ArrowDown className="h-5 w-5 text-red-500" />
                                     </div>
-                                    <span className="font-semibold text-sm">Withdraw</span>
+                                    <span className="font-semibold text-xs">Withdraw</span>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -1117,15 +1120,15 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                     <DialogTrigger asChild>
                         <Button 
                             variant="outline" 
-                            className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
+                            className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
                             disabled={cooldown > 0}
                         >
                             <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                              <ArrowDown className="h-6 w-6 text-red-500" />
+                              <ArrowDown className="h-5 w-5 text-red-500" />
                             </div>
-                            <span className="font-semibold text-sm">
+                            <span className="font-semibold text-xs">
                               {cooldown > 0 
-                                  ? `Cooldown: ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
+                                  ? `Wait: ${Math.floor(cooldown / 3600)}h`
                                   : 'Withdraw'}
                             </span>
                         </Button>
@@ -1134,11 +1137,11 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 opacity-50" disabled>
+                                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
                                     <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
-                                      <ArrowDown className="h-6 w-6 text-red-500" />
+                                      <ArrowDown className="h-5 w-5 text-red-500" />
                                     </div>
-                                    <span className="font-semibold text-sm">Withdraw</span>
+                                    <span className="font-semibold text-xs">Withdraw</span>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -1411,13 +1414,13 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
             <>
                 <Button 
                     variant="outline" 
-                    className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
+                    className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
                     onClick={() => setOpen(true)}
                 >
                     <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                      <ArrowUpDown className="h-6 w-6 text-primary" />
+                      <ArrowUpDown className="h-5 w-5 text-primary" />
                     </div>
-                    <span className="font-semibold text-sm">Transfer</span>
+                    <span className="font-semibold text-xs">Transfer</span>
                 </Button>
                 
                 <MobileTransferFlow
@@ -1475,11 +1478,11 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
         <>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" className="group w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
+                    <Button variant="outline" className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
                         <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                          <ArrowUpDown className="h-6 w-6 text-primary" />
+                          <ArrowUpDown className="h-5 w-5 text-primary" />
                         </div>
-                        <span className="font-semibold text-sm">Transfer</span>
+                        <span className="font-semibold text-xs">Transfer</span>
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -1652,11 +1655,11 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 opacity-50" disabled>
+                        <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
                             <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
-                              <Coins className="h-6 w-6 text-green-500" />
+                              <Coins className="h-5 w-5 text-green-500" />
                             </div>
-                            <span className="font-semibold text-sm">Fund Wallet</span>
+                            <span className="font-semibold text-xs">Fund Wallet</span>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -1674,11 +1677,11 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 opacity-50" disabled>
+                    <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
                         <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
-                          <Coins className="h-6 w-6 text-green-500" />
+                          <Coins className="h-5 w-5 text-green-500" />
                         </div>
-                        <span className="font-semibold text-sm">Fund Wallet</span>
+                        <span className="font-semibold text-xs">Fund Wallet</span>
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1706,13 +1709,13 @@ const AirtimeButton = ({ onSuccess }: { onSuccess?: () => void }) => {
     <>
       <Button 
         variant="outline" 
-        className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+        className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
         onClick={() => setOpen(true)}
       >
         <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 group-hover:from-orange-500/30 group-hover:to-orange-600/20 transition-all">
-          <Smartphone className="h-6 w-6 text-orange-500" />
+          <Smartphone className="h-5 w-5 text-orange-500" />
         </div>
-        <span className="font-semibold text-sm">Buy Airtime</span>
+        <span className="font-semibold text-xs">Buy Airtime</span>
       </Button>
       <AirtimePurchaseFlow 
         open={open} 
@@ -1721,6 +1724,36 @@ const AirtimeButton = ({ onSuccess }: { onSuccess?: () => void }) => {
         onSuccess={onSuccess}
       />
     </>
+  );
+};
+
+const DataButton = ({ onClick }: { onClick: () => void }) => {
+  return (
+    <Button 
+      variant="outline" 
+      className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
+      onClick={onClick}
+    >
+      <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 group-hover:from-blue-500/30 group-hover:to-blue-600/20 transition-all">
+        <Wifi className="h-5 w-5 text-blue-500" />
+      </div>
+      <span className="font-semibold text-xs">Buy Data</span>
+    </Button>
+  );
+};
+
+const RedeemButton = ({ onClick }: { onClick: () => void }) => {
+  return (
+    <Button 
+      variant="outline" 
+      className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
+      onClick={onClick}
+    >
+      <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all">
+        <Gift className="h-5 w-5 text-purple-500" />
+      </div>
+      <span className="font-semibold text-xs">Redeem</span>
+    </Button>
   );
 };
 
@@ -1746,6 +1779,18 @@ const Wallet: React.FC = () => {
   const { checkPinExists } = useTransactionPin();
   const [hasPinSet, setHasPinSet] = useState<boolean | null>(null);
   const [showPinSetup, setShowPinSetup] = useState(false);
+  const [showRedeemSheet, setShowRedeemSheet] = useState(false);
+  const [showDataSheet, setShowDataSheet] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Fetch wallet settings from database
   const { settings: walletSettings, loading: walletSettingsLoading } = useWalletSettings();
@@ -2045,7 +2090,7 @@ const Wallet: React.FC = () => {
         <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <FundWalletDialog isDepositsEnabled={walletSettings.deposits_enabled} />
         <WithdrawDialog 
           setWalletBalance={setWalletBalance} 
@@ -2063,6 +2108,8 @@ const Wallet: React.FC = () => {
           onTransferComplete={fetchWalletData} 
           onViewReceipt={handleViewReceipt}
         />
+        <AirtimeButton onSuccess={fetchWalletData} />
+        <DataButton onClick={() => setShowDataSheet(true)} />
         <GiveawayDialog 
           setWalletBalance={setWalletBalance} 
           walletBalance={walletBalance} 
@@ -2070,8 +2117,24 @@ const Wallet: React.FC = () => {
           redeemCooldown={redeemCooldown}
           onRedeemSuccess={startRedeemCooldown}
         />
-        <AirtimeButton onSuccess={fetchWalletData} />
+        <RedeemButton onClick={() => setShowRedeemSheet(true)} />
       </div>
+
+      <RedeemGiveawayDialog
+        open={showRedeemSheet} 
+        onOpenChange={setShowRedeemSheet}
+        onSuccess={fetchWalletData}
+        redeemCooldown={redeemCooldown}
+        onRedeemSuccess={startRedeemCooldown}
+        isMobile={isMobile}
+      />
+      
+      <DataPurchaseFlow
+        open={showDataSheet}
+        onOpenChange={setShowDataSheet}
+        isMobile={isMobile}
+        onSuccess={fetchWalletData}
+      />
 
       <Card className="border-border/50 shadow-xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <CardHeader>

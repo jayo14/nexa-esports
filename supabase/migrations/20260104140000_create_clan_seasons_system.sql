@@ -14,14 +14,7 @@ CREATE TABLE IF NOT EXISTS public.seasons (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-    CONSTRAINT valid_dates CHECK (end_date > start_date),
-    CONSTRAINT one_active_season CHECK (
-        NOT is_active OR NOT EXISTS (
-            SELECT 1 FROM seasons s2 
-            WHERE s2.is_active = true 
-            AND s2.id != seasons.id
-        )
-    )
+    CONSTRAINT valid_dates CHECK (end_date > start_date)
 );
 
 -- Create season_stats table to track player performance per season
@@ -53,7 +46,7 @@ CREATE TABLE IF NOT EXISTS public.season_events (
 );
 
 -- Add indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_seasons_active ON public.seasons(is_active) WHERE is_active = true;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_active ON public.seasons(is_active) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_seasons_dates ON public.seasons(start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_season_stats_season_user ON public.season_stats(season_id, user_id);
 CREATE INDEX IF NOT EXISTS idx_season_stats_season_rank ON public.season_stats(season_id, rank);

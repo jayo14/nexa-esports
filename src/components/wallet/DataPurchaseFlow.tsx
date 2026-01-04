@@ -1,21 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { useAirtime } from '@/hooks/useAirtime';
+import { useAirtime } from '@/hooks/useAirtime'; // Reusing for PIN/Wallet logic if available, or create mocked
 import { detectNetworkProvider, getNetworkDetails, formatPhoneNumber, validatePhoneNumber, NetworkProvider } from '@/lib/networkProviders';
-import { Smartphone, CheckCircle2, ChevronRight, ChevronLeft, Loader2, Wallet, RefreshCw, XCircle, History } from 'lucide-react';
+import { Wifi, CheckCircle2, ChevronRight, ChevronLeft, Loader2, Wallet, RefreshCw, XCircle, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { useToast } from '@/hooks/use-toast';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 
-interface AirtimePurchaseFlowProps {
+interface DataPurchaseFlowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isMobile?: boolean;
@@ -24,27 +25,56 @@ interface AirtimePurchaseFlowProps {
 
 const STEPS = {
   PHONE: 1,
-  AMOUNT: 2,
+  PLAN: 2,
   REVIEW: 3,
+  PIN: 3.5, // Intermediate step for PIN
   SUCCESS: 4,
 };
 
-export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
+// Mock Data Plans
+const DATA_PLANS: Record<NetworkProvider, { id: string; name: string; price: number; validity: string }[]> = {
+  MTN: [
+    { id: 'mtn-100mb', name: '100MB Daily', price: 100, validity: '1 Day' },
+    { id: 'mtn-1gb', name: '1GB Weekly', price: 500, validity: '7 Days' },
+    { id: 'mtn-2.5gb', name: '2.5GB Monthly', price: 1200, validity: '30 Days' },
+    { id: 'mtn-10gb', name: '10GB Monthly', price: 3000, validity: '30 Days' },
+    { id: 'mtn-40gb', name: '40GB Monthly', price: 10000, validity: '30 Days' },
+  ],
+  GLO: [
+    { id: 'glo-200mb', name: '200MB Daily', price: 100, validity: '1 Day' },
+    { id: 'glo-1gb', name: '1GB Monthly', price: 500, validity: '14 Days' },
+    { id: 'glo-3.9gb', name: '3.9GB Monthly', price: 1000, validity: '30 Days' },
+    { id: 'glo-15gb', name: '15GB Monthly', price: 3000, validity: '30 Days' },
+  ],
+  AIRTEL: [
+    { id: 'airtel-100mb', name: '100MB Daily', price: 100, validity: '1 Day' },
+    { id: 'airtel-750mb', name: '750MB Weekly', price: 500, validity: '14 Days' },
+    { id: 'airtel-3gb', name: '3GB Monthly', price: 1000, validity: '30 Days' },
+    { id: 'airtel-10gb', name: '10GB Monthly', price: 3000, validity: '30 Days' },
+  ],
+  '9MOBILE': [
+    { id: '9mobile-100mb', name: '100MB Daily', price: 100, validity: '1 Day' },
+    { id: '9mobile-1gb', name: '1GB Monthly', price: 1000, validity: '30 Days' },
+    { id: '9mobile-2.5gb', name: '2.5GB Monthly', price: 2000, validity: '30 Days' },
+    { id: '9mobile-11gb', name: '11GB Monthly', price: 4000, validity: '30 Days' },
+  ],
+};
+
+export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
   open,
   onOpenChange,
   isMobile = false,
   onSuccess,
 }) => {
-  const { purchaseAirtime, isPurchasing, airtimeLimits } = useAirtime();
-  const { toast } = useToast();
+  const { isPurchasing: isProcessingAirtime } = useAirtime(); // Only for loading state if we reuse logic
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const [step, setStep] = useState(STEPS.PHONE);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [amount, setAmount] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [detectedProvider, setDetectedProvider] = useState<NetworkProvider | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState('');
-  const [purchaseResult, setPurchaseResult] = useState<unknown>(null);
   const [showPinVerify, setShowPinVerify] = useState(false);
 
   // Reset state when opening/closing
@@ -52,15 +82,15 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     if (open) {
       setStep(STEPS.PHONE);
       setPhoneNumber('');
-      setAmount('');
+      setSelectedPlanId('');
       setDetectedProvider(null);
       setError('');
-      setPurchaseResult(null);
       setShowPinVerify(false);
+      setIsProcessing(false);
     }
   }, [open]);
 
-  // Network detection simulation (simulating "real" API call)
+  // Network detection
   useEffect(() => {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
     
@@ -68,7 +98,6 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
       setIsDetecting(true);
       setError('');
       
-      // Simulate API latency for "real-time" feel
       const timer = setTimeout(() => {
         const provider = detectNetworkProvider(phoneNumber);
         setDetectedProvider(provider);
@@ -78,7 +107,8 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
              if (!provider) {
                 setError('Network not supported or invalid number');
              } else {
-                // Real validation logic could go here
+                // Clear plan selection if network changes
+                setSelectedPlanId('');
              }
         }
       }, 600);
@@ -97,11 +127,10 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
         setError('Please enter a valid Nigerian phone number');
         return;
       }
-      setStep(STEPS.AMOUNT);
-    } else if (step === STEPS.AMOUNT) {
-      const numAmount = parseFloat(amount);
-      if (isNaN(numAmount) || numAmount < (airtimeLimits?.min || 50) || numAmount > (airtimeLimits?.max || 10000)) {
-        setError(`Amount must be between ₦${airtimeLimits?.min || 50} and ₦${airtimeLimits?.max || 10000}`);
+      setStep(STEPS.PLAN);
+    } else if (step === STEPS.PLAN) {
+      if (!selectedPlanId) {
+        setError('Please select a data plan');
         return;
       }
       setStep(STEPS.REVIEW);
@@ -123,34 +152,23 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
   };
 
   const performPurchase = () => {
-    const numAmount = parseFloat(amount);
-    
-    purchaseAirtime(
-      {
-        phone_number: phoneNumber,
-        amount: numAmount,
-        network_provider: detectedProvider!,
-      },
-      {
-        onSuccess: (data) => {
-            setPurchaseResult(data);
-            setStep(STEPS.SUCCESS);
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-            onSuccess?.();
-        },
-        onError: (err) => {
-            setError(err.message || 'Transaction failed');
-        }
-      }
-    );
+    setIsProcessing(true);
+    // Mock purchase process
+    setTimeout(() => {
+        setIsProcessing(false);
+        setStep(STEPS.SUCCESS);
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+        onSuccess?.();
+    }, 2000);
   };
 
-  const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
   const providerDetails = detectedProvider ? getNetworkDetails(detectedProvider) : null;
+  const availablePlans = detectedProvider ? DATA_PLANS[detectedProvider] : [];
+  const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
 
   // Step 1: Phone Number & Network
   const renderPhoneStep = () => (
@@ -205,7 +223,6 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
             </div>
         </div>
 
-        {/* Network Selection fallback / display */}
         {!detectedProvider && !isDetecting && phoneNumber.length > 3 && (
              <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
                 <XCircle className="h-4 w-4" />
@@ -216,8 +233,8 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     </motion.div>
   );
 
-  // Step 2: Amount Selection
-  const renderAmountStep = () => (
+  // Step 2: Plan Selection
+  const renderPlanStep = () => (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
@@ -238,49 +255,34 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
       </div>
 
       <div className="space-y-4">
-        <Label className="text-base font-medium">Select Amount</Label>
-        <div className="grid grid-cols-3 gap-3">
-          {quickAmounts.map((amt) => (
-            <Button
-              key={amt}
-              variant={amount === amt.toString() ? 'default' : 'outline'}
+        <Label className="text-base font-medium">Select Data Plan</Label>
+        <div className="grid grid-cols-1 gap-3 max-h-[40vh] overflow-y-auto pr-1">
+          {availablePlans.map((plan) => (
+            <div
+              key={plan.id}
               className={cn(
-                  "h-12 text-lg font-semibold transition-all",
-                  amount === amt.toString() && "ring-2 ring-primary ring-offset-2"
+                  "relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-muted/30",
+                  selectedPlanId === plan.id ? "border-primary bg-primary/5" : "border-border"
               )}
               onClick={() => {
-                  setAmount(amt.toString());
+                  setSelectedPlanId(plan.id);
                   setError('');
               }}
             >
-              ₦{amt}
-            </Button>
+              <div>
+                  <h4 className="font-bold text-lg">{plan.name}</h4>
+                  <p className="text-sm text-muted-foreground">Validity: {plan.validity}</p>
+              </div>
+              <div className="text-right">
+                  <div className="font-bold text-lg text-primary">₦{plan.price.toLocaleString()}</div>
+              </div>
+              {selectedPlanId === plan.id && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-10 scale-150">
+                      <CheckCircle2 className="h-10 w-10 text-primary" />
+                  </div>
+              )}
+            </div>
           ))}
-        </div>
-
-        <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or enter custom amount</span>
-            </div>
-        </div>
-
-        <div className="space-y-2">
-            <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">₦</span>
-                <Input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="100-50,000"
-                    className="pl-8 h-14 text-lg font-medium"
-                />
-            </div>
-             <p className="text-xs text-muted-foreground text-right">
-                Min: ₦{airtimeLimits?.min || 50} • Max: ₦{airtimeLimits?.max?.toLocaleString() || '10,000'}
-             </p>
         </div>
       </div>
     </motion.div>
@@ -296,7 +298,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     >
       <div className="text-center py-4">
           <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Total Amount</p>
-          <h3 className="text-4xl font-bold text-primary">₦{parseFloat(amount || '0').toLocaleString()}</h3>
+          <h3 className="text-4xl font-bold text-primary">₦{selectedPlan?.price.toLocaleString()}</h3>
       </div>
 
       <div className="space-y-4 border rounded-xl p-4 bg-muted/20">
@@ -312,8 +314,12 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
               </div>
           </div>
           <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Transaction Fee</span>
-              <span className="font-medium text-green-600">Free</span>
+              <span className="text-muted-foreground">Data Plan</span>
+              <span className="font-medium">{selectedPlan?.name}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Validity</span>
+              <span className="font-medium">{selectedPlan?.validity}</span>
           </div>
           <div className="flex justify-between items-center py-2">
               <span className="text-muted-foreground">Payment Method</span>
@@ -327,7 +333,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
       <Alert className="bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400">
          <RefreshCw className="h-4 w-4" />
          <AlertDescription className="text-xs">
-            Instant delivery. Usually takes less than 10 seconds.
+            Instant activation. Usually takes less than 30 seconds.
          </AlertDescription>
       </Alert>
     </motion.div>
@@ -345,9 +351,9 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
         </div>
         
         <div className="space-y-2">
-            <h3 className="text-2xl font-bold">Purchase Successful!</h3>
+            <h3 className="text-2xl font-bold">Data Purchase Successful!</h3>
             <p className="text-muted-foreground max-w-xs mx-auto">
-                You have successfully sent ₦{parseFloat(amount).toLocaleString()} airtime to {formatPhoneNumber(phoneNumber)}.
+                You have successfully subscribed to {selectedPlan?.name} for {formatPhoneNumber(phoneNumber)}.
             </p>
         </div>
 
@@ -358,7 +364,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
              <Button variant="ghost" className="w-full text-xs text-muted-foreground" onClick={() => {
                  setStep(STEPS.PHONE);
                  setPhoneNumber('');
-                 setAmount('');
+                 setSelectedPlanId('');
                  setDetectedProvider(null);
              }}>
                  Make another purchase
@@ -367,14 +373,13 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     </motion.div>
   );
 
-  // Render Footer based on step
   const renderFooter = () => {
      if (step === STEPS.SUCCESS) return null;
 
      return (
         <div className="flex items-center gap-3 mt-4">
             {step > STEPS.PHONE && (
-                <Button variant="outline" size="icon" onClick={handlePrevStep} disabled={isPurchasing}>
+                <Button variant="outline" size="icon" onClick={handlePrevStep} disabled={isProcessing}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
             )}
@@ -384,16 +389,16 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
                 onClick={step === STEPS.REVIEW ? handleInitiatePurchase : handleNextStep}
                 disabled={
                     (step === STEPS.PHONE && (!phoneNumber || !detectedProvider || isDetecting)) ||
-                    (step === STEPS.AMOUNT && !amount) ||
-                    isPurchasing
+                    (step === STEPS.PLAN && !selectedPlanId) ||
+                    isProcessing
                 }
             >
-                {isPurchasing ? (
+                {isProcessing ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
                     </>
                 ) : step === STEPS.REVIEW ? (
-                    'Confirm & Pay'
+                    'Pay with Wallet'
                 ) : (
                     <>Next <ChevronRight className="ml-2 h-4 w-4" /></>
                 )}
@@ -402,24 +407,19 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
      );
   };
 
-  const ContentWrapper = isMobile ? React.Fragment : React.Fragment;
-  const WrapperComponent = isMobile ? SheetContent : DialogContent;
-  const WrapperProps = isMobile ? { side: "bottom" as const, className: "h-[95vh] rounded-t-[20px] p-6" } : { className: "sm:max-w-[425px] p-6" };
-
   // Common Header
   const Header = (
     <div className="mb-6 space-y-1.5 text-center sm:text-left">
         <h2 className="text-lg font-semibold leading-none tracking-tight font-orbitron">
-            {step === STEPS.SUCCESS ? 'Transaction Receipt' : 'Buy Airtime'}
+            {step === STEPS.SUCCESS ? 'Transaction Receipt' : 'Buy Data Bundle'}
         </h2>
         <p className="text-sm text-muted-foreground font-rajdhani">
-            {step === STEPS.PHONE && 'Step 1: Enter Recipient Number'}
-            {step === STEPS.AMOUNT && 'Step 2: Choose Amount'}
+            {step === STEPS.PHONE && 'Step 1: Enter Phone Number'}
+            {step === STEPS.PLAN && 'Step 2: Select Data Plan'}
             {step === STEPS.REVIEW && 'Step 3: Confirm Details'}
             {step === STEPS.SUCCESS && 'Transaction Completed'}
         </p>
         
-        {/* Progress Indicator */}
         {step !== STEPS.SUCCESS && (
             <div className="flex gap-1.5 pt-4 justify-center sm:justify-start">
                 {[1, 2, 3].map((i) => (
@@ -436,56 +436,15 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     </div>
   );
 
-  if (isMobile) {
-      return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="bottom" className="h-[90vh] flex flex-col rounded-t-[20px] px-6 pt-8">
-                {Header}
-                <div className="flex-1 overflow-y-auto pb-6">
-                    <AnimatePresence mode="wait">
-                        {step === STEPS.PHONE && renderPhoneStep()}
-                        {step === STEPS.AMOUNT && renderAmountStep()}
-                        {step === STEPS.REVIEW && renderReviewStep()}
-                        {step === STEPS.SUCCESS && renderSuccessStep()}
-                    </AnimatePresence>
-                    
-                    {error && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        </motion.div>
-                    )}
-                </div>
-                <div className="pb-8">
-                    {renderFooter()}
-                </div>
-            </SheetContent>
-
-            <VerifyPinDialog
-                open={showPinVerify}
-                onOpenChange={setShowPinVerify}
-                onSuccess={handlePinSuccess}
-                onCancel={() => setShowPinVerify(false)}
-                title="Verify PIN for Airtime"
-                description="Enter your 4-digit PIN to authorize this transaction."
-                actionLabel="purchase"
-            />
-        </Sheet>
-      );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden gap-0">
-         <div className="p-6 pb-2">
+  const content = (
+      <>
+        <div className="p-6 pb-2">
             {Header}
-         </div>
-         <div className="px-6 py-2 min-h-[300px]">
+        </div>
+        <div className="px-6 py-2 min-h-[350px]">
             <AnimatePresence mode="wait">
                 {step === STEPS.PHONE && renderPhoneStep()}
-                {step === STEPS.AMOUNT && renderAmountStep()}
+                {step === STEPS.PLAN && renderPlanStep()}
                 {step === STEPS.REVIEW && renderReviewStep()}
                 {step === STEPS.SUCCESS && renderSuccessStep()}
             </AnimatePresence>
@@ -493,48 +452,43 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
             {error && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
                     <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
+                        <XCircle className="h-4 w-4" />
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 </motion.div>
             )}
-         </div>
-         <div className="p-6 pt-2 bg-muted/10">
+        </div>
+        <div className="p-6 pt-2 bg-muted/10">
             {renderFooter()}
-         </div>
-      </DialogContent>
+        </div>
+      </>
+  );
 
-      <VerifyPinDialog
+  return (
+    <>
+        {isMobile ? (
+            <Sheet open={open} onOpenChange={onOpenChange}>
+                <SheetContent side="bottom" className="h-[90vh] flex flex-col rounded-t-[20px] p-0 overflow-y-auto">
+                    {content}
+                </SheetContent>
+            </Sheet>
+        ) : (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden gap-0">
+                    {content}
+                </DialogContent>
+            </Dialog>
+        )}
+
+        <VerifyPinDialog
             open={showPinVerify}
             onOpenChange={setShowPinVerify}
             onSuccess={handlePinSuccess}
             onCancel={() => setShowPinVerify(false)}
-            title="Verify PIN for Airtime"
+            title="Verify PIN for Data Purchase"
             description="Enter your 4-digit PIN to authorize this transaction."
             actionLabel="purchase"
-      />
-    </Dialog>
+        />
+    </>
   );
 };
-
-// Helper for error icon
-function AlertCircle(props: React.SVGProps<SVGSVGElement>) {
-    return (
-      <svg
-        {...props}
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" x2="12.01" y1="8" y2="8" />
-        <line x1="12" y1="12" x2="12" y2="16" />
-      </svg>
-    );
-}
