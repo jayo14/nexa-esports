@@ -131,7 +131,7 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
         if (params.get('transaction_type') === 'giveaway') {
             setOpen(true);
         }
-    }, [location.search]);
+    }, [location]);
 
     // Update URL when dialog opens/closes
     useEffect(() => {
@@ -796,7 +796,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         if (params.get('transaction_type') === 'withdraw') {
             setOpen(true);
         }
-    }, [location.search]);
+    }, [location]);
 
     // Update URL when dialog opens/closes
     useEffect(() => {
@@ -1358,7 +1358,7 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
         if (params.get('transaction_type') === 'transfer') {
             setOpen(true);
         }
-    }, [location.search]);
+    }, [location]);
 
     // Update URL when dialog opens/closes
     useEffect(() => {

@@ -56,7 +56,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     if (params.get('transaction_type') === 'airtime') {
       onOpenChange(true);
     }
-  }, [location.search, onOpenChange]);
+  }, [location, onOpenChange]);
 
   // Update URL when dialog opens/closes
   useEffect(() => {

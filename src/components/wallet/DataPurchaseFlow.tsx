@@ -86,7 +86,7 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
     if (params.get('transaction_type') === 'data') {
       onOpenChange(true);
     }
-  }, [location.search, onOpenChange]);
+  }, [location, onOpenChange]);
 
   // Update URL when dialog opens/closes
   useEffect(() => {
