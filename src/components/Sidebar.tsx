@@ -31,6 +31,7 @@ import {
   Gift,
   DollarSign,
   Trophy,
+  ShoppingBag,
 } from 'lucide-react';
 import { NavItem } from '@/components/NavItem';
 
@@ -79,6 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: Smartphone, label: 'Airtime', path: '/airtime' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
@@ -92,6 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: Smartphone, label: 'Airtime', path: '/airtime' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
@@ -106,6 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: Smartphone, label: 'Airtime', path: '/airtime' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: Users, label: 'Players', path: '/admin/players' },
     { icon: Crosshair, label: 'Scrims', path: '/admin/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },

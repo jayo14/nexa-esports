@@ -31,6 +31,7 @@ import { Loadouts } from '@/pages/Loadouts';
 import { Announcements } from '@/pages/Announcements';
 import Statistics from '@/pages/Statistics';
 import { Airtime } from '@/pages/Airtime';
+import { Marketplace } from '@/pages/Marketplace';
 
 // Admin pages
 import { AdminPlayers } from '@/pages/admin/Players';
@@ -110,6 +111,7 @@ function AppRoutes() {
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
         <Route path="/airtime" element={<ProtectedRoute><Layout showSidebar><Airtime /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace" element={<ProtectedRoute><Layout showSidebar><Marketplace /></Layout></ProtectedRoute>} />
         <Route path="/payment-success" element={<ProtectedRoute><Layout showSidebar><PaymentSuccess /></Layout></ProtectedRoute>} />
 
         {/* Admin routes */}
