@@ -19,7 +19,7 @@ import {
   Clock,
   Megaphone,
   Bell,
-  AlertCircle, // Add this import
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -30,6 +30,9 @@ import {
   Wallet,
   Gift,
   DollarSign,
+  Trophy,
+  ShoppingBag,
+  Smartphone,
 } from 'lucide-react';
 import { NavItem } from '@/components/NavItem';
 
@@ -77,6 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const playerMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
@@ -89,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const moderatorMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
@@ -102,11 +107,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const adminMenuItems = [
     { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: Users, label: 'Players', path: '/admin/players' },
     { icon: Crosshair, label: 'Scrims', path: '/admin/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
     { icon: Calendar, label: 'Events', path: '/admin/events' },
+    { icon: Trophy, label: 'Seasons', path: '/admin/seasons' },
     { icon: Clock, label: 'Attendance', path: '/admin/attendance' },
     { icon: Megaphone, label: 'Announcements', path: '/admin/announcements' },
     { icon: Bell, label: 'Notifications', path: '/admin/notifications' },

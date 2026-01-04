@@ -30,6 +30,7 @@ import { WeaponLoadouts } from '@/pages/WeaponLoadouts';
 import { Loadouts } from '@/pages/Loadouts';
 import { Announcements } from '@/pages/Announcements';
 import Statistics from '@/pages/Statistics';
+import { Marketplace } from '@/pages/Marketplace';
 
 // Admin pages
 import { AdminPlayers } from '@/pages/admin/Players';
@@ -45,6 +46,7 @@ import { AdminAttendance } from '@/pages/admin/Attendance';
 import { AdminAnnouncementsManagement } from '@/pages/admin/AnnouncementsManagement';
 import { AdminNotifications } from '@/pages/admin/Notifications';
 import { AdminConfig } from '@/pages/admin/Config';
+import { AdminSeasons } from '@/pages/admin/Seasons';
 import AdminDashboard from '@/pages/AdminDashboard';
 import { Feedback } from '@/pages/admin/Feedback';
 import Activities from '@/pages/admin/Activities';
@@ -107,6 +109,7 @@ function AppRoutes() {
         <Route path="/announcements" element={<ProtectedRoute><Layout showSidebar><Announcements /></Layout></ProtectedRoute>} />
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace" element={<ProtectedRoute><Layout showSidebar><Marketplace /></Layout></ProtectedRoute>} />
         <Route path="/payment-success" element={<ProtectedRoute><Layout showSidebar><PaymentSuccess /></Layout></ProtectedRoute>} />
 
         {/* Admin routes */}
@@ -125,6 +128,7 @@ function AppRoutes() {
         <Route path="/admin/config" element={<ProtectedRoute><Layout showSidebar><AdminConfig /></Layout></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute><Layout showSidebar><Feedback /></Layout></ProtectedRoute>} />
         <Route path="/admin/earnings" element={<ProtectedRoute><Layout showSidebar><Earnings /></Layout></ProtectedRoute>} />
+        <Route path="/admin/seasons" element={<ProtectedRoute><Layout showSidebar><AdminSeasons /></Layout></ProtectedRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
