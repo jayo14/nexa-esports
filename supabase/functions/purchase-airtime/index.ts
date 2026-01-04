@@ -127,7 +127,14 @@ serve(async (req) => {
       const vtpassData = await vtpassResponse.json();
 
       // Update transaction with VTPASS response
-      if (vtpassData.code === '000' || vtpassData.content?.transactions?.status === 'delivered') {
+      // VTPASS success indicators: code === '000' OR status === 'delivered'
+      const isSuccess = 
+        vtpassData.code === '000' || 
+        vtpassData.response_description === 'TRANSACTION SUCCESSFUL' ||
+        vtpassData.content?.transactions?.status === 'delivered' ||
+        vtpassData.content?.transactions?.status === 'successful';
+
+      if (isSuccess) {
         // Success - deduct from wallet and update transaction
         const newBalance = profile.wallet_balance - amount;
 

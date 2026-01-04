@@ -19,7 +19,7 @@ import {
   Clock,
   Megaphone,
   Bell,
-  AlertCircle, // Add this import
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -32,6 +32,7 @@ import {
   DollarSign,
   Trophy,
   ShoppingBag,
+  Smartphone,
 } from 'lucide-react';
 import { NavItem } from '@/components/NavItem';
 

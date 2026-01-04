@@ -105,8 +105,14 @@ export const useMarketplace = () => {
           throw error;
         }
 
-        // Increment view count
-        await supabase.rpc('increment_listing_views', { listing_id: listingId });
+        // Increment view count only if not already viewed in this session
+        const viewedKey = `listing_viewed_${listingId}`;
+        const hasViewed = sessionStorage.getItem(viewedKey);
+        
+        if (!hasViewed) {
+          await supabase.rpc('increment_listing_views', { listing_id: listingId });
+          sessionStorage.setItem(viewedKey, 'true');
+        }
 
         return data;
       },
