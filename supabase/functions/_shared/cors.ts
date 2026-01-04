@@ -4,6 +4,7 @@
 const allowedOrigins = [
   'https://nexa-esports.vercel.app',
   'https://www.nexaesports.com',
+  'https://nexaesports.com',
   'http://localhost:3000',
   'http://localhost:5173',
 ];
