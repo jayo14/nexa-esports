@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,7 @@ import { PinSetupAlert } from '@/components/PinSetupAlert';
 import { MobileWithdrawFlow } from '@/components/wallet/MobileWithdrawFlow';
 import { MobileTransferFlow } from '@/components/wallet/MobileTransferFlow';
 import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
+import { AirtimePurchaseFlow } from '@/components/wallet/AirtimePurchaseFlow';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
@@ -65,9 +66,14 @@ const renderTransactionIcon = (type: string) => {
     case 'Transfer Out':
     case 'Giveaway Created':
     case 'Monthly Tax':
+    case 'Airtime Purchase':
       return (
         <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500/20 to-red-600/10 backdrop-blur-sm border border-red-500/20 group-hover:shadow-lg group-hover:shadow-red-500/20 transition-all">
-          <ArrowUp className="h-7 w-7 text-red-500" />
+          {type === 'Airtime Purchase' ? (
+            <Smartphone className="h-7 w-7 text-red-500" />
+          ) : (
+            <ArrowUp className="h-7 w-7 text-red-500" />
+          )}
         </div>
       );
     case 'Giveaway Refund':
@@ -1683,6 +1689,41 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
     )
 }
 
+const AirtimeButton = ({ onSuccess }: { onSuccess?: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return (
+    <>
+      <Button 
+        variant="outline" 
+        className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+        onClick={() => setOpen(true)}
+      >
+        <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 group-hover:from-orange-500/30 group-hover:to-orange-600/20 transition-all">
+          <Smartphone className="h-6 w-6 text-orange-500" />
+        </div>
+        <span className="font-semibold text-sm">Buy Airtime</span>
+      </Button>
+      <AirtimePurchaseFlow 
+        open={open} 
+        onOpenChange={setOpen} 
+        isMobile={isMobile}
+        onSuccess={onSuccess}
+      />
+    </>
+  );
+};
+
 const Wallet: React.FC = () => {
   const { profile, user } = useAuth();
   const location = useLocation();
@@ -2004,7 +2045,7 @@ const Wallet: React.FC = () => {
         <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <FundWalletDialog isDepositsEnabled={walletSettings.deposits_enabled} />
         <WithdrawDialog 
           setWalletBalance={setWalletBalance} 
@@ -2029,6 +2070,7 @@ const Wallet: React.FC = () => {
           redeemCooldown={redeemCooldown}
           onRedeemSuccess={startRedeemCooldown}
         />
+        <AirtimeButton onSuccess={fetchWalletData} />
       </div>
 
       <Card className="border-border/50 shadow-xl animate-fade-in" style={{ animationDelay: '0.2s' }}>

@@ -80,7 +80,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const playerMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: Smartphone, label: 'Airtime', path: '/airtime' },
     { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
@@ -94,7 +93,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const moderatorMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: Smartphone, label: 'Airtime', path: '/airtime' },
     { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
@@ -109,7 +107,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const adminMenuItems = [
     { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: Smartphone, label: 'Airtime', path: '/airtime' },
     { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: Users, label: 'Players', path: '/admin/players' },
     { icon: Crosshair, label: 'Scrims', path: '/admin/scrims' },
