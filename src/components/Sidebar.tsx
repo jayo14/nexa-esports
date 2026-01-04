@@ -78,6 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const playerMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: Smartphone, label: 'Airtime', path: '/airtime' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
@@ -90,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const moderatorMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: Smartphone, label: 'Airtime', path: '/airtime' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Crosshair, label: 'Scrims', path: '/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
@@ -103,6 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const adminMenuItems = [
     { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: Smartphone, label: 'Airtime', path: '/airtime' },
     { icon: Users, label: 'Players', path: '/admin/players' },
     { icon: Crosshair, label: 'Scrims', path: '/admin/scrims' },
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
