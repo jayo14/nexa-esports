@@ -4,6 +4,8 @@ const allowedOrigins = [
   'http://localhost:8080',
   'http://localhost:8081',
   'https://nexa-esports.vercel.app',
+  'https://www.nexaesports.com',
+  'https://nexaesports.com',
 ];
 
 const getCorsHeaders = (request: Request) => {
