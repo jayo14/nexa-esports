@@ -140,16 +140,11 @@ const PinVerifyContent: React.FC<{
 
         {/* PIN Input - Using Custom Component */}
         <CustomPinInput 
-          pin={pin}
+          value={pin}
+          onChange={onPinChange}
+          onComplete={onPinComplete}
+          disabled={isLocked || isLoading}
           error={error}
-          verified={verified}
-          isLocked={isLocked}
-          isLoading={isLoading}
-          remainingTime={remainingTime}
-          onPinChange={onPinChange}
-          onPinComplete={onComplete}
-          onCancel={onCancel}
-          actionLabel={actionLabel}
         />
 
         {/* Error message */}

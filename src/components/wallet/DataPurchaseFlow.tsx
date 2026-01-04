@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,6 +68,8 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
   onSuccess,
 }) => {
   const { isPurchasing: isProcessingAirtime } = useAirtime(); // Only for loading state if we reuse logic
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [step, setStep] = useState(STEPS.PHONE);
@@ -76,6 +79,26 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState('');
   const [showPinVerify, setShowPinVerify] = useState(false);
+
+  // Check URL params to open dialog
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('transaction_type') === 'data') {
+      onOpenChange(true);
+    }
+  }, [location.search, onOpenChange]);
+
+  // Update URL when dialog opens/closes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (open) {
+      params.set('transaction_type', 'data');
+      navigate(`?${params.toString()}`, { replace: true });
+    } else if (params.get('transaction_type') === 'data') {
+      params.delete('transaction_type');
+      navigate(`?${params.toString()}`, { replace: true });
+    }
+  }, [open, navigate, location.search]);
 
   // Reset state when opening/closing
   useEffect(() => {

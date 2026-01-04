@@ -96,6 +96,8 @@ const renderTransactionIcon = (type: string) => {
 
 const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, redeemCooldown, onRedeemSuccess }) => {
     const { profile } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const { toast } = useToast();
     // Allow any authenticated player to create/redeem giveaways
     const isAuthenticated = Boolean(profile?.id);
@@ -122,6 +124,26 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
     const [isMobile, setIsMobile] = useState(false);
     const [showPinVerify, setShowPinVerify] = useState(false);
     const [pendingGiveaway, setPendingGiveaway] = useState(false);
+
+    // Check URL params to open dialog
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('transaction_type') === 'giveaway') {
+            setOpen(true);
+        }
+    }, [location.search]);
+
+    // Update URL when dialog opens/closes
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (open) {
+            params.set('transaction_type', 'giveaway');
+            navigate(`?${params.toString()}`, { replace: true });
+        } else if (params.get('transaction_type') === 'giveaway') {
+            params.delete('transaction_type');
+            navigate(`?${params.toString()}`, { replace: true });
+        }
+    }, [open, navigate, location.search]);
 
     // Check screen size for responsive dialog/sheet
     useEffect(() => {
@@ -751,6 +773,8 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
 
 const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalComplete, isWithdrawalServiceAvailable = true, cooldown = 0 }) => {
     const { profile } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [amount, setAmount] = useState(0);
     const [accountNumber, setAccountNumber] = useState('');
     const [accountName, setAccountName] = useState('');
@@ -765,6 +789,26 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
     const [isMobile, setIsMobile] = useState(false);
     const [showPinVerify, setShowPinVerify] = useState(false);
     const [pendingWithdrawal, setPendingWithdrawal] = useState(false);
+
+    // Check URL params to open dialog
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('transaction_type') === 'withdraw') {
+            setOpen(true);
+        }
+    }, [location.search]);
+
+    // Update URL when dialog opens/closes
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (open) {
+            params.set('transaction_type', 'withdraw');
+            navigate(`?${params.toString()}`, { replace: true });
+        } else if (params.get('transaction_type') === 'withdraw') {
+            params.delete('transaction_type');
+            navigate(`?${params.toString()}`, { replace: true });
+        }
+    }, [open, navigate, location.search]);
 
     // Check screen size for responsive dialog/sheet
     useEffect(() => {
@@ -1292,6 +1336,8 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
 }
 
 const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [amount, setAmount] = useState(0);
     const [recipient, setRecipient] = useState('');
     const [open, setOpen] = useState(false);
@@ -1305,6 +1351,26 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
 
     const TRANSFER_FEE = 50;
     const totalCost = amount + TRANSFER_FEE;
+
+    // Check URL params to open dialog
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('transaction_type') === 'transfer') {
+            setOpen(true);
+        }
+    }, [location.search]);
+
+    // Update URL when dialog opens/closes
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (open) {
+            params.set('transaction_type', 'transfer');
+            navigate(`?${params.toString()}`, { replace: true });
+        } else if (params.get('transaction_type') === 'transfer') {
+            params.delete('transaction_type');
+            navigate(`?${params.toString()}`, { replace: true });
+        }
+    }, [open, navigate, location.search]);
 
     // Check screen size for responsive dialog/sheet
     useEffect(() => {

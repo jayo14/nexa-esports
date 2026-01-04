@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +38,8 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
 }) => {
   const { purchaseAirtime, isPurchasing, airtimeLimits } = useAirtime();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const [step, setStep] = useState(STEPS.PHONE);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -46,6 +49,26 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
   const [error, setError] = useState('');
   const [purchaseResult, setPurchaseResult] = useState<unknown>(null);
   const [showPinVerify, setShowPinVerify] = useState(false);
+
+  // Check URL params to open dialog
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('transaction_type') === 'airtime') {
+      onOpenChange(true);
+    }
+  }, [location.search, onOpenChange]);
+
+  // Update URL when dialog opens/closes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (open) {
+      params.set('transaction_type', 'airtime');
+      navigate(`?${params.toString()}`, { replace: true });
+    } else if (params.get('transaction_type') === 'airtime') {
+      params.delete('transaction_type');
+      navigate(`?${params.toString()}`, { replace: true });
+    }
+  }, [open, navigate, location.search]);
 
   // Reset state when opening/closing
   useEffect(() => {
