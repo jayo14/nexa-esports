@@ -45,6 +45,7 @@ import { AdminAttendance } from '@/pages/admin/Attendance';
 import { AdminAnnouncementsManagement } from '@/pages/admin/AnnouncementsManagement';
 import { AdminNotifications } from '@/pages/admin/Notifications';
 import { AdminConfig } from '@/pages/admin/Config';
+import { AdminSeasons } from '@/pages/admin/Seasons';
 import AdminDashboard from '@/pages/AdminDashboard';
 import { Feedback } from '@/pages/admin/Feedback';
 import Activities from '@/pages/admin/Activities';
@@ -125,6 +126,7 @@ function AppRoutes() {
         <Route path="/admin/config" element={<ProtectedRoute><Layout showSidebar><AdminConfig /></Layout></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute><Layout showSidebar><Feedback /></Layout></ProtectedRoute>} />
         <Route path="/admin/earnings" element={<ProtectedRoute><Layout showSidebar><Earnings /></Layout></ProtectedRoute>} />
+        <Route path="/admin/seasons" element={<ProtectedRoute><Layout showSidebar><AdminSeasons /></Layout></ProtectedRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

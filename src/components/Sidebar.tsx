@@ -30,6 +30,7 @@ import {
   Wallet,
   Gift,
   DollarSign,
+  Trophy,
 } from 'lucide-react';
 import { NavItem } from '@/components/NavItem';
 
@@ -107,6 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { icon: Package, label: 'Loadouts', path: '/loadouts' },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
     { icon: Calendar, label: 'Events', path: '/admin/events' },
+    { icon: Trophy, label: 'Seasons', path: '/admin/seasons' },
     { icon: Clock, label: 'Attendance', path: '/admin/attendance' },
     { icon: Megaphone, label: 'Announcements', path: '/admin/announcements' },
     { icon: Bell, label: 'Notifications', path: '/admin/notifications' },
