@@ -143,7 +143,7 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
             params.delete('transaction_type');
             navigate(`?${params.toString()}`, { replace: true });
         }
-    }, [open, navigate, location.search]);
+    }, [open, navigate, location]);
 
     // Check screen size for responsive dialog/sheet
     useEffect(() => {
@@ -808,7 +808,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
             params.delete('transaction_type');
             navigate(`?${params.toString()}`, { replace: true });
         }
-    }, [open, navigate, location.search]);
+    }, [open, navigate, location]);
 
     // Check screen size for responsive dialog/sheet
     useEffect(() => {
@@ -1370,7 +1370,7 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
             params.delete('transaction_type');
             navigate(`?${params.toString()}`, { replace: true });
         }
-    }, [open, navigate, location.search]);
+    }, [open, navigate, location]);
 
     // Check screen size for responsive dialog/sheet
     useEffect(() => {

@@ -98,7 +98,7 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
       params.delete('transaction_type');
       navigate(`?${params.toString()}`, { replace: true });
     }
-  }, [open, navigate, location.search]);
+  }, [open, navigate, location]);
 
   // Reset state when opening/closing
   useEffect(() => {
