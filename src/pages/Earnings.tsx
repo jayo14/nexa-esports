@@ -10,12 +10,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, ChevronLeft, ChevronRight, Wallet, TrendingUp, DollarSign, ArrowDownToLine } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Wallet, TrendingUp, DollarSign, ArrowDownToLine, Key } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { useTransactionPin } from '@/hooks/useTransactionPin';
+import { SetupPinDialog } from '@/components/SetupPinDialog';
+import { PinSetupAlert } from '@/components/PinSetupAlert';
 
 const Earnings = () => {
-    const { profile } = useAuth();
+    const { profile, user } = useAuth();
     const navigate = useNavigate();
     const { toast } = useToast();
     const { earnings, loading: earningsLoading } = useEarnings();
@@ -25,6 +29,23 @@ const Earnings = () => {
     const [cashOutOpen, setCashOutOpen] = useState(false);
     const [cashOutAmount, setCashOutAmount] = useState<number>(0);
     const [isCashingOut, setIsCashingOut] = useState(false);
+    const [showPinVerify, setShowPinVerify] = useState(false);
+    
+    // PIN management states
+    const { checkPinExists } = useTransactionPin();
+    const [hasPinSet, setHasPinSet] = useState<boolean | null>(null);
+    const [showPinSetup, setShowPinSetup] = useState(false);
+
+    // Check if user has PIN set
+    useEffect(() => {
+        const checkPin = async () => {
+            if (user?.id) {
+                const pinExists = await checkPinExists();
+                setHasPinSet(pinExists);
+            }
+        };
+        checkPin();
+    }, [user?.id, checkPinExists]);
 
     const isClanMaster = profile?.role === 'clan_master' || profile?.role === 'admin';
 
@@ -96,7 +117,17 @@ const Earnings = () => {
         }
     };
 
-    const handleCashOut = async () => {
+    const handleCashOutClick = () => {
+        if (!hasPinSet) {
+            toast({
+                title: "Security PIN Required",
+                description: "You must set up a transaction PIN before you can cash out your earnings.",
+                variant: "destructive",
+            });
+            setShowPinSetup(true);
+            return;
+        }
+
         if (!profile?.banking_info) {
             toast({
                 title: "Banking Info Required",
@@ -115,9 +146,13 @@ const Earnings = () => {
             return;
         }
 
+        setShowPinVerify(true);
+    };
+
+    const handleCashOut = async () => {
         setIsCashingOut(true);
         try {
-            const bankingInfo = profile.banking_info as any;
+            const bankingInfo = profile?.banking_info as any;
             
             // Call flutterwave-transfer function to initiate withdrawal
             const { data, error } = await supabase.functions.invoke('flutterwave-transfer', {
@@ -220,6 +255,11 @@ const Earnings = () => {
                     Cash Out Earnings
                 </Button>
             </div>
+
+            {/* PIN Setup Alert - Show if PIN not set */}
+            {hasPinSet === false && (
+                <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="nexa-card overflow-hidden group hover:nexa-glow transition-all duration-300">
@@ -509,7 +549,7 @@ const Earnings = () => {
                             Cancel
                         </Button>
                         <Button
-                            onClick={handleCashOut}
+                            onClick={handleCashOutClick}
                             disabled={isCashingOut || cashOutAmount <= 0}
                             className="nexa-button"
                         >
@@ -519,6 +559,29 @@ const Earnings = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <VerifyPinDialog
+                open={showPinVerify}
+                onOpenChange={setShowPinVerify}
+                onSuccess={() => {
+                    setShowPinVerify(false);
+                    handleCashOut();
+                }}
+                onCancel={() => setShowPinVerify(false)}
+                title="Verify PIN for Cash Out"
+                description="Enter your 4-digit PIN to authorize this withdrawal."
+                actionLabel="cash out"
+            />
+
+            {/* PIN Setup Dialog */}
+            <SetupPinDialog 
+                open={showPinSetup}
+                onOpenChange={setShowPinSetup}
+                onSuccess={() => {
+                    setHasPinSet(true);
+                    setShowPinSetup(false);
+                }}
+            />
         </div>
     );
 };

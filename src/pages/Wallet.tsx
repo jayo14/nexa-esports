@@ -1730,8 +1730,8 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                     <span className="font-semibold text-xs">Fund Wallet</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh] sm:h-[600px] rounded-t-[32px] border-t-primary/20 bg-background/95 backdrop-blur-xl">
-                <SheetHeader className="text-left">
+            <SheetContent side="bottom" className="h-[80vh] sm:h-[600px] rounded-t-[32px] border-t-primary/20 bg-background/95 backdrop-blur-xl overflow-hidden flex flex-col">
+                <SheetHeader className="text-left px-6 pt-6">
                     <SheetTitle className="text-2xl font-bold flex items-center gap-2">
                         <Coins className="h-6 w-6 text-green-500" />
                         Fund Wallet
@@ -1741,9 +1741,9 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="py-6 h-full flex flex-col">
+                <div className="flex-1 overflow-y-auto px-6 py-6" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {step === 1 ? (
-                        <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+                        <div className="space-y-6">
                             <div className="grid grid-cols-3 gap-3">
                                 {presetAmounts.map((preset) => (
                                     <Button
@@ -1788,7 +1788,7 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                             </Alert>
                         </div>
                     ) : (
-                        <div className="space-y-6 flex-1">
+                        <div className="space-y-6">
                             <Card className="border-2 border-primary/10 bg-primary/5 rounded-3xl overflow-hidden">
                                 <CardContent className="p-6 space-y-4">
                                     <div className="flex justify-between items-center text-sm text-muted-foreground">
@@ -1819,63 +1819,30 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                             </div>
                         </div>
                     )}
+                </div>
 
-                    <div className="mt-auto pt-6 flex gap-3">
-                        {step === 2 && (
-                            <Button 
-                                variant="outline" 
-                                className="flex-1 h-14 rounded-2xl border-2" 
-                                onClick={() => setStep(1)}
-                            >
-                                Back
-                            </Button>
-                        )}
+                <div className="px-6 pb-8 pt-4 flex gap-3 bg-background/50 border-t border-primary/5 backdrop-blur-md">
+                    {step === 2 && (
                         <Button 
-                            className={`flex-[2] h-14 rounded-2xl font-bold text-lg transition-all ${
-                                step === 1 ? "bg-primary hover:bg-primary/90" : "bg-green-600 hover:bg-green-700"
-                            }`}
-                            onClick={step === 1 ? validateAndNext : handlePayment}
-                            disabled={amount < 500}
+                            variant="outline" 
+                            className="flex-1 h-14 rounded-2xl border-2" 
+                            onClick={() => setStep(1)}
                         >
-                            {step === 1 ? "Continue" : `Pay ₦${amount.toLocaleString()}`}
+                            Back
                         </Button>
-                    </div>
+                    )}
+                    <Button 
+                        className={`flex-[2] h-14 rounded-2xl font-bold text-lg transition-all ${
+                            step === 1 ? "bg-primary hover:bg-primary/90" : "bg-green-600 hover:bg-green-700"
+                        }`}
+                        onClick={step === 1 ? validateAndNext : handlePayment}
+                        disabled={amount < 500}
+                    >
+                        {step === 1 ? "Continue" : `Pay ₦${amount.toLocaleString()}`}
+                    </Button>
                 </div>
             </SheetContent>
         </Sheet>
-    )
-}
-                        <p className="text-xs text-muted-foreground">
-                            Min: ₦500 • Max: ₦50,000
-                        </p>
-                    </div>
-                    <Alert>
-                        <Coins className="h-4 w-4" />
-                        <AlertTitle>Transaction Fee</AlertTitle>
-                        <AlertDescription>
-                            {amount > 0 ? (
-                                <>
-                                    A fee of ₦{(amount * 0.04).toFixed(2)} (4%) will be deducted.
-                                    <div className="text-sm text-muted-foreground mt-1">
-                                        You will be charged ₦{amount.toFixed(2)} and receive ₦{(amount * 0.96).toFixed(2)} in your wallet.
-                                    </div>
-                                </>
-                            ) : (
-                                'A 4% fee will be deducted from your deposit.'
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                </div>
-                <DialogFooter>
-                    <Button 
-                        onClick={handlePayment}
-                        disabled={amount < 500}
-                    >
-                        Pay ₦{amount.toFixed(2)}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     )
 }
 

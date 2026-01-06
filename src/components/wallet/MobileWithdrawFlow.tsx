@@ -96,14 +96,15 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
           </SheetHeader>
 
           {/* Progress Bar */}
-          <div className="flex gap-2 mb-8">
+          <div className="flex gap-2 mb-8 px-2">
             <div className={`h-2 flex-1 rounded-full transition-all ${step === 'amount' || step === 'review' || step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
             <div className={`h-2 flex-1 rounded-full transition-all ${step === 'review' || step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
             <div className={`h-2 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
           </div>
 
-          {/* Step 1: Enter Amount */}
-          {step === 'amount' && (
+          <div className="flex-1 overflow-y-auto px-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Step 1: Enter Amount */}
+            {step === 'amount' && (
             <div className="space-y-8 py-4">
               <div className="space-y-6">
                 <div className="text-center py-8 px-4 bg-card/50 rounded-lg border border-border">
@@ -270,6 +271,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
               )}
             </div>
           )}
+          </div>
         </SheetContent>
       </Sheet>
 
