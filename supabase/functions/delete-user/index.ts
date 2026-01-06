@@ -2,8 +2,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders(origin) })
   }
 
   try {
@@ -76,7 +77,7 @@ Deno.serve(async (req) => {
           success: true, 
           warning: 'User data deleted but auth user deletion failed' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } 
       }
     )
   }

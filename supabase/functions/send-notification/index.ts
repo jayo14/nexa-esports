@@ -3,8 +3,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(origin) });
   }
 
   try {
@@ -21,7 +22,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Missing required fields: type, title, message" }),
         {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 400,
         }
       );
@@ -64,7 +65,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Failed to create notifications" }),
         {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 500,
         }
       );
@@ -93,7 +94,7 @@ serve(async (req) => {
         notifications_sent: targetUsers.length 
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 200,
       }
     );
@@ -103,7 +104,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       }
     );

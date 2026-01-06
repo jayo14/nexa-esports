@@ -7,8 +7,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(origin) });
   }
 
   // Create a Supabase client with the user's auth token
@@ -21,7 +22,7 @@ serve(async (req) => {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 401,
     });
   }
@@ -58,13 +59,13 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ allowed: weekday !== 'Sunday', weekday, timezone: resolvedTz }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
         status: 200,
       });
     } catch (err) {
       console.error('Error checking withdrawal availability:', err);
       return new Response(JSON.stringify({ allowed: true, error: err instanceof Error ? err.message : String(err) }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
         status: 200,
       });
     }
@@ -92,13 +93,13 @@ serve(async (req) => {
       console.log("Paystack create recipient response:", result);
 
       return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: response.ok ? 200 : 400,
       });
     } catch (error) {
       console.error("Error creating transfer recipient:", error);
       return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });
     }
@@ -143,7 +144,7 @@ serve(async (req) => {
 
       if (weekday === 'Sunday') {
         return new Response(JSON.stringify({ error: 'withdrawals_disabled_today', message: 'Withdrawals are not allowed on Sundays in your region.' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
           status: 403,
         });
       }
@@ -151,14 +152,14 @@ serve(async (req) => {
       // Validate min/max withdrawal amounts
       if (amount < 500) {
         return new Response(JSON.stringify({ error: "Minimum withdrawal amount is ₦500" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 400,
         });
       }
 
       if (amount > 30000) {
         return new Response(JSON.stringify({ error: "Maximum withdrawal amount is ₦30,000" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 400,
         });
       }
@@ -177,7 +178,7 @@ serve(async (req) => {
       if (walletError || !wallet) {
         console.error(`Wallet not found for user ${user.id}:`, walletError);
         return new Response(JSON.stringify({ error: "Wallet not found" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 404,
         });
       }
@@ -185,7 +186,7 @@ serve(async (req) => {
       if (wallet.balance < totalDeduction) {
         console.warn(`User ${user.id} has insufficient funds. Balance: ${wallet.balance}, Required: ${totalDeduction}`);
         return new Response(JSON.stringify({ error: "Insufficient funds for withdrawal and fee" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 400,
         });
       }
@@ -218,13 +219,13 @@ serve(async (req) => {
 
         if ((msg || '').toLowerCase().includes('insufficient balance')) {
           return new Response(JSON.stringify({ error: 'insufficient_paystack_balance', message: msg }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
             status: 400,
           });
         }
 
         return new Response(JSON.stringify({ error: 'paystack_transfer_failed', message: msg, details: result }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 400,
         });
       }
@@ -266,7 +267,7 @@ serve(async (req) => {
         // At this stage the Paystack transfer may have gone through; do NOT automatically expose raw RPC details to end users,
         // but include them in logs/monitoring. We still return a machine-friendly payload so the frontend can detect and display a safe message.
         return new Response(JSON.stringify(errorPayload), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
           status: 500,
         });
       }
@@ -285,20 +286,20 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 200,
       });
     } catch (error) {
       console.error("Error initiating transfer:", error);
       return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });
     }
   }
 
   return new Response(JSON.stringify({ error: "Invalid endpoint" }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     status: 400,
   });
 });

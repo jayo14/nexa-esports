@@ -6,6 +6,11 @@ import * as crypto from "https://deno.land/std@0.168.0/node/crypto.ts";
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders(origin) });
+  }
+
   const signature = req.headers.get("x-paystack-signature");
   const body = await req.text();
 

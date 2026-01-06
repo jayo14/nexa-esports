@@ -7,6 +7,7 @@ const allowedOrigins = [
   'https://nexaesports.com',
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost:8080',
 ];
 
 export const corsHeaders = (origin: string) => {
@@ -15,7 +16,7 @@ export const corsHeaders = (origin: string) => {
 
   return {
     'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-scenario-key',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   };
 };

@@ -6,6 +6,11 @@ const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
 const FLUTTERWAVE_WEBHOOK_SECRET = Deno.env.get("FLUTTERWAVE_WEBHOOK_SECRET") || Deno.env.get("FLUTTERWAVE_SECRET_KEY"); // Fallback for backward compatibility
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders(origin) });
+  }
+
   const signature = req.headers.get("verif-hash");
   const body = await req.text();
 

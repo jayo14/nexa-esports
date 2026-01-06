@@ -3,7 +3,12 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
 
-serve(async (_req) => {
+serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders(origin) });
+  }
+
   // Flutterwave endpoint to get list of banks
   const flutterwaveUrl = "https://api.flutterwave.com/v3/banks/NG"; // NG for Nigeria
   const flutterwaveResponse = await fetch(flutterwaveUrl, {
@@ -24,11 +29,11 @@ serve(async (_req) => {
       status: true, 
       data: flutterwaveData.data 
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     });
   }
 
   return new Response(JSON.stringify(flutterwaveData), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
   });
 });

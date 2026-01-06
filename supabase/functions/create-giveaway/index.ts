@@ -4,8 +4,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(origin) });
   }
 
   try {
@@ -18,7 +19,7 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 401,
       });
     }
@@ -27,14 +28,14 @@ serve(async (req) => {
 
     if (!title || !code_value || !total_codes || !expires_in_hours) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });
     }
 
     if (code_value <= 0 || total_codes <= 0 || expires_in_hours <= 0) {
       return new Response(JSON.stringify({ error: "Invalid values" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -51,7 +52,7 @@ serve(async (req) => {
     if (error) {
       console.error("Error creating giveaway:", error);
       return new Response(JSON.stringify({ error: error.message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -62,7 +63,7 @@ serve(async (req) => {
     if (!giveawayId) {
       console.error("No giveaway ID returned from RPC");
       return new Response(JSON.stringify({ error: "Failed to create giveaway" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });
     }
@@ -79,7 +80,7 @@ serve(async (req) => {
     if (fetchError) {
       console.error("Error fetching giveaway:", fetchError);
       return new Response(JSON.stringify({ error: "Giveaway created but failed to fetch details" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });
     }
@@ -180,14 +181,14 @@ serve(async (req) => {
       giveaway_id: giveawayId,
       giveaway 
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (err) {
     console.error("Unexpected error in create-giveaway:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
   }

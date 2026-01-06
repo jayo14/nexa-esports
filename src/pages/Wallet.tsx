@@ -1627,7 +1627,7 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         customizations: {
             title: 'Nexa Elite Nexus',
             description: 'Wallet Funding',
-            logo: '',
+            logo: '/nexa-logo.jpg',
         },
         meta: {
             userId: profile?.id || '',
@@ -1636,7 +1636,7 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
 
     // Validate public key is configured before initializing hook
     if (!config.public_key) {
-        console.error('Flutterwave public key not configured');
+        // console.error('Flutterwave public key not configured'); // This is handled by a toast in handlePayment
     }
 
     const handleFlutterPayment = useFlutterwave(config);

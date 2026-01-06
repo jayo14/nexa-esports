@@ -5,8 +5,9 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(origin) });
   }
 
   try {
@@ -15,7 +16,7 @@ serve(async (req) => {
     if (!transaction_id) {
       return new Response(JSON.stringify({ error: "transaction_id is required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
@@ -31,7 +32,7 @@ serve(async (req) => {
     if (!flutterwaveResponse.ok) {
       return new Response(JSON.stringify({ error: "Payment verification failed" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
@@ -40,7 +41,7 @@ serve(async (req) => {
     if (flutterwaveData.status !== 'success' || flutterwaveData.data.status !== 'successful') {
       return new Response(JSON.stringify({ error: "Payment not successful", data: flutterwaveData }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
@@ -56,13 +57,13 @@ serve(async (req) => {
       console.error('Error checking for existing transaction:', existingTransactionError);
       return new Response(JSON.stringify({ error: 'Error checking for existing transaction' }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
     if (existingTransaction) {
       return new Response(JSON.stringify({ message: "Transaction already processed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
@@ -74,7 +75,7 @@ serve(async (req) => {
     if (!userId) {
       return new Response(JSON.stringify({ error: "User ID not found in transaction metadata. Cannot credit wallet." }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
@@ -93,20 +94,20 @@ serve(async (req) => {
       console.error('Error crediting wallet:', creditWalletError);
       return new Response(JSON.stringify({ error: 'Error crediting wallet' }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
     console.log('New balance:', newBalance);
 
     return new Response(JSON.stringify(flutterwaveData), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     });
 
   } catch (err) {
     console.error("Unexpected error in verify-payment:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
   }

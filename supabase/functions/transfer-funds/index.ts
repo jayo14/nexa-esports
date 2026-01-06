@@ -4,9 +4,10 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(origin) });
   }
 
   try {
@@ -19,7 +20,7 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 401,
       });
     }
@@ -28,7 +29,7 @@ serve(async (req) => {
 
     if (!recipient_ign || !amount || amount <= 0) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -42,20 +43,20 @@ serve(async (req) => {
     if (error) {
       console.error("Error executing user transfer:", error);
       return new Response(JSON.stringify({ error: error.message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400, // Using 400 for foreseeable errors like "insufficient funds"
       });
     }
 
     return new Response(JSON.stringify({ message: "Transfer successful" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (err) {
     console.error("Unexpected error in transfer-funds:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
   }

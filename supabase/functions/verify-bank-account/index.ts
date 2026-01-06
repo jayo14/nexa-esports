@@ -2,9 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
+  const origin = req.headers.get("Origin") || "";
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(origin) });
   }
 
   try {
@@ -14,7 +15,7 @@ serve(async (req) => {
 
     if (!bank_code || !account_number) {
       return new Response(JSON.stringify({ error: "bank_code and account_number are required" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });
     }
@@ -29,20 +30,20 @@ serve(async (req) => {
 
     if (!data.status) {
       return new Response(JSON.stringify({ status: false, message: data.message }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });
     }
 
     return new Response(JSON.stringify({ status: true, data: data.data }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (err) {
     console.error('Error in verify-bank-account:', err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
   }

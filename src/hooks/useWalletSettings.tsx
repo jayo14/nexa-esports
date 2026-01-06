@@ -71,11 +71,11 @@ export const useWalletSettings = () => {
 
             const { error } = await supabase
                 .from('clan_settings')
-                .update({ 
+                .upsert({ 
+                    key,
                     value, 
                     updated_by: userId || null 
-                })
-                .eq('key', key);
+                }, { onConflict: 'key' });
 
             if (error) {
                 throw error;
