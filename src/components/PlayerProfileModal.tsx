@@ -81,6 +81,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
     const [searchParams] = useSearchParams();
     const [fullPlayer, setFullPlayer] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [rank, setRank] = useState<number | null>(initialRank || null);
     const [activeTab, setActiveTab] = useState<"BR" | "MP">("BR");
     const [revealContact, setRevealContact] = useState(false);
 
@@ -89,25 +90,39 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
       if (open && initialPlayer?.id) {
         const currentPath = window.location.pathname;
         navigate(`${currentPath}?playerId=${initialPlayer.id}`, { replace: true });
-      } else if (!open && !searchParams.get('playerId')) {
-        // Only navigate if we aren't currently loading a player from URL
       }
     }, [open, initialPlayer?.id, navigate]);
 
-    // Fetch full data if we only have name/id or if opened via URL
+    // Fetch full data and rank
     useEffect(() => {
-      const fetchPlayer = async (id: string) => {
+      const fetchData = async (id: string) => {
         setIsLoading(true);
         try {
-          const { data, error } = await supabase
+          // Fetch profile
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', id)
             .single();
           
-          if (data) setFullPlayer(data);
+          if (profileData) {
+            setFullPlayer(profileData);
+            
+            // Fetch rank if not provided
+            if (!initialRank) {
+              const { data: leaderboard, error: rankError } = await supabase
+                .from('leaderboard')
+                .select('id')
+                .order('total_kills', { ascending: false });
+              
+              if (leaderboard) {
+                const playerRank = leaderboard.findIndex(entry => entry.id === id) + 1;
+                setRank(playerRank > 0 ? playerRank : null);
+              }
+            }
+          }
         } catch (error) {
-          console.error("Error fetching player:", error);
+          console.error("Error fetching player data:", error);
         } finally {
           setIsLoading(false);
         }
@@ -115,16 +130,14 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
       const idFromUrl = searchParams.get('playerId');
       if (open) {
-        if (initialPlayer && Object.keys(initialPlayer).length > 2) {
-          setFullPlayer(initialPlayer);
-        } else if (initialPlayer?.id) {
-          fetchPlayer(initialPlayer.id);
+        if (initialPlayer?.id) {
+          fetchData(initialPlayer.id);
         }
       } else if (idFromUrl) {
         onOpenChange(true);
-        fetchPlayer(idFromUrl);
+        fetchData(idFromUrl);
       }
-    }, [open, initialPlayer, searchParams]);
+    }, [open, initialPlayer?.id, searchParams, initialRank]);
 
     // Auto-generated insights
     const analysis = useMemo(() => {
@@ -226,7 +239,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                 <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-sm z-20" />
 
                 {/* Rank Badge Overlay */}
-                {(initialRank || p.kills) && (
+                {(rank || p.kills) && (
                   <motion.div 
                     initial={{ x: 20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
@@ -236,7 +249,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                     <span className="text-[8px] text-primary uppercase tracking-tighter">Combat Rank</span>
                     <div className="flex items-center gap-1">
                       <Trophy className="w-3 h-3 text-yellow-500" />
-                      <span className="font-mono text-lg">#{initialRank || '??'}</span>
+                      <span className="font-mono text-lg">#{rank || '??'}</span>
                     </div>
                   </motion.div>
                 )}
@@ -283,7 +296,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
             {/* 4. Stats Overview Bar */}
             <div className="grid grid-cols-2 md:grid-cols-5 border-b border-white/5 bg-black/20">
-              <StatQuickCard icon={<Trophy className="text-yellow-500" />} label="Rank" value={initialRank ? `#${initialRank}` : 'Unranked'} />
+              <StatQuickCard icon={<Trophy className="text-yellow-500" />} label="Rank" value={rank ? `#${rank}` : 'Unranked'} />
               <StatQuickCard icon={<Shield className="text-purple-500" />} label="Tier" value={p.tier || p.grade || "N/A"} />
               <StatQuickCard icon={<Crosshair className="text-primary" />} label="Specialty" value={p.preferred_mode || "BOTH"} />
               <StatQuickCard icon={<Activity className="text-green-500" />} label="Attendance" value={`${p.attendance || 0}%`} />
