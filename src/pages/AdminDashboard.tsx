@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Calendar, Target, TrendingUp, Trophy, Gamepad2, Activity, Bell, FileText, Settings, Shield, BarChart3 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStats } from '@/hooks/useAdminStats';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { data: stats, isLoading, error } = useAdminStats();
+  const { profile } = useAuth();
 
   if (isLoading) {
     return (
@@ -112,7 +114,12 @@ export default function AdminDashboard() {
       color: "from-gray-600 to-slate-600",
       path: "/admin/config"
     }
-  ];
+  ].filter(action => {
+    if (action.title === 'System Config') {
+      return profile?.role === 'clan_master';
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-8">
@@ -166,6 +173,14 @@ export default function AdminDashboard() {
                   <p className="text-xs text-gray-400 mt-2">
                     <span className="text-blue-400">BR: {stats?.total_br_kills || 0}</span> • <span className="text-green-400">MP: {stats?.total_mp_kills || 0}</span>
                   </p>
+                ) : stat.title === 'Total Players' ? (
+                  <p className="text-xs text-gray-400 mt-2">
+                    {stats?.banned_players > 0 ? (
+                      <span className="text-red-400">{stats.banned_players} banned</span>
+                    ) : (
+                      <span>{stat.description}</span>
+                    )}
+                  </p>
                 ) : (
                   <p className="text-xs text-gray-400 mt-2">{stat.description}</p>
                 )}
@@ -188,7 +203,12 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {quickActions.map((action, index) => {
+            {quickActions.filter(action => {
+              if (action.title === 'System Config') {
+                return profile?.role === 'clan_master';
+              }
+              return true;
+            }).map((action, index) => {
               const Icon = action.icon;
               return (
                 <Button

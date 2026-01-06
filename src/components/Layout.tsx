@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileMenu } from "@/components/MobileMenu";
-import { ReportBugButton } from "@/components/ReportBugButton";
+
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -95,7 +95,6 @@ export const Layout: React.FC<LayoutProps> = ({
           <Header onSidebarToggle={handleSidebarToggle} />
         </div>
         <main className="p-4 md:p-6 overflow-auto">{children}</main>
-        <ReportBugButton />
       </div>
       
       {/* Bottom Dock Navigation - Only on mobile */}

@@ -12,7 +12,21 @@ export const useAdminStats = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Also fetch banned player count
+      const { count: bannedPlayersCount, error: bannedError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_banned', true);
+
+      if (bannedError) {
+        console.warn('Could not fetch banned player count', bannedError);
+      }
+
+      return {
+        ...data,
+        banned_players: bannedPlayersCount || 0,
+      };
     },
     refetchInterval: 30000, // Refresh every 30 seconds for real-time feel
   });

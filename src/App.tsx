@@ -125,7 +125,7 @@ function AppRoutes() {
         <Route path="/admin/announcements" element={<ProtectedRoute><Layout showSidebar><AdminAnnouncementsManagement /></Layout></ProtectedRoute>} />
         <Route path="/admin/notifications" element={<ProtectedRoute><Layout showSidebar><AdminNotifications /></Layout></ProtectedRoute>} />
         <Route path="/admin/activities" element={<ProtectedRoute><Layout showSidebar><Activities /></Layout></ProtectedRoute>} />
-        <Route path="/admin/config" element={<ProtectedRoute><Layout showSidebar><AdminConfig /></Layout></ProtectedRoute>} />
+        <Route path="/admin/config" element={<ProtectedRoute allowedRoles={['clan_master']}><Layout showSidebar><AdminConfig /></Layout></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute><Layout showSidebar><Feedback /></Layout></ProtectedRoute>} />
         <Route path="/admin/earnings" element={<ProtectedRoute><Layout showSidebar><Earnings /></Layout></ProtectedRoute>} />
         <Route path="/admin/seasons" element={<ProtectedRoute><Layout showSidebar><AdminSeasons /></Layout></ProtectedRoute>} />

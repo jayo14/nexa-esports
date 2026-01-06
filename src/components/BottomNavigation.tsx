@@ -23,7 +23,7 @@ export const BottomNavigation: React.FC = () => {
   // Four major pages for dock navigation: Home, Statistics, Wallet, Profile
   const majorPages: BottomNavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
-    { icon: Trophy, label: 'Statistics', path: '/statistics' },
+    { icon: Trophy, label: 'Leaderboard', path: '/statistics' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
@@ -73,7 +73,7 @@ export const BottomNavigation: React.FC = () => {
                     )}
                   />
                   {isActive && (
-                    <div className="absolute inset-0 bg-[#FF1F44]/20 rounded-full blur-md -z-10"></div>
+                    <div className="absolute inset-0 bg-[#FF1F44]/20 rounded-xl blur-md -z-10"></div>
                   )}
                 </div>
                 <span
