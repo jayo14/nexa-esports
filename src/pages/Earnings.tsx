@@ -119,12 +119,15 @@ const Earnings = () => {
         try {
             const bankingInfo = profile.banking_info as any;
             
-            // Call paystack-transfer function to initiate withdrawal
-            const { data, error } = await supabase.functions.invoke('paystack-transfer', {
+            // Call flutterwave-transfer function to initiate withdrawal
+            const { data, error } = await supabase.functions.invoke('flutterwave-transfer', {
                 body: {
                     endpoint: 'initiate-transfer',
                     amount: cashOutAmount,
-                    recipient_code: bankingInfo.recipient_code,
+                    account_bank: bankingInfo.bank_code,
+                    account_number: bankingInfo.account_number,
+                    beneficiary_name: bankingInfo.account_name,
+                    narration: 'Earnings cash out',
                 },
             });
 
@@ -157,7 +160,7 @@ const Earnings = () => {
                         description: "Withdrawals are not allowed on Sundays in your region. Please try again on Monday.",
                         variant: "destructive",
                     });
-                } else if (errorCode === 'insufficient_paystack_balance') {
+                } else if (errorCode === 'insufficient_flutterwave_balance') {
                     toast({
                         title: "Withdrawal Service Unavailable",
                         description: "We are currently unable to process withdrawals. Please try again later. Our team has been notified.",

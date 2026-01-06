@@ -17,7 +17,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAdminPlayers } from '@/hooks/useAdminPlayers';
 import { sendBroadcastPushNotification } from '@/lib/pushNotifications';
-import { usePaystackPayment } from 'react-paystack';
+import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TransactionReceipt } from '@/components/TransactionReceipt';
@@ -835,7 +835,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         const check = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                const { data, error } = await supabase.functions.invoke('paystack-transfer', {
+                const { data, error } = await supabase.functions.invoke('flutterwave-transfer', {
                     headers: { Authorization: `Bearer ${session?.access_token}` },
                     body: { endpoint: 'check-withdrawal-availability' },
                 });
@@ -925,20 +925,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         console.log("Withdrawal process started.");
         console.log("State:", { amount, walletBalance, bankCode, accountNumber, accountName });
 
-        // Generate a deterministic idempotency key based on user, amount, and account details
-        // This allows safe retries of the same legitimate request while preventing duplicate withdrawals
-        const idempotencyKey = `withdraw_${profile?.id}_${amount}_${bankCode}_${accountNumber}`;
-
         try {
-            console.log("Validation passed. Creating transfer recipient...");
-            const recipientPayload = {
-                endpoint: 'create-transfer-recipient',
-                name: accountName,
-                account_number: accountNumber,
-                bank_code: bankCode,
-            };
-            console.log("Recipient payload:", recipientPayload);
-
             const { data: { session } } = await supabase.auth.getSession();
 
             if (!session || !session.access_token) {
@@ -950,34 +937,18 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                 return;
             }
 
-            const { data: recipientData, error: recipientError } = await supabase.functions.invoke('paystack-transfer', {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: recipientPayload,
-            });
-
-            if (recipientError || !recipientData.status) {
-                console.error("Error creating transfer recipient:", recipientError || recipientData);
-                toast({
-                    title: "Error creating transfer recipient",
-                    description: recipientData?.message || recipientError?.message || "An error occurred",
-                    variant: "destructive",
-                });
-                return;
-            }
-
-            console.log("Transfer recipient created successfully:", recipientData);
-            console.log("Initiating transfer...");
+            console.log("Initiating Flutterwave transfer...");
             const transferPayload = {
                 endpoint: 'initiate-transfer',
                 amount,
-                recipient_code: recipientData.data.recipient_code,
-                idempotency_key: idempotencyKey,
+                account_bank: bankCode,
+                account_number: accountNumber,
+                beneficiary_name: accountName,
+                narration: notes || 'Wallet withdrawal',
             };
             console.log("Transfer payload:", transferPayload);
 
-            const { data: transferData, error: transferError } = await supabase.functions.invoke('paystack-transfer', {
+            const { data: transferData, error: transferError } = await supabase.functions.invoke('flutterwave-transfer', {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`,
                 },
@@ -987,7 +958,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
             if (transferError || !transferData.status) {
                 console.error("Error initiating transfer:", transferError || transferData);
                 
-                // Try to extract structured JSON returned by the edge function (it may be in transferError.context.json)
+                // Try to extract structured JSON returned by the edge function
                 let payload: any = transferData ?? null;
                 try {
                     if (transferError?.context?.json) payload = transferError.context.json;
@@ -1001,28 +972,40 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                 const errorCode = payload?.error;
                 const errorMessage = payload?.message || transferError?.message || 'An unexpected error occurred';
 
+                // Map error codes to user-friendly messages
                 if (errorCode === 'withdrawals_disabled_today') {
                     toast({
                         title: "Withdrawals Not Available Today",
                         description: "Withdrawals are not allowed on Sundays in your region. Please try again on Monday.",
                         variant: "destructive",
                     });
-                } else if (errorCode === 'insufficient_paystack_balance') {
+                } else if (errorCode === 'insufficient_flutterwave_balance') {
                     toast({
                         title: "Withdrawal Service Unavailable",
                         description: "We are currently unable to process withdrawals. Please try again later. Our team has been notified.",
                         variant: "destructive",
                     });
                 } else if (errorCode === 'failed_to_update_wallet') {
-                    // Edge case: the transfer likely succeeded with Paystack but DB update failed
                     toast({
                         title: "Withdrawal Processing",
                         description: "Your withdrawal was processed but we couldn't update your wallet immediately. Our team has been notified and will reconcile this shortly.",
                     });
-                } else if (errorCode === 'duplicate_withdrawal') {
+                } else if (errorCode === 'duplicate_transfer') {
                     toast({
                         title: "Duplicate Request",
                         description: "This withdrawal has already been processed. Please check your transaction history.",
+                        variant: "destructive",
+                    });
+                } else if (errorCode === 'account_not_found') {
+                    toast({
+                        title: "Invalid Account",
+                        description: "Could not verify the bank account. Please check your account details in settings.",
+                        variant: "destructive",
+                    });
+                } else if (errorCode === 'daily_limit_exceeded' || errorCode === 'monthly_limit_exceeded') {
+                    toast({
+                        title: "Limit Exceeded",
+                        description: errorMessage,
                         variant: "destructive",
                     });
                 } else {
@@ -1104,32 +1087,18 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                     bankName={bankName}
                     cooldown={cooldown}
                     onWithdrawSubmit={async (withdrawAmount) => {
-                         const idempotencyKey = `withdraw_${profile?.id}_${withdrawAmount}_${bankCode}_${accountNumber}`;
-                         
                          try {
-                            const recipientPayload = {
-                                endpoint: 'create-transfer-recipient',
-                                name: accountName,
-                                account_number: accountNumber,
-                                bank_code: bankCode,
-                            };
-                            
-                            const { data: { session } } = await supabase.auth.getSession();
-                            const { data: recipientData, error: recipientError } = await supabase.functions.invoke('paystack-transfer', {
-                                headers: { 'Authorization': `Bearer ${session?.access_token}` },
-                                body: recipientPayload,
-                            });
-                            
-                            if (recipientError || !recipientData.status) throw new Error(recipientData?.message || recipientError?.message);
-                            
                             const transferPayload = {
                                 endpoint: 'initiate-transfer',
                                 amount: Number(withdrawAmount),
-                                recipient_code: recipientData.data.recipient_code,
-                                idempotency_key: idempotencyKey,
+                                account_bank: bankCode,
+                                account_number: accountNumber,
+                                beneficiary_name: accountName,
+                                narration: 'Wallet withdrawal',
                             };
                             
-                            const { data: transferData, error: transferError } = await supabase.functions.invoke('paystack-transfer', {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const { data: transferData, error: transferError } = await supabase.functions.invoke('flutterwave-transfer', {
                                 headers: { 'Authorization': `Bearer ${session?.access_token}` },
                                 body: transferPayload,
                             });
@@ -1641,35 +1610,36 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
     const navigate = useNavigate();
     const { user, profile } = useAuth();
     const [amount, setAmount] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
+    const [open, setOpen] = useState(false);
     const { toast } = useToast();
 
     const config = {
-        reference: (new Date()).getTime().toString(),
-        email: user?.email || '',
-        amount: amount * 100,
-        publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '',
-        metadata: {
-          userId: profile?.id || '',
-          custom_fields: []
-        },
+        public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY || '',
+        tx_ref: `FLW_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        amount: amount,
         currency: 'NGN',
+        payment_options: 'card,mobilemoney,ussd,banktransfer',
+        customer: {
+            email: user?.email || '',
+            phone_number: profile?.phone || '',
+            name: profile?.username || profile?.ign || '',
+        },
+        customizations: {
+            title: 'Nexa Elite Nexus',
+            description: 'Wallet Funding',
+            logo: '',
+        },
+        meta: {
+            userId: profile?.id || '',
+        },
     };
 
-    const initializePayment = usePaystackPayment(config as any);
-
-    const onSuccess = () => {
-      navigate(`/payment-success?reference=${config.reference}`);
-    };
-
-    const onClose = () => {
-        toast({
-            title: "Payment Closed",
-            description: "You closed the payment window. Your transaction was not completed.",
-            variant: "destructive",
-        });
-        setIsLoading(false);
+    // Validate public key is configured before initializing hook
+    if (!config.public_key) {
+        console.error('Flutterwave public key not configured');
     }
+
+    const handleFlutterPayment = useFlutterwave(config);
 
     const handlePayment = () => {
         // Validate amount
@@ -1701,19 +1671,41 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         }
 
         // Guard: ensure public key is configured
-        const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '';
+        const publicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY || '';
         if (!publicKey) {
             toast({
                 title: 'Payment Unavailable',
-                description: 'Paystack is not configured. Please contact support or try again later.',
+                description: 'Payment service is not configured. Please contact support or try again later.',
                 variant: 'destructive',
             });
             return;
         }
 
-        setIsLoading(true);
-        initializePayment({ onSuccess, onClose } as any);
-    }
+        handleFlutterPayment({
+            callback: (response) => {
+                console.log('Flutterwave payment response:', response);
+                closePaymentModal(); // Close the modal programmatically
+                
+                if (response.status === 'successful' || response.status === 'completed') {
+                    setOpen(false);
+                    navigate(`/payment-success?reference=${response.tx_ref}&transaction_id=${response.transaction_id}`);
+                } else {
+                    toast({
+                        title: 'Payment Failed',
+                        description: 'Your payment was not successful. Please try again.',
+                        variant: 'destructive',
+                    });
+                }
+            },
+            onClose: () => {
+                toast({
+                    title: "Payment Closed",
+                    description: "You closed the payment window. Your transaction was not completed.",
+                    variant: "destructive",
+                });
+            },
+        });
+    };
 
     // Show disabled state if deposits are not enabled by clan master
     if (!isDepositsEnabled) {
@@ -1736,25 +1728,65 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         )
     }
 
-    // Deposits enabled by clan master, but temporarily disabled at system level
-    // Note: When the system is ready to accept deposits, this should be replaced
-    // with the actual payment dialog functionality
+    // Deposits enabled - show the dialog
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
-                          <Coins className="h-5 w-5 text-green-500" />
-                        </div>
-                        <span className="font-semibold text-xs">Fund Wallet</span>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-105 transition-all duration-200">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
+                      <Coins className="h-5 w-5 text-green-500" />
+                    </div>
+                    <span className="font-semibold text-xs">Fund Wallet</span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Fund Wallet</DialogTitle>
+                    <DialogDescription>Add funds to your wallet to make payments and transfers.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4 grid gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="amount">Amount (₦)</Label>
+                        <Input 
+                            id="amount"
+                            type="number"
+                            placeholder="₦0.00"
+                            value={amount || ''}
+                            onChange={(e) => setAmount(Number(e.target.value))}
+                            min="500"
+                            max="50000"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Min: ₦500 • Max: ₦50,000
+                        </p>
+                    </div>
+                    <Alert>
+                        <Coins className="h-4 w-4" />
+                        <AlertTitle>Transaction Fee</AlertTitle>
+                        <AlertDescription>
+                            {amount > 0 ? (
+                                <>
+                                    A fee of ₦{(amount * 0.04).toFixed(2)} (4%) will be deducted.
+                                    <div className="text-sm text-muted-foreground mt-1">
+                                        You will be charged ₦{amount.toFixed(2)} and receive ₦{(amount * 0.96).toFixed(2)} in your wallet.
+                                    </div>
+                                </>
+                            ) : (
+                                'A 4% fee will be deducted from your deposit.'
+                            )}
+                        </AlertDescription>
+                    </Alert>
+                </div>
+                <DialogFooter>
+                    <Button 
+                        onClick={handlePayment}
+                        disabled={amount < 500}
+                    >
+                        Pay ₦{amount.toFixed(2)}
                     </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Wallet funding is temporarily unavailable. Please try again later.</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -2076,7 +2108,7 @@ const Wallet: React.FC = () => {
 
   useEffect(() => {
     const fetchBanks = async () => {
-      const { data, error } = await supabase.functions.invoke('get-banks');
+      const { data, error } = await supabase.functions.invoke('flutterwave-get-banks');
       if (data?.status && data?.data) {
         setBanks(data.data);
       }
