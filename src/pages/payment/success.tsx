@@ -17,9 +17,14 @@ const PaymentSuccess: React.FC = () => {
     useEffect(() => {
         const query = new URLSearchParams(location.search);
         const reference = query.get('reference');
+        const transaction_id = query.get('transaction_id');
 
-        if (reference) {
-            verifyPayment(reference);
+        if (transaction_id) {
+            verifyPayment(transaction_id);
+        } else if (reference) {
+            // Fallback to reference if transaction_id not provided
+            setStatus('error');
+            setMessage('Payment verification failed. Transaction ID not found.');
         } else {
             setStatus('error');
             setMessage('No payment reference found.');
@@ -41,10 +46,10 @@ const PaymentSuccess: React.FC = () => {
         }
     }, [status, navigate, location.search]);
 
-      const verifyPayment = async (reference: string) => {
-        const { data, error } = await supabase.functions.invoke('verify-payment', {
+      const verifyPayment = async (transaction_id: string) => {
+        const { data, error } = await supabase.functions.invoke('flutterwave-verify-payment', {
           body: {
-            reference,
+            transaction_id,
           },
         });
         if (error || !data || !data.data) {
@@ -53,13 +58,13 @@ const PaymentSuccess: React.FC = () => {
             return;
         }
 
-        if (data.message === 'Transaction already processed' || data.data.status === 'success') {
+        if (data.message === 'Transaction already processed' || data.status === 'success') {
             setStatus('success');
             setMessage('Payment successful! Your wallet has been credited.');
             await updateProfile({}); // Re-fetch profile
         } else {
             setStatus('error');
-            setMessage(`Payment failed: ${data.data.gateway_response}`);
+            setMessage(`Payment failed: ${data.data?.status || 'Unknown error'}`);
         }
     };
 
