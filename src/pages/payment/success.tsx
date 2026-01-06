@@ -18,13 +18,14 @@ const PaymentSuccess: React.FC = () => {
         const query = new URLSearchParams(location.search);
         const reference = query.get('reference');
         const transaction_id = query.get('transaction_id');
+        
+        console.log('Payment success page loaded with:', { reference, transaction_id });
 
-        if (transaction_id) {
-            verifyPayment(transaction_id);
+        if (transaction_id && transaction_id !== 'null' && transaction_id !== 'undefined') {
+            verifyPayment(transaction_id, reference || undefined);
         } else if (reference) {
-            // Fallback to reference if transaction_id not provided
-            setStatus('error');
-            setMessage('Payment verification failed. Transaction ID not found.');
+            // If we only have reference, try with that
+            verifyPayment('', reference);
         } else {
             setStatus('error');
             setMessage('No payment reference found.');
@@ -46,15 +47,25 @@ const PaymentSuccess: React.FC = () => {
         }
     }, [status, navigate, location.search]);
 
-      const verifyPayment = async (transaction_id: string) => {
+      const verifyPayment = async (transaction_id: string, tx_ref?: string) => {
         const { data, error } = await supabase.functions.invoke('flutterwave-verify-payment', {
           body: {
             transaction_id,
+            tx_ref
           },
         });
-        if (error || !data || !data.data) {
+        
+        if (error) {
+            console.error('Payment verification error:', error);
             setStatus('error');
-            setMessage('Error verifying payment.');
+            setMessage('Error verifying payment. Please contact support.');
+            return;
+        }
+
+        if (!data || (!data.data && data.message !== 'Transaction already processed')) {
+            console.error('Invalid response from verification function:', data);
+            setStatus('error');
+            setMessage('Invalid response from verification service.');
             return;
         }
 

@@ -1606,11 +1606,12 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
     )
 }
 
-const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boolean }) => {
+const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boolean }) => {
     const navigate = useNavigate();
     const { user, profile } = useAuth();
     const [amount, setAmount] = useState(0);
     const [open, setOpen] = useState(false);
+    const [step, setStep] = useState(1); // 1: Amount selection, 2: Confirmation
     const { toast } = useToast();
 
     const config = {
@@ -1634,42 +1635,9 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         },
     };
 
-    // Validate public key is configured before initializing hook
-    if (!config.public_key) {
-        // console.error('Flutterwave public key not configured'); // This is handled by a toast in handlePayment
-    }
-
     const handleFlutterPayment = useFlutterwave(config);
 
     const handlePayment = () => {
-        // Validate amount
-        if (amount <= 0) {
-            toast({
-                title: 'Invalid Amount',
-                description: 'Please enter a valid amount greater than 0.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        if (amount < 500) {
-            toast({
-                title: 'Minimum Deposit Required',
-                description: 'Minimum deposit amount is ₦500. Please enter at least ₦500 to proceed.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        if (amount > 50000) {
-            toast({
-                title: 'Maximum Deposit Exceeded',
-                description: 'Maximum deposit amount is ₦50,000. Please enter ₦50,000 or less.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
         // Guard: ensure public key is configured
         const publicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY || '';
         if (!publicKey) {
@@ -1684,7 +1652,7 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         handleFlutterPayment({
             callback: (response) => {
                 console.log('Flutterwave payment response:', response);
-                closePaymentModal(); // Close the modal programmatically
+                closePaymentModal();
                 
                 if (response.status === 'successful' || response.status === 'completed') {
                     setOpen(false);
@@ -1707,7 +1675,26 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         });
     };
 
-    // Show disabled state if deposits are not enabled by clan master
+    const validateAndNext = () => {
+        if (amount < 500) {
+            toast({
+                title: 'Minimum Deposit Required',
+                description: 'Minimum deposit amount is ₦500.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        if (amount > 50000) {
+            toast({
+                title: 'Maximum Deposit Exceeded',
+                description: 'Maximum deposit amount is ₦50,000.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        setStep(2);
+    };
+
     if (!isDepositsEnabled) {
         return (
             <TooltipProvider>
@@ -1728,34 +1715,136 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         )
     }
 
-    // Deposits enabled - show the dialog
+    const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
+        <Sheet open={open} onOpenChange={(val) => {
+            setOpen(val);
+            if (!val) setStep(1);
+        }}>
+            <SheetTrigger asChild>
                 <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-105 transition-all duration-200">
                     <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
                       <Coins className="h-5 w-5 text-green-500" />
                     </div>
                     <span className="font-semibold text-xs">Fund Wallet</span>
                 </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Fund Wallet</DialogTitle>
-                    <DialogDescription>Add funds to your wallet to make payments and transfers.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 grid gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="amount">Amount (₦)</Label>
-                        <Input 
-                            id="amount"
-                            type="number"
-                            placeholder="₦0.00"
-                            value={amount || ''}
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                            min="500"
-                            max="50000"
-                        />
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[80vh] sm:h-[600px] rounded-t-[32px] border-t-primary/20 bg-background/95 backdrop-blur-xl">
+                <SheetHeader className="text-left">
+                    <SheetTitle className="text-2xl font-bold flex items-center gap-2">
+                        <Coins className="h-6 w-6 text-green-500" />
+                        Fund Wallet
+                    </SheetTitle>
+                    <SheetDescription>
+                        {step === 1 ? "Choose an amount to add to your wallet." : "Confirm your deposit details."}
+                    </SheetDescription>
+                </SheetHeader>
+
+                <div className="py-6 h-full flex flex-col">
+                    {step === 1 ? (
+                        <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+                            <div className="grid grid-cols-3 gap-3">
+                                {presetAmounts.map((preset) => (
+                                    <Button
+                                        key={preset}
+                                        variant={amount === preset ? "default" : "outline"}
+                                        className={`h-12 rounded-xl font-bold transition-all ${
+                                            amount === preset 
+                                            ? "bg-green-600 hover:bg-green-700 scale-105 shadow-lg shadow-green-500/20" 
+                                            : "hover:border-green-500/50 hover:bg-green-500/5"
+                                        }`}
+                                        onClick={() => setAmount(preset)}
+                                    >
+                                        ₦{preset.toLocaleString()}
+                                    </Button>
+                                ))}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="custom-amount" className="text-sm font-medium text-muted-foreground">Custom Amount</Label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-muted-foreground">₦</span>
+                                    <Input 
+                                        id="custom-amount"
+                                        type="number"
+                                        placeholder="Enter amount"
+                                        className="h-14 pl-10 text-xl font-bold rounded-2xl border-2 focus-visible:ring-green-500/20 focus-visible:border-green-500"
+                                        value={amount || ''}
+                                        onChange={(e) => setAmount(Number(e.target.value))}
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground px-1">
+                                    Min: ₦500 • Max: ₦50,000
+                                </p>
+                            </div>
+
+                            <Alert className="bg-blue-500/5 border-blue-500/20 rounded-2xl">
+                                <Shield className="h-4 w-4 text-blue-500" />
+                                <AlertTitle className="text-blue-500 font-semibold text-sm">Secure Payment</AlertTitle>
+                                <AlertDescription className="text-xs text-blue-500/80">
+                                    Your payment is processed securely via Flutterwave. We do not store your card details.
+                                </AlertDescription>
+                            </Alert>
+                        </div>
+                    ) : (
+                        <div className="space-y-6 flex-1">
+                            <Card className="border-2 border-primary/10 bg-primary/5 rounded-3xl overflow-hidden">
+                                <CardContent className="p-6 space-y-4">
+                                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                                        <span>Deposit Amount</span>
+                                        <span className="font-bold text-foreground">₦{amount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm text-red-400">
+                                        <span>Transaction Fee (4%)</span>
+                                        <span className="font-bold">-₦{(amount * 0.04).toFixed(2)}</span>
+                                    </div>
+                                    <div className="h-px bg-primary/10 my-2" />
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold">Total to Receive</span>
+                                        <span className="text-2xl font-black text-green-500">₦{(amount * 0.96).toLocaleString()}</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <div className="bg-muted/50 p-4 rounded-2xl text-xs text-muted-foreground space-y-2">
+                                <p className="flex items-center gap-2">
+                                    <Check className="h-3 w-3 text-green-500" />
+                                    Instant wallet crediting
+                                </p>
+                                <p className="flex items-center gap-2">
+                                    <Check className="h-3 w-3 text-green-500" />
+                                    Valid for all Nexa services
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-auto pt-6 flex gap-3">
+                        {step === 2 && (
+                            <Button 
+                                variant="outline" 
+                                className="flex-1 h-14 rounded-2xl border-2" 
+                                onClick={() => setStep(1)}
+                            >
+                                Back
+                            </Button>
+                        )}
+                        <Button 
+                            className={`flex-[2] h-14 rounded-2xl font-bold text-lg transition-all ${
+                                step === 1 ? "bg-primary hover:bg-primary/90" : "bg-green-600 hover:bg-green-700"
+                            }`}
+                            onClick={step === 1 ? validateAndNext : handlePayment}
+                            disabled={amount < 500}
+                        >
+                            {step === 1 ? "Continue" : `Pay ₦${amount.toLocaleString()}`}
+                        </Button>
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    )
+}
                         <p className="text-xs text-muted-foreground">
                             Min: ₦500 • Max: ₦50,000
                         </p>
@@ -2189,7 +2278,7 @@ const Wallet: React.FC = () => {
       )}
 
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        <FundWalletDialog isDepositsEnabled={walletSettings.deposits_enabled} />
+        <FundWalletSheet isDepositsEnabled={walletSettings.deposits_enabled} />
         <WithdrawDialog 
           setWalletBalance={setWalletBalance} 
           walletBalance={walletBalance} 
