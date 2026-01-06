@@ -189,7 +189,7 @@ export const Settings: React.FC = () => {
 
   useEffect(() => {
     const fetchBanks = async () => {
-        const { data, error } = await supabase.functions.invoke('get-banks');
+        const { data, error } = await supabase.functions.invoke('flutterwave-get-banks');
         if (data?.status && data?.data) {
             setBanks(data.data);
         }
@@ -233,9 +233,9 @@ export const Settings: React.FC = () => {
         if (formData.banking_info.account_number?.length === 10 && formData.banking_info.bank_code) {
             setVerificationStatus('verifying');
             try {
-                const { data, error } = await supabase.functions.invoke('verify-bank-account', {
+                const { data, error } = await supabase.functions.invoke('flutterwave-verify-bank-account', {
                     body: {
-                        bank_code: formData.banking_info.bank_code,
+                        account_bank: formData.banking_info.bank_code,
                         account_number: formData.banking_info.account_number,
                     }
                 });

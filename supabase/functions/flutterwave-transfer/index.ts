@@ -174,13 +174,23 @@ serve(async (req) => {
 
       console.log("Flutterwave transfer payload:", transferPayload);
 
+      // Build headers with optional X-Scenario-Key for testing
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
+        "Content-Type": "application/json",
+        "X-Idempotency-Key": idempotencyKey,
+      };
+
+      // Add X-Scenario-Key for testing if provided in the request
+      const scenarioKey = req.headers.get("X-Scenario-Key");
+      if (scenarioKey) {
+        headers["X-Scenario-Key"] = scenarioKey;
+        console.log("Using test scenario:", scenarioKey);
+      }
+
       const response = await fetch(flutterwaveUrl, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-          "Content-Type": "application/json",
-          "X-Idempotency-Key": idempotencyKey,
-        },
+        headers,
         body: JSON.stringify(transferPayload),
       });
 
@@ -189,16 +199,92 @@ serve(async (req) => {
 
       if (!response.ok || result.status !== 'success') {
         const msg = result.message || JSON.stringify(result);
-        console.warn('Flutterwave transfer failed:', msg);
+        const errorType = result.error_type || result.error || 'unknown';
+        console.warn('Flutterwave transfer failed:', msg, 'Error type:', errorType);
 
-        if ((msg || '').toLowerCase().includes('insufficient balance')) {
-          return new Response(JSON.stringify({ error: 'insufficient_flutterwave_balance', message: msg }), {
+        // Map Flutterwave error types to user-friendly messages
+        const errorMapping: Record<string, { code: string; message: string }> = {
+          insufficient_balance: {
+            code: 'insufficient_flutterwave_balance',
+            message: 'Transfer service is temporarily unavailable. Please try again later.'
+          },
+          invalid_currency: {
+            code: 'invalid_currency',
+            message: 'Invalid currency specified for this transfer.'
+          },
+          invalid_amount: {
+            code: 'invalid_amount',
+            message: 'The transfer amount is invalid.'
+          },
+          amount_below_limit_error: {
+            code: 'amount_below_limit',
+            message: 'Transfer amount is below the minimum limit.'
+          },
+          amount_exceed_limit_error: {
+            code: 'amount_exceed_limit',
+            message: 'Transfer amount exceeds the maximum limit.'
+          },
+          account_resolved_failed: {
+            code: 'account_not_found',
+            message: 'Could not verify the bank account. Please check the account details.'
+          },
+          no_account_found: {
+            code: 'account_not_found',
+            message: 'Bank account not found. Please verify the account number.'
+          },
+          blocked_bank: {
+            code: 'blocked_bank',
+            message: 'Transfers to this bank are currently unavailable.'
+          },
+          disabled_transfer: {
+            code: 'disabled_transfer',
+            message: 'Transfer service is temporarily disabled. Please try again later.'
+          },
+          duplicate_reference: {
+            code: 'duplicate_transfer',
+            message: 'This transfer has already been processed.'
+          },
+          day_limit_error: {
+            code: 'daily_limit_exceeded',
+            message: 'You have exceeded your daily transfer limit.'
+          },
+          day_transfer_limit_exceeded: {
+            code: 'daily_limit_exceeded',
+            message: 'Daily transfer limit has been exceeded.'
+          },
+          month_limit_error: {
+            code: 'monthly_limit_exceeded',
+            message: 'You have exceeded your monthly transfer limit.'
+          },
+          month_transfer_limit_exceeded: {
+            code: 'monthly_limit_exceeded',
+            message: 'Monthly transfer limit has been exceeded.'
+          },
+          unavailable_transfer_option: {
+            code: 'unavailable_transfer',
+            message: 'This transfer option is currently unavailable.'
+          },
+        };
+
+        // Check if we have a mapped error
+        const mappedError = errorMapping[errorType];
+        if (mappedError) {
+          return new Response(JSON.stringify({ 
+            error: mappedError.code, 
+            message: mappedError.message,
+            raw_error: errorType 
+          }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400,
           });
         }
 
-        return new Response(JSON.stringify({ error: 'flutterwave_transfer_failed', message: msg, details: result }), {
+        // Generic error response
+        return new Response(JSON.stringify({ 
+          error: 'flutterwave_transfer_failed', 
+          message: msg || 'Transfer failed. Please try again.', 
+          details: result 
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
         });
