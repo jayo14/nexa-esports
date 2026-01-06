@@ -165,7 +165,7 @@ serve(async (req) => {
       const transferPayload = {
         account_bank,
         account_number,
-        amount: Math.floor(netAmount), // Flutterwave expects integer amount
+        amount: Math.round(netAmount), // Round to nearest whole number to avoid precision loss
         narration: narration || "Wallet withdrawal",
         currency: "NGN",
         beneficiary_name,
@@ -181,11 +181,14 @@ serve(async (req) => {
         "X-Idempotency-Key": idempotencyKey,
       };
 
-      // Add X-Scenario-Key for testing if provided in the request
+      // Add X-Scenario-Key for testing ONLY in development/test environments
       const scenarioKey = req.headers.get("X-Scenario-Key");
-      if (scenarioKey) {
+      const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
+      if (scenarioKey && isDevelopment) {
         headers["X-Scenario-Key"] = scenarioKey;
         console.log("Using test scenario:", scenarioKey);
+      } else if (scenarioKey && !isDevelopment) {
+        console.warn("X-Scenario-Key header ignored in production environment");
       }
 
       const response = await fetch(flutterwaveUrl, {

@@ -1634,6 +1634,11 @@ const FundWalletDialog = ({ isDepositsEnabled = true }: { isDepositsEnabled?: bo
         },
     };
 
+    // Validate public key is configured before initializing hook
+    if (!config.public_key) {
+        console.error('Flutterwave public key not configured');
+    }
+
     const handleFlutterPayment = useFlutterwave(config);
 
     const handlePayment = () => {

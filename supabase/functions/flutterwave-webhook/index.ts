@@ -3,7 +3,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
-const FLUTTERWAVE_WEBHOOK_SECRET = Deno.env.get("FLUTTERWAVE_SECRET_KEY"); // Use secret key as signature hash
+const FLUTTERWAVE_WEBHOOK_SECRET = Deno.env.get("FLUTTERWAVE_WEBHOOK_SECRET") || Deno.env.get("FLUTTERWAVE_SECRET_KEY"); // Fallback for backward compatibility
 
 serve(async (req) => {
   const signature = req.headers.get("verif-hash");

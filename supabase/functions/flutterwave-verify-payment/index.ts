@@ -67,12 +67,12 @@ serve(async (req) => {
     }
 
     // Extract transaction details
-    const userId = flutterwaveData.data.meta?.userId || flutterwaveData.data.customer?.id;
+    const userId = flutterwaveData.data.meta?.userId;
     const amount = flutterwaveData.data.amount;
     const currency = flutterwaveData.data.currency;
 
     if (!userId) {
-      return new Response(JSON.stringify({ error: "User ID not found in transaction metadata" }), {
+      return new Response(JSON.stringify({ error: "User ID not found in transaction metadata. Cannot credit wallet." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -22,6 +22,10 @@ VITE_FLUTTERWAVE_PUBLIC_KEY=FLWPUBK_TEST-b1c886c37a102b555212cbd90d991ccb-X
 # Backend (Supabase Edge Functions)
 FLUTTERWAVE_SECRET_KEY=FLWSECK_TEST-ed7084e2ff4f8d5a24366380dcda91da-X
 FLUTTERWAVE_ENCRYPTION_KEY=FLWSECK_TEST104790c94134
+FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashboard
+
+# Environment (for testing scenario keys)
+ENVIRONMENT=development  # Set to 'production' in production
 ```
 
 ## Edge Functions
@@ -251,8 +255,11 @@ Set up webhooks in your Flutterwave dashboard:
 
 1. Go to Settings > Webhooks
 2. Set webhook URL: `https://your-domain.com/flutterwave-webhook`
-3. Set secret hash (use your FLUTTERWAVE_SECRET_KEY)
-4. Enable events: `charge.completed`
+3. Generate and set a webhook secret hash in your dashboard
+4. Add the webhook secret to your environment as `FLUTTERWAVE_WEBHOOK_SECRET`
+5. Enable events: `charge.completed`
+
+**Security Note**: Always use a dedicated webhook secret different from your API secret key for signature verification.
 
 ## Support
 
