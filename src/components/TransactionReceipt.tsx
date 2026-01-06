@@ -43,7 +43,10 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
   const receiptRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const formatTransactionType = (type: string) => {
+  const formatTransactionType = (type: string | undefined | null) => {
+    if (!type) {
+      return 'N/A';
+    }
     return type
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))

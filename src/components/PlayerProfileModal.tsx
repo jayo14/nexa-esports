@@ -354,7 +354,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                     <div className="w-full h-[2px] bg-primary/20 animate-scan-line shadow-[0_0_15px_rgba(255,31,68,0.5)]" />
                   </div>
 
-                  <div className="bg-[#0a0a0a] h-full rounded-lg p-6 relative">
+                  <div className="bg-[#0a0a0a] rounded-lg p-6 relative" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-2">
                         <Cpu className="w-4 h-4 text-primary animate-pulse" />
