@@ -212,7 +212,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
         <div className="h-full flex flex-col relative z-10">
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0">
             
             {/* 3. Top Header Section (Identity & Presence) */}
             <div className="p-6 md:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent relative">
