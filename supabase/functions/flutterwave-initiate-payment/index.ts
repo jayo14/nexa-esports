@@ -3,7 +3,6 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
-const FLUTTERWAVE_ENCRYPTION_KEY = Deno.env.get("FLUTTERWAVE_ENCRYPTION_KEY");
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -60,8 +59,14 @@ serve(async (req) => {
       });
     }
 
-    // Generate unique transaction reference
-    const tx_ref = `FLW_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    // Generate unique transaction reference using crypto for better uniqueness
+    const randomBytes = new Uint8Array(8);
+    crypto.getRandomValues(randomBytes);
+    const randomStr = Array.from(randomBytes)
+      .map(b => b.toString(36))
+      .join('')
+      .substring(0, 7);
+    const tx_ref = `FLW_${Date.now()}_${randomStr}`;
 
     // Create payment payload for Flutterwave Standard/Inline
     const paymentPayload = {
