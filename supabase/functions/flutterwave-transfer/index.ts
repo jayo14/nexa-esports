@@ -3,8 +3,6 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
-
 // Helper to generate unique idempotency key
 function generateIdempotencyKey(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -15,6 +13,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
+
+  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
 
   // Create a Supabase client with the user's auth token
   const supabaseClient = createClient(

@@ -16,9 +16,9 @@ export const useTaxSettings = () => {
                     .select('amount')
                     .order('created_at', { ascending: false })
                     .limit(1)
-                    .single();
+                    .maybeSingle();
 
-                if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+                if (error) {
                     throw error;
                 }
 

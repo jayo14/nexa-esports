@@ -105,9 +105,9 @@ export const useAirtime = () => {
         .from('airtime_statistics')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching airtime statistics:', error);
         throw error;
       }
@@ -131,7 +131,7 @@ export const useAirtime = () => {
         .from('app_settings')
         .select('value')
         .eq('key', 'vtpass_enabled')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error checking airtime status:', error);

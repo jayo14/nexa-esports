@@ -50,19 +50,21 @@ serve(async (req) => {
       throw new Error('Amount must be between ₦50 and ₦10,000');
     }
 
-    // Get user profile and wallet balance
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('wallet_balance')
-      .eq('id', user.id)
-      .single();
+    // Get user wallet balance
+    const { data: wallet, error: walletError } = await supabaseClient
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      throw new Error('Failed to fetch user profile');
+    if (walletError || !wallet) {
+      throw new Error('Failed to fetch user wallet');
     }
 
+    const currentBalance = Number(wallet.balance);
+
     // Check if user has sufficient balance
-    if (profile.wallet_balance < amount) {
+    if (currentBalance < amount) {
       throw new Error('Insufficient wallet balance');
     }
 
@@ -76,7 +78,7 @@ serve(async (req) => {
         phone_number: phone_number,
         network_provider: network_provider,
         status: 'pending',
-        wallet_balance_before: profile.wallet_balance,
+        wallet_balance_before: currentBalance,
       })
       .select()
       .single();
@@ -136,15 +138,15 @@ serve(async (req) => {
 
       if (isSuccess) {
         // Success - deduct from wallet and update transaction
-        const newBalance = profile.wallet_balance - amount;
+        const newBalance = currentBalance - amount;
 
         // Update wallet balance
-        const { error: walletError } = await supabaseClient
-          .from('profiles')
-          .update({ wallet_balance: newBalance })
-          .eq('id', user.id);
+        const { error: walletUpdateError } = await supabaseClient
+          .from('wallets')
+          .update({ balance: newBalance })
+          .eq('user_id', user.id);
 
-        if (walletError) {
+        if (walletUpdateError) {
           throw new Error('Failed to update wallet balance');
         }
 

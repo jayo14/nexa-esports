@@ -7,10 +7,13 @@ import {
   X, Crosshair, Trophy, Smartphone, Activity, 
   Shield, Zap, User, Target, BarChart3, 
   Calendar, Lock, Unlock, Share2, AlertCircle,
-  ChevronRight, ArrowUpRight, ShieldCheck, Cpu
+  ChevronRight, ArrowUpRight, ShieldCheck, Cpu,
+  ArrowRightLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 interface PlayerProfileModalProps {
     open: boolean;
@@ -212,7 +215,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
         <div className="h-full flex flex-col relative z-10">
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <ScrollArea className="flex-1 min-h-0">
             
             {/* 3. Top Header Section (Identity & Presence) */}
             <div className="p-6 md:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent relative">
@@ -486,18 +489,27 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
               </div>
 
             </div>
-          </div>
+          </ScrollArea>
 
           {/* 9. Action Buttons (Footer) */}
           <div className="p-6 border-t border-white/10 bg-black/60 backdrop-blur-xl flex flex-col sm:flex-row justify-end gap-4">
             <Button 
               variant="ghost"
+              onClick={() => {
+                navigate(`/statistics?compare=${p.id}`);
+                onOpenChange(false);
+                toast.success(`Loading comparison for ${p.ign}`);
+              }}
               className="h-14 px-8 border border-white/5 text-gray-400 font-black uppercase tracking-[0.2em] text-[10px] hover:bg-white/5 hover:text-white"
             >
-              <BarChart3 className="w-4 h-4 mr-2" />
+              <ArrowRightLeft className="w-4 h-4 mr-2 text-primary" />
               Compare Ops
             </Button>
             <Button 
+              onClick={() => {
+                navigate(`/public-profile/${p.id}`);
+                onOpenChange(false);
+              }}
               className="h-14 px-10 bg-primary/10 border-2 border-primary/50 text-primary font-black uppercase tracking-[0.2em] text-[10px] hover:bg-primary hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(255,31,68,0.2)] group"
             >
               <ArrowUpRight className="w-4 h-4 mr-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />

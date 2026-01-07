@@ -1,20 +1,108 @@
 import { FC, useState, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { supabase } from '@/integrations/supabase/client';
-import { Award, Trophy, Target, Share2, Link2, Download } from 'lucide-react';
+import { Award, Trophy, Target, Share2, Link2, Download, ArrowRightLeft, User, TrendingUp, Shield, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from "@/lib/utils";
+
+const ComparisonPlayerCard = ({ player, title, isTarget }: { player: any; title: string; isTarget?: boolean }) => (
+  <Card className={cn(
+    "bg-black/40 border-white/5 relative overflow-hidden group",
+    isTarget ? "border-primary/30" : "border-blue-500/30"
+  )}>
+    <div className={cn(
+      "absolute top-0 left-0 w-full h-1",
+      isTarget ? "bg-primary" : "bg-blue-500"
+    )} />
+    <CardContent className="p-6">
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <img 
+            src={player.avatar_url || "/placeholder.svg"} 
+            alt={player.ign}
+            className="w-16 h-16 rounded-lg object-cover border-2 border-white/10"
+          />
+          <div className={cn(
+            "absolute -bottom-2 -right-2 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
+            isTarget ? "bg-primary text-white" : "bg-blue-500 text-white"
+          )}>
+            {isTarget ? "TARGET" : "ASSET"}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">{title}</div>
+          <h3 className="text-xl font-black text-white font-orbitron italic">
+            {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            <Shield className="w-3 h-3 text-primary" />
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+              {player.tier} • {player.grade}
+            </span>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const Statistics: FC = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const compareId = searchParams.get('compare');
+  
   const [filter, setFilter] = useState<'overall' | 'br' | 'mp'>('overall');
   const [limit] = useState(10);
   const { data: leaderboardData, isLoading, refetch } = useLeaderboard();
   const leaderboardRef = useRef<HTMLDivElement>(null);
+  
+  const [comparePlayer, setComparePlayer] = useState<any>(null);
+  const [currentPlayer, setCurrentPlayer] = useState<any>(null);
+  const [isComparing, setIsComparing] = useState(!!compareId);
+
+  useEffect(() => {
+    const fetchCompareData = async () => {
+      if (!compareId) return;
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', compareId)
+          .single();
+        
+        if (profile) setComparePlayer(profile);
+      } catch (err) {
+        console.error("Error fetching comparison player:", err);
+      }
+    };
+
+    const fetchCurrentPlayerData = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) setCurrentPlayer(profile);
+      } catch (err) {
+        console.error("Error fetching current player:", err);
+      }
+    };
+
+    fetchCompareData();
+    fetchCurrentPlayerData();
+  }, [compareId, user?.id]);
 
   // Real-time updates for attendance changes
   useEffect(() => {
@@ -163,16 +251,102 @@ const Statistics: FC = () => {
     }
   };
 
+  const ComparisonSection = () => {
+    if (!comparePlayer || !currentPlayer) return null;
+
+    const stats = [
+      { label: 'Total Eliminations', key: 'kills' },
+      { label: 'BR Eliminations', key: 'br_kills' },
+      { label: 'MP Eliminations', key: 'mp_kills' },
+      { label: 'Attendance', key: 'attendance', suffix: '%' },
+    ];
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold font-orbitron flex items-center gap-2 text-primary">
+            <ArrowRightLeft className="w-5 h-5" />
+            Operational Comparison
+          </h2>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              setSearchParams({});
+              setComparePlayer(null);
+            }}
+            className="text-muted-foreground hover:text-white"
+          >
+            Clear Comparison
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Player Cards */}
+          <ComparisonPlayerCard player={currentPlayer} title="You (Current Asset)" />
+          <ComparisonPlayerCard player={comparePlayer} title="Target Objective" isTarget />
+        </div>
+
+        <Card className="mt-6 bg-black/40 border-primary/20 backdrop-blur-xl">
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              {stats.map((stat) => {
+                const val1 = currentPlayer[stat.key] || 0;
+                const val2 = comparePlayer[stat.key] || 0;
+                const max = Math.max(val1, val2, 1);
+                
+                return (
+                  <div key={stat.key} className="space-y-2">
+                    <div className="flex justify-between text-xs font-black uppercase tracking-widest text-gray-500">
+                      <span>{stat.label}</span>
+                      <div className="flex gap-4 font-mono">
+                        <span className={cn(val1 >= val2 ? "text-primary" : "text-white")}>
+                          {val1}{stat.suffix}
+                        </span>
+                        <span className="text-gray-700">VS</span>
+                        <span className={cn(val2 >= val1 ? "text-primary" : "text-white")}>
+                          {val2}{stat.suffix}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex">
+                      <div 
+                        className="h-full bg-blue-500/50 transition-all duration-1000"
+                        style={{ width: `${(val1 / (val1 + val2 || 1)) * 100}%` }}
+                      />
+                      <div 
+                        className="h-full bg-primary/50 transition-all duration-1000"
+                        style={{ width: `${(val2 / (val1 + val2 || 1)) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-2 py-2 sm:px-4 sm:py-4">
       <div className="mb-3">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-orbitron mb-1">
-          Player Statistics & Leaderboard
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-orbitron mb-1 uppercase tracking-tight">
+          System Intelligence
         </h1>
-        <p className="text-muted-foreground font-rajdhani text-sm">
-          Performance rankings - Updated in real-time
+        <p className="text-muted-foreground font-rajdhani text-sm uppercase tracking-widest">
+          Performance rankings & Behavioral Analysis
         </p>
       </div>
+
+      <AnimatePresence>
+        {comparePlayer && <ComparisonSection />}
+      </AnimatePresence>
 
       <div className="flex flex-col sm:flex-row justify-end gap-2 mb-3">
         <Button variant="outline" size="sm" onClick={handleCopyLink}>

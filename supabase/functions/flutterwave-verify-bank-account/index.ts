@@ -8,6 +8,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
+  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
+
   try {
     const { account_number, account_bank } = await req.json();
 
@@ -24,7 +26,7 @@ serve(async (req) => {
     const response = await fetch(`https://api.flutterwave.com/v3/accounts/resolve`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${Deno.env.get("FLUTTERWAVE_SECRET_KEY")}`,
+        Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

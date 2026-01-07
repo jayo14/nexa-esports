@@ -2,13 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
-
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
+
+  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
 
   try {
     // Create a Supabase client with the user's auth token
@@ -29,7 +29,7 @@ serve(async (req) => {
     // Validate required environment variables
     if (!FLUTTERWAVE_SECRET_KEY) {
       console.error("FLUTTERWAVE_SECRET_KEY is not set");
-      return new Response(JSON.stringify({ error: "Payment service not configured" }), {
+      return new Response(JSON.stringify({ error: "Payment service not configured: FLUTTERWAVE_SECRET_KEY missing" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });

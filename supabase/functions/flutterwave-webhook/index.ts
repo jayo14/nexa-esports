@@ -2,14 +2,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
-const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
-const FLUTTERWAVE_WEBHOOK_SECRET = Deno.env.get("FLUTTERWAVE_WEBHOOK_SECRET") || Deno.env.get("FLUTTERWAVE_SECRET_KEY"); // Fallback for backward compatibility
-
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
+
+  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
+  const FLUTTERWAVE_WEBHOOK_SECRET = Deno.env.get("FLUTTERWAVE_WEBHOOK_SECRET") || FLUTTERWAVE_SECRET_KEY;
 
   const signature = req.headers.get("verif-hash");
   const body = await req.text();

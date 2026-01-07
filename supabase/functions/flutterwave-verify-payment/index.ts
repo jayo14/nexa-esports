@@ -2,47 +2,31 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
-const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
-
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-    try {
+  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
 
-      const { transaction_id, tx_ref: provided_tx_ref } = await req.json();
+  try {
+    const { transaction_id, tx_ref: provided_tx_ref } = await req.json();
 
-  
+    if (!transaction_id && !provided_tx_ref) {
+      return new Response(JSON.stringify({ error: "transaction_id or tx_ref is required" }), {
+        status: 400,
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      });
+    }
 
-      if (!transaction_id && !provided_tx_ref) {
-
-        return new Response(JSON.stringify({ error: "transaction_id or tx_ref is required" }), {
-
-          status: 400,
-
-          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-
-        });
-
-      }
-
-  
-
-      if (!FLUTTERWAVE_SECRET_KEY) {
-
-        console.error("FLUTTERWAVE_SECRET_KEY is not set");
-
-        return new Response(JSON.stringify({ error: "Server configuration error: SECRET_KEY missing" }), {
-
-          status: 500,
-
-          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-
-        });
-
-      }
+    if (!FLUTTERWAVE_SECRET_KEY) {
+      console.error("FLUTTERWAVE_SECRET_KEY is not set");
+      return new Response(JSON.stringify({ error: "Server configuration error: FLUTTERWAVE_SECRET_KEY missing" }), {
+        status: 500,
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      });
+    }
 
   
 

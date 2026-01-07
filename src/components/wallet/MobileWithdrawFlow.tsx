@@ -80,15 +80,15 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto p-6">
-          <SheetHeader className="text-left mb-8">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <ArrowDown className="h-8 w-8 text-destructive" />
+        <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
+          <SheetHeader className="px-6 pt-6 text-left">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <ArrowDown className="h-6 w-6 text-destructive" />
               </div>
               <div className="flex-1">
-                <SheetTitle className="text-2xl mb-1">Withdraw Funds</SheetTitle>
-                <SheetDescription className="text-base">
+                <SheetTitle className="text-xl">Withdraw Funds</SheetTitle>
+                <SheetDescription>
                   Step {step === 'amount' ? 1 : step === 'review' ? 2 : 3} of 3
                 </SheetDescription>
               </div>
@@ -96,13 +96,13 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
           </SheetHeader>
 
           {/* Progress Bar */}
-          <div className="flex gap-2 mb-8 px-2">
-            <div className={`h-2 flex-1 rounded-full transition-all ${step === 'amount' || step === 'review' || step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-all ${step === 'review' || step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
+          <div className="flex gap-2 px-6 mt-4">
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${['amount', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${['review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
           </div>
 
-          <div className="flex-1 overflow-y-auto px-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex-1 overflow-y-auto px-6 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
             {/* Step 1: Enter Amount */}
             {step === 'amount' && (
             <div className="space-y-8 py-4">
@@ -156,7 +156,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
               <Button
                 onClick={handleAmountNext}
                 disabled={!amount || Number(amount) < 500 || Number(amount) > 30000 || Number(amount) > walletBalance || cooldown > 0}
-                className="w-full h-16 text-lg font-bold"
+                className="w-full h-14 text-base font-bold"
                 size="lg"
               >
                 {cooldown > 0 ? (
@@ -164,7 +164,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
                 ) : (
                   <>
                     Next
-                    <ArrowRight className="ml-2 h-6 w-6" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </>
                 )}
               </Button>
@@ -173,11 +173,11 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
 
           {/* Step 2: Review Details */}
           {step === 'review' && (
-            <div className="space-y-8 py-4">
-              <div className="space-y-6">
-                <div className="border-2 border-border p-6 rounded-lg space-y-4">
-                  <h3 className="font-semibold text-lg uppercase tracking-wide text-primary">Bank Details</h3>
-                  <div className="space-y-3 text-base">
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <div className="border border-border p-4 rounded-lg space-y-3">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Bank Details</h3>
+                  <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Bank</span>
                       <span className="font-semibold text-right">{bankName}</span>
@@ -195,44 +195,44 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
                   </div>
                 </div>
 
-                <div className="border-2 border-border p-6 rounded-lg space-y-4">
-                  <h3 className="font-semibold text-lg uppercase tracking-wide text-primary">Transaction Summary</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-xl items-center">
+                <div className="border border-border p-4 rounded-lg space-y-3">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Transaction Summary</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-lg items-center">
                       <span>Amount</span>
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-base text-muted-foreground items-center">
+                    <div className="flex justify-between text-sm text-muted-foreground items-center">
                       <span>Fee (4%)</span>
                       <span>-₦{fee.toFixed(2)}</span>
                     </div>
-                    <div className="h-px bg-border my-2" />
-                    <div className="flex justify-between text-xl items-center">
+                    <div className="h-px bg-border my-1" />
+                    <div className="flex justify-between text-lg items-center">
                       <span className="font-semibold">You Will Receive</span>
                       <span className="font-bold text-green-500">₦{youWillReceive.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
-                <Alert className="p-4">
-                  <AlertDescription className="text-base">
+                <Alert className="p-3">
+                  <AlertDescription className="text-sm">
                     Please verify all details before proceeding. This transaction cannot be reversed.
                   </AlertDescription>
                 </Alert>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setStep('amount')}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Back
                 </Button>
                 <Button
                   onClick={handleReviewNext}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Verify PIN

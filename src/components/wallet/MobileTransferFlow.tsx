@@ -94,15 +94,15 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto p-6">
-          <SheetHeader className="text-left mb-8">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                <ArrowUpDown className="h-8 w-8 text-primary" />
+        <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
+          <SheetHeader className="px-6 pt-6 text-left">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <ArrowUpDown className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
-                <SheetTitle className="text-2xl mb-1">Transfer Funds</SheetTitle>
-                <SheetDescription className="text-base">
+                <SheetTitle className="text-xl">Transfer Funds</SheetTitle>
+                <SheetDescription>
                   Step {step === 'recipient' ? 1 : step === 'amount' ? 2 : step === 'review' ? 3 : 4} of 4
                 </SheetDescription>
               </div>
@@ -110,15 +110,16 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
           </SheetHeader>
 
           {/* Progress Bar */}
-          <div className="flex gap-2 mb-8">
-            <div className={`h-2 flex-1 rounded-full transition-all ${['recipient', 'amount', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-all ${['amount', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-all ${['review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-            <div className={`h-2 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
+          <div className="flex gap-2 px-6 mt-4">
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${['recipient', 'amount', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${['amount', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${['review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
           </div>
 
-          {/* Step 1: Select Recipient */}
-          {step === 'recipient' && (
+          <div className="flex-1 overflow-y-auto px-6 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Step 1: Select Recipient */}
+            {step === 'recipient' && (
             <div className="space-y-8 py-4">
               <div className="space-y-6">
                 <div className="space-y-4">
@@ -184,22 +185,110 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
               <Button
                 onClick={handleRecipientNext}
                 disabled={!recipient}
-                className="w-full h-16 text-lg font-bold"
+                className="w-full h-14 text-base font-bold"
                 size="lg"
               >
                 Next
-                <ArrowRight className="ml-2 h-6 w-6" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
           )}
 
           {/* Step 2: Enter Amount */}
           {step === 'amount' && (
-            <div className="space-y-8 py-4">
-              <div className="space-y-6">
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
                 {selectedPlayer && (
-                  <div className="border-2 border-border p-4 rounded-lg bg-card/50">
-                    <p className="text-sm text-muted-foreground mb-2">Transferring to</p>
+                  <div className="border border-border p-3 rounded-lg bg-card/50">
+                    <p className="text-xs text-muted-foreground mb-1.5">Transferring to</p>
+                    <div className="flex items-center gap-3">
+                      {selectedPlayer.avatar_url && (
+                        <img
+                          src={selectedPlayer.avatar_url}
+                          alt={selectedPlayer.ign}
+                          className="w-10 h-10 rounded-lg object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="font-semibold text-base">
+                          {selectedPlayer.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{selectedPlayer.ign}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-center py-6 px-4 bg-card/50 rounded-lg border border-border">
+                  <p className="text-sm text-muted-foreground mb-2">Available Balance</p>
+                  <p className="text-4xl font-bold text-primary">₦{walletBalance.toLocaleString()}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="transfer-amount" className="text-base font-semibold">Enter Amount</Label>
+                  <Input
+                    id="transfer-amount"
+                    type="number"
+                    placeholder="₦0.00"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="h-14 text-xl text-center font-bold"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Quick Amount Buttons */}
+                <div className="grid grid-cols-3 gap-3">
+                  {[500, 1000, 2000].map((quickAmount) => (
+                    <Button
+                      key={quickAmount}
+                      variant="outline"
+                      onClick={() => setAmount(quickAmount.toString())}
+                      className="h-12 text-sm font-bold"
+                      disabled={quickAmount + TRANSFER_FEE > walletBalance}
+                    >
+                      ₦{quickAmount.toLocaleString()}
+                    </Button>
+                  ))}
+                </div>
+
+                <Alert className="p-3">
+                  <Coins className="h-4 w-4" />
+                  <AlertTitle className="text-sm">Transaction Fee</AlertTitle>
+                  <AlertDescription className="text-xs mt-0.5">
+                    A flat fee of ₦{TRANSFER_FEE} will be deducted from your wallet.
+                  </AlertDescription>
+                </Alert>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep('recipient')}
+                  className="h-14 flex-1 text-base font-bold"
+                  size="lg"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleAmountNext}
+                  disabled={!amount || Number(amount) <= 0 || totalCost > walletBalance}
+                  className="h-14 flex-1 text-base font-bold"
+                  size="lg"
+                >
+                  Next
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review Details */}
+          {step === 'review' && (
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                {selectedPlayer && (
+                  <div className="border border-border p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Recipient</h3>
                     <div className="flex items-center gap-3">
                       {selectedPlayer.avatar_url && (
                         <img
@@ -208,148 +297,60 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                           className="w-12 h-12 rounded-lg object-cover"
                         />
                       )}
-                      <div>
-                        <p className="font-semibold text-lg">
-                          {selectedPlayer.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{selectedPlayer.ign}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-center py-8 px-4 bg-card/50 rounded-lg border border-border">
-                  <p className="text-base text-muted-foreground mb-3">Available Balance</p>
-                  <p className="text-5xl font-bold text-primary">₦{walletBalance.toLocaleString()}</p>
-                </div>
-
-                <div className="space-y-4">
-                  <Label htmlFor="transfer-amount" className="text-lg font-semibold">Enter Amount</Label>
-                  <Input
-                    id="transfer-amount"
-                    type="number"
-                    placeholder="₦0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="h-16 text-2xl text-center font-bold"
-                    autoFocus
-                  />
-                </div>
-
-                {/* Quick Amount Buttons */}
-                <div className="grid grid-cols-3 gap-4">
-                  {[500, 1000, 2000].map((quickAmount) => (
-                    <Button
-                      key={quickAmount}
-                      variant="outline"
-                      onClick={() => setAmount(quickAmount.toString())}
-                      className="h-16 text-base font-bold"
-                      disabled={quickAmount + TRANSFER_FEE > walletBalance}
-                    >
-                      ₦{quickAmount.toLocaleString()}
-                    </Button>
-                  ))}
-                </div>
-
-                <Alert className="p-4">
-                  <Coins className="h-5 w-5" />
-                  <AlertTitle className="text-base">Transaction Fee</AlertTitle>
-                  <AlertDescription className="text-sm mt-1">
-                    A flat fee of ₦{TRANSFER_FEE} will be deducted from your wallet.
-                  </AlertDescription>
-                </Alert>
-              </div>
-
-              <div className="flex gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('recipient')}
-                  className="h-16 flex-1 text-base font-bold"
-                  size="lg"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleAmountNext}
-                  disabled={!amount || Number(amount) <= 0 || totalCost > walletBalance}
-                  className="h-16 flex-1 text-base font-bold"
-                  size="lg"
-                >
-                  Next
-                  <ArrowRight className="ml-2 h-6 w-6" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Review Details */}
-          {step === 'review' && (
-            <div className="space-y-8 py-4">
-              <div className="space-y-6">
-                {selectedPlayer && (
-                  <div className="border-2 border-border p-6 rounded-lg space-y-4">
-                    <h3 className="font-semibold text-lg uppercase tracking-wide text-primary">Recipient</h3>
-                    <div className="flex items-center gap-3">
-                      {selectedPlayer.avatar_url && (
-                        <img
-                          src={selectedPlayer.avatar_url}
-                          alt={selectedPlayer.ign}
-                          className="w-16 h-16 rounded-lg object-cover"
-                        />
-                      )}
                       <div className="flex-1">
-                        <p className="font-bold text-xl">
+                        <p className="font-bold text-lg">
                           {selectedPlayer.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{selectedPlayer.ign}
                         </p>
                         {selectedPlayer.username && (
-                          <p className="text-base text-muted-foreground">@{selectedPlayer.username}</p>
+                          <p className="text-sm text-muted-foreground">@{selectedPlayer.username}</p>
                         )}
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="border-2 border-border p-6 rounded-lg space-y-4">
-                  <h3 className="font-semibold text-lg uppercase tracking-wide text-primary">Transaction Summary</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-xl items-center">
+                <div className="border border-border p-4 rounded-lg space-y-3">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Transaction Summary</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
                       <span>Transfer Amount</span>
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-base text-muted-foreground items-center">
+                    <div className="flex justify-between items-center">
                       <span>Transfer Fee</span>
                       <span>₦{TRANSFER_FEE}</span>
                     </div>
-                    <div className="h-px bg-border my-2" />
-                    <div className="flex justify-between text-xl items-center">
+                    <div className="h-px bg-border my-1" />
+                    <div className="flex justify-between text-base items-center">
                       <span className="font-semibold">Total Deduction</span>
                       <span className="font-bold text-destructive">₦{totalCost.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-base text-green-500 items-center mt-4">
+                    <div className="flex justify-between text-sm text-green-500 items-center mt-2">
                       <span>Recipient Receives</span>
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
 
-                <Alert className="p-4">
-                  <AlertDescription className="text-base">
+                <Alert className="p-3">
+                  <AlertDescription className="text-sm">
                     Please verify all details before proceeding. This transaction cannot be reversed.
                   </AlertDescription>
                 </Alert>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setStep('amount')}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Back
                 </Button>
                 <Button
                   onClick={handleReviewNext}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Verify PIN
