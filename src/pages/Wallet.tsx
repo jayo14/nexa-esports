@@ -17,7 +17,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAdminPlayers } from '@/hooks/useAdminPlayers';
 import { sendBroadcastPushNotification } from '@/lib/pushNotifications';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+// Removed flutterwave-react-v3 import - now using server-side payment initiation
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TransactionReceipt } from '@/components/TransactionReceipt';
@@ -1612,67 +1612,74 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
     const [amount, setAmount] = useState(0);
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(1); // 1: Amount selection, 2: Confirmation
+    const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
 
-    const config = {
-        public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY || '',
-        tx_ref: `FLW_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-        amount: amount,
-        currency: 'NGN',
-        payment_options: 'card,mobilemoney,ussd,banktransfer',
-        customer: {
-            email: user?.email || '',
-            phone_number: profile?.phone || '',
-            name: profile?.username || profile?.ign || '',
-        },
-        customizations: {
-            title: 'Nexa Elite Nexus',
-            description: 'Wallet Funding',
-            logo: '/nexa-logo.jpg',
-        },
-        meta: {
-            userId: profile?.id || '',
-        },
-    };
+    const handlePayment = async () => {
+        setIsProcessing(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session || !session.access_token) {
+                toast({
+                    title: 'Authentication Error',
+                    description: 'Your session has expired. Please log out and log back in.',
+                    variant: 'destructive',
+                });
+                setIsProcessing(false);
+                return;
+            }
 
-    const handleFlutterPayment = useFlutterwave(config);
+            // Call the edge function to initiate payment
+            const { data, error } = await supabase.functions.invoke('flutterwave-initiate-payment', {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: {
+                    amount: amount,
+                    customer: {
+                        email: user?.email || '',
+                        phone: profile?.phone || '',
+                        name: profile?.username || profile?.ign || '',
+                    },
+                    redirect_url: `${window.location.origin}/payment-success`,
+                },
+            });
 
-    const handlePayment = () => {
-        // Guard: ensure public key is configured
-        const publicKey = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY || '';
-        if (!publicKey) {
+            if (error) {
+                console.error('Payment initiation error:', error);
+                toast({
+                    title: 'Payment Unavailable',
+                    description: error.message || 'Failed to initiate payment. Please try again.',
+                    variant: 'destructive',
+                });
+                setIsProcessing(false);
+                return;
+            }
+
+            if (!data || data.status !== 'success') {
+                console.error('Payment initiation failed:', data);
+                toast({
+                    title: 'Payment Failed',
+                    description: data?.error || 'Failed to initiate payment. Please try again.',
+                    variant: 'destructive',
+                });
+                setIsProcessing(false);
+                return;
+            }
+
+            // Redirect to Flutterwave's hosted payment page
+            console.log('Redirecting to payment link:', data.data.link);
+            window.location.href = data.data.link;
+        } catch (error: any) {
+            console.error('Error initiating payment:', error);
             toast({
-                title: 'Payment Unavailable',
-                description: 'Payment service is not configured. Please contact support or try again later.',
+                title: 'Error',
+                description: error?.message || 'An unexpected error occurred.',
                 variant: 'destructive',
             });
-            return;
+            setIsProcessing(false);
         }
-
-        handleFlutterPayment({
-            callback: (response) => {
-                console.log('Flutterwave payment response:', response);
-                closePaymentModal();
-                
-                if (response.status === 'successful' || response.status === 'completed') {
-                    setOpen(false);
-                    navigate(`/payment-success?reference=${response.tx_ref}&transaction_id=${response.transaction_id}`);
-                } else {
-                    toast({
-                        title: 'Payment Failed',
-                        description: 'Your payment was not successful. Please try again.',
-                        variant: 'destructive',
-                    });
-                }
-            },
-            onClose: () => {
-                toast({
-                    title: "Payment Closed",
-                    description: "You closed the payment window. Your transaction was not completed.",
-                    variant: "destructive",
-                });
-            },
-        });
     };
 
     const validateAndNext = () => {
@@ -1827,6 +1834,7 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                             variant="outline" 
                             className="flex-1 h-14 rounded-2xl border-2" 
                             onClick={() => setStep(1)}
+                            disabled={isProcessing}
                         >
                             Back
                         </Button>
@@ -1836,9 +1844,10 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                             step === 1 ? "bg-primary hover:bg-primary/90" : "bg-green-600 hover:bg-green-700"
                         }`}
                         onClick={step === 1 ? validateAndNext : handlePayment}
-                        disabled={amount < 500}
+                        disabled={amount < 500 || isProcessing}
                     >
-                        {step === 1 ? "Continue" : `Pay ₦${amount.toLocaleString()}`}
+                        {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {step === 1 ? "Continue" : isProcessing ? "Processing..." : `Pay ₦${amount.toLocaleString()}`}
                     </Button>
                 </div>
             </SheetContent>
