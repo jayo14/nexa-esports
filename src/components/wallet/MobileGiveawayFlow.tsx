@@ -456,6 +456,7 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
               </Button>
             </div>
           )}
+          </div>
         </SheetContent>
       </Sheet>
 

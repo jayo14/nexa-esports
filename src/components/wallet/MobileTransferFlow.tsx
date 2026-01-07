@@ -389,6 +389,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
               )}
             </div>
           )}
+          </div>
         </SheetContent>
       </Sheet>
 
