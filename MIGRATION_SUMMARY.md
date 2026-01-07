@@ -1,27 +1,25 @@
-# Paystack to Flutterwave Migration Summary
+# Flutterwave Integration Summary
 
 ## Overview
-Successfully migrated the entire payment system from Paystack to Flutterwave v3 API.
+Flutterwave v3 API integration for payment processing with **server-side payment initiation** for enhanced security.
 
 ## Files Changed
 
-### Removed Files
-- No files deleted (Paystack functions remain for reference but are unused)
-
 ### New Files Created
-1. `supabase/functions/flutterwave-webhook/index.ts` - Webhook handler
-2. `supabase/functions/flutterwave-verify-payment/index.ts` - Payment verification
-3. `supabase/functions/flutterwave-transfer/index.ts` - Bank transfers/withdrawals
-4. `supabase/functions/flutterwave-get-banks/index.ts` - Bank list fetcher
-5. `supabase/functions/flutterwave-verify-bank-account/index.ts` - Account verification
-6. `src/lib/flutterwave.ts` - Flutterwave utility functions (unused, kept for reference)
-7. `FLUTTERWAVE_INTEGRATION.md` - Complete integration documentation
-8. `MIGRATION_SUMMARY.md` - This file
+1. `supabase/functions/flutterwave-initiate-payment/index.ts` - Server-side payment initialization
+2. `supabase/functions/flutterwave-webhook/index.ts` - Webhook handler
+3. `supabase/functions/flutterwave-verify-payment/index.ts` - Payment verification
+4. `supabase/functions/flutterwave-transfer/index.ts` - Bank transfers/withdrawals
+5. `supabase/functions/flutterwave-get-banks/index.ts` - Bank list fetcher
+6. `supabase/functions/flutterwave-verify-bank-account/index.ts` - Account verification
+7. `src/lib/flutterwave.ts` - Flutterwave utility functions (unused, kept for reference)
+8. `FLUTTERWAVE_INTEGRATION.md` - Complete integration documentation
+9. `MIGRATION_SUMMARY.md` - This file
 
 ### Modified Files
-1. `.env.example` - Updated with Flutterwave credentials
-2. `package.json` - Removed react-paystack, added flutterwave-react-v3
-3. `src/pages/Wallet.tsx` - Main wallet page with payment integration
+1. `.env.example` - Updated with live API credentials (removed test keys)
+2. `package.json` - Removed flutterwave-react-v3 (now using server-side initiation)
+3. `src/pages/Wallet.tsx` - Updated to use server-side payment initiation
 4. `src/pages/Earnings.tsx` - Admin earnings cashout
 5. `src/pages/Settings.tsx` - Bank account verification
 6. `src/pages/payment/success.tsx` - Payment verification page
@@ -30,12 +28,20 @@ Successfully migrated the entire payment system from Paystack to Flutterwave v3 
 
 ### Payment Flow
 1. User initiates payment in Wallet.tsx
-2. Flutterwave React SDK opens payment modal
-3. User completes payment
-4. Flutterwave redirects to success page with transaction_id
-5. Success page calls flutterwave-verify-payment function
-6. Function verifies with Flutterwave API and credits wallet
-7. User redirected to wallet with receipt
+2. Frontend calls flutterwave-initiate-payment edge function
+3. Edge function creates payment session with Flutterwave API
+4. User is redirected to Flutterwave's hosted payment page
+5. User completes payment on Flutterwave's secure page
+6. Flutterwave redirects to success page with transaction details
+7. Success page calls flutterwave-verify-payment function
+8. Function verifies with Flutterwave API and credits wallet
+9. User redirected to wallet with receipt
+
+**Security Benefits:**
+- No public key exposed to frontend
+- All sensitive operations server-side
+- Reduced client-side attack surface
+- Better audit trail and logging
 
 ### Withdrawal Flow
 1. User requests withdrawal in Wallet.tsx
@@ -87,18 +93,16 @@ X-Scenario-Key: scenario:insufficient_balance
 
 ## Environment Variables Required
 
-### Frontend (.env or Vercel)
+### Backend (Supabase Edge Functions) - Live API
 ```
-VITE_FLUTTERWAVE_PUBLIC_KEY=FLWPUBK_TEST-b1c886c37a102b555212cbd90d991ccb-X
+FLUTTERWAVE_CLIENT_ID=your_live_client_id
+FLUTTERWAVE_SECRET_KEY=your_live_secret_key
+FLUTTERWAVE_ENCRYPTION_KEY=your_live_encryption_key
+FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
+ENVIRONMENT=production
 ```
 
-### Backend (Supabase Edge Functions)
-```
-FLUTTERWAVE_SECRET_KEY=FLWSECK_TEST-ed7084e2ff4f8d5a24366380dcda91da-X
-FLUTTERWAVE_ENCRYPTION_KEY=FLWSECK_TEST104790c94134
-FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
-ENVIRONMENT=development
-```
+**Note:** Live Flutterwave API does not use a public key. All payment operations are server-side only.
 
 ## Transaction Fees
 - Deposits: 4% (deducted from deposit)

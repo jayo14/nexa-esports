@@ -4,7 +4,7 @@ This document describes the Flutterwave payment integration in Nexa Elite Nexus.
 
 ## Overview
 
-The application uses Flutterwave v3 API for payment processing, including:
+The application uses Flutterwave v3 API for payment processing with **server-side payment initiation**, including:
 - Card payments
 - Mobile money
 - USSD
@@ -16,21 +16,56 @@ The application uses Flutterwave v3 API for payment processing, including:
 The following environment variables must be set:
 
 ```bash
-# Frontend (Vite)
-VITE_FLUTTERWAVE_PUBLIC_KEY=FLWPUBK_TEST-b1c886c37a102b555212cbd90d991ccb-X
-
-# Backend (Supabase Edge Functions)
-FLUTTERWAVE_SECRET_KEY=FLWSECK_TEST-ed7084e2ff4f8d5a24366380dcda91da-X
-FLUTTERWAVE_ENCRYPTION_KEY=FLWSECK_TEST104790c94134
+# Backend (Supabase Edge Functions) - Live API credentials
+FLUTTERWAVE_CLIENT_ID=your_flutterwave_client_id_here
+FLUTTERWAVE_SECRET_KEY=your_flutterwave_secret_key_here
+FLUTTERWAVE_ENCRYPTION_KEY=your_flutterwave_encryption_key_here
 FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashboard
 
 # Environment (for testing scenario keys)
-ENVIRONMENT=development  # Set to 'production' in production
+ENVIRONMENT=production  # Set to 'development' for testing
 ```
+
+**Note:** The live Flutterwave API does not use a public key. All payment initialization is done server-side for security.
 
 ## Edge Functions
 
-### 1. flutterwave-webhook
+### 1. flutterwave-initiate-payment
+Initiates payment transactions server-side and returns a payment link.
+
+**Endpoint**: `POST /flutterwave-initiate-payment`
+
+**Request Body**:
+```json
+{
+  "amount": 5000,
+  "customer": {
+    "email": "user@example.com",
+    "phone": "08012345678",
+    "name": "John Doe"
+  },
+  "redirect_url": "https://your-domain.com/payment-success"
+}
+```
+
+**Response**:
+```json
+{
+  "status": "success",
+  "data": {
+    "link": "https://checkout.flutterwave.com/v3/hosted/pay/xxxxx",
+    "tx_ref": "FLW_1234567890_abc123"
+  }
+}
+```
+
+**Features**:
+- Server-side payment initialization for enhanced security
+- No public key required (uses SECRET_KEY)
+- Generates unique transaction reference
+- Returns hosted payment page link
+- Validates amount limits (₦500 - ₦50,000)
+
 Handles incoming webhook notifications from Flutterwave for successful payments.
 
 **Endpoint**: `POST /flutterwave-webhook`
@@ -42,7 +77,7 @@ Handles incoming webhook notifications from Flutterwave for successful payments.
 - Logs transaction fees as platform earnings
 - Prevents duplicate transaction processing
 
-### 2. flutterwave-verify-payment
+### 3. flutterwave-verify-payment
 Verifies payment transactions after completion.
 
 **Endpoint**: `POST /flutterwave-verify-payment`
@@ -59,7 +94,7 @@ Verifies payment transactions after completion.
 - Credits user wallet via RPC function
 - Prevents duplicate processing
 
-### 3. flutterwave-transfer
+### 4. flutterwave-transfer
 Initiates bank transfers for withdrawals.
 
 **Endpoint**: `POST /flutterwave-transfer`
@@ -91,7 +126,7 @@ Initiates bank transfers for withdrawals.
 - `daily_limit_exceeded` / `monthly_limit_exceeded` - Transfer limits reached
 - `duplicate_transfer` - Transaction already processed
 
-### 4. flutterwave-get-banks
+### 5. flutterwave-get-banks
 Fetches list of supported banks.
 
 **Endpoint**: `GET /flutterwave-get-banks`
@@ -110,7 +145,7 @@ Fetches list of supported banks.
 }
 ```
 
-### 5. flutterwave-verify-bank-account
+### 6. flutterwave-verify-bank-account
 Verifies bank account details.
 
 **Endpoint**: `POST /flutterwave-verify-bank-account`
@@ -138,45 +173,47 @@ Verifies bank account details.
 
 ### Payment Flow
 
-The frontend uses the official `flutterwave-react-v3` library:
+The frontend uses **server-side payment initiation** for enhanced security:
 
 ```tsx
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+const handlePayment = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Call edge function to initiate payment
+    const { data, error } = await supabase.functions.invoke('flutterwave-initiate-payment', {
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: {
+        amount: 5000,
+        customer: {
+          email: 'user@example.com',
+          phone: '08012345678',
+          name: 'John Doe',
+        },
+        redirect_url: `${window.location.origin}/payment-success`,
+      },
+    });
 
-const config = {
-  public_key: import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY,
-  tx_ref: `FLW_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-  amount: 1000,
-  currency: 'NGN',
-  payment_options: 'card,mobilemoney,ussd,banktransfer',
-  customer: {
-    email: 'user@example.com',
-    phone_number: '08012345678',
-    name: 'John Doe',
-  },
-  customizations: {
-    title: 'Nexa Elite Nexus',
-    description: 'Wallet Funding',
-  },
-  meta: {
-    userId: 'user_id_here',
-  },
+    if (error) {
+      console.error('Payment initiation error:', error);
+      return;
+    }
+
+    // Redirect to Flutterwave's hosted payment page
+    window.location.href = data.data.link;
+  } catch (error) {
+    console.error('Error initiating payment:', error);
+  }
 };
-
-const handleFlutterPayment = useFlutterwave(config);
-
-// Trigger payment
-handleFlutterPayment({
-  callback: (response) => {
-    console.log(response);
-    closePaymentModal();
-    // Handle success
-  },
-  onClose: () => {
-    // Handle modal close
-  },
-});
 ```
+
+**Key Benefits:**
+- No public key exposed to frontend
+- Enhanced security with server-side control
+- Consistent payment flow across all devices
+- Better error handling and logging
 
 ### Withdrawal Flow
 
@@ -225,13 +262,19 @@ Available scenarios:
 - `scenario:day_limit_error`
 - And more...
 
-### Test Credentials
+### Production Credentials
+
+For live/production use, set the following environment variables:
 
 ```bash
-Public Key: FLWPUBK_TEST-b1c886c37a102b555212cbd90d991ccb-X
-Secret Key: FLWSECK_TEST-ed7084e2ff4f8d5a24366380dcda91da-X
-Encryption Key: FLWSECK_TEST104790c94134
+FLUTTERWAVE_CLIENT_ID=your_live_client_id
+FLUTTERWAVE_SECRET_KEY=your_live_secret_key
+FLUTTERWAVE_ENCRYPTION_KEY=your_live_encryption_key
+FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
+ENVIRONMENT=production
 ```
+
+Get your live credentials from the Flutterwave dashboard under Settings > API Keys.
 
 ## Security Best Practices
 
