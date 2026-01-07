@@ -225,7 +225,7 @@ export const RedeemGiveawayDialog: React.FC<RedeemGiveawayDialogProps> = ({
   if (isMobile) {
       return (
         <Sheet open={open} onOpenChange={handleOpenChange}>
-            <SheetContent side="bottom" className="h-[auto] max-h-[90vh] rounded-t-[20px] p-6">
+            <SheetContent side="bottom" className="h-auto max-h-[90dvh] rounded-t-[20px] p-6 pb-10">
                 {isMobile ? (
                   <SheetHeader className="hidden">
                     <SheetTitle>Redeem Giveaway</SheetTitle>

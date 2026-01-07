@@ -9,7 +9,7 @@ export const useAdminStats = () => {
       const { data, error } = await supabase
         .from('admin_dashboard_stats')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       

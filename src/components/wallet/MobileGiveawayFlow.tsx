@@ -134,15 +134,15 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[90vh] overflow-y-auto p-6">
-          <SheetHeader className="text-left mb-8">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                <Gift className="h-8 w-8 text-primary" />
+        <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
+          <SheetHeader className="px-6 pt-6 text-left">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <Gift className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
-                <SheetTitle className="text-2xl mb-1">Create Giveaway</SheetTitle>
-                <SheetDescription className="text-base">
+                <SheetTitle className="text-xl">Create Giveaway</SheetTitle>
+                <SheetDescription>
                   {step === 'codes' ? 'Giveaway Created!' : `Step ${step === 'details' ? 1 : step === 'config' ? 2 : step === 'review' ? 3 : 4} of ${step === 'codes' ? 5 : 4}`}
                 </SheetDescription>
               </div>
@@ -151,16 +151,17 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
 
           {/* Progress Bar */}
           {step !== 'codes' && (
-            <div className="flex gap-2 mb-8">
-              <div className={`h-2 flex-1 rounded-full transition-all ${['details', 'config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-              <div className={`h-2 flex-1 rounded-full transition-all ${['config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-              <div className={`h-2 flex-1 rounded-full transition-all ${['review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-              <div className={`h-2 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
+            <div className="flex gap-2 px-6 mt-4">
+              <div className={`h-1.5 flex-1 rounded-full transition-all ${['details', 'config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+              <div className={`h-1.5 flex-1 rounded-full transition-all ${['config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+              <div className={`h-1.5 flex-1 rounded-full transition-all ${['review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+              <div className={`h-1.5 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
             </div>
           )}
 
-          {/* Step 1: Giveaway Details */}
-          {step === 'details' && (
+          <div className="flex-1 overflow-y-auto px-6 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Step 1: Giveaway Details */}
+            {step === 'details' && (
             <div className="space-y-8 py-4">
               <div className="space-y-6">
                 <div className="space-y-4">
@@ -196,23 +197,23 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
               <Button
                 onClick={handleDetailsNext}
                 disabled={!title.trim()}
-                className="w-full h-16 text-lg font-bold"
+                className="w-full h-14 text-base font-bold"
                 size="lg"
               >
                 Next
-                <ArrowRight className="ml-2 h-6 w-6" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
           )}
 
           {/* Step 2: Configure Giveaway */}
           {step === 'config' && (
-            <div className="space-y-8 py-4">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <Label htmlFor="codeValue" className="text-lg font-semibold">Value per Code</Label>
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <Label htmlFor="codeValue" className="text-base font-semibold">Value per Code</Label>
                   <Select value={codeValue} onValueChange={setCodeValue}>
-                    <SelectTrigger id="codeValue" className="h-14 text-base">
+                    <SelectTrigger id="codeValue" className="h-12 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -226,8 +227,8 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
                   </Select>
                 </div>
 
-                <div className="space-y-4">
-                  <Label htmlFor="totalCodes" className="text-lg font-semibold">Number of Codes</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="totalCodes" className="text-base font-semibold">Number of Codes</Label>
                   <Input
                     id="totalCodes"
                     type="number"
@@ -235,14 +236,14 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
                     max="100"
                     value={totalCodes}
                     onChange={(e) => setTotalCodes(e.target.value)}
-                    className="h-14 text-base"
+                    className="h-12 text-base"
                   />
                 </div>
 
-                <div className="space-y-4">
-                  <Label htmlFor="expiresIn" className="text-lg font-semibold">Expires In</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="expiresIn" className="text-base font-semibold">Expires In</Label>
                   <Select value={expiresIn} onValueChange={setExpiresIn}>
-                    <SelectTrigger id="expiresIn" className="h-14 text-base">
+                    <SelectTrigger id="expiresIn" className="h-12 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -256,41 +257,41 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
                   </Select>
                 </div>
 
-                <div className="flex items-start space-x-4 p-6 border-2 border-border rounded-lg bg-muted/30">
+                <div className="flex items-start space-x-3 p-4 border border-border rounded-lg bg-muted/30">
                   <input
                     type="checkbox"
                     id="isPrivate"
                     checked={isPrivate}
                     onChange={(e) => setIsPrivate(e.target.checked)}
-                    className="h-6 w-6 mt-1 rounded border-border cursor-pointer"
+                    className="h-5 w-5 mt-0.5 rounded border-border cursor-pointer"
                   />
                   <div className="flex-1 cursor-pointer" onClick={() => setIsPrivate(!isPrivate)}>
-                    <Label htmlFor="isPrivate" className="text-base font-semibold cursor-pointer">
+                    <Label htmlFor="isPrivate" className="text-sm font-semibold cursor-pointer">
                       Private Giveaway
                     </Label>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Codes will be generated but won't appear in notifications
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setStep('details')}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Back
                 </Button>
                 <Button
                   onClick={handleConfigNext}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Next
-                  <ArrowRight className="ml-2 h-6 w-6" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -298,11 +299,11 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
 
           {/* Step 3: Review */}
           {step === 'review' && (
-            <div className="space-y-8 py-4">
-              <div className="space-y-6">
-                <div className="border-2 border-border p-6 rounded-lg space-y-4">
-                  <h3 className="font-semibold text-lg uppercase tracking-wide text-primary">Giveaway Details</h3>
-                  <div className="space-y-3">
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <div className="border border-border p-4 rounded-lg space-y-3">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Giveaway Details</h3>
+                  <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-start">
                       <span className="text-muted-foreground">Title</span>
                       <span className="font-semibold text-right">{title}</span>
@@ -324,18 +325,18 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
                   </div>
                 </div>
 
-                <div className="border-2 border-border p-6 rounded-lg space-y-4">
-                  <h3 className="font-semibold text-lg uppercase tracking-wide text-primary">Configuration</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-base">
+                <div className="border border-border p-4 rounded-lg space-y-3">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Configuration</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
                       <span>Value per Code</span>
                       <span className="font-bold">₦{Number(codeValue).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-base">
+                    <div className="flex justify-between items-center">
                       <span>Number of Codes</span>
                       <span className="font-bold">{totalCodes}</span>
                     </div>
-                    <div className="flex justify-between text-base">
+                    <div className="flex justify-between items-center">
                       <span>Expires In</span>
                       <span className="font-bold">
                         {Number(expiresIn) < 1 
@@ -343,33 +344,33 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
                           : `${expiresIn} hours`}
                       </span>
                     </div>
-                    <div className="h-px bg-border my-2" />
-                    <div className="flex justify-between text-xl">
+                    <div className="h-px bg-border my-1" />
+                    <div className="flex justify-between text-lg items-center">
                       <span className="font-semibold">Total Cost</span>
                       <span className="font-bold text-destructive">₦{totalCost.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
 
-                <Alert className="p-4">
-                  <AlertDescription className="text-base">
+                <Alert className="p-3">
+                  <AlertDescription className="text-sm">
                     This amount will be deducted from your wallet balance.
                   </AlertDescription>
                 </Alert>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setStep('config')}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Back
                 </Button>
                 <Button
                   onClick={handleReviewNext}
-                  className="h-16 flex-1 text-base font-bold"
+                  className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
                   Verify PIN

@@ -462,9 +462,11 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
   if (isMobile) {
       return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="bottom" className="h-[90vh] flex flex-col rounded-t-[20px] px-6 pt-8 overflow-hidden">
-                {Header}
-                <div className="flex-1 overflow-y-auto pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
+                <div className="px-6 pt-8">
+                    {Header}
+                </div>
+                <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
                     <AnimatePresence mode="wait">
                         {step === STEPS.PHONE && renderPhoneStep()}
                         {step === STEPS.AMOUNT && renderAmountStep()}
@@ -481,7 +483,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
                         </motion.div>
                     )}
                 </div>
-                <div className="pb-8">
+                <div className="px-6 pb-8 pt-2">
                     {renderFooter()}
                 </div>
             </SheetContent>

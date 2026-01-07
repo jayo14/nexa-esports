@@ -14,7 +14,7 @@ export const useGlobalTheme = () => {
         .from('app_settings')
         .select('value')
         .eq('key', 'global_theme')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching global theme:', error);

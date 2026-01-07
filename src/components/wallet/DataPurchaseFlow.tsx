@@ -460,11 +460,11 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
   );
 
   const content = (
-      <>
-        <div className="p-6 pb-2">
+      <div className="flex flex-col h-full">
+        <div className="px-6 pt-8 pb-2">
             {Header}
         </div>
-        <div className="px-6 py-2 min-h-[350px]">
+        <div className="flex-1 overflow-y-auto px-6 py-2 min-h-[350px]" style={{ WebkitOverflowScrolling: 'touch' }}>
             <AnimatePresence mode="wait">
                 {step === STEPS.PHONE && renderPhoneStep()}
                 {step === STEPS.PLAN && renderPlanStep()}
@@ -481,17 +481,17 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
                 </motion.div>
             )}
         </div>
-        <div className="p-6 pt-2 bg-muted/10">
+        <div className="px-6 pb-8 pt-2 bg-muted/10 border-t">
             {renderFooter()}
         </div>
-      </>
+      </div>
   );
 
   return (
     <>
         {isMobile ? (
             <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent side="bottom" className="h-[90vh] flex flex-col rounded-t-[20px] p-0 overflow-y-auto">
+                <SheetContent side="bottom" className="h-[90dvh] p-0 overflow-hidden rounded-t-[20px]">
                     {content}
                 </SheetContent>
             </Sheet>

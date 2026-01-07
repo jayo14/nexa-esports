@@ -160,10 +160,10 @@ export const useAirtime = () => {
         };
       }
 
-      const settings = data.reduce((acc, setting) => {
+      const settings = data?.reduce((acc, setting) => {
         acc[setting.key] = parseFloat(setting.value);
         return acc;
-      }, {} as Record<string, number>);
+      }, {} as Record<string, number>) || {};
 
       return {
         min: settings.airtime_min_amount || 50,

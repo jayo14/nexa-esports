@@ -28,7 +28,7 @@ export const useTransactionPin = () => {
         .from('profiles')
         .select('transaction_pin_hash')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return !!data?.transaction_pin_hash;
