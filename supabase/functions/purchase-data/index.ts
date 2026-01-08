@@ -6,10 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface AirtimeRequest {
+interface DataRequest {
   phone_number: string;
-  amount: number;
+  variation_code: string;
   network_provider: 'MTN' | 'GLO' | 'AIRTEL' | '9MOBILE';
+  amount: number;
 }
 
 serve(async (req) => {
@@ -39,15 +40,15 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { phone_number, amount, network_provider }: AirtimeRequest = await req.json();
+    const { phone_number, variation_code, network_provider, amount }: DataRequest = await req.json();
 
     // Validate input
-    if (!phone_number || !amount || !network_provider) {
+    if (!phone_number || !variation_code || !network_provider || !amount) {
       throw new Error('Missing required fields');
     }
 
-    if (amount < 50 || amount > 10000) {
-      throw new Error('Amount must be between ₦50 and ₦10,000');
+    if (amount < 100) {
+      throw new Error('Amount must be at least ₦100');
     }
 
     // Get user wallet balance
@@ -70,13 +71,14 @@ serve(async (req) => {
 
     // Create transaction record
     const { data: transaction, error: transactionError } = await supabaseClient
-      .from('airtime_transactions')
+      .from('data_transactions')
       .insert({
         user_id: user.id,
         transaction_type: 'purchase',
         amount: amount,
         phone_number: phone_number,
         network_provider: network_provider,
+        variation_code: variation_code,
         status: 'pending',
         wallet_balance_before: currentBalance,
       })
@@ -90,10 +92,10 @@ serve(async (req) => {
     try {
       // Map network provider to VTPASS service IDs
       const serviceIdMap: Record<string, string> = {
-        'MTN': 'mtn',
-        'GLO': 'glo',
-        'AIRTEL': 'airtel',
-        '9MOBILE': 'etisalat', // VTPASS uses 'etisalat' for 9mobile
+        'MTN': 'mtn-data',
+        'GLO': 'glo-data',
+        'AIRTEL': 'airtel-data',
+        '9MOBILE': 'etisalat-data',
       };
 
       const serviceId = serviceIdMap[network_provider];
@@ -110,7 +112,7 @@ serve(async (req) => {
       // Generate request ID with proper date format (YYYYMMDD)
       const today = new Date();
       const datePrefix = today.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
-      const requestId = `${datePrefix}_AIRTIME_${transaction.id}_${Date.now()}`;
+      const requestId = `${datePrefix}_DATA_${transaction.id}_${Date.now()}`;
 
       // Call VTPASS API with timeout
       const controller = new AbortController();
@@ -131,6 +133,8 @@ serve(async (req) => {
           body: JSON.stringify({
             request_id: requestId,
             serviceID: serviceId,
+            billersCode: phone_number,
+            variation_code: variation_code,
             amount: amount,
             phone: phone_number,
           }),
@@ -145,7 +149,7 @@ serve(async (req) => {
         if (fetchError.name === 'AbortError') {
           // Timeout - treat as pending
           await supabaseClient
-            .from('airtime_transactions')
+            .from('data_transactions')
             .update({
               status: 'processing',
               vtpass_request_id: requestId,
@@ -165,6 +169,7 @@ serve(async (req) => {
       // User-friendly error messages
       const getErrorMessage = (code: string): string => {
         const errorMessages: Record<string, string> = {
+          '010': 'Invalid data plan selected. Please choose a different plan.',
           '011': 'Invalid request. Please check your input and try again.',
           '012': 'Service not available. Please try a different network.',
           '013': 'Amount is below minimum allowed. Please increase the amount.',
@@ -205,7 +210,7 @@ serve(async (req) => {
 
         // Update transaction status
         await supabaseClient
-          .from('airtime_transactions')
+          .from('data_transactions')
           .update({
             status: 'completed',
             vtpass_request_id: requestId,
@@ -221,9 +226,9 @@ serve(async (req) => {
           .from('wallet_transactions')
           .insert({
             user_id: user.id,
-            transaction_type: 'Airtime Purchase',
+            transaction_type: 'Data Purchase',
             amount: -amount,
-            description: `Airtime purchase: ₦${amount} ${network_provider} to ${phone_number}`,
+            description: `Data purchase: ₦${amount} ${network_provider} to ${phone_number}`,
             status: 'completed',
             balance_after: newBalance,
           });
@@ -231,12 +236,13 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             success: true,
-            message: 'Airtime purchased successfully',
+            message: 'Data purchased successfully',
             transaction: {
               id: transaction.id,
               amount: amount,
               phone_number: phone_number,
               network_provider: network_provider,
+              variation_code: variation_code,
               status: 'completed',
               new_balance: newBalance,
             },
@@ -249,7 +255,7 @@ serve(async (req) => {
       } else if (responseCode === '000' && (transactionStatus === 'pending' || transactionStatus === 'initiated')) {
         // Transaction is pending - needs requery later
         await supabaseClient
-          .from('airtime_transactions')
+          .from('data_transactions')
           .update({
             status: 'processing',
             vtpass_request_id: requestId,
@@ -272,7 +278,7 @@ serve(async (req) => {
       } else if (responseCode === '099') {
         // Transaction is processing
         await supabaseClient
-          .from('airtime_transactions')
+          .from('data_transactions')
           .update({
             status: 'processing',
             vtpass_request_id: requestId,
@@ -284,7 +290,7 @@ serve(async (req) => {
       } else if (responseCode === '091') {
         // Transaction not processed - safe to retry
         await supabaseClient
-          .from('airtime_transactions')
+          .from('data_transactions')
           .update({
             status: 'failed',
             vtpass_request_id: requestId,
@@ -299,7 +305,7 @@ serve(async (req) => {
         const errorMessage = getErrorMessage(responseCode);
         
         await supabaseClient
-          .from('airtime_transactions')
+          .from('data_transactions')
           .update({
             status: 'failed',
             vtpass_request_id: requestId,
@@ -313,7 +319,7 @@ serve(async (req) => {
     } catch (vtpassError) {
       // Update transaction as failed
       await supabaseClient
-        .from('airtime_transactions')
+        .from('data_transactions')
         .update({
           status: 'failed',
           error_message: vtpassError.message || 'VTPASS API error',
@@ -323,7 +329,7 @@ serve(async (req) => {
       throw vtpassError;
     }
   } catch (error) {
-    console.error('Error in purchase-airtime function:', error);
+    console.error('Error in purchase-data function:', error);
     return new Response(
       JSON.stringify({
         success: false,
