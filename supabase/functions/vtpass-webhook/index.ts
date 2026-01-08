@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Constants for transaction types
+const TRANSACTION_TYPE = {
+  AIRTIME: 'AIRTIME',
+  DATA: 'DATA',
+} as const;
+
+const TABLE_NAMES = {
+  [TRANSACTION_TYPE.AIRTIME]: 'airtime_transactions',
+  [TRANSACTION_TYPE.DATA]: 'data_transactions',
+} as const;
+
+const TRANSACTION_DISPLAY_NAMES = {
+  [TRANSACTION_TYPE.AIRTIME]: 'Airtime Purchase',
+  [TRANSACTION_TYPE.DATA]: 'Data Purchase',
+} as const;
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -37,9 +53,16 @@ serve(async (req) => {
       } = webhookData;
 
       // Determine which table to update based on request_id prefix
-      let tableName = 'airtime_transactions';
-      if (request_id && request_id.includes('_DATA_')) {
-        tableName = 'data_transactions';
+      // Request IDs follow format: YYYYMMDD_TYPE_ID_TIMESTAMP
+      const requestIdParts = request_id?.split('_') || [];
+      const transactionTypeFromId = requestIdParts[1]; // Extract TYPE part
+      
+      let tableName = TABLE_NAMES[TRANSACTION_TYPE.AIRTIME]; // Default to airtime
+      let transactionType = TRANSACTION_TYPE.AIRTIME;
+      
+      if (transactionTypeFromId === TRANSACTION_TYPE.DATA) {
+        tableName = TABLE_NAMES[TRANSACTION_TYPE.DATA];
+        transactionType = TRANSACTION_TYPE.DATA;
       }
 
       // Find the transaction by vtpass_request_id
@@ -97,16 +120,16 @@ serve(async (req) => {
               updateData.wallet_balance_after = newBalance;
 
               // Log wallet transaction
-              const transactionType = tableName === 'data_transactions' ? 'Data Purchase' : 'Airtime Purchase';
+              const transactionDisplayName = TRANSACTION_DISPLAY_NAMES[transactionType];
               const networkProvider = existingTransaction.network_provider;
               
               await supabaseClient
                 .from('wallet_transactions')
                 .insert({
                   user_id: userId,
-                  transaction_type: transactionType,
+                  transaction_type: transactionDisplayName,
                   amount: -transactionAmount,
-                  description: `${transactionType}: ₦${transactionAmount} ${networkProvider} to ${phone}`,
+                  description: `${transactionDisplayName}: ₦${transactionAmount} ${networkProvider} to ${phone}`,
                   status: 'completed',
                   balance_after: newBalance,
                 });

@@ -76,9 +76,11 @@ export const useData = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['dataTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      const newBalance = data?.transaction?.new_balance;
+      const balanceText = typeof newBalance === 'number' ? newBalance.toFixed(2) : '0.00';
       toast({
         title: 'Success',
-        description: `Data purchased successfully! New balance: ₦${data.transaction.new_balance.toFixed(2)}`,
+        description: `Data purchased successfully! New balance: ₦${balanceText}`,
       });
     },
     onError: (error: Error) => {
