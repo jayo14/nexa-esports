@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { useAirtime } from '@/hooks/useAirtime'; // Reusing for PIN/Wallet logic if available, or create mocked
+import { useData } from '@/hooks/useData';
 import { detectNetworkProvider, getNetworkDetails, formatPhoneNumber, validatePhoneNumber, NetworkProvider } from '@/lib/networkProviders';
 import { Wifi, CheckCircle2, ChevronRight, ChevronLeft, Loader2, Wallet, RefreshCw, XCircle, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,10 +67,9 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
   isMobile = false,
   onSuccess,
 }) => {
-  const { isPurchasing: isProcessingAirtime } = useAirtime(); // Only for loading state if we reuse logic
+  const { purchaseData, isPurchasing } = useData();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isProcessing, setIsProcessing] = useState(false);
   
   const [step, setStep] = useState(STEPS.PHONE);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -109,7 +108,6 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
       setDetectedProvider(null);
       setError('');
       setShowPinVerify(false);
-      setIsProcessing(false);
     }
   }, [open]);
 
@@ -175,18 +173,30 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
   };
 
   const performPurchase = () => {
-    setIsProcessing(true);
-    // Mock purchase process
-    setTimeout(() => {
-        setIsProcessing(false);
-        setStep(STEPS.SUCCESS);
-        confetti({
+    if (!selectedPlan || !detectedProvider) return;
+
+    purchaseData(
+      {
+        phone_number: phoneNumber,
+        variation_code: selectedPlanId,
+        network_provider: detectedProvider,
+        amount: selectedPlan.price,
+      },
+      {
+        onSuccess: () => {
+          setStep(STEPS.SUCCESS);
+          confetti({
             particleCount: 100,
             spread: 70,
             origin: { y: 0.6 }
-        });
-        onSuccess?.();
-    }, 2000);
+          });
+          onSuccess?.();
+        },
+        onError: (err) => {
+          setError(err.message || 'Transaction failed');
+        }
+      }
+    );
   };
 
   const providerDetails = detectedProvider ? getNetworkDetails(detectedProvider) : null;
@@ -402,7 +412,7 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
      return (
         <div className="flex items-center gap-3 mt-4">
             {step > STEPS.PHONE && (
-                <Button variant="outline" size="icon" onClick={handlePrevStep} disabled={isProcessing}>
+                <Button variant="outline" size="icon" onClick={handlePrevStep} disabled={isPurchasing}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
             )}
@@ -413,10 +423,10 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
                 disabled={
                     (step === STEPS.PHONE && (!phoneNumber || !detectedProvider || isDetecting)) ||
                     (step === STEPS.PLAN && !selectedPlanId) ||
-                    isProcessing
+                    isPurchasing
                 }
             >
-                {isProcessing ? (
+                {isPurchasing ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
                     </>
