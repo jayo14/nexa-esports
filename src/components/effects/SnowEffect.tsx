@@ -1,10 +1,9 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export const SnowEffect: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { themeSettings } = useTheme();
+  const { themeSettings, currentTheme } = useTheme();
   const [isActive, setIsActive] = useState(true);
 
   // Respect reduced motion preference
@@ -17,7 +16,8 @@ export const SnowEffect: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isActive || !themeSettings?.enableSnow) return;
+    // Only show snow when Christmas theme is active AND snow is enabled
+    if (!isActive || !themeSettings?.enableSnow || currentTheme !== 'christmas') return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -89,9 +89,10 @@ export const SnowEffect: React.FC = () => {
       window.removeEventListener('resize', resizeCanvas);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [isActive, themeSettings?.enableSnow]);
+  }, [isActive, themeSettings?.enableSnow, currentTheme]);
 
-  if (!themeSettings?.enableSnow) return null;
+  // Only render if Christmas theme is active and snow is enabled
+  if (!themeSettings?.enableSnow || currentTheme !== 'christmas') return null;
 
   return (
     <canvas

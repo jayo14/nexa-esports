@@ -3,9 +3,10 @@ import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export const FestiveLights: React.FC = () => {
-  const { currentTheme } = useTheme();
+  const { currentTheme, themeSettings } = useTheme();
 
-  if (currentTheme !== 'christmas') return null;
+  // Show lights only when Christmas theme is active AND lights are enabled
+  if (currentTheme !== 'christmas' || !themeSettings.enableLights) return null;
 
   return (
     <div className="fixed top-0 left-0 w-full h-4 z-[60] pointer-events-none overflow-hidden flex justify-between items-start px-2">
