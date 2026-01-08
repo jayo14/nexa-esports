@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Shield, Users, Trophy, Target, ArrowRight, Star, Gamepad2, Mail } from 'lucide-react';
+import { Shield, Users, Trophy, Target, ArrowRight, Star, Gamepad2, Mail, BookOpen, ShoppingBag } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ClanGallery } from '@/components/ClanGallery';
 import { ContactForm } from '@/components/ContactForm';
@@ -22,9 +22,25 @@ export const Landing: React.FC = () => {
 
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between p-6 bg-card/40 backdrop-blur-xl border-b border-border/30 shadow-lg">
-        <div className="flex items-center space-x-3">
-          <div className="w-20 h-20 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">
-            <img src="/nexa-logo.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
+        <div className="flex items-center space-x-6">
+          <Link to="/" className="flex items-center space-x-3">
+            <div className="w-20 h-20 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">
+              <img src="/nexa-logo.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
+            </div>
+          </Link>
+          <div className="hidden md:flex items-center space-x-4">
+            <Link to="/blog">
+              <Button variant="ghost" className="text-foreground hover:text-primary font-rajdhani font-bold hover:bg-primary/10 transition-all">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Blog
+              </Button>
+            </Link>
+            <Link to="/marketplace-info">
+              <Button variant="ghost" className="text-foreground hover:text-primary font-rajdhani font-bold hover:bg-primary/10 transition-all">
+                <ShoppingBag className="w-4 h-4 mr-2" />
+                Marketplace
+              </Button>
+            </Link>
           </div>
         </div>
         

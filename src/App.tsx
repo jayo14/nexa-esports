@@ -11,6 +11,9 @@ import Index from '@/pages/Index';
 import { Landing } from '@/pages/Landing';
 import { PublicProfile } from '@/pages/PublicProfile';
 import NotFound from '@/pages/NotFound';
+import { Blog } from '@/pages/Blog';
+import { BlogPost } from '@/pages/BlogPost';
+import { MarketplaceInfo } from '@/pages/MarketplaceInfo';
 
 // Auth pages
 import { Login } from '@/pages/auth/Login';
@@ -90,6 +93,9 @@ function AppRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/profile/:userId" element={<PublicProfile />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="/marketplace-info" element={<MarketplaceInfo />} />
 
         {/* Auth routes */}
         <Route path="/auth/login" element={<Login />} />
