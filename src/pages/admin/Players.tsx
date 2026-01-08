@@ -829,6 +829,10 @@ export const AdminPlayers: React.FC = () => {
         open={!!selectedPlayer} 
         onOpenChange={(open) => !open && setSelectedPlayer(null)} 
         player={selectedPlayer ? { name: selectedPlayer.ign, id: selectedPlayer.id } : null} 
+        onEdit={(player) => {
+          setEditingPlayer(player);
+          setSelectedPlayer(null);
+        }}
       />
     </div>
   );

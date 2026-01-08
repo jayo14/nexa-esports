@@ -8,7 +8,7 @@ import {
   Shield, Zap, User, Target, BarChart3, 
   Calendar, Lock, Unlock, Share2, AlertCircle,
   ChevronRight, ArrowUpRight, ShieldCheck, Cpu,
-  ArrowRightLeft
+  ArrowRightLeft, Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ interface PlayerProfileModalProps {
     onOpenChange: (open: boolean) => void;
     player: any | null;
     rank?: number | null;
+    onEdit?: (player: any) => void;
 }
 
 // 1. Typing Text Effect Component
@@ -79,7 +80,7 @@ const NeonStatBar = ({ label, value, max, color = "primary" }: { label: string; 
   );
 };
 
-const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChange, player: initialPlayer, rank: initialRank}) => {
+const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChange, player: initialPlayer, rank: initialRank, onEdit}) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [fullPlayer, setFullPlayer] = useState<any>(null);
@@ -87,6 +88,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
     const [rank, setRank] = useState<number | null>(initialRank || null);
     const [activeTab, setActiveTab] = useState<"BR" | "MP">("BR");
     const [revealContact, setRevealContact] = useState(false);
+    const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
     // Deep linking logic
     useEffect(() => {
@@ -95,6 +97,24 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
         navigate(`${currentPath}?playerId=${initialPlayer.id}`, { replace: true });
       }
     }, [open, initialPlayer?.id, navigate]);
+
+    // Fetch current user profile for permissions
+    useEffect(() => {
+      const fetchCurrentUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          if (profile) {
+            setCurrentUserProfile(profile);
+          }
+        }
+      };
+      fetchCurrentUser();
+    }, []);
 
     // Fetch full data and rank
     useEffect(() => {
@@ -197,12 +217,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
         {/* Animated Background Polish */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-30" />
-          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full" />
-          <div className="absolute top-1/4 left-0 w-[300px] h-[300px] bg-blue-500/5 blur-[100px] rounded-full" />
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]" />
-          
-          {/* Faint Grid */}
-          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+          <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-primary/5 blur-[80px] rounded-full" />
         </div>
 
         <button 
@@ -281,7 +296,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                 <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6 text-sm font-mono text-gray-400">
                   <div className="flex items-center gap-2">
                     <span className="text-primary font-black text-lg">{playerPrefix}</span>
-                    <TypingText text={p.ign} className="text-white font-bold text-lg" delay={500} />
+                    <span className="text-white font-bold text-lg font-mono">{p.ign}</span>
                   </div>
                   <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-white/10" />
                   <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded border border-white/5">
@@ -352,15 +367,10 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                   transition={{ delay: 0.4 }}
                   className="relative rounded-xl border border-primary/20 p-1 overflow-hidden group h-full"
                 >
-                  {/* Scanning Effect */}
-                  <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
-                    <div className="w-full h-[2px] bg-primary/20 animate-scan-line shadow-[0_0_15px_rgba(255,31,68,0.5)]" />
-                  </div>
-
                   <div className="bg-[#0a0a0a] rounded-lg p-6 relative" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-2">
-                        <Cpu className="w-4 h-4 text-primary animate-pulse" />
+                        <Cpu className="w-4 h-4 text-primary" />
                         <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">System Intelligence</h3>
                       </div>
                       <div className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[8px] text-primary font-black uppercase">AI Analysis</div>
@@ -368,29 +378,21 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
                     <div className="space-y-4 font-mono text-xs leading-relaxed">
                       {analysis.length > 0 ? analysis.map((insight, idx) => (
-                        <motion.div 
+                        <div 
                           key={idx}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.8 + (idx * 0.3) }}
                           className="flex gap-3 text-gray-400"
                         >
                           <span className="text-primary font-black">{`>`}</span>
                           <span>{insight}</span>
-                        </motion.div>
+                        </div>
                       )) : (
                         <div className="text-gray-600 italic">Insufficient data for behavioral profiling...</div>
                       )}
                       
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 2 }}
-                        className="pt-6 flex items-center gap-3 text-[10px] text-green-400 font-black tracking-widest border-t border-white/5"
-                      >
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
+                      <div className="pt-6 flex items-center gap-3 text-[10px] text-green-400 font-black tracking-widest border-t border-white/5">
+                        <span className="w-2 h-2 bg-green-500 rounded-full" />
                         STATUS: OPTIMIZED CANDIDATE
-                      </motion.div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -493,6 +495,19 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
           {/* 9. Action Buttons (Footer) */}
           <div className="p-6 border-t border-white/10 bg-black/60 backdrop-blur-xl flex flex-col sm:flex-row justify-end gap-4">
+            {currentUserProfile && (currentUserProfile.role === 'admin' || currentUserProfile.role === 'clan_master') && onEdit && (
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  onEdit(p);
+                  onOpenChange(false);
+                }}
+                className="h-14 px-8 border border-primary/50 text-primary font-black uppercase tracking-[0.2em] text-[10px] hover:bg-primary/10"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Player
+              </Button>
+            )}
             <Button 
               variant="ghost"
               onClick={() => {
