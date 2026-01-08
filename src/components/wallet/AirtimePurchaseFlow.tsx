@@ -19,7 +19,6 @@ import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 interface AirtimePurchaseFlowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isMobile?: boolean;
   onSuccess?: () => void;
 }
 
@@ -33,7 +32,6 @@ const STEPS = {
 export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
   open,
   onOpenChange,
-  isMobile = false,
   onSuccess,
 }) => {
   const { purchaseAirtime, isPurchasing, airtimeLimits } = useAirtime();
@@ -459,77 +457,35 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     </div>
   );
 
-  if (isMobile) {
-      return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
-                <div className="px-6 pt-8">
-                    {Header}
-                </div>
-                <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-                    <AnimatePresence mode="wait">
-                        {step === STEPS.PHONE && renderPhoneStep()}
-                        {step === STEPS.AMOUNT && renderAmountStep()}
-                        {step === STEPS.REVIEW && renderReviewStep()}
-                        {step === STEPS.SUCCESS && renderSuccessStep()}
-                    </AnimatePresence>
-                    
-                    {error && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        </motion.div>
-                    )}
-                </div>
-                <div className="px-6 pb-8 pt-2">
-                    {renderFooter()}
-                </div>
-            </SheetContent>
-
-            <VerifyPinDialog
-                open={showPinVerify}
-                onOpenChange={setShowPinVerify}
-                onSuccess={handlePinSuccess}
-                onCancel={() => setShowPinVerify(false)}
-                title="Verify PIN for Airtime"
-                description="Enter your 4-digit PIN to authorize this transaction."
-                actionLabel="purchase"
-            />
-        </Sheet>
-      );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden gap-0">
-         <div className="p-6 pb-2">
-            {Header}
-         </div>
-         <div className="px-6 py-2 min-h-[300px]">
-            <AnimatePresence mode="wait">
-                {step === STEPS.PHONE && renderPhoneStep()}
-                {step === STEPS.AMOUNT && renderAmountStep()}
-                {step === STEPS.REVIEW && renderReviewStep()}
-                {step === STEPS.SUCCESS && renderSuccessStep()}
-            </AnimatePresence>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
+            <div className="px-6 pt-8">
+                {Header}
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <AnimatePresence mode="wait">
+                    {step === STEPS.PHONE && renderPhoneStep()}
+                    {step === STEPS.AMOUNT && renderAmountStep()}
+                    {step === STEPS.REVIEW && renderReviewStep()}
+                    {step === STEPS.SUCCESS && renderSuccessStep()}
+                </AnimatePresence>
+                
+                {error && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    </motion.div>
+                )}
+            </div>
+            <div className="px-6 pb-8 pt-2">
+                {renderFooter()}
+            </div>
+        </SheetContent>
 
-            {error && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
-                    <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                </motion.div>
-            )}
-         </div>
-         <div className="p-6 pt-2 bg-muted/10">
-            {renderFooter()}
-         </div>
-      </DialogContent>
-
-      <VerifyPinDialog
+        <VerifyPinDialog
             open={showPinVerify}
             onOpenChange={setShowPinVerify}
             onSuccess={handlePinSuccess}
@@ -537,8 +493,8 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
             title="Verify PIN for Airtime"
             description="Enter your 4-digit PIN to authorize this transaction."
             actionLabel="purchase"
-      />
-    </Dialog>
+        />
+    </Sheet>
   );
 };
 

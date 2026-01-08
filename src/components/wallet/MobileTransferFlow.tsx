@@ -62,9 +62,13 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
 
   const handleAmountNext = () => {
     const amountNum = Number(amount);
-    const totalCost = amountNum + TRANSFER_FEE;
     
-    if (amountNum <= 0 || totalCost > walletBalance) {
+    // Fee is deducted from amount, so sender only needs to have the amount in wallet
+    if (amountNum <= TRANSFER_FEE) {
+      return; // Amount must be greater than fee
+    }
+    
+    if (amountNum <= 0 || amountNum > walletBalance) {
       return;
     }
     
@@ -89,7 +93,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
     }
   };
 
-  const totalCost = Number(amount) + TRANSFER_FEE;
+  const recipientReceives = Math.max(0, Number(amount) - TRANSFER_FEE);
 
   return (
     <>
@@ -244,7 +248,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                       variant="outline"
                       onClick={() => setAmount(quickAmount.toString())}
                       className="h-12 text-sm font-bold"
-                      disabled={quickAmount + TRANSFER_FEE > walletBalance}
+                      disabled={quickAmount > walletBalance}
                     >
                       ₦{quickAmount.toLocaleString()}
                     </Button>
@@ -255,7 +259,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                   <Coins className="h-4 w-4" />
                   <AlertTitle className="text-sm">Transaction Fee</AlertTitle>
                   <AlertDescription className="text-xs mt-0.5">
-                    A flat fee of ₦{TRANSFER_FEE} will be deducted from your wallet.
+                    A flat fee of ₦{TRANSFER_FEE} will be deducted from the transfer amount.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -271,7 +275,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                 </Button>
                 <Button
                   onClick={handleAmountNext}
-                  disabled={!amount || Number(amount) <= 0 || totalCost > walletBalance}
+                  disabled={!amount || Number(amount) <= TRANSFER_FEE || Number(amount) > walletBalance}
                   className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
@@ -313,21 +317,21 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Transaction Summary</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
-                      <span>Transfer Amount</span>
+                      <span>Sending Amount</span>
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Transfer Fee</span>
-                      <span>₦{TRANSFER_FEE}</span>
+                    <div className="flex justify-between items-center text-red-500">
+                      <span>Transfer Fee (deducted from amount)</span>
+                      <span>-₦{TRANSFER_FEE}</span>
                     </div>
                     <div className="h-px bg-border my-1" />
                     <div className="flex justify-between text-base items-center">
-                      <span className="font-semibold">Total Deduction</span>
-                      <span className="font-bold text-destructive">₦{totalCost.toLocaleString()}</span>
+                      <span className="font-semibold">Deducted from Your Wallet</span>
+                      <span className="font-bold text-destructive">₦{Number(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm text-green-500 items-center mt-2">
-                      <span>Recipient Receives</span>
-                      <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
+                      <span className="font-semibold">Recipient Receives</span>
+                      <span className="font-bold">₦{recipientReceives.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
