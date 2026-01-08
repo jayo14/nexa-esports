@@ -12,6 +12,7 @@ import {
   XCircle,
   Lock,
   Users,
+  User,
   Star,
   BadgeCheck,
   Eye,
