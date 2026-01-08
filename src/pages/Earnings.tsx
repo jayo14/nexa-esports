@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -369,7 +369,19 @@ const Earnings = () => {
                 </CardHeader>
                 <CardContent>
                     <ResponsiveContainer width="100%" height={350}>
-                        <LineChart data={multiChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <AreaChart data={multiChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <defs>
+                                {chartSources.map((s, idx) => {
+                                    const colors = ['#FF1F44', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28'];
+                                    const color = colors[idx % colors.length];
+                                    return (
+                                        <linearGradient key={`gradient-${s}`} id={`color-${s}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={color} stopOpacity={0.8}/>
+                                            <stop offset="95%" stopColor={color} stopOpacity={0.1}/>
+                                        </linearGradient>
+                                    );
+                                })}
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                             <XAxis 
                                 dataKey="date" 
@@ -392,19 +404,18 @@ const Earnings = () => {
                                 const colors = ['#FF1F44', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28'];
                                 const color = colors[idx % colors.length];
                                 return (
-                                    <Line 
+                                    <Area 
                                         key={s} 
                                         type="monotone" 
                                         dataKey={s} 
                                         stroke={color} 
-                                        strokeWidth={3} 
-                                        dot={{ r: 4, fill: color }}
-                                        activeDot={{ r: 6 }}
+                                        strokeWidth={2} 
+                                        fill={`url(#color-${s})`}
                                         name={s.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} 
                                     />
                                 );
                             })}
-                        </LineChart>
+                        </AreaChart>
                     </ResponsiveContainer>
                 </CardContent>
             </Card>
