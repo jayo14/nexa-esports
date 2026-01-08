@@ -77,8 +77,8 @@ serve(async (req) => {
       payment_options: "card,mobilemoney,ussd,banktransfer",
       customer: {
         email: customer.email,
-        phonenumber: customer.phone || "",
-        name: customer.name || "",
+        phonenumber: customer.phone || undefined,
+        name: customer.name || "Nexa User",
       },
       customizations: {
         title: "Nexa Elite Nexus",
@@ -103,13 +103,15 @@ serve(async (req) => {
     });
 
     const flutterwaveData = await flutterwaveResponse.json();
-    console.log("Flutterwave response:", JSON.stringify(flutterwaveData, null, 2));
+    console.log("Flutterwave response status:", flutterwaveResponse.status);
+    console.log("Flutterwave response body:", JSON.stringify(flutterwaveData, null, 2));
 
     if (!flutterwaveResponse.ok || flutterwaveData.status !== "success") {
       console.error("Flutterwave payment initialization failed:", flutterwaveData);
       return new Response(JSON.stringify({ 
         error: "Payment initialization failed", 
-        details: flutterwaveData.message || "Unknown error" 
+        details: flutterwaveData.message || "Unknown error",
+        flutterwave_message: flutterwaveData.message 
       }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,

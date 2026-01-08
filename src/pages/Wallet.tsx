@@ -32,6 +32,7 @@ import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
 import { AirtimePurchaseFlow } from '@/components/wallet/AirtimePurchaseFlow';
 import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
 import { DataPurchaseFlow } from '@/components/wallet/DataPurchaseFlow';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
@@ -99,6 +100,7 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
     const navigate = useNavigate();
     const location = useLocation();
     const { toast } = useToast();
+    const isMobile = useIsMobile();
     // Allow any authenticated player to create/redeem giveaways
     const isAuthenticated = Boolean(profile?.id);
   

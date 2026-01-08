@@ -29,17 +29,35 @@ serve(async (req) => {
 
   // Handle successful charge
   if (event.event === "charge.completed" && event.data.status === "successful") {
-    const { amount, tx_ref, customer, currency, id } = event.data;
+    const { amount, tx_ref, customer, currency, id, meta } = event.data;
     const { email } = customer;
 
-    const { data: user, error: userError } = await supabaseAdmin
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .single();
+    let user;
 
-    if (userError || !user) {
-      console.error("User not found:", userError);
+    // 1. Try to identify user by ID passed in metadata (most reliable)
+    if (meta?.userId) {
+      const { data: userById } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("id", meta.userId)
+        .maybeSingle();
+      
+      if (userById) user = userById;
+    }
+
+    // 2. Fallback to email if user not found by ID
+    if (!user && email) {
+      const { data: userByEmail } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      
+      if (userByEmail) user = userByEmail;
+    }
+
+    if (!user) {
+      console.error("User not found for payment:", { metaUserId: meta?.userId, email });
       return new Response("User not found", { status: 404 });
     }
 

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { useToast } from '@/hooks/use-toast';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AirtimePurchaseFlowProps {
   open: boolean;
@@ -38,6 +39,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   
   const [step, setStep] = useState(STEPS.PHONE);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -423,10 +425,6 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
      );
   };
 
-  const ContentWrapper = isMobile ? React.Fragment : React.Fragment;
-  const WrapperComponent = isMobile ? SheetContent : DialogContent;
-  const WrapperProps = isMobile ? { side: "bottom" as const, className: "h-[95vh] rounded-t-[20px] p-6" } : { className: "sm:max-w-[425px] p-6" };
-
   // Common Header
   const Header = (
     <div className="mb-6 space-y-1.5 text-center sm:text-left">
@@ -457,33 +455,59 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     </div>
   );
 
+  const content = (
+    <div className="flex flex-col h-full">
+        <div className="px-6 pt-8">
+            {Header}
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <AnimatePresence mode="wait">
+                {step === STEPS.PHONE && renderPhoneStep()}
+                {step === STEPS.AMOUNT && renderAmountStep()}
+                {step === STEPS.REVIEW && renderReviewStep()}
+                {step === STEPS.SUCCESS && renderSuccessStep()}
+            </AnimatePresence>
+            
+            {error && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                </motion.div>
+            )}
+        </div>
+        <div className="px-6 pb-8 pt-2">
+            {renderFooter()}
+        </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+          <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
+              {content}
+          </SheetContent>
+
+          <VerifyPinDialog
+              open={showPinVerify}
+              onOpenChange={setShowPinVerify}
+              onSuccess={handlePinSuccess}
+              onCancel={() => setShowPinVerify(false)}
+              title="Verify PIN for Airtime"
+              description="Enter your 4-digit PIN to authorize this transaction."
+              actionLabel="purchase"
+          />
+      </Sheet>
+    );
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[90dvh] flex flex-col rounded-t-[20px] p-0 overflow-hidden">
-            <div className="px-6 pt-8">
-                {Header}
-            </div>
-            <div className="flex-1 overflow-y-auto px-6 pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-                <AnimatePresence mode="wait">
-                    {step === STEPS.PHONE && renderPhoneStep()}
-                    {step === STEPS.AMOUNT && renderAmountStep()}
-                    {step === STEPS.REVIEW && renderReviewStep()}
-                    {step === STEPS.SUCCESS && renderSuccessStep()}
-                </AnimatePresence>
-                
-                {error && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    </motion.div>
-                )}
-            </div>
-            <div className="px-6 pb-8 pt-2">
-                {renderFooter()}
-            </div>
-        </SheetContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden">
+            {content}
+        </DialogContent>
 
         <VerifyPinDialog
             open={showPinVerify}
@@ -494,7 +518,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
             description="Enter your 4-digit PIN to authorize this transaction."
             actionLabel="purchase"
         />
-    </Sheet>
+    </Dialog>
   );
 };
 

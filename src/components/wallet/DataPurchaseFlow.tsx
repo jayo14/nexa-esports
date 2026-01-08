@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { useToast } from '@/hooks/use-toast';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DataPurchaseFlowProps {
   open: boolean;
@@ -63,12 +64,12 @@ const DATA_PLANS: Record<NetworkProvider, { id: string; name: string; price: num
 export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
   open,
   onOpenChange,
-  isMobile = false,
   onSuccess,
 }) => {
   const { purchaseData, isPurchasing } = useData();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   
   const [step, setStep] = useState(STEPS.PHONE);
   const [phoneNumber, setPhoneNumber] = useState('');
