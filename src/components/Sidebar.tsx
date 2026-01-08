@@ -78,50 +78,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isModerator = profile?.role === 'moderator';
 
   const playerMenuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
-    { icon: User, label: 'Profile', path: '/profile' },
-    { icon: Crosshair, label: 'Scrims', path: '/scrims' },
-    { icon: Package, label: 'Loadouts', path: '/loadouts' },
-    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
-    { icon: BarChart3, label: 'Statistics', path: '/statistics' },
-    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', primary: true },
+    { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
+    { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: User, label: 'Profile', path: '/profile', primary: false },
+    { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
+    { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
+    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Megaphone, label: 'Announcements', path: '/announcements', primary: false },
+    { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
   const moderatorMenuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
-    { icon: User, label: 'Profile', path: '/profile' },
-    { icon: Crosshair, label: 'Scrims', path: '/scrims' },
-    { icon: Package, label: 'Loadouts', path: '/loadouts' },
-    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
-    { icon: Clock, label: 'Attendance', path: '/admin/attendance' },
-    { icon: BarChart3, label: 'Statistics', path: '/statistics' },
-    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', primary: true },
+    { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
+    { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: User, label: 'Profile', path: '/profile', primary: false },
+    { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
+    { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
+    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Clock, label: 'Attendance', path: '/admin/attendance', primary: false },
+    { icon: Megaphone, label: 'Announcements', path: '/announcements', primary: false },
+    { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
   const adminMenuItems = [
-    { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
-    { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
-    { icon: Users, label: 'Players', path: '/admin/players' },
-    { icon: Crosshair, label: 'Scrims', path: '/admin/scrims' },
-    { icon: Package, label: 'Loadouts', path: '/loadouts' },
-    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
-    { icon: Calendar, label: 'Events', path: '/admin/events' },
-    { icon: Trophy, label: 'Seasons', path: '/admin/seasons' },
-    { icon: Clock, label: 'Attendance', path: '/admin/attendance' },
-    { icon: Megaphone, label: 'Announcements', path: '/admin/announcements' },
-    { icon: Bell, label: 'Notifications', path: '/admin/notifications' },
-    { icon: AlertCircle, label: 'Issues', path: '/admin/feedback' },
-  ...(profile?.role === 'clan_master' ? [{ icon: DollarSign, label: 'Earnings', path: '/admin/earnings' }] : []),
-  ...(profile?.role === 'clan_master' ? [{ icon: Activity, label: 'Activities', path: '/admin/activities' }] : []),
-  ...(profile?.role === 'clan_master' ? [{ icon: SlidersHorizontal, label: 'Configuration', path: '/admin/config' }] : []),
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: Shield, label: 'Admin Dashboard', path: '/admin', primary: true },
+    { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
+    { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: Users, label: 'Players', path: '/admin/players', primary: false },
+    { icon: Crosshair, label: 'Scrims', path: '/admin/scrims', primary: false },
+    { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
+    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Calendar, label: 'Events', path: '/admin/events', primary: false },
+    { icon: Trophy, label: 'Seasons', path: '/admin/seasons', primary: false },
+    { icon: Clock, label: 'Attendance', path: '/admin/attendance', primary: false },
+    { icon: Megaphone, label: 'Announcements', path: '/admin/announcements', primary: false },
+    { icon: Bell, label: 'Notifications', path: '/admin/notifications', primary: false },
+    { icon: AlertCircle, label: 'Issues', path: '/admin/feedback', primary: false },
+  ...(profile?.role === 'clan_master' ? [{ icon: DollarSign, label: 'Earnings', path: '/admin/earnings', primary: false }] : []),
+  ...(profile?.role === 'clan_master' ? [{ icon: Activity, label: 'Activities', path: '/admin/activities', primary: false }] : []),
+  ...(profile?.role === 'clan_master' ? [{ icon: SlidersHorizontal, label: 'Configuration', path: '/admin/config', primary: false }] : []),
+    { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
   const handleLogout = async () => {
@@ -193,11 +194,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-6">
-        <div className="space-y-2">
-          {/* Player Menu - Only show for players */}
-          {isPlayer && (
-            <>
-              {playerMenuItems.map((item) => (
+        {/* Player Menu - Only show for players */}
+        {isPlayer && (
+          <>
+            {/* Primary Navigation */}
+            <div className="space-y-2">
+              {!isCollapsed && !isMediumScreen && (
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                  Primary
+                </div>
+              )}
+              {playerMenuItems.filter(item => item.primary).map((item) => (
                 <NavItem
                   key={item.path}
                   icon={item.icon}
@@ -208,13 +215,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => navigate(item.path)}
                 />
               ))}
-            </>
-          )}
+            </div>
 
-          {/* Moderator Menu - Only show for moderators */}
-          {isModerator && (
-            <>
-              {moderatorMenuItems.map((item) => (
+            {/* Secondary Navigation */}
+            <div className="space-y-2 pt-4 border-t border-border/30">
+              {!isCollapsed && !isMediumScreen && (
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                  Secondary
+                </div>
+              )}
+              {playerMenuItems.filter(item => !item.primary).map((item) => (
                 <NavItem
                   key={item.path}
                   icon={item.icon}
@@ -225,13 +235,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => navigate(item.path)}
                 />
               ))}
-            </>
-          )}
+            </div>
+          </>
+        )}
 
-          {/* Admin Menu - Only show for admins */}
-          {isAdmin && (
-            <>
-              {adminMenuItems.map((item) => (
+        {/* Moderator Menu - Only show for moderators */}
+        {isModerator && (
+          <>
+            {/* Primary Navigation */}
+            <div className="space-y-2">
+              {!isCollapsed && !isMediumScreen && (
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                  Primary
+                </div>
+              )}
+              {moderatorMenuItems.filter(item => item.primary).map((item) => (
+                <NavItem
+                  key={item.path}
+                  icon={item.icon}
+                  label={item.label}
+                  path={item.path}
+                  isActive={location.pathname === item.path}
+                  isCollapsed={isCollapsed || isMediumScreen}
+                  onClick={() => navigate(item.path)}
+                />
+              ))}
+            </div>
+
+            {/* Secondary Navigation */}
+            <div className="space-y-2 pt-4 border-t border-border/30">
+              {!isCollapsed && !isMediumScreen && (
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                  Secondary
+                </div>
+              )}
+              {moderatorMenuItems.filter(item => !item.primary).map((item) => (
+                <NavItem
+                  key={item.path}
+                  icon={item.icon}
+                  label={item.label}
+                  path={item.path}
+                  isActive={location.pathname === item.path}
+                  isCollapsed={isCollapsed || isMediumScreen}
+                  onClick={() => navigate(item.path)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Admin Menu - Only show for admins */}
+        {isAdmin && (
+          <>
+            {/* Primary Navigation */}
+            <div className="space-y-2">
+              {!isCollapsed && !isMediumScreen && (
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                  Primary
+                </div>
+              )}
+              {adminMenuItems.filter(item => item.primary).map((item) => (
                 <NavItem
                   key={item.path}
                   icon={item.icon}
@@ -242,9 +305,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => navigate(item.path)}
                 />
               ))}
-            </>
-          )}
-        </div>
+            </div>
+
+            {/* Secondary Navigation */}
+            <div className="space-y-2 pt-4 border-t border-border/30">
+              {!isCollapsed && !isMediumScreen && (
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+                  Secondary
+                </div>
+              )}
+              {adminMenuItems.filter(item => !item.primary).map((item) => (
+                <NavItem
+                  key={item.path}
+                  icon={item.icon}
+                  label={item.label}
+                  path={item.path}
+                  isActive={location.pathname.startsWith(item.path)}
+                  isCollapsed={isCollapsed || isMediumScreen}
+                  onClick={() => navigate(item.path)}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Footer */}
