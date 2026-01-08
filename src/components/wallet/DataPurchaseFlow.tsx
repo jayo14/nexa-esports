@@ -20,7 +20,6 @@ import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 interface DataPurchaseFlowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isMobile?: boolean;
   onSuccess?: () => void;
 }
 
@@ -499,19 +498,11 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
 
   return (
     <>
-        {isMobile ? (
-            <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent side="bottom" className="h-[90dvh] p-0 overflow-hidden rounded-t-[20px]">
-                    {content}
-                </SheetContent>
-            </Sheet>
-        ) : (
-            <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden gap-0">
-                    {content}
-                </DialogContent>
-            </Dialog>
-        )}
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="bottom" className="h-[90dvh] p-0 overflow-hidden rounded-t-[20px]">
+                {content}
+            </SheetContent>
+        </Sheet>
 
         <VerifyPinDialog
             open={showPinVerify}

@@ -121,7 +121,6 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
     const [showCodesDialog, setShowCodesDialog] = useState(false);
     
     // PIN verification states
-    const [isMobile, setIsMobile] = useState(false);
     const [showPinVerify, setShowPinVerify] = useState(false);
     const [pendingGiveaway, setPendingGiveaway] = useState(false);
 
@@ -144,16 +143,6 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
             navigate(`?${params.toString()}`, { replace: true });
         }
     }, [open, navigate, location]);
-
-    // Check screen size for responsive dialog/sheet
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     useEffect(() => {
         if (open && isAuthenticated) {
@@ -786,7 +775,6 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
     const [isProcessing, setIsProcessing] = useState(false);
     const withdrawalInProgressRef = useRef(false);
     const { toast } = useToast();
-    const [isMobile, setIsMobile] = useState(false);
     const [showPinVerify, setShowPinVerify] = useState(false);
     const [pendingWithdrawal, setPendingWithdrawal] = useState(false);
 
@@ -809,16 +797,6 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
             navigate(`?${params.toString()}`, { replace: true });
         }
     }, [open, navigate, location]);
-
-    // Check screen size for responsive dialog/sheet
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     useEffect(() => {
         if (profile?.banking_info) {
@@ -1041,266 +1019,110 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         }
     }
 
-    if (isMobile) {
-        return (
-            <>
-                {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
-                    <Button 
-                        variant="outline" 
-                        className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
-                        disabled={cooldown > 0}
-                        onClick={() => setOpen(true)}
-                    >
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                          <ArrowDown className="h-5 w-5 text-red-500" />
-                        </div>
-                        <span className="font-semibold text-xs">
-                          {cooldown > 0 
-                              ? `Wait: ${Math.floor(cooldown / 3600)}h`
-                              : 'Withdraw'}
-                        </span>
-                    </Button>
-                ) : (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
-                                    <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
-                                      <ArrowDown className="h-5 w-5 text-red-500" />
-                                    </div>
-                                    <span className="font-semibold text-xs">Withdraw</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Withdrawals are currently unavailable.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                )}
-
-                <MobileWithdrawFlow
-                    open={open}
-                    onOpenChange={setOpen}
-                    walletBalance={walletBalance}
-                    accountName={accountName}
-                    accountNumber={accountNumber}
-                    bankName={bankName}
-                    cooldown={cooldown}
-                    onWithdrawSubmit={async (withdrawAmount) => {
-                         try {
-                            const transferPayload = {
-                                endpoint: 'initiate-transfer',
-                                amount: Number(withdrawAmount),
-                                account_bank: bankCode,
-                                account_number: accountNumber,
-                                beneficiary_name: accountName,
-                                narration: 'Wallet withdrawal',
-                            };
-                            
-                            const { data: { session } } = await supabase.auth.getSession();
-                            const { data: transferData, error: transferError } = await supabase.functions.invoke('flutterwave-transfer', {
-                                headers: { 'Authorization': `Bearer ${session?.access_token}` },
-                                body: transferPayload,
-                            });
-                            
-                            if (transferError || !transferData.status) {
-                                let message = transferData?.message || transferError?.message;
-                                if (transferData?.error === 'withdrawals_disabled_today') message = 'Withdrawals disabled on Sundays.';
-                                throw new Error(message || 'Withdrawal failed');
-                            }
-                            
-                            toast({
-                                title: "Withdrawal Submitted",
-                                description: `Your request to withdraw ₦${Number(withdrawAmount).toLocaleString()} has been submitted.`,
-                            });
-                            onWithdrawalComplete?.();
-                         } catch (e: any) {
-                             console.error(e);
-                             toast({ title: "Withdrawal Failed", description: e.message, variant: "destructive" });
-                             throw e;
-                         }
-                    }}
-                    isProcessing={isProcessing}
-                />
-            </>
-        );
-    }
-
     return (
         <>
-            <Dialog open={open} onOpenChange={setOpen}>
-                {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
-                    <DialogTrigger asChild>
-                        <Button 
-                            variant="outline" 
-                            className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
-                            disabled={cooldown > 0}
-                        >
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                              <ArrowDown className="h-5 w-5 text-red-500" />
-                            </div>
-                            <span className="font-semibold text-xs">
-                              {cooldown > 0 
-                                  ? `Wait: ${Math.floor(cooldown / 3600)}h`
-                                  : 'Withdraw'}
-                            </span>
-                        </Button>
-                    </DialogTrigger>
-                ) : (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
-                                    <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
-                                      <ArrowDown className="h-5 w-5 text-red-500" />
-                                    </div>
-                                    <span className="font-semibold text-xs">Withdraw</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Withdrawals are currently unavailable.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                )}
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Withdraw</DialogTitle>
-                        <DialogDescription>Withdraw funds from your wallet to your bank account.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 grid gap-4">
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="bankName">Bank Name</Label>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Input 
-                                            id="bankName"
-                                            placeholder="Bank Name"
-                                            value={bankName}
-                                            readOnly
-                                        />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>To edit, go to your settings page.</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="accountNumber">Account Number</Label>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Input 
-                                            id="accountNumber"
-                                            placeholder="Account Number"
-                                            value={accountNumber}
-                                            readOnly
-                                        />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>To edit, go to your settings page.</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="accountName">Account Name</Label>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Input 
-                                            id="accountName"
-                                            placeholder="Account Name"
-                                            value={accountName}
-                                            readOnly
-                                        />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>To edit, go to your settings page.</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="amount">Amount</Label>
-                            <Input 
-                                id="amount"
-                                type="number"
-                                placeholder="₦0.00"
-                                value={amount}
-                                onChange={(e) => setAmount(Number(e.target.value))}
-                            />
-                        </div>
-                        <Alert>
-                            <Coins className="h-4 w-4" />
-                            <AlertTitle>Transaction Fee</AlertTitle>
-                            <AlertDescription>
-                                {amount > 0 ? (
-                                    <>
-                                        A fee of ₦{(amount * 0.04).toFixed(2)} (4%) will be deducted from the withdrawal.
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            You will receive ₦{(amount * 0.96).toFixed(2)} after fees.
-                                        </div>
-                                    </>
-                                ) : (
-                                    'A fee of 4% will be deducted for this transaction.'
-                                )}
-                            </AlertDescription>
-                        </Alert>
-                        <div className="grid gap-2">
-                            <Label htmlFor="notes">Transaction Notes</Label>
-                            <Textarea 
-                                id="notes"
-                                placeholder="Transaction Notes"
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                            />
-                        </div>
+            {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
+                <Button 
+                    variant="outline" 
+                    className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
+                    disabled={cooldown > 0}
+                    onClick={() => setOpen(true)}
+                >
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
+                      <ArrowDown className="h-5 w-5 text-red-500" />
                     </div>
-                    <DialogFooter>
-                        <Button 
-                            onClick={handleWithdrawClick}
-                            disabled={cooldown > 0 || isProcessing}
-                        >
-                            {isProcessing ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Processing...
-                                </>
-                            ) : cooldown > 0 
-                                ? `Wait ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m ${cooldown % 60}s`
-                                : 'Submit Withdrawal'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <span className="font-semibold text-xs">
+                      {cooldown > 0 
+                          ? `Wait: ${Math.floor(cooldown / 3600)}h`
+                          : 'Withdraw'}
+                    </span>
+                </Button>
+            ) : (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
+                                <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
+                                  <ArrowDown className="h-5 w-5 text-red-500" />
+                                </div>
+                                <span className="font-semibold text-xs">Withdraw</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Withdrawals are currently unavailable.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
+
+            <MobileWithdrawFlow
+                open={open}
+                onOpenChange={setOpen}
+                walletBalance={walletBalance}
+                accountName={accountName}
+                accountNumber={accountNumber}
+                bankName={bankName}
+                cooldown={cooldown}
+                onWithdrawSubmit={async (withdrawAmount) => {
+                     try {
+                        const transferPayload = {
+                            endpoint: 'initiate-transfer',
+                            amount: Number(withdrawAmount),
+                            account_bank: bankCode,
+                            account_number: accountNumber,
+                            beneficiary_name: accountName,
+                            narration: 'Wallet withdrawal',
+                        };
+                        
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const { data: transferData, error: transferError } = await supabase.functions.invoke('flutterwave-transfer', {
+                            headers: { 'Authorization': `Bearer ${session?.access_token}` },
+                            body: transferPayload,
+                        });
+                        
+                        if (transferError || !transferData.status) {
+                            let message = transferData?.message || transferError?.message;
+                            if (transferData?.error === 'withdrawals_disabled_today') message = 'Withdrawals disabled on Sundays.';
+                            throw new Error(message || 'Withdrawal failed');
+                        }
+                        
+                        toast({
+                            title: "Withdrawal Submitted",
+                            description: `Your request to withdraw ₦${Number(withdrawAmount).toLocaleString()} has been submitted.`,
+                        });
+                        onWithdrawalComplete?.();
+                     } catch (e: any) {
+                         console.error(e);
+                         toast({ title: "Withdrawal Failed", description: e.message, variant: "destructive" });
+                         throw e;
+                     }
+                }}
+                isProcessing={isProcessing}
+            />
         
-        {/* PIN Verification Dialog */}
-        <VerifyPinDialog
-            open={showPinVerify}
-            onOpenChange={(open) => {
-                setShowPinVerify(open);
-                if (!open) {
+            {/* PIN Verification Dialog */}
+            <VerifyPinDialog
+                open={showPinVerify}
+                onOpenChange={(open) => {
+                    setShowPinVerify(open);
+                    if (!open) {
+                        setPendingWithdrawal(false);
+                    }
+                }}
+                onSuccess={() => {
+                    setShowPinVerify(false);
                     setPendingWithdrawal(false);
-                }
-            }}
-            onSuccess={() => {
-                setShowPinVerify(false);
-                setPendingWithdrawal(false);
-                handleWithdraw();
-            }}
-            onCancel={() => {
-                setShowPinVerify(false);
-                setPendingWithdrawal(false);
-            }}
-            title="Verify PIN for Withdrawal"
-            description="Enter your 4-digit PIN to authorize this withdrawal."
-            actionLabel="withdrawal"
-        />
-    </>
+                    handleWithdraw();
+                }}
+                onCancel={() => {
+                    setShowPinVerify(false);
+                    setPendingWithdrawal(false);
+                }}
+                title="Verify PIN for Withdrawal"
+                description="Enter your 4-digit PIN to authorize this withdrawal."
+                actionLabel="withdrawal"
+            />
+        </>
     )
 }
 
@@ -1314,12 +1136,12 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
     const { data: players, isLoading } = useAdminPlayers();
 
     const [isTransferring, setIsTransferring] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const [showPinVerify, setShowPinVerify] = useState(false);
     const [pendingTransfer, setPendingTransfer] = useState(false);
 
     const TRANSFER_FEE = 50;
-    const totalCost = amount + TRANSFER_FEE;
+    // Fee is deducted from the amount being sent, not from sender's wallet
+    const recipientReceives = Math.max(0, amount - TRANSFER_FEE);
 
     // Check URL params to open dialog
     useEffect(() => {
@@ -1341,32 +1163,28 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
         }
     }, [open, navigate, location]);
 
-    // Check screen size for responsive dialog/sheet
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
     const handleTransferClick = () => {
-        const totalDeduction = amount + TRANSFER_FEE;
-        
         // Validate before showing PIN
         if (amount <= 0) {
             toast({ title: "Invalid Amount", description: "Transfer amount must be positive.", variant: "destructive" });
+            return;
+        }
+        if (amount <= TRANSFER_FEE) {
+            toast({ 
+                title: "Amount Too Low", 
+                description: `Amount must be greater than ₦${TRANSFER_FEE} (transfer fee).`,
+                variant: "destructive" 
+            });
             return;
         }
         if (!recipient) {
             toast({ title: "No Recipient", description: "Please select a player to transfer to.", variant: "destructive" });
             return;
         }
-        if (totalDeduction > walletBalance) {
+        if (amount > walletBalance) {
             toast({ 
                 title: "Insufficient funds", 
-                description: `You need ₦${totalDeduction.toLocaleString()} (₦${amount.toLocaleString()} + ₦${TRANSFER_FEE} fee) but only have ₦${walletBalance.toLocaleString()}`,
+                description: `You need ₦${amount.toLocaleString()} but only have ₦${walletBalance.toLocaleString()}`,
                 variant: "destructive" 
             });
             return;
@@ -1408,7 +1226,7 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
 
             toast({
                 title: "Transfer Successful!",
-                description: `₦${amount.toLocaleString()} has been sent to ${recipient} (₦${TRANSFER_FEE} fee deducted)`,
+                description: `₦${amount.toLocaleString()} sent to ${recipient}. Recipient receives ₦${recipientReceives.toLocaleString()} after ₦${TRANSFER_FEE} fee.`,
             });
             
             // Show receipt immediately
@@ -1444,165 +1262,91 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
         }
     }
 
-    if (isMobile) {
-        return (
-            <>
-                <Button 
-                    variant="outline" 
-                    className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
-                    onClick={() => setOpen(true)}
-                >
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                      <ArrowUpDown className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="font-semibold text-xs">Transfer</span>
-                </Button>
-                
-                <MobileTransferFlow
-                    open={open}
-                    onOpenChange={setOpen}
-                    walletBalance={walletBalance}
-                    players={players || []}
-                    isProcessing={isTransferring}
-                    onTransferSubmit={async (recipientIgn, transferAmount) => {
-                        try {
-                            const { data: { session } } = await supabase.auth.getSession();
-                            const { error } = await supabase.functions.invoke('transfer-funds', {
-                                headers: { 'Authorization': `Bearer ${session?.access_token}` },
-                                body: { recipient_ign: recipientIgn, amount: Number(transferAmount) },
-                            });
-
-                            if (error) throw new Error(error.message);
-
-                            toast({
-                                title: "Transfer Successful!",
-                                description: `₦${Number(transferAmount).toLocaleString()} sent to ${recipientIgn}`,
-                            });
-
-                            // Show receipt immediately
-                            if (onViewReceipt) {
-                                onViewReceipt({
-                                    id: 'temp-' + Date.now(),
-                                    type: 'Transfer Out',
-                                    amount: -Number(transferAmount),
-                                    description: `Transfer to ${recipientIgn}`,
-                                    status: 'success',
-                                    date: new Date().toLocaleDateString(),
-                                    created_at: new Date().toISOString(),
-                                    reference: `transfer_to_${recipientIgn}_${Date.now()}`,
-                                    currency: 'NGN'
-                                });
-                            }
-
-                            onTransferComplete?.();
-                        } catch (err: any) {
-                            toast({
-                                title: "Transfer Failed",
-                                description: err.message,
-                                variant: "destructive",
-                            });
-                            throw err;
-                        }
-                    }}
-                />
-            </>
-        );
-    }
-
     return (
         <>
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline" className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                          <ArrowUpDown className="h-5 w-5 text-primary" />
-                        </div>
-                        <span className="font-semibold text-xs">Transfer</span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Transfer</DialogTitle>
-                        <DialogDescription>Transfer funds to another player's wallet.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 grid gap-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="recipient">Recipient</Label>
-                                                <Select onValueChange={setRecipient} value={recipient}>
-                                                    <SelectTrigger id="recipient">
-                                                        <SelectValue placeholder="Select a player..." />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {players && players.filter(p => !p.is_banned).map((player) => (
-                                                            <SelectItem key={player.id} value={player.ign}>
-                                                                {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="amount">Amount</Label>
-                            <Input 
-                                id="amount"
-                                type="number"
-                                placeholder="₦0.00"
-                                value={amount}
-                                onChange={(e) => setAmount(Number(e.target.value))}
-                            />
-                        </div>
-                        <Alert>
-                            <Coins className="h-4 w-4" />
-                            <AlertTitle>Transaction Fee</AlertTitle>
-                            <AlertDescription>
-                                {amount > 0 ? (
-                                    <>
-                                        A flat fee of ₦{TRANSFER_FEE.toFixed(2)} will be deducted from your wallet.
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            Total deduction: ₦{(amount + TRANSFER_FEE).toFixed(2)} (₦{amount.toFixed(2)} transfer + ₦{TRANSFER_FEE.toFixed(2)} fee)
-                                        </div>
-                                        <div className="text-sm text-green-600 mt-1">
-                                            Recipient will receive: ₦{amount.toFixed(2)}
-                                        </div>
-                                    </>
-                                ) : (
-                                    `A flat fee of ₦${TRANSFER_FEE.toFixed(2)} will be deducted for this transaction.`
-                                )}
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={handleTransferClick} disabled={isTransferring}>
-                            {isTransferring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isTransferring ? "Processing..." : "Transfer Funds"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <Button 
+                variant="outline" 
+                className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
+                onClick={() => setOpen(true)}
+            >
+                <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                  <ArrowUpDown className="h-5 w-5 text-primary" />
+                </div>
+                <span className="font-semibold text-xs">Transfer</span>
+            </Button>
+            
+            <MobileTransferFlow
+                open={open}
+                onOpenChange={setOpen}
+                walletBalance={walletBalance}
+                players={players || []}
+                isProcessing={isTransferring}
+                onTransferSubmit={async (recipientIgn, transferAmount) => {
+                    try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const { error } = await supabase.functions.invoke('transfer-funds', {
+                            headers: { 'Authorization': `Bearer ${session?.access_token}` },
+                            body: { recipient_ign: recipientIgn, amount: Number(transferAmount) },
+                        });
+
+                        if (error) throw new Error(error.message);
+
+                        const recipientAmount = Number(transferAmount) - TRANSFER_FEE;
+                        toast({
+                            title: "Transfer Successful!",
+                            description: `₦${Number(transferAmount).toLocaleString()} sent. Recipient receives ₦${recipientAmount.toLocaleString()} after ₦${TRANSFER_FEE} fee.`,
+                        });
+
+                        // Show receipt immediately
+                        if (onViewReceipt) {
+                            onViewReceipt({
+                                id: 'temp-' + Date.now(),
+                                type: 'Transfer Out',
+                                amount: -Number(transferAmount),
+                                description: `Transfer to ${recipientIgn}`,
+                                status: 'success',
+                                date: new Date().toLocaleDateString(),
+                                created_at: new Date().toISOString(),
+                                reference: `transfer_to_${recipientIgn}_${Date.now()}`,
+                                currency: 'NGN'
+                            });
+                        }
+
+                        onTransferComplete?.();
+                    } catch (err: any) {
+                        toast({
+                            title: "Transfer Failed",
+                            description: err.message,
+                            variant: "destructive",
+                        });
+                        throw err;
+                    }
+                }}
+            />
         
-        {/* PIN Verification Dialog */}
-        <VerifyPinDialog
-            open={showPinVerify}
-            onOpenChange={(open) => {
-                setShowPinVerify(open);
-                if (!open) {
+            {/* PIN Verification Dialog */}
+            <VerifyPinDialog
+                open={showPinVerify}
+                onOpenChange={(open) => {
+                    setShowPinVerify(open);
+                    if (!open) {
+                        setPendingTransfer(false);
+                    }
+                }}
+                onSuccess={() => {
+                    setShowPinVerify(false);
                     setPendingTransfer(false);
-                }
-            }}
-            onSuccess={() => {
-                setShowPinVerify(false);
-                setPendingTransfer(false);
-                handleTransfer();
-            }}
-            onCancel={() => {
-                setShowPinVerify(false);
-                setPendingTransfer(false);
-            }}
-            title="Verify PIN for Transfer"
-            description="Enter your 4-digit PIN to authorize this transfer."
-            actionLabel="transfer"
-        />
-    </>
+                    handleTransfer();
+                }}
+                onCancel={() => {
+                    setShowPinVerify(false);
+                    setPendingTransfer(false);
+                }}
+                title="Verify PIN for Transfer"
+                description="Enter your 4-digit PIN to authorize this transfer."
+                actionLabel="transfer"
+            />
+        </>
     )
 }
 
@@ -1857,16 +1601,6 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
 
 const AirtimeButton = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [open, setOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   return (
     <>
@@ -1883,7 +1617,6 @@ const AirtimeButton = ({ onSuccess }: { onSuccess?: () => void }) => {
       <AirtimePurchaseFlow 
         open={open} 
         onOpenChange={setOpen} 
-        isMobile={isMobile}
         onSuccess={onSuccess}
       />
     </>
@@ -1944,16 +1677,6 @@ const Wallet: React.FC = () => {
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [showRedeemSheet, setShowRedeemSheet] = useState(false);
   const [showDataSheet, setShowDataSheet] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
   
   // Fetch wallet settings from database
   const { settings: walletSettings, loading: walletSettingsLoading } = useWalletSettings();
@@ -2289,13 +2012,11 @@ const Wallet: React.FC = () => {
         onSuccess={fetchWalletData}
         redeemCooldown={redeemCooldown}
         onRedeemSuccess={startRedeemCooldown}
-        isMobile={isMobile}
       />
       
       <DataPurchaseFlow
         open={showDataSheet}
         onOpenChange={setShowDataSheet}
-        isMobile={isMobile}
         onSuccess={fetchWalletData}
       />
 
