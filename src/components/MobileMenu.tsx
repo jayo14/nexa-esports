@@ -1,32 +1,33 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet';
 import {
-  Menu,
-  Wallet,
-  Sword,
-  Megaphone,
-  BarChart3,
+  LayoutDashboard,
+  User,
+  Crosshair,
+  Package,
   Settings,
   Shield,
   Users,
   Calendar,
   Clock,
+  Megaphone,
   Bell,
   AlertCircle,
+  Sword,
   Activity,
   SlidersHorizontal,
+  Wallet,
   DollarSign,
+  Trophy,
+  ShoppingBag,
   LogOut,
-  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,37 +36,63 @@ interface MobileMenuProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export const MobileMenu: React.FC<MobileMenuProps> = ({ open: externalOpen, onOpenChange: externalOnOpenChange }) => {
+export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setOpen }) => {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'clan_master';
+  const isPlayer = profile?.role === 'player';
+  const isModerator = profile?.role === 'moderator';
 
-  // Use external control for open state
-  const open = externalOpen;
-  const setOpen = externalOnOpenChange;
+  // --- Menu Definitions (Mirrored from Sidebar.tsx) ---
 
-  // Secondary pages for hamburger menu (Wallet and Statistics moved to dock navigation)
-  const playerSecondaryPages = [
-    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts' },
-    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+  const playerMenuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', primary: true },
+    { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
+    { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: User, label: 'Profile', path: '/profile', primary: false },
+    { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
+    { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
+    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Megaphone, label: 'Announcements', path: '/announcements', primary: false },
+    { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
-  const adminPages = [
-    { icon: Shield, label: 'Admin Dashboard', path: '/admin' },
-    { icon: Users, label: 'Players', path: '/admin/players' },
-    { icon: Calendar, label: 'Events', path: '/admin/events' },
-    { icon: Clock, label: 'Attendance', path: '/admin/attendance' },
-    { icon: Bell, label: 'Notifications', path: '/admin/notifications' },
-    { icon: AlertCircle, label: 'Issues', path: '/admin/feedback' },
+  const moderatorMenuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', primary: true },
+    { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
+    { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: User, label: 'Profile', path: '/profile', primary: false },
+    { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
+    { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
+    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Clock, label: 'Attendance', path: '/admin/attendance', primary: false },
+    { icon: Megaphone, label: 'Announcements', path: '/announcements', primary: false },
+    { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
-  const clanMasterPages = [
-    { icon: DollarSign, label: 'Earnings', path: '/admin/earnings' },
-    { icon: Activity, label: 'Activities', path: '/admin/activities' },
-    { icon: SlidersHorizontal, label: 'Configuration', path: '/admin/config' },
+  const adminMenuItems = [
+    { icon: Shield, label: 'Admin Dashboard', path: '/admin', primary: true },
+    { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
+    { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: Users, label: 'Players', path: '/admin/players', primary: false },
+    { icon: Crosshair, label: 'Scrims', path: '/admin/scrims', primary: false },
+    { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
+    { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Calendar, label: 'Events', path: '/admin/events', primary: false },
+    { icon: Trophy, label: 'Seasons', path: '/admin/seasons', primary: false },
+    { icon: Clock, label: 'Attendance', path: '/admin/attendance', primary: false },
+    { icon: Megaphone, label: 'Announcements', path: '/admin/announcements', primary: false },
+    { icon: Bell, label: 'Notifications', path: '/admin/notifications', primary: false },
+    { icon: AlertCircle, label: 'Issues', path: '/admin/feedback', primary: false },
+    ...(profile?.role === 'clan_master' ? [{ icon: DollarSign, label: 'Earnings', path: '/admin/earnings', primary: false }] : []),
+    ...(profile?.role === 'clan_master' ? [{ icon: Activity, label: 'Activities', path: '/admin/activities', primary: false }] : []),
+    ...(profile?.role === 'clan_master' ? [{ icon: SlidersHorizontal, label: 'Configuration', path: '/admin/config', primary: false }] : []),
+    { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
   const handleNavigation = (path: string) => {
@@ -84,7 +111,37 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open: externalOpen, onOp
   };
 
   const isActivePath = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    if (path === '/dashboard' || path === '/admin') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const renderMenuItems = (items: typeof playerMenuItems) => {
+    return (
+      <div className="space-y-1">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive = isActivePath(item.path);
+          
+          return (
+            <button
+              key={item.path}
+              onClick={() => handleNavigation(item.path)}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                isActive
+                  ? 'bg-gradient-to-r from-[#FF1F44]/30 to-red-600/20 border border-[#FF1F44]/50 text-white'
+                  : 'hover:bg-white/5 text-gray-300 hover:text-white'
+              )}
+            >
+              <Icon className={cn('w-5 h-5', isActive ? 'text-[#FF1F44]' : 'text-gray-400')} />
+              <span className="text-sm font-medium">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -116,88 +173,55 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open: externalOpen, onOp
         </SheetHeader>
 
         <div className="space-y-6 py-6">
-          {/* Player Secondary Pages */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-3">
-              Menu
-            </h3>
-            {playerSecondaryPages.map((item) => {
-              const Icon = item.icon;
-              const isActive = isActivePath(item.path);
-              
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
-                    isActive
-                      ? 'bg-gradient-to-r from-[#FF1F44]/30 to-red-600/20 border border-[#FF1F44]/50 text-white'
-                      : 'hover:bg-white/5 text-gray-300 hover:text-white'
-                  )}
-                >
-                  <Icon className={cn('w-5 h-5', isActive ? 'text-[#FF1F44]' : 'text-gray-400')} />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Admin Pages */}
-          {isAdmin && (
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-3">
-                Administration
-              </h3>
-              {adminPages.map((item) => {
-                const Icon = item.icon;
-                const isActive = isActivePath(item.path);
-                
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => handleNavigation(item.path)}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
-                      isActive
-                        ? 'bg-gradient-to-r from-[#FF1F44]/30 to-red-600/20 border border-[#FF1F44]/50 text-white'
-                        : 'hover:bg-white/5 text-gray-300 hover:text-white'
-                    )}
-                  >
-                    <Icon className={cn('w-5 h-5', isActive ? 'text-[#FF1F44]' : 'text-gray-400')} />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </button>
-                );
-              })}
+          {/* Render Menu Items Based on Role */}
+          {isPlayer && (
+            <div className="space-y-4">
+               <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                  Primary
+                </h3>
+                {renderMenuItems(playerMenuItems.filter(i => i.primary))}
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                  Secondary
+                </h3>
+                {renderMenuItems(playerMenuItems.filter(i => !i.primary))}
+              </div>
             </div>
           )}
 
-          {/* Clan Master Only Pages */}
-          {profile?.role === 'clan_master' && (
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-3">
-                Clan Master
-              </h3>
-              {clanMasterPages.map((item) => {
-                const Icon = item.icon;
-                const isActive = isActivePath(item.path);
-                
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => handleNavigation(item.path)}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
-                      isActive
-                        ? 'bg-gradient-to-r from-[#FF1F44]/30 to-red-600/20 border border-[#FF1F44]/50 text-white'
-                        : 'hover:bg-white/5 text-gray-300 hover:text-white'
-                    )}
-                  >
-                    <Icon className={cn('w-5 h-5', isActive ? 'text-[#FF1F44]' : 'text-gray-400')} />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </button>
-                );
-              })}
+          {isModerator && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                  Primary
+                </h3>
+                {renderMenuItems(moderatorMenuItems.filter(i => i.primary))}
+              </div>
+              <div className="space-y-2">
+                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                  Secondary
+                </h3>
+                {renderMenuItems(moderatorMenuItems.filter(i => !i.primary))}
+              </div>
+            </div>
+          )}
+
+          {isAdmin && (
+             <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                  Primary
+                </h3>
+                {renderMenuItems(adminMenuItems.filter(i => i.primary))}
+              </div>
+              <div className="space-y-2">
+                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                  Secondary
+                </h3>
+                {renderMenuItems(adminMenuItems.filter(i => !i.primary))}
+              </div>
             </div>
           )}
 
@@ -216,3 +240,4 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open: externalOpen, onOp
     </Sheet>
   );
 };
+
