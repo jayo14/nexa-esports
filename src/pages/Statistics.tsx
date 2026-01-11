@@ -53,7 +53,7 @@ const ComparisonPlayerCard = ({ player, title, isTarget }: { player: any; title:
       "absolute top-0 left-0 w-full h-1.5",
       isTarget ? "bg-primary animate-pulse" : "bg-blue-500"
     )} />
-    <CardContent className="p-6">
+    <CardContent className="p-4 sm:p-6">
       <div className="flex items-center gap-4">
         <div className="relative">
           <img 
@@ -121,7 +121,7 @@ const PodiumCard = ({ player, rank, color, isMvp }: { player: EnhancedPlayer; ra
         {/* Background Glow */}
         <div className={cn("absolute inset-0 bg-gradient-to-b to-transparent opacity-70", theme.bg)} />
         
-        <div className="relative p-5 flex flex-col items-center text-center">
+        <div className="relative p-4 sm:p-5 flex flex-col items-center text-center">
           <div className="relative mb-4">
             <div className={cn(
               "w-24 h-24 rounded-2xl overflow-hidden border-2 shadow-xl flex items-center justify-center",
@@ -443,7 +443,7 @@ const Statistics: FC = () => {
         </div>
 
         <Card className="mt-8 bg-black/40 border-primary/20 shadow-xl backdrop-blur-lg">
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-4 sm:p-6 space-y-6">
             {stats.map((stat) => {
               const val1 = (stat.key === 'kills' ? (currentPlayer.score || currentPlayer.total_kills) : currentPlayer[stat.key]) || 0;
               const val2 = (stat.key === 'kills' ? (comparePlayer.score || comparePlayer.total_kills) : comparePlayer[stat.key]) || 0;
@@ -505,7 +505,7 @@ const Statistics: FC = () => {
               </motion.div>
               <motion.h1 
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="text-4xl sm:text-5xl lg:text-6xl font-black text-white font-orbitron uppercase tracking-tight"
+                className="text-3xl sm:text-5xl lg:text-6xl font-black text-white font-orbitron uppercase tracking-tight"
               >
                 Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-yellow-500">Leaderboard</span>
               </motion.h1>
@@ -626,13 +626,13 @@ const Statistics: FC = () => {
                 className="bg-secondary/50 text-muted-foreground text-xs uppercase font-bold tracking-wider font-orbitron sticky top-0 z-30"
               >
                 <tr>
-                  <th className="p-4 text-center w-16">Rank</th>
-                  <th className="p-4 min-w-[200px]">Operator</th>
-                  <th className="p-4 text-center min-w-[100px] hidden md:table-cell">Matches</th>
-                  <th className="p-4 text-center min-w-[120px] hidden md:table-cell">Win Rate</th>
-                  <th className="p-4 text-center min-w-[100px] hidden sm:table-cell">K/D</th>
-                  <th className="p-4 text-right min-w-[120px]">Score</th>
-                  <th className="p-4 text-center w-16">Trend</th>
+                  <th className="p-3 sm:p-4 text-center w-12 sm:w-16">Rank</th>
+                  <th className="p-3 sm:p-4 min-w-[140px] sm:min-w-[200px]">Operator</th>
+                  <th className="p-3 sm:p-4 text-center min-w-[80px] sm:min-w-[100px] hidden md:table-cell">Matches</th>
+                  <th className="p-3 sm:p-4 text-center min-w-[100px] sm:min-w-[120px] hidden md:table-cell">Win Rate</th>
+                  <th className="p-3 sm:p-4 text-center min-w-[80px] sm:min-w-[100px] hidden sm:table-cell">K/D</th>
+                  <th className="p-3 sm:p-4 text-right min-w-[100px] sm:min-w-[120px]">Score</th>
+                  <th className="p-3 sm:p-4 text-center w-12 sm:w-16">Trend</th>
                 </tr>
               </motion.thead>
               <tbody className="divide-y divide-white/5">
@@ -663,38 +663,38 @@ const Statistics: FC = () => {
                           player.id === user.id && "bg-primary/5 shadow-inner shadow-primary/10 border-l-2 border-primary"
                         )}
                       >
-                        <td className="p-4 text-center font-bold text-gray-400 w-16">
+                        <td className="p-3 sm:p-4 text-center font-bold text-gray-400 w-12 sm:w-16">
                           {getMedalIcon(position)}
                         </td>
-                        <td className="p-4 min-w-[200px]">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
+                        <td className="p-3 sm:p-4 min-w-[140px] sm:min-w-[200px]">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="relative flex-shrink-0">
                               <img 
                                 src={player.avatar_url || "/placeholder.svg"} 
                                 alt={player.ign}
-                                className="w-10 h-10 rounded-lg object-cover border-2 border-primary/30 group-hover:border-primary/50 transition-colors"
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover border-2 border-primary/30 group-hover:border-primary/50 transition-colors"
                               />
                               {player.id === user.id && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-black shadow-md animate-pulse" />
+                                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-black shadow-md animate-pulse" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
                                 {player.ign}
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold uppercase tracking-widest">
-                                <Shield className="w-3 h-3 text-primary" />
+                              <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-widest">
+                                <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
                                 {player.tier} • {player.grade}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-4 text-center text-gray-300 hidden md:table-cell min-w-[100px]">
+                        <td className="p-3 sm:p-4 text-center text-gray-300 hidden md:table-cell min-w-[80px] sm:min-w-[100px]">
                           {player.matches_played}
                         </td>
-                        <td className="p-4 text-center hidden md:table-cell min-w-[120px]">
+                        <td className="p-3 sm:p-4 text-center hidden md:table-cell min-w-[100px] sm:min-w-[120px]">
                           <div className="flex items-center justify-center gap-2">
-                            <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className="w-12 sm:w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
                               <motion.div 
                                 className="h-full bg-primary" 
                                 style={{ width: `${player.win_rate}%` }}
@@ -706,13 +706,13 @@ const Statistics: FC = () => {
                             <span className="text-xs font-bold text-primary">{player.win_rate}%</span>
                           </div>
                         </td>
-                        <td className="p-4 text-center font-mono text-yellow-500/80 hidden sm:table-cell min-w-[100px]">
+                        <td className="p-3 sm:p-4 text-center font-mono text-yellow-500/80 hidden sm:table-cell min-w-[80px] sm:min-w-[100px]">
                           {player.kd_ratio}
                         </td>
-                        <td className="p-4 text-right font-black text-xl text-primary font-orbitron min-w-[120px]">
+                        <td className="p-3 sm:p-4 text-right font-black text-lg sm:text-xl text-primary font-orbitron min-w-[100px] sm:min-w-[120px]">
                           {player.score.toLocaleString()}
                         </td>
-                        <td className="p-4 text-center w-16">
+                        <td className="p-3 sm:p-4 text-center w-12 sm:w-16">
                           {getTrendIcon(player.trend)}
                         </td>
                       </motion.tr>
