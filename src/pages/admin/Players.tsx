@@ -766,20 +766,20 @@ export const AdminPlayers: React.FC = () => {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="aggressive">Aggressive</SelectItem>
-                        <SelectItem value="defensive">Defensive</SelectItem>
-                        <SelectItem value="support">Support</SelectItem>
-                        <SelectItem value="versatile">Versatile</SelectItem>
+                        <SelectItem value="Hybrid">Hybrid(MP+BR)</SelectItem>
+                        <SelectItem value="BR">Battle Royale(BR)</SelectItem>
+                        <SelectItem value="MP">Multiplayer(MP)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               </div>
 
-              {/* Account Actions - Unban */}
-              {editingPlayer.is_banned && (
-                <div className="space-y-4 pt-4 border-t border-white/10">
-                  <h3 className="text-lg font-semibold text-red-400">Account Actions</h3>
+              {/* Account Actions */}
+              <div className="space-y-4 pt-4 border-t border-white/10">
+                <h3 className="text-lg font-semibold text-red-400">Account Actions</h3>
+                
+                {editingPlayer.is_banned ? (
                   <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-center justify-between">
                     <div>
                       <h4 className="font-medium text-red-400">Player is Banned</h4>
@@ -798,8 +798,90 @@ export const AdminPlayers: React.FC = () => {
                       Unban Player
                     </Button>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="space-y-4 p-4 border border-red-500/20 rounded-lg bg-red-500/5">
+                    <h4 className="font-medium text-red-400">Ban Player</h4>
+                    
+                    <div className="space-y-2">
+                      <Label>Ban Type</Label>
+                      <RadioGroup value={banType} onValueChange={(v: any) => setBanType(v)} className="flex gap-4">
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="temporary" id="edit-ban-temp" />
+                          <Label htmlFor="edit-ban-temp">Temporary</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="permanent" id="edit-ban-perm" />
+                          <Label htmlFor="edit-ban-perm">Permanent</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {banType === 'temporary' && (
+                      <div className="space-y-2">
+                        <Label>Ban Until</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal bg-background/50", !banDate && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {banDate ? format(banDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={banDate} onSelect={setBanDate} disabled={(date) => date < new Date()} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Reason</Label>
+                      <Input 
+                        value={banReason} 
+                        onChange={(e) => setBanReason(e.target.value)} 
+                        placeholder="Enter ban reason"
+                        className="bg-background/50 border-white/20"
+                      />
+                    </div>
+
+                    <Button 
+                      onClick={async () => {
+                        if (!banReason) {
+                          toast({ title: "Reason Required", description: "Please provide a reason for the ban.", variant: "destructive" });
+                          return;
+                        }
+                        if (banType === 'temporary' && !banDate) return;
+                        
+                        const banExpiresAt = banType === 'temporary' ? banDate?.toISOString() : null;
+                        
+                        await updatePlayer.mutateAsync({
+                          id: editingPlayer.id,
+                          updates: { 
+                            is_banned: true, 
+                            banned_at: new Date().toISOString(), 
+                            ban_reason: banReason, 
+                            ban_expires_at: banExpiresAt, 
+                            banned_by: profile?.id 
+                          }
+                        });
+                        
+                        await logPlayerBan(editingPlayer.id, editingPlayer.ign, banReason);
+                        toast({ title: "Player Banned", description: `${editingPlayer.ign} has been banned.`, variant: 'destructive' });
+                        
+                        setEditingPlayer({ 
+                          ...editingPlayer, 
+                          is_banned: true, 
+                          ban_reason: banReason 
+                        });
+                        setBanReason('');
+                      }} 
+                      variant="destructive" 
+                      className="w-full"
+                    >
+                      Confirm Ban
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               <Button 
                 onClick={() => handleUpdatePlayer({ 
