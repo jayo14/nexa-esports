@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,8 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { logEventCreate, logEventUpdate, logEventDelete, logEventStatusUpdate } from "@/lib/activityLogger";
-import { sendBroadcastPushNotification } from "@/lib/pushNotifications";
+import { logEventDelete, logEventStatusUpdate } from "@/lib/activityLogger";
 import {
   Calendar,
   Clock,
@@ -26,21 +24,8 @@ import {
   Trash2,
   Users,
   Search,
-  Filter,
 } from "lucide-react";
-
-interface Event {
-  id: string;
-  name: string;
-  type: "MP" | "BR" | "Tournament" | "Scrims";
-  date: string;
-  time: string;
-  end_time?: string;
-  description?: string;
-  status: string;
-  created_at: string;
-  event_participants: { count: number }[];
-}
+import { Event } from "@/types/events";
 
 export const AdminEventsManagement: React.FC = () => {
   const { profile } = useAuth();
@@ -48,21 +33,9 @@ export const AdminEventsManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-
-  const [formData, setFormData] = useState({
-    name: "",
-    type: "MP" as "MP" | "BR" | "Tournament" | "Scrims",
-    date: "",
-    time: "",
-    end_time: "",
-    description: "",
-    status: "upcoming",
-  });
 
   // Fetch events using useQuery
   const { data: events = [], isLoading } = useQuery({
@@ -195,104 +168,6 @@ export const AdminEventsManagement: React.FC = () => {
     };
   }, [events, queryClient]);
 
-  // Create/Update event mutation
-  const saveEventMutation = useMutation({
-    mutationFn: async (eventData: typeof formData) => {
-      const isUpdate = !!editingEvent;
-      
-      if (isUpdate) {
-        const { error } = await supabase
-          .from("events")
-          .update({
-            ...eventData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingEvent.id);
-        if (error) throw error;
-
-        // Log event update
-        await logEventUpdate(eventData.name, editingEvent, eventData);
-        
-        // Send push notification for event update
-        try {
-          await sendBroadcastPushNotification({
-            title: `📅 Event Updated: ${eventData.name}`,
-            message: `${eventData.type} event on ${new Date(eventData.date).toLocaleDateString()} at ${eventData.time}`,
-            data: {
-              type: 'event_updated',
-              url: '/scrims',
-              eventName: eventData.name,
-              eventType: eventData.type,
-              eventDate: eventData.date,
-              eventTime: eventData.time,
-            }
-          });
-        } catch (pushError) {
-          console.warn('Failed to send push notification for event update:', pushError);
-        }
-      } else {
-        const { error } = await supabase.from("events").insert([
-          {
-            ...eventData,
-            created_by: profile?.id,
-          },
-        ]);
-        if (error) throw error;
-
-        // Log event creation
-        await logEventCreate(eventData.name, eventData);
-        
-        // Send push notification for new event
-        try {
-          await sendBroadcastPushNotification({
-            title: `🎮 New Event: ${eventData.name}`,
-            message: `${eventData.type} event scheduled for ${new Date(eventData.date).toLocaleDateString()} at ${eventData.time}`,
-            data: {
-              type: 'event_created',
-              url: '/scrims',
-              eventName: eventData.name,
-              eventType: eventData.type,
-              eventDate: eventData.date,
-              eventTime: eventData.time,
-            }
-          });
-        } catch (pushError) {
-          console.warn('Failed to send push notification for new event:', pushError);
-        }
-      }
-      
-      return { isUpdate };
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["activities"] });
-      setIsCreating(false);
-      setEditingEvent(null);
-      setFormData({
-        name: "",
-        type: "MP",
-        date: "",
-        time: "",
-        end_time: "",
-        description: "",
-        status: "upcoming",
-      });
-      toast({
-        title: result?.isUpdate ? "Event Updated" : "Event Created",
-        description: `Event has been ${
-          result?.isUpdate ? "updated" : "created"
-        } successfully.`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   // Manual status update mutation (for admin override)
   const updateStatusMutation = useMutation({
     mutationFn: async ({
@@ -365,25 +240,6 @@ export const AdminEventsManagement: React.FC = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveEventMutation.mutate(formData);
-  };
-
-  const handleEdit = (event: Event) => {
-    setEditingEvent(event);
-    setFormData({
-      name: event.name,
-      type: event.type,
-      date: event.date,
-      time: event.time,
-      end_time: event.end_time || "",
-      description: event.description || "",
-      status: event.status,
-    });
-    setIsCreating(true);
-  };
-
   const handleDelete = (event: Event) => {
     if (confirm("Are you sure you want to delete this event?")) {
       deleteEventMutation.mutate({ eventId: event.id, eventName: event.name });
@@ -394,7 +250,7 @@ export const AdminEventsManagement: React.FC = () => {
     updateStatusMutation.mutate({ 
       eventId: event.id, 
       newStatus, 
-      eventName: event.name,
+      eventName: event.name, 
       oldStatus: event.status 
     });
   };
@@ -508,19 +364,7 @@ export const AdminEventsManagement: React.FC = () => {
           </p>
         </div>
         <Button
-          onClick={() => {
-            setIsCreating(true);
-            setEditingEvent(null);
-            setFormData({
-              name: "",
-              type: "MP",
-              date: "",
-              time: "",
-              end_time: "",
-              description: "",
-              status: "upcoming",
-            });
-          }}
+          onClick={() => navigate("/admin/events/new")}
           className="bg-primary hover:bg-primary/90"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -570,156 +414,6 @@ export const AdminEventsManagement: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Create/Edit Form */}
-      {isCreating && (
-        <Card className="bg-card/50 border-border/30 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>
-              {editingEvent ? "Edit Event" : "Create New Event"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Event Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    placeholder="Tournament Championship"
-                    className="bg-background/50"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="type">Event Type</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(
-                      value: "MP" | "BR" | "Tournament" | "Scrims"
-                    ) => setFormData((prev) => ({ ...prev, type: value }))}
-                  >
-                    <SelectTrigger className="bg-background/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MP">Multiplayer</SelectItem>
-                      <SelectItem value="BR">Battle Royale</SelectItem>
-                      <SelectItem value="Tournament">Tournament</SelectItem>
-                      <SelectItem value="Scrims">Scrims</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, date: e.target.value }))
-                    }
-                    className="bg-background/50"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="time">Start Time</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, time: e.target.value }))
-                    }
-                    className="bg-background/50"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="end_time">End Time (Optional)</Label>
-                  <Input
-                    id="end_time"
-                    type="time"
-                    value={formData.end_time}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        end_time: e.target.value,
-                      }))
-                    }
-                    className="bg-background/50"
-                    placeholder="Leave empty for open-ended events"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Events will auto-complete when end time is reached
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, status: value }))
-                    }
-                  >
-                    <SelectTrigger className="bg-background/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="upcoming">Upcoming</SelectItem>
-                      <SelectItem value="ongoing">Ongoing</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Event description..."
-                  className="bg-background/50"
-                />
-              </div>
-
-              <div className="flex space-x-2">
-                <Button type="submit" disabled={saveEventMutation.isPending}>
-                  {editingEvent ? "Update Event" : "Create Event"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreating(false);
-                    setEditingEvent(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Events List */}
       <div className="grid gap-4">
@@ -830,7 +524,7 @@ export const AdminEventsManagement: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleEdit(event)}
+                      onClick={() => navigate(`/admin/events/${event.id}/edit`)}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>

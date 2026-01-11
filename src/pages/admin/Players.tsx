@@ -776,6 +776,31 @@ export const AdminPlayers: React.FC = () => {
                 </div>
               </div>
 
+              {/* Account Actions - Unban */}
+              {editingPlayer.is_banned && (
+                <div className="space-y-4 pt-4 border-t border-white/10">
+                  <h3 className="text-lg font-semibold text-red-400">Account Actions</h3>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-red-400">Player is Banned</h4>
+                      <p className="text-sm text-gray-400">
+                        Reason: {editingPlayer.ban_reason || 'No reason provided'}
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={async () => {
+                        await handleUnbanPlayer(editingPlayer);
+                        setEditingPlayer({ ...editingPlayer, is_banned: false, ban_reason: null });
+                      }} 
+                      variant="outline" 
+                      className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                    >
+                      Unban Player
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <Button 
                 onClick={() => handleUpdatePlayer({ 
                   ign: editingPlayer.ign,
