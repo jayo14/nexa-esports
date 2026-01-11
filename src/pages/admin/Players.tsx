@@ -71,11 +71,10 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails, leade
   return (
     <Card 
       className={cn(
-        "bg-gradient-to-br from-background/40 via-background/20 to-background/40 backdrop-blur-xl border border-[#FF1F44]/20 shadow-2xl relative overflow-hidden cursor-pointer group",
-        "transition-all duration-300 hover:border-[#FF1F44]/60 hover:shadow-[0_0_30px_rgba(255,31,68,0.3)] hover:scale-[1.02]",
+        "bg-gradient-to-br from-background/40 via-background/20 to-background/40 backdrop-blur-xl border border-[#FF1F44]/20 shadow-2xl relative overflow-hidden group",
+        "transition-all duration-300",
         player.is_banned && "opacity-50 grayscale"
       )}
-      onClick={() => onDetails(player)}
     >
       {/* Sci-fi corner decorations */}
       <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-[#FF1F44]/40"></div>
