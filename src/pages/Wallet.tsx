@@ -32,6 +32,7 @@ import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
 import { AirtimePurchaseFlow } from '@/components/wallet/AirtimePurchaseFlow';
 import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
 import { DataPurchaseFlow } from '@/components/wallet/DataPurchaseFlow';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { FlutterwaveHistory } from '@/components/wallet/FlutterwaveHistory';
 
 // Transaction fee constants
