@@ -169,6 +169,16 @@ Verifies bank account details.
 }
 ```
 
+### 7. flutterwave-get-transactions
+Fetches transaction history directly from Flutterwave for the authenticated user.
+
+**Endpoint**: `GET /flutterwave-get-transactions`
+
+**Features**:
+- Filters by customer email
+- Supports status filtering (default: 'successful')
+- Used by the "Verify Payments" UI component for external verification.
+
 ## Frontend Integration
 
 ### Payment Flow
