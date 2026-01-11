@@ -30,7 +30,7 @@ type Player = Database['public']['Tables']['profiles']['Row'] & {
 // Constants
 const TOP_RANKS_THRESHOLD = 10;
 
-const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails, leaderboardRank }) => {
+const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
@@ -129,19 +129,32 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails, leade
             </div>
           </div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="hover:bg-[#FF1F44]/20">
-                <MoreVertical className="w-4 h-4" />
+          <div className="flex items-center gap-1">
+            {(profile?.role === 'admin' || profile?.role === 'clan_master') && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="hover:bg-[#FF1F44]/20 h-8 w-8 text-white"
+                onClick={(e) => { e.stopPropagation(); onEdit(player); }}
+                title="Edit Player"
+              >
+                <Edit className="w-4 h-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border-[#FF1F44]/30">
-              {(profile?.role === 'admin' || profile?.role === 'clan_master') && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(player); }}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-              )}
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="hover:bg-[#FF1F44]/20 h-8 w-8">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border-[#FF1F44]/30">
+                {(profile?.role === 'admin' || profile?.role === 'clan_master') && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(player); }}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
               {player.is_banned ? (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onUnban(player); }} disabled={player.role === 'clan_master'}>
                   <Check className="w-4 h-4 mr-2" />
@@ -166,8 +179,9 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, onDetails, leade
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      </div>
 
-        {/* Role and Grade Badges */}
+      {/* Role and Grade Badges */}
         <div className="flex gap-2 flex-wrap">
           <Badge className="bg-gradient-to-r from-[#FF1F44]/20 to-red-600/20 border border-[#FF1F44]/30 text-white">
             {getRoleIcon(player.role)}
@@ -573,7 +587,6 @@ export const AdminPlayers: React.FC = () => {
                 }
               }
             }}
-            onDetails={setSelectedPlayer}
           />
         ))}
       </div>
