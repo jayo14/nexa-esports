@@ -32,7 +32,7 @@ import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
 import { AirtimePurchaseFlow } from '@/components/wallet/AirtimePurchaseFlow';
 import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
 import { DataPurchaseFlow } from '@/components/wallet/DataPurchaseFlow';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { FlutterwaveHistory } from '@/components/wallet/FlutterwaveHistory';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
@@ -1223,7 +1223,17 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
             });
 
             if (error) {
-                throw new Error(error.message);
+                // Try to parse structured error from edge function
+                let errorMessage = error.message;
+                try {
+                    if (error.context && typeof error.context.json === 'function') {
+                        const errorBody = await error.context.json();
+                        errorMessage = errorBody.message || errorBody.error || errorMessage;
+                    }
+                } catch (e) {
+                    // Fallback to default message
+                }
+                throw new Error(errorMessage);
             }
 
             toast({
@@ -1419,11 +1429,19 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
             window.location.href = data.data.link;
         } catch (error: any) {
             console.error('Error initiating payment:', error);
+            
+            // Try to extract a friendly message
+            let message = error?.message || 'An unexpected error occurred.';
+            if (message.includes('Minimum amount')) message = 'The minimum deposit amount is ₦500.';
+            if (message.includes('Maximum amount')) message = 'The maximum deposit amount is ₦50,000.';
+            if (message.includes('network') || message.includes('fetch')) message = 'Network error. Please check your internet connection.';
+
             toast({
-                title: 'Error',
-                description: error?.message || 'An unexpected error occurred.',
+                title: 'Payment Failed',
+                description: message,
                 variant: 'destructive',
             });
+        } finally {
             setIsProcessing(false);
         }
     };
@@ -2023,11 +2041,12 @@ const Wallet: React.FC = () => {
       />
 
       <Card className="border-border/50 shadow-xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <Coins className="h-6 w-6 text-primary" />
             Transaction History
           </CardTitle>
+          <FlutterwaveHistory />
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
