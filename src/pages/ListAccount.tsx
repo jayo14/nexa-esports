@@ -44,7 +44,7 @@ const ASSET_OPTIONS = [
 ];
 
 const LOGIN_METHODS = [
-  { id: 'activision', label: 'Activision', logo: 'https://e7.pngegg.com/pngimages/682/1000/png-clipart-call-of-duty-mobile-logo-iphone-call-of-duty-black-ops-mobile-game-call-of-duty-modern-warfare-video-game-logo.png' },
+  { id: 'activision', label: 'Activision', logo: '/activision_logo_white-text.png' },
   { id: 'icloud', label: 'iCloud', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/31/Apple_logo_white.svg' },
   { id: 'gmail', label: 'Gmail', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg' },
   { id: 'facebook', label: 'Facebook', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg' },
