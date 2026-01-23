@@ -21,6 +21,8 @@ interface NavItemProps {
   isCollapsed: boolean;
   onClick: () => void;
   subItems?: { label: string; path: string; }[];
+  badgeCount?: number;
+  badgeColor?: string;
 }
 
 export const NavItem: React.FC<NavItemProps> = ({
@@ -31,14 +33,10 @@ export const NavItem: React.FC<NavItemProps> = ({
   isCollapsed,
   onClick,
   subItems,
+  badgeCount,
+  badgeColor = 'bg-destructive',
 }) => {
-  const { unreadCount } = useNotifications();
-  const { data: activitiesCount = 0 } = useActivities();
-  const { profile } = useAuth();
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
-
-  const isNotificationsItem = path === '/admin/notifications';
-  const isActivitiesItem = path === '/admin/activities';
 
   const handleItemClick = () => {
     if (subItems) {
@@ -57,22 +55,15 @@ export const NavItem: React.FC<NavItemProps> = ({
       } ${isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
     >
       <Icon className={`w-4 h-4 ${isCollapsed ? '' : 'mr-2'}`} />
-      {!isCollapsed && <span>{label}</span>}
+      {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
       {subItems && !isCollapsed && (
-        <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${isSubMenuOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSubMenuOpen ? 'rotate-180' : ''}`} />
       )}
-      {isNotificationsItem && unreadCount > 0 && (
-        <div className={`absolute bg-destructive text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center ${
-          isCollapsed ? 'top-0 right-0 text-[10px]' : 'top-1 right-1'
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <div className={`absolute ${badgeColor} text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 ${
+          isCollapsed ? 'top-0 right-0' : 'top-1 right-2'
         }`}>
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </div>
-      )}
-      {isActivitiesItem && activitiesCount > 0 && (
-        <div className={`absolute bg-orange-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center ${
-          isCollapsed ? 'top-0 right-0 text-[10px]' : 'top-1 right-1'
-        }`}>
-          {activitiesCount > 99 ? '99+' : activitiesCount}
+          {badgeCount > 99 ? '99+' : badgeCount}
         </div>
       )}
     </Button>

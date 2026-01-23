@@ -34,6 +34,9 @@ import { Loadouts } from '@/pages/Loadouts';
 import { Announcements } from '@/pages/Announcements';
 import Statistics from '@/pages/Statistics';
 import { Marketplace } from '@/pages/Marketplace';
+import { ListAccount } from '@/pages/ListAccount';
+import { ListingDetails } from '@/pages/ListingDetails';
+import { BuyerDashboard } from '@/pages/BuyerDashboard';
 
 // Admin pages
 import { AdminPlayers } from '@/pages/admin/Players';
@@ -51,6 +54,7 @@ import { AdminNotifications } from '@/pages/admin/Notifications';
 import { AdminConfig } from '@/pages/admin/Config';
 import { AdminSeasons } from '@/pages/admin/Seasons';
 import AdminDashboard from '@/pages/AdminDashboard';
+import { MarketplaceManagement } from '@/pages/admin/MarketplaceManagement';
 import { Feedback } from '@/pages/admin/Feedback';
 import Activities from '@/pages/admin/Activities';
 import Wallet from '@/pages/Wallet';
@@ -120,10 +124,14 @@ function AppRoutes() {
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Layout showSidebar><Marketplace /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace/list" element={<ProtectedRoute><Layout showSidebar><ListAccount /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace/listing/:listingId" element={<ProtectedRoute><Layout showSidebar><ListingDetails /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace/orders" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />
         <Route path="/payment-success" element={<ProtectedRoute><Layout showSidebar><PaymentSuccess /></Layout></ProtectedRoute>} />
 
         {/* Admin routes */}
         <Route path="/admin" element={<ProtectedRoute><Layout showSidebar><AdminDashboard /></Layout></ProtectedRoute>} />
+        <Route path="/admin/marketplace" element={<ProtectedRoute><Layout showSidebar><MarketplaceManagement /></Layout></ProtectedRoute>} />
         <Route path="/admin/players" element={<ProtectedRoute><Layout showSidebar><AdminPlayers /></Layout></ProtectedRoute>} />
         <Route path="/admin/loadouts" element={<ProtectedRoute><Layout showSidebar><AdminLoadouts /></Layout></ProtectedRoute>} />
         <Route path="/admin/weapon-layouts" element={<ProtectedRoute><Layout showSidebar><AdminWeaponLayouts /></Layout></ProtectedRoute>} />

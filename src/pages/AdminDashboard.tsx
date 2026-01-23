@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,20 +29,20 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
-      title: "Total Players",
-      value: stats?.total_players || 0,
-      description: "Active clan members",
+      title: "Total Members",
+      value: stats?.total_members || 0,
+      description: "Every profile in the system",
       icon: Users,
       color: "from-blue-500 to-cyan-500",
       iconColor: "text-blue-400"
     },
     {
-      title: "Total Events",
-      value: stats?.total_events || 0,
-      description: "Scrims & tournaments",
-      icon: Calendar,
-      color: "from-green-500 to-emerald-500",
-      iconColor: "text-green-400"
+      title: "Total Players",
+      value: stats?.total_players || 0,
+      description: "Users with player role",
+      icon: Shield,
+      color: "from-indigo-500 to-purple-500",
+      iconColor: "text-indigo-400"
     },
     {
       title: "Total Kills",
@@ -114,12 +113,7 @@ export default function AdminDashboard() {
       color: "from-gray-600 to-slate-600",
       path: "/admin/config"
     }
-  ].filter(action => {
-    if (action.title === 'System Config') {
-      return profile?.role === 'clan_master';
-    }
-    return true;
-  });
+  ];
 
   return (
     <div className="space-y-8">
@@ -156,7 +150,6 @@ export default function AdminDashboard() {
               key={index} 
               className="bg-gradient-to-br from-background/40 via-background/20 to-background/40 backdrop-blur-xl border border-white/10 shadow-xl hover:shadow-2xl hover:border-[#FF1F44]/30 transition-all duration-300 relative overflow-hidden group"
             >
-              {/* Animated gradient background */}
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
               
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
@@ -173,13 +166,13 @@ export default function AdminDashboard() {
                   <p className="text-xs text-gray-400 mt-2">
                     <span className="text-blue-400">BR: {stats?.total_br_kills || 0}</span> • <span className="text-green-400">MP: {stats?.total_mp_kills || 0}</span>
                   </p>
+                ) : stat.title === 'Total Members' ? (
+                  <p className="text-xs text-gray-400 mt-2 font-bold uppercase tracking-tight">
+                    All registered users
+                  </p>
                 ) : stat.title === 'Total Players' ? (
                   <p className="text-xs text-gray-400 mt-2">
-                    {stats?.banned_players > 0 ? (
-                      <span className="text-red-400">{stats.banned_players} banned</span>
-                    ) : (
-                      <span>{stat.description}</span>
-                    )}
+                    <span className="text-red-400 font-bold">{stats?.banned_players || 0} banned</span> • <span className="text-green-400">{stats?.active_players || 0} active</span>
                   </p>
                 ) : (
                   <p className="text-xs text-gray-400 mt-2">{stat.description}</p>
@@ -216,7 +209,6 @@ export default function AdminDashboard() {
                   onClick={() => navigate(action.path)}
                   className={`h-auto p-6 flex flex-col items-start gap-3 bg-gradient-to-br ${action.color} hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl group relative overflow-hidden`}
                 >
-                  {/* Shine effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
                   
                   <div className="flex items-center gap-3 w-full relative z-10">

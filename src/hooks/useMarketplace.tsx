@@ -8,6 +8,13 @@ export interface AccountListing {
   title: string;
   description: string;
   price: number;
+  is_negotiable: boolean;
+  game: string;
+  assets: any;
+  login_methods: any;
+  region: string;
+  refund_policy: boolean;
+  video_url?: string;
   player_level?: number;
   rank?: string;
   kd_ratio?: number;
@@ -235,52 +242,28 @@ export const useMarketplace = () => {
         throw new Error('Not authenticated');
       }
 
-      // Check if user has sufficient balance
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile) {
-        throw new Error('Failed to fetch user profile');
-      }
-
-      if (profile.wallet_balance < price) {
-        throw new Error('Insufficient wallet balance');
-      }
-
-      // Create transaction
-      const { data, error } = await supabase
-        .from('account_transactions')
-        .insert([
-          {
-            listing_id: listingId,
-            buyer_id: user.id,
-            seller_id: sellerId,
-            price: price,
-            status: 'pending',
-          },
-        ])
-        .select()
-        .single();
+      // Call the RPC function for atomic purchase (Wallet -> Escrow)
+      const { data, error } = await supabase.rpc('marketplace_purchase_listing', {
+        p_listing_id: listingId,
+        p_price: price
+      });
 
       if (error) throw error;
-
-      // Update listing status to reserved
-      await supabase
-        .from('account_listings')
-        .update({ status: 'reserved' })
-        .eq('id', listingId);
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Purchase failed');
+      }
 
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
       queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
+      // Invalidate wallet query to update balance immediately
+      queryClient.invalidateQueries({ queryKey: ['wallet'] }); 
       toast({
         title: 'Success',
-        description: 'Purchase initiated. Please wait for seller confirmation.',
+        description: 'Purchase initiated. Funds are held in escrow.',
       });
     },
     onError: (error: Error) => {

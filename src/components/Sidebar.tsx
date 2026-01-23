@@ -5,17 +5,12 @@ import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   User,
-  MessageSquare,
   Crosshair,
   Package,
-  Codesandbox,
   Settings,
   Shield,
   Users,
-  BarChart3,
-  UserCog,
   Calendar,
-  UserPlus,
   Clock,
   Megaphone,
   Bell,
@@ -28,18 +23,20 @@ import {
   Activity,
   SlidersHorizontal,
   Wallet,
-  Gift,
   DollarSign,
   Trophy,
   ShoppingBag,
-  Smartphone,
 } from 'lucide-react';
 import { NavItem } from '@/components/NavItem';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useActivities } from '@/hooks/useActivities';
 
 interface MenuItem {
-  icon: React.ComponentType<any>;
+  icon: any;
   label: string;
   path: string;
+  primary?: boolean;
+  subItems?: { label: string; path: string; }[];
 }
 
 interface SidebarProps {
@@ -55,6 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
 
   const { profile, logout } = useAuth();
+  const { unreadCount } = useNotifications();
+  const { data: activitiesCount = 0 } = useActivities();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMediumScreen, setIsMediumScreen] = useState(false);
@@ -77,11 +76,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isPlayer = profile?.role === 'player';
   const isModerator = profile?.role === 'moderator';
 
-  const playerMenuItems = [
+  const marketplaceSubItems = [
+    { label: 'Browse Accounts', path: '/marketplace' },
+    { label: 'My Orders', path: '/marketplace/orders' },
+    ...(isAdmin ? [{ label: 'Marketplace Admin', path: '/admin/marketplace' }] : []),
+  ];
+
+  const getBadgeProps = (path: string) => {
+    if (path === '/admin/notifications') return { badgeCount: unreadCount, badgeColor: 'bg-destructive' };
+    if (path === '/admin/activities') return { badgeCount: activitiesCount, badgeColor: 'bg-orange-500' };
+    return {};
+  };
+
+  const playerMenuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', primary: true },
     { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
     { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true, subItems: marketplaceSubItems },
     { icon: User, label: 'Profile', path: '/profile', primary: false },
     { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
     { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
@@ -90,11 +101,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
-  const moderatorMenuItems = [
+  const moderatorMenuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', primary: true },
     { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
     { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true, subItems: marketplaceSubItems },
     { icon: User, label: 'Profile', path: '/profile', primary: false },
     { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
     { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
@@ -104,11 +115,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
 
-  const adminMenuItems = [
+  const adminMenuItems: MenuItem[] = [
     { icon: Shield, label: 'Admin Dashboard', path: '/admin', primary: true },
     { icon: Trophy, label: 'Leaderboard', path: '/statistics', primary: true },
     { icon: Wallet, label: 'Wallet', path: '/wallet', primary: true },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true, subItems: marketplaceSubItems },
     { icon: Users, label: 'Players', path: '/admin/players', primary: false },
     { icon: Crosshair, label: 'Scrims', path: '/admin/scrims', primary: false },
     { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
@@ -137,6 +148,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   if (!profile) {
     return <div>Loading...</div>;
   }
+
+  const renderNavItems = (items: MenuItem[]) => {
+    return items.map((item) => (
+      <NavItem
+        key={item.path}
+        icon={item.icon}
+        label={item.label}
+        path={item.path}
+        isActive={location.pathname === item.path || (item.subItems?.some(si => location.pathname === si.path) ?? false)}
+        isCollapsed={isCollapsed || isMediumScreen}
+        onClick={() => navigate(item.path)}
+        subItems={item.subItems}
+        {...getBadgeProps(item.path)}
+      />
+    ));
+  };
 
   return (
     <>
@@ -197,44 +224,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Player Menu - Only show for players */}
         {isPlayer && (
           <>
-            {/* Primary Navigation */}
             <div className="space-y-2">
               {!isCollapsed && !isMediumScreen && (
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
                   Primary
                 </div>
               )}
-              {playerMenuItems.filter(item => item.primary).map((item) => (
-                <NavItem
-                  key={item.path}
-                  icon={item.icon}
-                  label={item.label}
-                  path={item.path}
-                  isActive={location.pathname === item.path}
-                  isCollapsed={isCollapsed || isMediumScreen}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
+              {renderNavItems(playerMenuItems.filter(item => item.primary))}
             </div>
 
-            {/* Secondary Navigation */}
             <div className="space-y-2 pt-4 border-t border-border/30">
               {!isCollapsed && !isMediumScreen && (
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
                   Secondary
                 </div>
               )}
-              {playerMenuItems.filter(item => !item.primary).map((item) => (
-                <NavItem
-                  key={item.path}
-                  icon={item.icon}
-                  label={item.label}
-                  path={item.path}
-                  isActive={location.pathname === item.path}
-                  isCollapsed={isCollapsed || isMediumScreen}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
+              {renderNavItems(playerMenuItems.filter(item => !item.primary))}
             </div>
           </>
         )}
@@ -242,44 +247,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Moderator Menu - Only show for moderators */}
         {isModerator && (
           <>
-            {/* Primary Navigation */}
             <div className="space-y-2">
               {!isCollapsed && !isMediumScreen && (
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
                   Primary
                 </div>
               )}
-              {moderatorMenuItems.filter(item => item.primary).map((item) => (
-                <NavItem
-                  key={item.path}
-                  icon={item.icon}
-                  label={item.label}
-                  path={item.path}
-                  isActive={location.pathname === item.path}
-                  isCollapsed={isCollapsed || isMediumScreen}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
+              {renderNavItems(moderatorMenuItems.filter(item => item.primary))}
             </div>
 
-            {/* Secondary Navigation */}
             <div className="space-y-2 pt-4 border-t border-border/30">
               {!isCollapsed && !isMediumScreen && (
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
                   Secondary
                 </div>
               )}
-              {moderatorMenuItems.filter(item => !item.primary).map((item) => (
-                <NavItem
-                  key={item.path}
-                  icon={item.icon}
-                  label={item.label}
-                  path={item.path}
-                  isActive={location.pathname === item.path}
-                  isCollapsed={isCollapsed || isMediumScreen}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
+              {renderNavItems(moderatorMenuItems.filter(item => !item.primary))}
             </div>
           </>
         )}
@@ -287,44 +270,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Admin Menu - Only show for admins */}
         {isAdmin && (
           <>
-            {/* Primary Navigation */}
             <div className="space-y-2">
               {!isCollapsed && !isMediumScreen && (
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
                   Primary
                 </div>
               )}
-              {adminMenuItems.filter(item => item.primary).map((item) => (
-                <NavItem
-                  key={item.path}
-                  icon={item.icon}
-                  label={item.label}
-                  path={item.path}
-                  isActive={location.pathname.startsWith(item.path)}
-                  isCollapsed={isCollapsed || isMediumScreen}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
+              {renderNavItems(adminMenuItems.filter(item => item.primary))}
             </div>
 
-            {/* Secondary Navigation */}
             <div className="space-y-2 pt-4 border-t border-border/30">
               {!isCollapsed && !isMediumScreen && (
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
                   Secondary
                 </div>
               )}
-              {adminMenuItems.filter(item => !item.primary).map((item) => (
-                <NavItem
-                  key={item.path}
-                  icon={item.icon}
-                  label={item.label}
-                  path={item.path}
-                  isActive={location.pathname.startsWith(item.path)}
-                  isCollapsed={isCollapsed || isMediumScreen}
-                  onClick={() => navigate(item.path)}
-                />
-              ))}
+              {renderNavItems(adminMenuItems.filter(item => !item.primary))}
             </div>
           </>
         )}

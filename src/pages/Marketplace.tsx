@@ -3,95 +3,111 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { useMarketplace } from '@/hooks/useMarketplace';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShoppingCart, Plus, Eye, Star, TrendingUp, AlertCircle, Shield } from 'lucide-react';
+import { 
+  ShoppingCart, 
+  Plus, 
+  Eye, 
+  Star, 
+  TrendingUp, 
+  AlertCircle, 
+  Shield, 
+  Clock, 
+  Activity, 
+  Swords, 
+  Trophy, 
+  Search, 
+  Filter, 
+  Globe
+} from 'lucide-react';
 import { format } from 'date-fns';
+import { useSellerStatus } from '@/hooks/useSellerStatus';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
 
 export const Marketplace: React.FC = () => {
   const { profile } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const {
     listings,
     listingsLoading,
     myListings,
     isMarketplaceEnabled,
-    createListing,
-    purchaseAccount,
-    isCreating,
-    isPurchasing,
   } = useMarketplace();
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<any>(null);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-    player_level: '',
-    rank: '',
-    kd_ratio: '',
-    weapons_owned: '',
-    skins_owned: '',
-    legendary_items: '',
-    mythic_items: '',
+  const { isApproved, isPending, refetchSellerStatus } = useSellerStatus();
+  const [isRequestingSeller, setIsRequestingSeller] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterRegion, setFilterRegion] = useState('all');
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+
+  const handleBecomeSeller = async () => {
+    setIsRequestingSeller(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('seller_requests')
+        .insert([{ user_id: user.id }]);
+
+      if (error) throw error;
+
+      toast({ title: 'Success', description: 'Seller request submitted for approval.' });
+      refetchSellerStatus();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsRequestingSeller(false);
+    }
+  };
+
+  const filteredListings = listings.filter(listing => {
+    const matchesSearch = listing.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         listing.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRegion = filterRegion === 'all' || listing.region === filterRegion;
+    return matchesSearch && matchesRegion;
   });
 
-  const handleCreateListing = () => {
-    createListing({
-      title: formData.title,
-      description: formData.description,
-      price: parseFloat(formData.price),
-      player_level: formData.player_level ? parseInt(formData.player_level) : undefined,
-      rank: formData.rank || undefined,
-      kd_ratio: formData.kd_ratio ? parseFloat(formData.kd_ratio) : undefined,
-      weapons_owned: formData.weapons_owned ? parseInt(formData.weapons_owned) : undefined,
-      skins_owned: formData.skins_owned ? parseInt(formData.skins_owned) : undefined,
-      legendary_items: formData.legendary_items ? parseInt(formData.legendary_items) : 0,
-      mythic_items: formData.mythic_items ? parseInt(formData.mythic_items) : 0,
-    });
-
-    setIsCreateDialogOpen(false);
-    setFormData({
-      title: '',
-      description: '',
-      price: '',
-      player_level: '',
-      rank: '',
-      kd_ratio: '',
-      weapons_owned: '',
-      skins_owned: '',
-      legendary_items: '',
-      mythic_items: '',
-    });
+  const getAssetCount = (assets: any) => {
+    if (!assets) return 0;
+    return Object.values(assets).filter(v => !!v).length;
   };
 
-  const handlePurchase = (listing: any) => {
-    if (!listing) return;
-    
-    purchaseAccount({
-      listingId: listing.id,
-      sellerId: listing.seller_id,
-      price: listing.price,
-    });
-    setIsViewDialogOpen(false);
-  };
+  const renderAssetBadges = (assets: any) => {
+    if (!assets) return [];
+    const premiumAssets = [
+      { id: 'mythic_gun', label: 'Mythic', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
+      { id: 'mythic_gun_maxed', label: 'Mythic (Max)', color: 'bg-purple-600/20 text-purple-400 border-purple-500/40' },
+      { id: 'mythic_skin', label: 'Mythic Skin', color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' },
+      { id: 'mythic_skin_maxed', label: 'Mythic Skin (Max)', color: 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40' },
+      { id: 'legendary_gun', label: 'Legendary', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
+      { id: 'legendary_skin', label: 'Leg Skin', color: 'bg-yellow-600/10 text-yellow-600 border-yellow-600/20' },
+      { id: 'legendary_vehicle', label: 'Leg Vehicle', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
+    ];
 
-  const openViewDialog = (listing: any) => {
-    setSelectedListing(listing);
-    setIsViewDialogOpen(true);
+    const badges = premiumAssets
+      .filter(asset => !!assets[asset.id])
+      .map(asset => (
+        <Badge key={asset.id} variant="outline" className={`font-rajdhani text-[9px] px-1.5 py-0 ${asset.color}`}>
+          {asset.label}
+        </Badge>
+      ));
+
+    return badges;
   };
 
   if (!isMarketplaceEnabled) {
@@ -108,384 +124,292 @@ export const Marketplace: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-orbitron font-bold text-foreground mb-2">
-            CODM Accounts Marketplace
+    <div className="container mx-auto p-4 md:p-6 space-y-6 md:space-y-8 animate-fade-in">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-br from-card to-card/50 p-6 rounded-2xl border border-primary/10 shadow-lg">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-orbitron font-bold text-foreground flex items-center gap-2">
+            <ShoppingCart className="h-8 w-8 text-primary animate-pulse" />
+            Marketplace
           </h1>
-          <p className="text-muted-foreground font-rajdhani">
-            Buy and sell Call of Duty Mobile accounts securely
+          <p className="text-sm md:text-base text-muted-foreground font-rajdhani max-w-md">
+            Securely buy and sell CODM accounts. Verified sellers, escrow protection.
           </p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="font-rajdhani">
+        
+        <div className="flex items-center gap-3">
+          {isApproved ? (
+            <Button 
+              onClick={() => navigate('/marketplace/list')}
+              className="w-full md:w-auto font-rajdhani bg-primary hover:bg-primary/90 shadow-lg hover:shadow-primary/20 transition-all duration-300"
+            >
               <Plus className="mr-2 h-4 w-4" />
               List Account
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="font-orbitron">List Your CODM Account</DialogTitle>
-              <DialogDescription className="font-rajdhani">
-                Provide details about your account to attract buyers
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title" className="font-rajdhani">
-                  Title *
-                </Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g., Level 150 Legendary Account"
-                  className="font-rajdhani"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description" className="font-rajdhani">
-                  Description *
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe your account features, skins, weapons, etc."
-                  className="font-rajdhani"
-                  rows={4}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="price" className="font-rajdhani">
-                    Price (₦) *
-                  </Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="10000"
-                    className="font-rajdhani"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="player_level" className="font-rajdhani">
-                    Player Level
-                  </Label>
-                  <Input
-                    id="player_level"
-                    type="number"
-                    value={formData.player_level}
-                    onChange={(e) => setFormData({ ...formData, player_level: e.target.value })}
-                    placeholder="150"
-                    className="font-rajdhani"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="rank" className="font-rajdhani">
-                    Rank
-                  </Label>
-                  <Input
-                    id="rank"
-                    value={formData.rank}
-                    onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-                    placeholder="Legendary"
-                    className="font-rajdhani"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="kd_ratio" className="font-rajdhani">
-                    K/D Ratio
-                  </Label>
-                  <Input
-                    id="kd_ratio"
-                    type="number"
-                    step="0.01"
-                    value={formData.kd_ratio}
-                    onChange={(e) => setFormData({ ...formData, kd_ratio: e.target.value })}
-                    placeholder="2.5"
-                    className="font-rajdhani"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="weapons_owned" className="font-rajdhani">
-                    Weapons Owned
-                  </Label>
-                  <Input
-                    id="weapons_owned"
-                    type="number"
-                    value={formData.weapons_owned}
-                    onChange={(e) => setFormData({ ...formData, weapons_owned: e.target.value })}
-                    placeholder="50"
-                    className="font-rajdhani"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="skins_owned" className="font-rajdhani">
-                    Skins Owned
-                  </Label>
-                  <Input
-                    id="skins_owned"
-                    type="number"
-                    value={formData.skins_owned}
-                    onChange={(e) => setFormData({ ...formData, skins_owned: e.target.value })}
-                    placeholder="100"
-                    className="font-rajdhani"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="legendary_items" className="font-rajdhani">
-                    Legendary Items
-                  </Label>
-                  <Input
-                    id="legendary_items"
-                    type="number"
-                    value={formData.legendary_items}
-                    onChange={(e) => setFormData({ ...formData, legendary_items: e.target.value })}
-                    placeholder="5"
-                    className="font-rajdhani"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="mythic_items" className="font-rajdhani">
-                    Mythic Items
-                  </Label>
-                  <Input
-                    id="mythic_items"
-                    type="number"
-                    value={formData.mythic_items}
-                    onChange={(e) => setFormData({ ...formData, mythic_items: e.target.value })}
-                    placeholder="2"
-                    className="font-rajdhani"
-                  />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={handleCreateListing}
-                disabled={!formData.title || !formData.description || !formData.price || isCreating}
-                className="font-rajdhani"
-              >
-                {isCreating ? 'Creating...' : 'Create Listing'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          ) : (
+            <Button 
+              onClick={handleBecomeSeller} 
+              disabled={isPending || isRequestingSeller}
+              className="font-rajdhani w-full md:w-auto"
+              variant={isPending ? "outline" : "default"}
+            >
+              {isPending ? (
+                <>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Request Pending
+                </>
+              ) : (
+                <>
+                  <Shield className="mr-2 h-4 w-4" />
+                  Become a Seller
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Search and Filter Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="md:col-span-3 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search by account title or description..." 
+            className="pl-10 h-12 bg-card/50"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="relative">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <select 
+            className="w-full h-12 pl-10 pr-4 rounded-md border border-input bg-card/50 font-rajdhani text-sm focus:ring-2 focus:ring-primary outline-none appearance-none"
+            value={filterRegion}
+            onChange={(e) => setFilterRegion(e.target.value)}
+          >
+            <option value="all">All Regions</option>
+            <option value="Africa">Africa</option>
+            <option value="UAE">UAE</option>
+            <option value="EU">EU</option>
+            <option value="USA">USA</option>
+            <option value="Others">Others</option>
+          </select>
+        </div>
       </div>
 
       {/* My Listings Section */}
       {myListings && myListings.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-orbitron">My Listings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {myListings.map((listing) => (
-                <Card key={listing.id} className="border-primary/20">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-orbitron line-clamp-1">
-                      {listing.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm text-muted-foreground font-rajdhani line-clamp-2">
-                      {listing.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl font-orbitron font-bold text-primary">
-                        ₦{listing.price.toLocaleString()}
-                      </span>
-                      <Badge className="font-rajdhani">
-                        {listing.status}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* All Listings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-orbitron">
-            <ShoppingCart className="h-5 w-5" />
-            Available Accounts
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {listingsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : listings.length === 0 ? (
-            <div className="text-center py-12">
-              <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground font-rajdhani">
-                No accounts available for sale at the moment.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {listings.map((listing) => (
-                <Card
-                  key={listing.id}
-                  className="hover:border-primary/50 transition-colors cursor-pointer"
-                  onClick={() => openViewDialog(listing)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-base font-orbitron line-clamp-1">
-                        {listing.title}
-                      </CardTitle>
-                      {listing.verification_status === 'verified' && (
-                        <Shield className="h-4 w-4 text-green-500 flex-shrink-0" />
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground font-rajdhani line-clamp-2">
-                      {listing.description}
-                    </p>
-                    {listing.player_level && (
-                      <div className="flex items-center gap-2 text-sm font-rajdhani">
-                        <TrendingUp className="h-4 w-4" />
-                        Level {listing.player_level}
-                      </div>
-                    )}
-                    {listing.rank && (
-                      <div className="flex items-center gap-2 text-sm font-rajdhani">
-                        <Star className="h-4 w-4 text-yellow-500" />
-                        {listing.rank}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-2xl font-orbitron font-bold text-primary">
-                        ₦{listing.price.toLocaleString()}
-                      </span>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground font-rajdhani">
-                        <Eye className="h-3 w-3" />
-                        {listing.views_count || 0}
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-rajdhani">
-                      Seller: {listing.seller?.ign || 'Unknown'}
-                    </p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      className="w-full font-rajdhani"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openViewDialog(listing);
-                      }}
-                    >
-                      View Details
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* View Details Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          {selectedListing && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-orbitron flex items-center gap-2">
-                  {selectedListing.title}
-                  {selectedListing.verification_status === 'verified' && (
-                    <Shield className="h-5 w-5 text-green-500" />
+        <div className="space-y-4">
+          <h2 className="text-xl font-orbitron font-bold flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            My Listings
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {myListings.map((listing) => (
+              <Card 
+                key={listing.id} 
+                className="group border-primary/10 hover:border-primary/30 transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col shadow-sm hover:shadow-md cursor-pointer"
+                onClick={() => navigate(`/marketplace/listing/${listing.id}`)}
+              >
+                <div className="aspect-video w-full bg-muted/30 flex items-center justify-center relative border-b border-primary/5">
+                  {listing.video_url ? (
+                    <video src={listing.video_url} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <ShoppingCart className="h-12 w-12 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
                   )}
-                </DialogTitle>
-                <DialogDescription className="font-rajdhani">
-                  Listed by {selectedListing.seller?.ign || 'Unknown'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-orbitron font-semibold mb-2">Description</h4>
-                  <p className="text-sm text-muted-foreground font-rajdhani">
-                    {selectedListing.description}
+                  <div className="absolute top-2 right-2">
+                    <Badge className="font-rajdhani bg-background/80 backdrop-blur-sm border-primary/20">
+                      {listing.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                </div>
+                <CardHeader className="p-4 pb-2">
+                  <CardTitle className="text-base font-orbitron line-clamp-1 group-hover:text-primary transition-colors">
+                    {listing.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 flex-1 flex flex-col justify-between gap-4">
+                  <p className="text-sm text-muted-foreground font-rajdhani line-clamp-2 italic">
+                    {listing.description}
                   </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {selectedListing.player_level && (
-                    <div>
-                      <p className="text-sm text-muted-foreground font-rajdhani">Level</p>
-                      <p className="font-orbitron font-semibold">{selectedListing.player_level}</p>
-                    </div>
-                  )}
-                  {selectedListing.rank && (
-                    <div>
-                      <p className="text-sm text-muted-foreground font-rajdhani">Rank</p>
-                      <p className="font-orbitron font-semibold">{selectedListing.rank}</p>
-                    </div>
-                  )}
-                  {selectedListing.kd_ratio && (
-                    <div>
-                      <p className="text-sm text-muted-foreground font-rajdhani">K/D Ratio</p>
-                      <p className="font-orbitron font-semibold">{selectedListing.kd_ratio}</p>
-                    </div>
-                  )}
-                  {selectedListing.weapons_owned && (
-                    <div>
-                      <p className="text-sm text-muted-foreground font-rajdhani">Weapons</p>
-                      <p className="font-orbitron font-semibold">{selectedListing.weapons_owned}</p>
-                    </div>
-                  )}
-                  {selectedListing.legendary_items > 0 && (
-                    <div>
-                      <p className="text-sm text-muted-foreground font-rajdhani">Legendary Items</p>
-                      <p className="font-orbitron font-semibold">{selectedListing.legendary_items}</p>
-                    </div>
-                  )}
-                  {selectedListing.mythic_items > 0 && (
-                    <div>
-                      <p className="text-sm text-muted-foreground font-rajdhani">Mythic Items</p>
-                      <p className="font-orbitron font-semibold">{selectedListing.mythic_items}</p>
-                    </div>
-                  )}
-                </div>
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-muted-foreground font-rajdhani">Price</span>
-                    <span className="text-3xl font-orbitron font-bold text-primary">
-                      ₦{selectedListing.price.toLocaleString()}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-orbitron font-bold text-primary">
+                      ₦{listing.price.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-rajdhani">
+                      {format(new Date(listing.created_at), 'MMM d')}
                     </span>
                   </div>
-                  {profile?.id !== selectedListing.seller_id && (
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All Listings Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-orbitron font-bold flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-primary" />
+            Available Accounts
+          </h2>
+          <Badge variant="outline" className="font-rajdhani">{filteredListings.length} listings</Badge>
+        </div>
+        
+        {listingsLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 bg-card/50 rounded-2xl border border-dashed border-primary/20">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground font-rajdhani animate-pulse">Scanning marketplace...</p>
+          </div>
+        ) : filteredListings.length === 0 ? (
+          <div className="text-center py-24 bg-card/50 rounded-2xl border border-dashed border-primary/20">
+            <ShoppingCart className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
+            <p className="text-xl text-muted-foreground font-orbitron">No accounts found</p>
+            <p className="text-sm text-muted-foreground font-rajdhani">Try adjusting your filters or search query.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredListings.map((listing) => (
+              <Card
+                key={listing.id}
+                className="group hover:border-primary/40 transition-all duration-300 cursor-pointer overflow-hidden bg-card/50 backdrop-blur-sm flex flex-col shadow-sm hover:shadow-xl hover:-translate-y-1"
+                onClick={() => navigate(`/marketplace/listing/${listing.id}`)}
+              >
+                {/* Card Thumbnail */}
+                <div className="aspect-video w-full bg-muted/40 flex items-center justify-center relative border-b border-primary/5 overflow-hidden">
+                  {listing.video_url ? (
+                    <video src={listing.video_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" muted />
+                  ) : (
+                    <ShoppingCart className="h-12 w-12 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
+                  )}
+                  
+                  {listing.verification_status === 'verified' && (
+                    <div className="absolute top-2 left-2">
+                      <Badge className="bg-green-500/90 hover:bg-green-500 text-white border-none font-rajdhani gap-1">
+                        <Shield className="h-3 w-3" />
+                        VERIFIED
+                      </Badge>
+                    </div>
+                  )}
+
+                  {listing.video_url && (
                     <Button
-                      onClick={() => handlePurchase(selectedListing)}
-                      disabled={isPurchasing}
-                      className="w-full font-rajdhani"
+                      size="sm"
+                      variant="secondary"
+                      className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewVideoUrl(listing.video_url);
+                      }}
                     >
-                      {isPurchasing ? 'Processing...' : 'Purchase Account'}
+                      <Eye className="h-3 w-3 mr-1" /> Preview
                     </Button>
                   )}
+                  
+                  <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                    <div className="bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-rajdhani flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      {listing.views_count || 0}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+
+                <CardHeader className="p-4 pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base md:text-lg font-orbitron line-clamp-1 group-hover:text-primary transition-colors">
+                      {listing.title}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="p-4 pt-0 space-y-4 flex-1">
+                  {/* Account Specs Row */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-primary/5 p-2 rounded-lg border border-primary/5 flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase font-rajdhani">Level</span>
+                      <span className="text-sm font-bold font-orbitron">{listing.player_level || '—'}</span>
+                    </div>
+                    <div className="bg-primary/5 p-2 rounded-lg border border-primary/5 flex flex-col">
+                      <span className="text-[9px] text-muted-foreground uppercase font-rajdhani">Rank</span>
+                      <span className="text-sm font-bold font-orbitron truncate">{listing.rank || '—'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 h-10 overflow-hidden">
+                    {listing.region && (
+                      <Badge variant="outline" className="font-rajdhani text-[10px] border-primary/20 bg-primary/5">
+                        <Globe className="h-2.5 w-2.5 mr-1" /> {listing.region.toUpperCase()}
+                      </Badge>
+                    )}
+                    {(() => {
+                      const badges = renderAssetBadges(listing.assets);
+                      const displayBadges = badges.slice(0, 3);
+                      const remaining = badges.length - 3;
+                      return (
+                        <>
+                          {displayBadges}
+                          {remaining > 0 && (
+                            <Badge variant="outline" className="font-rajdhani text-[10px] border-primary/10 bg-muted/30">
+                              +{remaining} MORE
+                            </Badge>
+                          )}
+                        </>
+                      );
+                    })()}
+                    {listing.is_negotiable && (
+                      <Badge variant="outline" className="font-rajdhani text-[10px] border-green-500/20 bg-green-500/5 text-green-500">
+                        NEGOTIABLE
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-primary/5">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground font-rajdhani uppercase tracking-tight">Purchase Price</span>
+                      <span className="text-2xl font-orbitron font-black text-primary">
+                        ₦{listing.price.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-muted-foreground font-rajdhani uppercase tracking-tighter">Verified Seller</p>
+                      <p className="text-xs font-semibold font-orbitron text-foreground truncate max-w-[80px]">
+                        {listing.seller?.ign || 'Unknown'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="p-4 pt-0">
+                  <Button
+                    className="w-full font-orbitron bg-secondary hover:bg-primary hover:text-primary-foreground transition-all duration-300 h-10 group-hover:shadow-lg group-hover:shadow-primary/10"
+                    size="sm"
+                  >
+                    View Full Specs
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Video Preview Dialog */}
+      <Dialog open={!!previewVideoUrl} onOpenChange={(open) => !open && setPreviewVideoUrl(null)}>
+        <DialogContent className="max-w-4xl p-0 bg-black overflow-hidden rounded-2xl border-primary/20">
+          <DialogHeader className="p-4 absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+            <DialogTitle className="text-white font-orbitron">Account Showcase</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full flex items-center justify-center">
+            {previewVideoUrl && (
+              <video 
+                src={previewVideoUrl} 
+                className="w-full h-full object-contain" 
+                controls 
+                autoPlay
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
