@@ -13,6 +13,8 @@
     "vercel-install": "pnpm install --no-frozen-lockfile"
   },
   "dependencies": {
+    "@capacitor/cli": "^7.4.5",
+    "@capacitor/core": "^8.0.1",
     "@emailjs/browser": "^4.4.1",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
