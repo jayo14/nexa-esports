@@ -6,6 +6,7 @@ export interface AccountListing {
   id: string;
   seller_id: string;
   title: string;
+  account_uid?: string;
   description: string;
   price: number;
   is_negotiable: boolean;
@@ -84,6 +85,11 @@ export const useMarketplace = () => {
       }
       return data as AccountListing[];
     },
+    enabled: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return !!session;
+    },
+    retry: false,
   });
 
   // Fetch a single listing by ID
@@ -256,14 +262,69 @@ export const useMarketplace = () => {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
       queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
       // Invalidate wallet query to update balance immediately
       queryClient.invalidateQueries({ queryKey: ['wallet'] }); 
+      
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Send In-App Notification to Buyer
+      if (user) {
+        await supabase.from('notifications').insert([{
+          user_id: user.id,
+          type: 'marketplace_purchase',
+          title: 'Order Placed Successfully',
+          message: `You have successfully purchased a listing for ₦${variables.price.toLocaleString()}. Funds are held in escrow.`,
+          data: { 
+            orderId: data.transaction_id,
+            listingId: variables.listingId,
+            url: '/marketplace/orders' 
+          }
+        }]);
+
+        // Send Email to Buyer (Client-side trigger)
+        try {
+          // Fetch listing details for the email
+          const { data: listing } = await supabase
+            .from('account_listings')
+            .select('title')
+            .eq('id', variables.listingId)
+            .single();
+            
+          const { sendOrderConfirmationEmail } = await import('@/lib/emailService');
+          await sendOrderConfirmationEmail({
+            to_email: user.email || '',
+            to_name: user.user_metadata?.ign || 'Buyer',
+            order_id: data.transaction_id,
+            listing_title: listing?.title || 'Account Listing',
+            price: variables.price,
+            seller_name: 'Seller' // We could fetch this if needed
+          });
+        } catch (e) {
+          console.error("Failed to send order email:", e);
+        }
+      }
+
+      // Send In-App Notification to Seller
+      if (variables.sellerId) {
+        await supabase.from('notifications').insert([{
+          user_id: variables.sellerId,
+          type: 'marketplace_sale',
+          title: 'New Order Received',
+          message: `Someone has purchased your listing! Funds are in escrow. Please deliver the account credentials.`,
+          data: { 
+            listingId: variables.listingId,
+            price: variables.price,
+            url: '/marketplace' // Or a seller dashboard if it existed
+          }
+        }]);
+      }
+
       toast({
         title: 'Success',
-        description: 'Purchase initiated. Funds are held in escrow.',
+        description: 'Purchase initiated. Funds are held in escrow. Check your email for details.',
       });
     },
     onError: (error: Error) => {

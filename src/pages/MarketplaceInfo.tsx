@@ -1,721 +1,515 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useMarketplace } from '@/hooks/useMarketplace';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Shield,
   ShoppingBag,
   CheckCircle,
-  XCircle,
-  Lock,
+  Search,
   Users,
   User,
   Star,
-  BadgeCheck,
-  Eye,
-  FileCheck,
-  AlertTriangle,
-  MessageSquare,
-  CreditCard,
-  Target,
+  Globe,
+  ArrowRight,
+  TrendingUp,
+  Filter,
+  SlidersHorizontal,
   Home,
   BookOpen,
-  ArrowRight,
-  ChevronRight,
-  TrendingUp,
-  Zap,
   Award,
+  Video,
+  Menu,
+  LayoutDashboard
 } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export const MarketplaceInfo: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { listings, listingsLoading } = useMarketplace();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [regionFilter, setRegionFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Filter and sort listings
+  const filteredListings = listings.filter(listing => {
+    const matchesSearch = listing.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         listing.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRegion = regionFilter === 'all' || listing.region === regionFilter;
+    return matchesSearch && matchesRegion;
+  }).sort((a, b) => {
+    if (sortOrder === 'price_asc') return a.price - b.price;
+    if (sortOrder === 'price_desc') return b.price - a.price;
+    if (sortOrder === 'level_desc') return (b.player_level || 0) - (a.player_level || 0);
+    // newest
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const featuredListings = filteredListings.filter(l => l.featured).slice(0, 3);
+  const displayListings = filteredListings.length > 0 ? filteredListings : [];
+
+  const renderAssetBadges = (assets: any) => {
+    if (!assets) return [];
+    const premiumAssets = [
+      { id: 'mythic_gun', label: 'Mythic' },
+      { id: 'mythic_gun_maxed', label: 'Mythic (Max)' },
+      { id: 'mythic_skin', label: 'Mythic Skin' },
+      { id: 'mythic_skin_maxed', label: 'Mythic Skin (Max)' },
+      { id: 'legendary_gun', label: 'Legendary' },
+      { id: 'legendary_skin', label: 'Leg Skin' },
+      { id: 'legendary_vehicle', label: 'Leg Vehicle' },
+    ];
+
+    return premiumAssets
+      .filter(asset => !!assets[asset.id])
+      .map(asset => {
+        const count = assets[asset.id];
+        return (
+          <Badge key={asset.id} variant="outline" className="text-[10px] font-rajdhani border-primary/20 bg-primary/5 text-primary">
+            {asset.label}
+            {typeof count === 'number' && count > 1 ? ` (${count})` : ''}
+          </Badge>
+        );
+      });
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30">
       {/* Animated Background */}
-      <div className="fixed inset-0 opacity-20 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10"></div>
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,31,68,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,31,68,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background/90" />
+         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px] animate-pulse" />
+         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[120px] animate-pulse delay-1000" />
+         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]" />
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between p-6 bg-card/40 backdrop-blur-xl border-b border-border/30 shadow-lg">
-        <div className="flex items-center space-x-6">
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="w-16 h-16 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">
-              <img src="/nexa-logo.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
+      <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border/40">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
+               <img src="/nexa-logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-xl" />
             </div>
+            <span className="font-orbitron font-bold text-lg hidden sm:block tracking-wide">
+              NEXA<span className="text-primary">MARKET</span>
+            </span>
           </Link>
-          <div className="hidden md:flex items-center space-x-6">
+          
+          <div className="hidden md:flex items-center gap-1">
             <Link to="/">
-              <Button variant="ghost" className="text-foreground hover:text-primary font-rajdhani font-bold hover:bg-primary/10">
+              <Button variant="ghost" size="sm" className="font-rajdhani font-semibold hover:bg-primary/5">
                 <Home className="w-4 h-4 mr-2" />
                 Home
               </Button>
             </Link>
             <Link to="/blog">
-              <Button variant="ghost" className="text-foreground hover:text-primary font-rajdhani font-bold hover:bg-primary/10">
+               <Button variant="ghost" size="sm" className="font-rajdhani font-semibold hover:bg-primary/5">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Blog
               </Button>
             </Link>
-            <Link to="/marketplace-info">
-              <Button variant="ghost" className="text-primary font-rajdhani font-bold hover:bg-primary/10 bg-primary/10">
-                <Shield className="w-4 h-4 mr-2" />
-                Marketplace
-              </Button>
-            </Link>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
-          <Link to="/auth/login">
-            <Button variant="ghost" className="text-foreground hover:text-primary font-rajdhani font-bold hover:bg-primary/10">
-              Login
-            </Button>
-          </Link>
-          <Link to="/auth/signup">
-            <Button className="nexa-button font-rajdhani font-black">
-              Join Clan
-            </Button>
-          </Link>
+          {user ? (
+            <Link to="/dashboard">
+              <Button className="font-rajdhani font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link to="/auth/login">
+                <Button variant="ghost" className="font-rajdhani font-bold hover:bg-primary/5">
+                  Log In
+                </Button>
+              </Link>
+              <Link to="/auth/signup">
+                <Button className="font-rajdhani font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                  Join Now
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Menu Trigger */}
+        <div className="flex md:hidden items-center gap-4">
+          <ThemeToggle />
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="w-6 h-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="bg-background/95 backdrop-blur-xl border-l border-primary/20">
+              <SheetHeader className="mb-6">
+                <SheetTitle className="text-left font-orbitron text-xl font-bold">Menu</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-4">
+                <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start font-rajdhani text-lg">
+                    <Home className="w-5 h-5 mr-3" />
+                    Home
+                  </Button>
+                </Link>
+                <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start font-rajdhani text-lg">
+                    <BookOpen className="w-5 h-5 mr-3" />
+                    Blog
+                  </Button>
+                </Link>
+                
+                <div className="h-px bg-border/50 my-2" />
+
+                {user ? (
+                  <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full font-rajdhani font-bold bg-primary text-white">
+                      <LayoutDashboard className="w-5 h-5 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full justify-start font-rajdhani">
+                        Log In
+                      </Button>
+                    </Link>
+                    <Link to="/auth/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button className="w-full font-rajdhani font-bold bg-primary text-white">
+                        Join Now
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative z-10 px-6 py-20 md:py-28 text-center bg-gradient-to-b from-card/40 to-transparent">
-        <div className="max-w-6xl mx-auto">
-          <div className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/50 rounded-full mb-8 nexa-glow backdrop-blur-sm">
-            <Shield className="w-5 h-5 text-primary animate-pulse" />
-            <span className="text-sm text-primary font-bold font-rajdhani tracking-wider">
-              Secure Trading Platform
-            </span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-orbitron font-black mb-6 leading-none">
-            <span className="block bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
-              Buy & Sell CODM Accounts
-            </span>
-            <span className="block mt-2 bg-gradient-to-r from-primary via-red-400 to-primary bg-clip-text text-transparent">
-              Safely, Securely, Confidently
-            </span>
-          </h1>
-
-          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto font-rajdhani font-medium">
-            Trade Call of Duty Mobile accounts with complete protection. 
-            <span className="text-primary font-bold"> Escrow-backed transactions</span>, 
-            verified vendors, and <span className="text-primary font-bold">zero scams</span>.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link to="/marketplace">
-              <Button size="lg" className="nexa-button px-10 py-6 text-xl font-rajdhani font-black group shadow-2xl hover:shadow-primary/50">
-                <ShoppingBag className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform" />
-                Explore Marketplace
-                <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link to="/auth/signup">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-primary/50 hover:bg-primary/10 hover:border-primary px-10 py-6 text-xl font-rajdhani font-black group"
-              >
-                <Award className="w-6 h-6 mr-3 group-hover:rotate-12 transition-transform" />
-                Become a Verified Seller
-              </Button>
-            </Link>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {[
-              { icon: Shield, label: 'Escrow Protected', desc: '100% Secure' },
-              { icon: BadgeCheck, label: 'Verified Vendors', desc: 'ID Checked' },
-              { icon: Lock, label: 'Encrypted Payments', desc: 'SSL Secured' },
-              { icon: MessageSquare, label: '24/7 Support', desc: 'Always Here' },
-            ].map((item, index) => (
-              <div key={index} className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl blur-lg group-hover:blur-xl transition-all"></div>
-                <div className="relative p-4 bg-card/90 backdrop-blur-sm border-2 border-border/50 rounded-xl hover:border-primary/50 transition-all">
-                  <item.icon className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <p className="text-sm font-orbitron font-bold">{item.label}</p>
-                  <p className="text-xs text-muted-foreground font-rajdhani">{item.desc}</p>
+      <main className="relative z-10 pb-20">
+        {/* Hero Section */}
+        <section className="pt-20 pb-16 px-6 text-center lg:text-left relative overflow-hidden">
+          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+             <div className="space-y-8">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold font-rajdhani tracking-wider animate-fade-in-up">
+                   <Shield className="w-4 h-4" />
+                   SECURE ESCROW TRADING
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* What is the Marketplace Section */}
-      <section className="relative z-10 px-6 py-16 border-t border-border/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
-              What is the Nexaesports <span className="text-primary">CODM Marketplace</span>?
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-rajdhani leading-relaxed">
-              A revolutionary trading platform built specifically for Call of Duty Mobile players. 
-              Buy and sell accounts with complete peace of mind, backed by the trusted Nexaesports brand.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Shield,
-                title: 'No Scams',
-                description: 'Every transaction is protected by our secure escrow system. Your money stays safe until you confirm account delivery.',
-              },
-              {
-                icon: BadgeCheck,
-                title: 'Verified Vendors',
-                description: 'All sellers undergo identity verification and reputation checks. Trade with confidence knowing who you\'re dealing with.',
-              },
-              {
-                icon: TrendingUp,
-                title: 'Transparent Pricing',
-                description: 'Fair market rates with no hidden fees. See exactly what you\'re paying for with detailed account statistics and ratings.',
-              },
-            ].map((feature, index) => (
-              <Card key={index} className="group hover:border-primary/50 transition-all bg-card/80 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="font-orbitron text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground font-rajdhani leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* User Types Section */}
-      <section className="relative z-10 px-6 py-16 bg-gradient-to-b from-card/20 to-transparent border-t border-border/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
-              Two Types of <span className="text-primary">Trusted Sellers</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-rajdhani">
-              Choose from public sellers or elite Nexa Players for your next account purchase.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Public Sellers */}
-            <Card className="border-2 border-border/50 hover:border-primary/30 transition-all bg-card/80 backdrop-blur-sm">
-              <CardHeader className="border-b border-border/30 pb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <Users className="w-8 h-8 text-blue-400" />
-                  <CardTitle className="text-2xl font-orbitron">Public Sellers</CardTitle>
-                </div>
-                <p className="text-muted-foreground font-rajdhani">
-                  Anyone can list and sell accounts
+                
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-orbitron font-black leading-tight tracking-tight">
+                   The Premier <br />
+                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-red-400 to-orange-500 animate-gradient">
+                     CODM Market
+                   </span>
+                </h1>
+                
+                <p className="text-xl text-muted-foreground font-rajdhani max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                   Buy and sell Call of Duty: Mobile accounts with complete confidence. 
+                   Verified sellers, instant delivery, and 100% money-back guarantee.
                 </p>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold">Open to All</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        Any registered user can create listings
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <FileCheck className="w-5 h-5 text-blue-400 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold">Manual Review</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        All listings reviewed by our team before going live
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Eye className="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold">Identity Checks</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        Basic verification required for all sellers
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold">Platform Rules</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        Must comply with our trading guidelines and policies
-                      </p>
-                    </div>
+
+                {/* Search Bar */}
+                <div className="max-w-md mx-auto lg:mx-0 relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-600 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity" />
+                  <div className="relative flex items-center bg-card border border-border/50 rounded-xl shadow-2xl p-2">
+                     <Search className="w-5 h-5 text-muted-foreground ml-3" />
+                     <input 
+                        type="text" 
+                        placeholder="Search for skins, ranks, or levels..."
+                        className="flex-1 bg-transparent border-none focus:ring-0 px-4 py-2 font-rajdhani text-lg placeholder:text-muted-foreground/50"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                     />
+                     <Button size="sm" className="font-rajdhani font-bold">
+                        Search
+                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Nexa Players */}
-            <Card className="border-2 border-primary/50 hover:border-primary transition-all bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm relative overflow-hidden">
-              <div className="absolute top-4 right-4">
-                <Badge className="bg-primary/90 backdrop-blur-sm font-rajdhani font-black text-sm">
-                  PREMIUM
-                </Badge>
-              </div>
-              <CardHeader className="border-b border-primary/30 pb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <Star className="w-8 h-8 text-primary" />
-                  <CardTitle className="text-2xl font-orbitron">Nexa Players</CardTitle>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8 pt-4">
+                   <div className="flex -space-x-3">
+                      {[1,2,3,4].map(i => (
+                         <div key={i} className="w-10 h-10 rounded-full border-2 border-background bg-muted flex items-center justify-center overflow-hidden">
+                            <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
+                         </div>
+                      ))}
+                      <div className="w-10 h-10 rounded-full border-2 border-background bg-card flex items-center justify-center font-bold text-xs">
+                         2k+
+                      </div>
+                   </div>
+                   <div className="text-left">
+                      <div className="flex text-yellow-500">
+                         {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-current" />)}
+                      </div>
+                      <p className="text-sm font-rajdhani text-muted-foreground">Trusted by 2,000+ Gamers</p>
+                   </div>
                 </div>
-                <p className="text-muted-foreground font-rajdhani">
-                  Fully verified Nexaesports clan members
-                </p>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <BadgeCheck className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold text-primary">Elite Verification</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        Extensive background checks and identity verification
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <TrendingUp className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold text-primary">Higher Trust Rating</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        Proven track record within Nexaesports community
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Zap className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold text-primary">Priority Visibility</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        Listings featured prominently in marketplace
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Award className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-rajdhani font-bold text-primary">Verified Badge</p>
-                      <p className="text-sm text-muted-foreground font-rajdhani">
-                        Special badge displayed on all listings and profile
-                      </p>
-                    </div>
-                  </div>
+             </div>
+
+             {/* Hero Visual */}
+             <div className="relative hidden lg:block">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-full blur-3xl animate-pulse" />
+                <div className="relative grid grid-cols-2 gap-4">
+                   {featuredListings.length > 0 ? (
+                      featuredListings.map((listing, i) => (
+                         <Card key={listing.id} className={`bg-card/40 backdrop-blur-md border-primary/20 transform hover:-translate-y-2 transition-all duration-500 ${i === 1 ? 'translate-y-12' : ''}`}>
+                            <div className="aspect-video bg-black/50 relative overflow-hidden rounded-t-xl">
+                               {listing.video_url ? (
+                                  <video src={listing.video_url} className="w-full h-full object-cover opacity-80" autoPlay muted loop />
+                               ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+                                    <ShoppingBag className="w-12 h-12 text-primary/20" />
+                                  </div>
+                               )}
+                               <div className="absolute top-2 right-2">
+                                  <Badge className="bg-primary/90 hover:bg-primary border-none text-[10px]">FEATURED</Badge>
+                               </div>
+                            </div>
+                            <CardContent className="p-4">
+                               <h3 className="font-orbitron font-bold truncate text-foreground">{listing.title}</h3>
+                               <p className="text-primary font-bold mt-1">₦{listing.price.toLocaleString()}</p>
+                            </CardContent>
+                         </Card>
+                      ))
+                   ) : (
+                      <div className="col-span-2 text-center py-20 bg-card/20 rounded-3xl border border-dashed border-primary/20">
+                         <p className="text-muted-foreground font-rajdhani">Featured listings loading...</p>
+                      </div>
+                   )}
                 </div>
-              </CardContent>
-            </Card>
+             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Security & Trust System */}
-      <section className="relative z-10 px-6 py-16 border-t border-border/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500/20 to-green-500/10 border border-green-500/50 rounded-full mb-6">
-              <Shield className="w-5 h-5 text-green-500" />
-              <span className="text-sm text-green-500 font-bold font-rajdhani tracking-wider">
-                MAXIMUM SECURITY
-              </span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
-              How We Keep You <span className="text-primary">100% Safe</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-rajdhani">
-              Multiple layers of protection ensure every transaction is secure from start to finish.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Lock,
-                title: 'Escrow-Based Transactions',
-                description: 'Your payment is held securely until you confirm the account is delivered and working. Seller only gets paid after you approve.',
-              },
-              {
-                icon: FileCheck,
-                title: 'Account Validation',
-                description: 'Every account listing is verified for accuracy. Stats, ranks, and items are checked before approval.',
-              },
-              {
-                icon: Star,
-                title: 'Vendor Reputation System',
-                description: 'Detailed seller ratings and reviews from real buyers. See transaction history and success rates.',
-              },
-              {
-                icon: MessageSquare,
-                title: 'Dispute Resolution',
-                description: 'Professional support team available 24/7 to resolve any issues. Fair arbitration process protects both parties.',
-              },
-              {
-                icon: Eye,
-                title: 'Transaction Monitoring',
-                description: 'All trades logged and audited. Suspicious activity triggers automatic security checks.',
-              },
-              {
-                icon: AlertTriangle,
-                title: 'Anti-Fraud Detection',
-                description: 'AI-powered fraud monitoring identifies and blocks scammers before they can harm legitimate users.',
-              },
-              {
-                icon: CreditCard,
-                title: 'Secure Payment Processing',
-                description: 'Bank-grade encryption protects your financial information. Multiple payment methods supported.',
-              },
-              {
-                icon: Shield,
-                title: 'Buyer Protection Guarantee',
-                description: 'If something goes wrong, we\'ve got your back. Full refund policy for qualifying disputes.',
-              },
-              {
-                icon: BadgeCheck,
-                title: 'Identity Verification',
-                description: 'Sellers must verify their identity before listing. Reduces anonymous scammers significantly.',
-              },
-            ].map((feature, index) => (
-              <Card key={index} className="group hover:border-primary/50 transition-all bg-card/80 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="font-orbitron text-lg">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground font-rajdhani leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="mt-12 p-8 bg-gradient-to-r from-green-500/10 to-green-500/5 border-2 border-green-500/30 rounded-2xl backdrop-blur-sm">
-            <div className="flex items-start gap-4">
-              <Shield className="w-8 h-8 text-green-500 flex-shrink-0 mt-1" />
+        {/* Filters & Listings */}
+        <section className="px-6 py-12 max-w-7xl mx-auto">
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
               <div>
-                <h3 className="text-2xl font-orbitron font-bold mb-3 text-green-500">
-                  Your Money is Protected Until You Confirm Delivery
-                </h3>
-                <p className="text-lg text-muted-foreground font-rajdhani leading-relaxed">
-                  Unlike random Telegram or Discord sellers, Nexaesports holds your payment in secure escrow. 
-                  The seller only receives funds after you verify the account is exactly as described. 
-                  If there's any issue, our support team steps in to resolve it fairly.
-                </p>
+                 <h2 className="text-3xl font-orbitron font-bold flex items-center gap-3">
+                    <ShoppingBag className="w-8 h-8 text-primary" />
+                    Latest Accounts
+                 </h2>
+                 <p className="text-muted-foreground font-rajdhani mt-1">
+                    Fresh listings from verified sellers.
+                 </p>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+              
+              <div className="flex flex-wrap gap-3">
+                 <Select value={regionFilter} onValueChange={setRegionFilter}>
+                    <SelectTrigger className="w-[140px] bg-card border-border/50 font-rajdhani">
+                       <Globe className="w-4 h-4 mr-2" />
+                       <SelectValue placeholder="Region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       <SelectItem value="all">Global</SelectItem>
+                       <SelectItem value="Africa">Africa</SelectItem>
+                       <SelectItem value="EU">Europe</SelectItem>
+                       <SelectItem value="USA">N. America</SelectItem>
+                       <SelectItem value="Asia">Asia</SelectItem>
+                    </SelectContent>
+                 </Select>
 
-      {/* How Buying Works */}
-      <section className="relative z-10 px-6 py-16 bg-gradient-to-b from-card/20 to-transparent border-t border-border/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
-              How <span className="text-primary">Buying</span> Works
-            </h2>
-            <p className="text-xl text-muted-foreground font-rajdhani">
-              Simple, secure, and straightforward. Get your dream CODM account in 5 easy steps.
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            {[
-              {
-                step: 1,
-                title: 'Browse CODM Accounts',
-                description: 'Explore hundreds of listings with detailed stats, screenshots, and seller ratings. Use filters to find exactly what you need.',
-                icon: ShoppingBag,
-              },
-              {
-                step: 2,
-                title: 'Check Seller Rating & Account Details',
-                description: 'Review seller reputation, transaction history, and complete account information including level, rank, skins, and weapons.',
-                icon: Eye,
-              },
-              {
-                step: 3,
-                title: 'Pay Securely via Nexaesports',
-                description: 'Choose your payment method and complete checkout. Your money goes into secure escrow - not directly to the seller.',
-                icon: CreditCard,
-              },
-              {
-                step: 4,
-                title: 'Account Delivered',
-                description: 'Seller provides account credentials through our secure messaging system. Log in and verify everything is as described.',
-                icon: CheckCircle,
-              },
-              {
-                step: 5,
-                title: 'Buyer Confirms → Seller Gets Paid',
-                description: 'Once you confirm the account is correct, we release payment to the seller. If there\'s an issue, open a dispute instead.',
-                icon: BadgeCheck,
-              },
-            ].map((item, index) => (
-              <Card key={index} className="group hover:border-primary/50 transition-all bg-card/80 backdrop-blur-sm overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-6">
-                    <div className="relative flex-shrink-0">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center text-2xl font-orbitron font-black">
-                        {item.step}
-                      </div>
-                      {index < 4 && (
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0.5 h-6 bg-gradient-to-b from-primary/50 to-transparent"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <item.icon className="w-6 h-6 text-primary" />
-                        <h3 className="text-2xl font-orbitron font-bold group-hover:text-primary transition-colors">
-                          {item.title}
-                        </h3>
-                      </div>
-                      <p className="text-muted-foreground font-rajdhani text-lg leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why Buy on Nexaesports - Comparison */}
-      <section className="relative z-10 px-6 py-16 border-t border-border/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
-              Why Buy on <span className="text-primary">Nexaesports</span>?
-            </h2>
-            <p className="text-xl text-muted-foreground font-rajdhani">
-              See the difference between random sellers and our secure platform.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Random Sellers */}
-            <Card className="border-2 border-red-500/30 bg-red-500/5 backdrop-blur-sm">
-              <CardHeader className="border-b border-red-500/20">
-                <CardTitle className="text-2xl font-orbitron flex items-center gap-3">
-                  <XCircle className="w-7 h-7 text-red-500" />
-                  Random Telegram Sellers
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  {[
-                    'No identity verification',
-                    'Direct payment to stranger',
-                    'No buyer protection',
-                    'High scam risk',
-                    'No dispute resolution',
-                    'Anonymous sellers',
-                    'No transaction records',
-                    'Can\'t verify account before paying',
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                      <span className="text-muted-foreground font-rajdhani">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Nexaesports */}
-            <Card className="border-2 border-primary/50 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm">
-              <CardHeader className="border-b border-primary/30">
-                <CardTitle className="text-2xl font-orbitron flex items-center gap-3">
-                  <CheckCircle className="w-7 h-7 text-primary" />
-                  Nexaesports Marketplace
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  {[
-                    'Verified sellers with ID checks',
-                    'Secure escrow protection',
-                    'Comprehensive buyer guarantee',
-                    'Zero tolerance for scams',
-                    'Professional support team',
-                    'Transparent seller ratings',
-                    'Full transaction audit trails',
-                    'Test account before confirming',
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
-                      <span className="font-rajdhani font-semibold">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-2xl font-orbitron font-bold mb-4">
-              The Choice is <span className="text-primary">Clear</span>
-            </p>
-            <p className="text-lg text-muted-foreground font-rajdhani max-w-2xl mx-auto">
-              Don't risk your hard-earned money with unverified sellers. 
-              Trade with confidence on Nexaesports where your security is our priority.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Signals & Testimonials */}
-      <section className="relative z-10 px-6 py-16 bg-gradient-to-b from-card/20 to-transparent border-t border-border/30">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
-              Trusted by <span className="text-primary">CODM Players</span>
-            </h2>
-            <p className="text-xl text-muted-foreground font-rajdhani">
-              Join thousands of satisfied traders who chose security over risk.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {[
-              {
-                quote: 'Bought my first legendary account here. Smooth process, seller was verified, and support helped with account transfer. Will buy again!',
-                author: 'NeXa_Thunder',
-                role: 'Verified Buyer',
-              },
-              {
-                quote: 'As a seller, I love the escrow system. Buyers feel safe and I get paid fairly. Much better than dealing with randoms on Telegram.',
-                author: 'NeXa_TradeMaster',
-                role: 'Verified Seller',
-              },
-              {
-                quote: 'Got scammed twice before finding Nexaesports. Finally bought my dream account safely. The verification badges give real peace of mind.',
-                author: 'ClanMember_Pro',
-                role: 'Community Member',
-              },
-            ].map((testimonial, index) => (
-              <Card key={index} className="bg-card/80 backdrop-blur-sm hover:border-primary/50 transition-all">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-muted-foreground font-rajdhani mb-6 leading-relaxed italic">
-                    "{testimonial.quote}"
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <User className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-rajdhani font-bold">{testimonial.author}</p>
-                      <p className="text-xs text-muted-foreground font-rajdhani">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Trust Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { value: '500+', label: 'Accounts Traded', icon: ShoppingBag },
-              { value: '98%', label: 'Success Rate', icon: CheckCircle },
-              { value: '₦2M+', label: 'Transaction Volume', icon: TrendingUp },
-              { value: '24/7', label: 'Support Available', icon: MessageSquare },
-            ].map((stat, index) => (
-              <div key={index} className="text-center p-6 bg-card/80 backdrop-blur-sm border-2 border-border/50 rounded-xl hover:border-primary/50 transition-all">
-                <stat.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                <p className="text-4xl font-orbitron font-black text-primary mb-2">{stat.value}</p>
-                <p className="text-sm text-muted-foreground font-rajdhani font-bold">{stat.label}</p>
+                 <Select value={sortOrder} onValueChange={setSortOrder}>
+                    <SelectTrigger className="w-[160px] bg-card border-border/50 font-rajdhani">
+                       <SlidersHorizontal className="w-4 h-4 mr-2" />
+                       <SelectValue placeholder="Sort By" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       <SelectItem value="newest">Newest First</SelectItem>
+                       <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                       <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                    </SelectContent>
+                 </Select>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+           </div>
 
-      {/* Final CTA Section */}
-      <section className="relative z-10 px-6 py-20 border-t border-border/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="relative overflow-hidden rounded-3xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5"></div>
-            <div className="relative p-12 text-center">
-              <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
-                Ready to Trade <span className="text-primary">Safely</span>?
-              </h2>
-              <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto font-rajdhani">
-                Join Nexaesports today and experience secure, scam-free account trading backed by our community and protection guarantees.
-              </p>
+           {listingsLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                 {[1,2,3,4,5,6,7,8].map(i => (
+                    <div key={i} className="h-[350px] bg-card/30 rounded-2xl animate-pulse" />
+                 ))}
+              </div>
+           ) : displayListings.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                 {displayListings.map(listing => (
+                    <Card key={listing.id} className="group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden flex flex-col">
+                       {/* Image Area */}
+                       <div className="aspect-[4/3] bg-black/50 relative overflow-hidden">
+                          {listing.video_url ? (
+                             <video 
+                                src={listing.video_url} 
+                                className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                                muted
+                                loop
+                                onMouseEnter={e => e.currentTarget.play()}
+                                onMouseLeave={e => {
+                                   e.currentTarget.pause();
+                                   e.currentTarget.currentTime = 0;
+                                }}
+                             />
+                          ) : (
+                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-card to-background">
+                                <ShoppingBag className="w-12 h-12 text-muted-foreground/20" />
+                             </div>
+                          )}
+                          
+                          {/* Overlay Tags */}
+                          <div className="absolute top-3 left-3 flex flex-col gap-2">
+                             {listing.verification_status === 'verified' && (
+                                <Badge className="bg-green-500/90 text-white border-none backdrop-blur-md shadow-lg font-rajdhani">
+                                   <Shield className="w-3 h-3 mr-1" /> VERIFIED
+                                </Badge>
+                             )}
+                          </div>
+                          
+                          <div className="absolute bottom-3 right-3">
+                             <Badge variant="secondary" className="backdrop-blur-md bg-black/50 text-white border-none font-rajdhani">
+                                <Globe className="w-3 h-3 mr-1" /> {listing.region}
+                             </Badge>
+                          </div>
+                       </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <Link to="/marketplace">
-                  <Button size="lg" className="nexa-button px-10 py-6 text-xl font-rajdhani font-black group">
-                    <ShoppingBag className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform" />
-                    Explore CODM Marketplace
-                    <ChevronRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-                <Link to="/auth/signup">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-2 border-primary/50 hover:bg-primary/10 hover:border-primary px-10 py-6 text-xl font-rajdhani font-black"
-                  >
-                    <Award className="w-6 h-6 mr-3" />
-                    Become a Verified Seller
-                  </Button>
-                </Link>
+                       <CardContent className="p-4 flex-1 flex flex-col gap-3">
+                          <div>
+                             <h3 className="font-orbitron font-bold text-lg truncate group-hover:text-primary transition-colors">
+                                {listing.title}
+                             </h3>
+                             <p className="text-xs text-muted-foreground font-rajdhani line-clamp-2 mt-1">
+                                {listing.description}
+                             </p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1">
+                             {renderAssetBadges(listing.assets).slice(0, 3)}
+                             {renderAssetBadges(listing.assets).length > 3 && (
+                                <span className="text-[9px] text-muted-foreground font-rajdhani">+{renderAssetBadges(listing.assets).length - 3} more</span>
+                             )}
+                          </div>
+                          
+                          <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/30">
+                             <div className="flex flex-col">
+                                <span className="text-[10px] text-muted-foreground font-rajdhani uppercase tracking-wider">Price</span>
+                                <span className="text-xl font-orbitron font-bold text-primary">
+                                   ₦{listing.price.toLocaleString()}
+                                </span>
+                             </div>
+                          </div>
+                       </CardContent>
+                       
+                       <CardFooter className="p-4 pt-0">
+                          <Link to="/auth/login" className="w-full">
+                             <Button className="w-full font-rajdhani font-bold bg-muted hover:bg-primary hover:text-white transition-colors">
+                                View Details <ArrowRight className="w-4 h-4 ml-2" />
+                             </Button>
+                          </Link>
+                       </CardFooter>
+                    </Card>
+                 ))}
+              </div>
+           ) : (
+              <div className="text-center py-24 bg-card/20 rounded-3xl border border-dashed border-border">
+                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-muted-foreground" />
+                 </div>
+                 <h3 className="text-xl font-orbitron font-bold mb-2">No listings found</h3>
+                 <p className="text-muted-foreground font-rajdhani">
+                    Try adjusting your filters or search query.
+                 </p>
+              </div>
+           )}
+        </section>
+
+        {/* Top Sellers Section */}
+        <section className="px-6 py-16 bg-card/30 border-y border-border/30">
+           <div className="max-w-7xl mx-auto">
+              <div className="text-center mb-12">
+                 <h2 className="text-3xl md:text-4xl font-orbitron font-bold mb-4">
+                    Top Verified <span className="text-primary">Sellers</span>
+                 </h2>
+                 <p className="text-muted-foreground font-rajdhani max-w-2xl mx-auto">
+                    Trade with our most trusted community members. High ratings, fast delivery, and premium support.
+                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/blog/account-trading-safety-guide">
-                  <Button
-                    variant="ghost"
-                    className="text-primary hover:bg-primary/10 font-rajdhani font-bold"
-                  >
-                    <BookOpen className="w-5 h-5 mr-2" />
-                    Read Safety Guide
-                  </Button>
-                </Link>
-                <Link to="/blog">
-                  <Button
-                    variant="ghost"
-                    className="text-primary hover:bg-primary/10 font-rajdhani font-bold"
-                  >
-                    <Target className="w-5 h-5 mr-2" />
-                    Learn Trading Tips
-                  </Button>
-                </Link>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                 {[
+                    { name: 'Ghost_Killer', rating: 5.0, sales: 142, img: 'https://i.pravatar.cc/150?img=60' },
+                    { name: 'Viper_Sniper', rating: 4.9, sales: 98, img: 'https://i.pravatar.cc/150?img=52' },
+                    { name: 'Nexa_Official', rating: 5.0, sales: 523, img: '/nexa-logo.jpg' },
+                    { name: 'Shadow_Ops', rating: 4.8, sales: 76, img: 'https://i.pravatar.cc/150?img=12' },
+                 ].map((seller, i) => (
+                    <div key={i} className="bg-background border border-border/50 rounded-2xl p-6 text-center hover:border-primary/50 transition-all group cursor-pointer">
+                       <div className="w-20 h-20 mx-auto rounded-full p-1 bg-gradient-to-br from-primary to-transparent mb-4 group-hover:scale-105 transition-transform">
+                          <img src={seller.img} alt={seller.name} className="w-full h-full rounded-full object-cover bg-black" />
+                       </div>
+                       <h3 className="font-orbitron font-bold text-lg mb-1 flex items-center justify-center gap-1">
+                          {seller.name}
+                          <CheckCircle className="w-4 h-4 text-blue-500" />
+                       </h3>
+                       <div className="flex items-center justify-center gap-1 text-yellow-500 mb-3">
+                          <Star className="w-4 h-4 fill-current" />
+                          <span className="font-bold text-foreground">{seller.rating}</span>
+                          <span className="text-muted-foreground text-xs">({seller.sales} sales)</span>
+                       </div>
+                       <Button variant="outline" size="sm" className="w-full font-rajdhani">
+                          View Profile
+                       </Button>
+                    </div>
+                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+           </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="px-6 py-20">
+           <div className="max-w-4xl mx-auto text-center relative">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+              <div className="relative bg-card/80 backdrop-blur-xl border border-primary/20 rounded-3xl p-12 shadow-2xl">
+                 <h2 className="text-4xl md:text-5xl font-orbitron font-black mb-6">
+                    Ready to <span className="text-primary">Upgrade?</span>
+                 </h2>
+                 <p className="text-xl text-muted-foreground font-rajdhani mb-8 max-w-2xl mx-auto">
+                    Join thousands of players buying and selling safely on Nexa Marketplace.
+                    Create your account today and get started.
+                 </p>
+                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Link to="/auth/signup">
+                       <Button size="lg" className="w-full sm:w-auto font-orbitron font-bold text-lg px-8 py-6 shadow-xl shadow-primary/20">
+                          Create Free Account
+                       </Button>
+                    </Link>
+                    <Link to="/auth/login">
+                       <Button size="lg" variant="outline" className="w-full sm:w-auto font-orbitron font-bold text-lg px-8 py-6">
+                          Seller Dashboard
+                       </Button>
+                    </Link>
+                 </div>
+              </div>
+           </div>
+        </section>
+
+      </main>
     </div>
   );
 };

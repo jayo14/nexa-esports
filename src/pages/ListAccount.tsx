@@ -28,7 +28,6 @@ import {
   Plus,
   Globe,
   Lock,
-  Clock
 } from 'lucide-react';
 import { useMarketplace } from '@/hooks/useMarketplace';
 import { useToast } from '@/hooks/use-toast';
@@ -40,13 +39,13 @@ const ASSET_OPTIONS = [
   { id: 'mythic_skin', label: 'Mythic Skin' },
   { id: 'mythic_skin_maxed', label: 'Mythic Skin (Maxed)' },
   { id: 'legendary_gun', label: 'Legendary Gun' },
-  { id: 'legendary_skin', label: 'Legendary Skin' },
+  { id: 'legendary_skin', label: 'Leg Skin' },
   { id: 'legendary_vehicle', label: 'Legendary Vehicle' },
 ];
 
 const LOGIN_METHODS = [
   { id: 'activision', label: 'Activision', logo: 'https://e7.pngegg.com/pngimages/682/1000/png-clipart-call-of-duty-mobile-logo-iphone-call-of-duty-black-ops-mobile-game-call-of-duty-modern-warfare-video-game-logo.png' },
-  { id: 'icloud', label: 'iCloud', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
+  { id: 'icloud', label: 'iCloud', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/31/Apple_logo_white.svg' },
   { id: 'gmail', label: 'Gmail', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg' },
   { id: 'facebook', label: 'Facebook', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg' },
   { id: 'others', label: 'Others', logo: null },
@@ -69,27 +68,35 @@ export const ListAccount: React.FC = () => {
   
   const [formData, setFormData] = useState({
     title: '',
+    account_uid: '',
     description: '',
     price: '',
     is_negotiable: false,
     region: '',
     refund_policy: false,
     other_login: '',
-    player_level: '',
-    rank: '',
-    kd_ratio: '',
-    weapons_owned: '',
-    skins_owned: '',
   });
 
-  const [selectedAssets, setSelectedAssets] = useState<Record<string, boolean>>({});
+  const [selectedAssets, setSelectedAssets] = useState<Record<string, number>>({});
   const [selectedLogins, setSelectedLogins] = useState<Record<string, boolean>>({});
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   const handleAssetChange = (id: string, checked: boolean) => {
-    setSelectedAssets(prev => ({ ...prev, [id]: checked }));
+    setSelectedAssets(prev => {
+      if (checked) {
+        return { ...prev, [id]: prev[id] || 1 };
+      } else {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+    });
+  };
+
+  const handleAssetCountChange = (id: string, count: number) => {
+    setSelectedAssets(prev => ({ ...prev, [id]: Math.max(1, count) }));
   };
 
   const handleLoginChange = (id: string, checked: boolean) => {
@@ -99,7 +106,7 @@ export const ListAccount: React.FC = () => {
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+      if (file.size > 50 * 1024 * 1024) {
         toast({
           title: "File too large",
           description: "Video must be under 50MB",
@@ -122,7 +129,6 @@ export const ListAccount: React.FC = () => {
     e.preventDefault();
     let videoUrl = null;
     
-    // Enhanced Validation
     if (!formData.title.trim() || formData.title.trim().length < 5) {
       toast({
         title: "Invalid Title",
@@ -164,7 +170,7 @@ export const ListAccount: React.FC = () => {
     if (assetCount === 0) {
       toast({
         title: "Assets Required",
-        description: "Please select at least one account asset (e.g., Mythic Gun, Legendary Skin)",
+        description: "Please select at least one account asset",
         variant: "destructive"
       });
       return;
@@ -174,16 +180,7 @@ export const ListAccount: React.FC = () => {
     if (loginMethods.length === 0) {
       toast({
         title: "Login Method Required",
-        description: "Please select at least one login method for the account",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (selectedLogins['others'] && !formData.other_login.trim()) {
-      toast({
-        title: "Specification Required",
-        description: "Please specify the other login method(s)",
+        description: "Please select at least one login method",
         variant: "destructive"
       });
       return;
@@ -208,7 +205,6 @@ export const ListAccount: React.FC = () => {
           
         videoUrl = publicUrl;
       } catch (error: any) {
-        console.error('Video upload error:', error);
         toast({
           title: "Upload failed",
           description: "Failed to upload account video",
@@ -223,6 +219,7 @@ export const ListAccount: React.FC = () => {
 
     const listingPayload = {
       title: formData.title,
+      account_uid: formData.account_uid,
       description: formData.description,
       price: parseFloat(formData.price),
       is_negotiable: formData.is_negotiable,
@@ -235,11 +232,6 @@ export const ListAccount: React.FC = () => {
       refund_policy: formData.refund_policy,
       video_url: videoUrl,
       game: 'Call Of Duty Mobile',
-      player_level: formData.player_level ? parseInt(formData.player_level) : undefined,
-      rank: formData.rank || undefined,
-      kd_ratio: formData.kd_ratio ? parseFloat(formData.kd_ratio) : undefined,
-      weapons_owned: formData.weapons_owned ? parseInt(formData.weapons_owned) : undefined,
-      skins_owned: formData.skins_owned ? parseInt(formData.skins_owned) : undefined,
     };
 
     createListing(listingPayload, {
@@ -250,8 +242,7 @@ export const ListAccount: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-8 max-w-4xl animate-fade-in">
-      {/* Navigation Header */}
+    <div className="container mx-auto p-4 md:p-8 max-w-4xl animate-fade-in pb-32">
       <div className="flex items-center gap-4 mb-8">
         <Button 
           variant="ghost" 
@@ -267,10 +258,9 @@ export const ListAccount: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8 pb-20">
-        {/* Listing Title */}
+      <form onSubmit={handleSubmit} className="space-y-8">
         <Card className="border-primary/10">
-          <CardContent className="p-6">
+          <CardContent className="p-6 space-y-6">
             <div className="grid gap-2">
               <Label htmlFor="title" className="font-rajdhani font-semibold flex items-center gap-1">
                 Listing Title <span className="text-destructive">*</span>
@@ -283,10 +273,22 @@ export const ListAccount: React.FC = () => {
                 className="font-rajdhani h-11"
               />
             </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="account_uid" className="font-rajdhani font-semibold flex items-center gap-1">
+                Account UID <span className="text-xs text-muted-foreground ml-2">(Optional - only visible to admins/buyers)</span>
+              </Label>
+              <Input
+                id="account_uid"
+                value={formData.account_uid}
+                onChange={(e) => setFormData({ ...formData, account_uid: e.target.value })}
+                placeholder="Enter CODM UID"
+                className="font-rajdhani h-11"
+              />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Game Selection (Hardcoded for now as per req) */}
         <Card className="border-primary/20 bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardHeader className="bg-primary/5 border-b border-primary/10">
             <CardTitle className="text-sm font-orbitron flex items-center gap-2">
@@ -312,7 +314,6 @@ export const ListAccount: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Pricing & Basic Specs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border-primary/10">
             <CardHeader>
@@ -361,78 +362,11 @@ export const ListAccount: React.FC = () => {
           <Card className="border-primary/10">
             <CardHeader>
               <CardTitle className="text-sm font-orbitron flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                Account Stats
+                <Globe className="h-4 w-4 text-primary" />
+                Region & Policy
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="player_level">Player Level</Label>
-                  <Input 
-                    id="player_level"
-                    type="number"
-                    placeholder="150"
-                    value={formData.player_level}
-                    onChange={(e) => setFormData({ ...formData, player_level: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="rank">MP Rank</Label>
-                  <Input 
-                    id="rank"
-                    placeholder="Legendary"
-                    value={formData.rank}
-                    onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="kd_ratio">K/D</Label>
-                  <Input 
-                    id="kd_ratio"
-                    type="number"
-                    step="0.01"
-                    placeholder="2.5"
-                    value={formData.kd_ratio}
-                    onChange={(e) => setFormData({ ...formData, kd_ratio: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weapons">Weapons</Label>
-                  <Input 
-                    id="weapons"
-                    type="number"
-                    placeholder="50"
-                    value={formData.weapons_owned}
-                    onChange={(e) => setFormData({ ...formData, weapons_owned: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="skins">Skins</Label>
-                  <Input 
-                    id="skins"
-                    type="number"
-                    placeholder="100"
-                    value={formData.skins_owned}
-                    onChange={(e) => setFormData({ ...formData, skins_owned: e.target.value })}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="border-primary/10">
-          <CardHeader>
-            <CardTitle className="text-sm font-orbitron flex items-center gap-2">
-              <Globe className="h-4 w-4 text-primary" />
-              Region & Policy
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
                   Account Region <span className="text-destructive">*</span>
@@ -473,46 +407,59 @@ export const ListAccount: React.FC = () => {
                   <span className={`text-xs font-bold ${formData.refund_policy ? 'text-green-500' : 'text-muted-foreground'}`}>YES</span>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Assets Section */}
         <Card className="border-primary/10">
           <CardHeader>
             <CardTitle className="text-sm font-orbitron flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" />
               Account Assets <span className="text-destructive">*</span>
             </CardTitle>
-            <CardDescription className="font-rajdhani text-xs">Check all that apply to your account</CardDescription>
+            <CardDescription className="font-rajdhani text-xs">Check assets and enter quantity</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {ASSET_OPTIONS.map((asset) => (
                 <div 
                   key={asset.id} 
-                  className={`flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                  className={`flex flex-col gap-3 p-3 rounded-lg border transition-all ${
                     selectedAssets[asset.id] ? 'bg-primary/10 border-primary/40' : 'hover:bg-muted/50 border-border'
                   }`}
                 >
-                  <Checkbox 
-                    id={asset.id} 
-                    checked={selectedAssets[asset.id] || false}
-                    onCheckedChange={(checked) => handleAssetChange(asset.id, checked as boolean)}
-                  />
-                  <Label 
-                    htmlFor={asset.id} 
-                    className="text-sm font-rajdhani cursor-pointer select-none flex-1 py-1"
-                  >
-                    {asset.label}
-                  </Label>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox 
+                      id={asset.id} 
+                      checked={!!selectedAssets[asset.id]}
+                      onCheckedChange={(checked) => handleAssetChange(asset.id, checked as boolean)}
+                    />
+                    <Label 
+                      htmlFor={asset.id} 
+                      className="text-sm font-rajdhani cursor-pointer select-none flex-1 py-1"
+                    >
+                      {asset.label}
+                    </Label>
+                  </div>
+                  
+                  {selectedAssets[asset.id] !== undefined && (
+                    <div className="flex items-center gap-2 pl-7 animate-in slide-in-from-left-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Count:</Label>
+                      <Input 
+                        type="number"
+                        min="1"
+                        value={selectedAssets[asset.id]}
+                        onChange={(e) => handleAssetCountChange(asset.id, parseInt(e.target.value))}
+                        className="h-7 w-20 text-xs font-bold"
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Login Methods */}
         <Card className="border-primary/10">
           <CardHeader>
             <CardTitle className="text-sm font-orbitron flex items-center gap-2">
@@ -533,7 +480,7 @@ export const ListAccount: React.FC = () => {
                     htmlFor={`login-${method.id}`}
                     className="flex flex-col items-center gap-3 cursor-pointer w-full"
                   >
-                    <div className="h-8 w-8 flex items-center justify-center">
+                    <div className={`h-8 w-8 flex items-center justify-center ${method.id === 'icloud' ? 'brightness-200' : ''}`}>
                       {method.logo ? (
                         <img src={method.logo} alt={method.label} className="h-full w-full object-contain" />
                       ) : (
@@ -568,7 +515,6 @@ export const ListAccount: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Description & Video */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border-primary/10">
             <CardHeader>
@@ -635,7 +581,6 @@ export const ListAccount: React.FC = () => {
           </Card>
         </div>
 
-        {/* Safety Note */}
         <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 flex gap-4">
           <Info className="h-6 w-6 text-primary flex-shrink-0" />
           <div className="space-y-1">
@@ -646,8 +591,7 @@ export const ListAccount: React.FC = () => {
           </div>
         </div>
 
-        {/* Submit Section */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50">
+        <div className="fixed bottom-20 md:bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border flex justify-center z-50">
           <Button 
             className="w-full max-w-md h-12 font-orbitron text-lg shadow-lg shadow-primary/20"
             size="lg"

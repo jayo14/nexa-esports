@@ -1,17 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Shield, Users, Trophy, Target, ArrowRight, Star, Gamepad2, Mail, BookOpen, ShoppingBag } from 'lucide-react';
+import { Shield, Users, Trophy, Target, ArrowRight, Star, Gamepad2, Mail, BookOpen, ShoppingBag, Menu, X, LayoutDashboard } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ClanGallery } from '@/components/ClanGallery';
 import { ContactForm } from '@/components/ContactForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export const Landing: React.FC = () => {
+  const { user } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
       {/* Animated Background */}
-      <div className="fixed inset-0 opacity-20 overflow-hidden">
+      <div className="fixed inset-0 opacity-20 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10"></div>
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '1s'}}></div>
@@ -21,10 +26,10 @@ export const Landing: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between p-6 bg-card/40 backdrop-blur-xl border-b border-border/30 shadow-lg">
+      <nav className="relative z-10 flex items-center justify-between p-4 md:p-6 bg-card/40 backdrop-blur-xl border-b border-border/30 shadow-lg">
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-3">
-            <div className="w-20 h-20 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">
+            <div className="w-12 h-12 md:w-20 md:h-20 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">
               <img src="/nexa-logo.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
             </div>
           </Link>
@@ -44,18 +49,90 @@ export const Landing: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-4">
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center space-x-4">
           <ThemeToggle />
-          <Link to="/auth/login">
-            <Button variant="ghost" className="text-foreground hover:text-primary font-rajdhani font-bold text-lg hover:bg-primary/10 transition-all">
-              Login
-            </Button>
-          </Link>
-          <Link to="/auth/signup">
-            <Button className="nexa-button font-rajdhani font-black text-lg px-6">
-              Join Clan
-            </Button>
-          </Link>
+          {user ? (
+            <Link to="/dashboard">
+              <Button className="nexa-button font-rajdhani font-black text-lg px-6">
+                <LayoutDashboard className="w-5 h-5 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/auth/login">
+                <Button variant="ghost" className="text-foreground hover:text-primary font-rajdhani font-bold text-lg hover:bg-primary/10 transition-all">
+                  Login
+                </Button>
+              </Link>
+              <Link to="/auth/signup">
+                <Button className="nexa-button font-rajdhani font-black text-lg px-6">
+                  Join Clan
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* Mobile Menu Trigger */}
+        <div className="flex md:hidden items-center gap-4">
+          <ThemeToggle />
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-foreground">
+                <Menu className="w-6 h-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="bg-background/95 backdrop-blur-xl border-l border-primary/20">
+              <SheetHeader className="mb-8">
+                <SheetTitle className="text-left font-orbitron text-xl font-bold flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <img src="/nexa-logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-lg" />
+                  </div>
+                  NeXa Esports
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-4">
+                <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start text-lg font-rajdhani font-bold">
+                    <BookOpen className="w-5 h-5 mr-3" />
+                    Blog
+                  </Button>
+                </Link>
+                <Link to="/marketplace-info" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start text-lg font-rajdhani font-bold">
+                    <ShoppingBag className="w-5 h-5 mr-3" />
+                    Marketplace
+                  </Button>
+                </Link>
+                
+                <div className="h-px bg-border/50 my-2" />
+
+                {user ? (
+                  <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full nexa-button font-rajdhani font-black text-lg">
+                      <LayoutDashboard className="w-5 h-5 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" className="w-full justify-start text-lg font-rajdhani font-bold border-primary/50">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/auth/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button className="w-full nexa-button font-rajdhani font-black text-lg">
+                        Join Clan
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </nav>
 

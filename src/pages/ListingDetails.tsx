@@ -156,7 +156,10 @@ export const ListingDetails: React.FC = () => {
                   value && (
                     <div key={key} className="flex items-center gap-2 bg-primary/5 p-3 rounded-xl border border-primary/10 transition-colors hover:bg-primary/10">
                       <CheckCircle2 className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-rajdhani font-semibold">{assetLabels[key] || key}</span>
+                      <span className="text-sm font-rajdhani font-semibold">
+                        {assetLabels[key] || key}
+                        {typeof value === 'number' && value > 1 ? ` (${value})` : ''}
+                      </span>
                     </div>
                   )
                 ))}
@@ -181,20 +184,6 @@ export const ListingDetails: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Stats Summary */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-muted/30 p-3 rounded-lg border border-border flex flex-col items-center">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground mb-1" />
-                  <span className="text-[10px] font-rajdhani uppercase text-muted-foreground">Level</span>
-                  <span className="font-bold font-orbitron">{listing.player_level || 'N/A'}</span>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-lg border border-border flex flex-col items-center">
-                  <Star className="h-4 w-4 text-yellow-500 mb-1" />
-                  <span className="text-[10px] font-rajdhani uppercase text-muted-foreground">Rank</span>
-                  <span className="font-bold font-orbitron text-xs truncate max-w-full px-1">{listing.rank || 'N/A'}</span>
-                </div>
-              </div>
-
               {/* Security Banner */}
               <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex gap-3 items-center">
                 <Shield className="h-8 w-8 text-primary shrink-0" />
@@ -203,6 +192,14 @@ export const ListingDetails: React.FC = () => {
                   <p className="text-[10px] font-rajdhani text-muted-foreground leading-tight">Funds are held safely until you confirm delivery.</p>
                 </div>
               </div>
+
+              {/* Account UID - Added this section */}
+              {listing.account_uid && (
+                <div className="p-3 rounded-xl bg-muted/30 border border-border space-y-1">
+                  <p className="text-[10px] font-orbitron text-muted-foreground uppercase tracking-widest">Account UID</p>
+                  <p className="font-mono text-xs break-all">{listing.account_uid}</p>
+                </div>
+              )}
 
               {/* Login Methods Info */}
               <div className="space-y-2">

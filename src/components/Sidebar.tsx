@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const marketplaceSubItems = [
     { label: 'Browse Accounts', path: '/marketplace' },
-    { label: 'My Orders', path: '/marketplace/orders' },
+    { label: 'Buyer Dashboard', path: '/marketplace/orders' },
     ...(isAdmin ? [{ label: 'Marketplace Admin', path: '/admin/marketplace' }] : []),
   ];
 

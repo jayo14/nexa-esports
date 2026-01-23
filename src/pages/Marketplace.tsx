@@ -101,11 +101,15 @@ export const Marketplace: React.FC = () => {
 
     const badges = premiumAssets
       .filter(asset => !!assets[asset.id])
-      .map(asset => (
-        <Badge key={asset.id} variant="outline" className={`font-rajdhani text-[9px] px-1.5 py-0 ${asset.color}`}>
-          {asset.label}
-        </Badge>
-      ));
+      .map(asset => {
+        const count = assets[asset.id];
+        return (
+          <Badge key={asset.id} variant="outline" className={`font-rajdhani text-[9px] px-1.5 py-0 ${asset.color}`}>
+            {asset.label}
+            {typeof count === 'number' && count > 1 ? ` (${count})` : ''}
+          </Badge>
+        );
+      });
 
     return badges;
   };
@@ -324,18 +328,6 @@ export const Marketplace: React.FC = () => {
                 </CardHeader>
                 
                 <CardContent className="p-4 pt-0 space-y-4 flex-1">
-                  {/* Account Specs Row */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-primary/5 p-2 rounded-lg border border-primary/5 flex flex-col">
-                      <span className="text-[9px] text-muted-foreground uppercase font-rajdhani">Level</span>
-                      <span className="text-sm font-bold font-orbitron">{listing.player_level || '—'}</span>
-                    </div>
-                    <div className="bg-primary/5 p-2 rounded-lg border border-primary/5 flex flex-col">
-                      <span className="text-[9px] text-muted-foreground uppercase font-rajdhani">Rank</span>
-                      <span className="text-sm font-bold font-orbitron truncate">{listing.rank || '—'}</span>
-                    </div>
-                  </div>
-
                   <div className="flex flex-wrap gap-1.5 h-10 overflow-hidden">
                     {listing.region && (
                       <Badge variant="outline" className="font-rajdhani text-[10px] border-primary/20 bg-primary/5">
