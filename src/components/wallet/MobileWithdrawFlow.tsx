@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ArrowDown, ArrowRight, Coins, Loader2, CheckCircle2 } from 'lucide-react';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 interface MobileWithdrawFlowProps {
   open: boolean;
@@ -46,17 +48,19 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
     }
   }, [open]);
 
-  const handleAmountNext = () => {
+  const handleAmountNext = async () => {
     const amountNum = Number(amount);
     
     if (amountNum < 500 || amountNum > 30000 || amountNum > walletBalance) {
       return;
     }
     
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('review');
   };
 
-  const handleReviewNext = () => {
+  const handleReviewNext = async () => {
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
     setShowPinVerify(true);
   };
 

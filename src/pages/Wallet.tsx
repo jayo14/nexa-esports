@@ -32,8 +32,11 @@ import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
 import { AirtimePurchaseFlow } from '@/components/wallet/AirtimePurchaseFlow';
 import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
 import { DataPurchaseFlow } from '@/components/wallet/DataPurchaseFlow';
+import { FundWalletFlow } from '@/components/wallet/FundWalletFlow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FlutterwaveHistory } from '@/components/wallet/FlutterwaveHistory';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
@@ -450,7 +453,10 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
                 <Button 
                     variant="outline" 
                     className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
-                    onClick={() => setOpen(true)}
+                    onClick={async () => {
+                        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                        setOpen(true);
+                    }}
                 >
                     <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
                       <Gift className="h-5 w-5 text-primary" />
@@ -767,6 +773,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
     const { profile } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const isMobile = useIsMobile();
     const [amount, setAmount] = useState(0);
     const [accountNumber, setAccountNumber] = useState('');
     const [accountName, setAccountName] = useState('');
@@ -1029,7 +1036,10 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                     variant="outline" 
                     className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
                     disabled={cooldown > 0}
-                    onClick={() => setOpen(true)}
+                    onClick={async () => {
+                        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                        setOpen(true);
+                    }}
                 >
                     <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
                       <ArrowDown className="h-5 w-5 text-red-500" />
@@ -1132,6 +1142,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
 const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isMobile = useIsMobile();
     const [amount, setAmount] = useState(0);
     const [recipient, setRecipient] = useState('');
     const [open, setOpen] = useState(false);
@@ -1280,7 +1291,10 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
             <Button 
                 variant="outline" 
                 className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
-                onClick={() => setOpen(true)}
+                onClick={async () => {
+                    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                    setOpen(true);
+                }}
             >
                 <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
                   <ArrowUpDown className="h-5 w-5 text-primary" />
@@ -1366,14 +1380,16 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
 const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boolean }) => {
     const navigate = useNavigate();
     const { user, profile } = useAuth();
+    const isMobile = useIsMobile();
     const [amount, setAmount] = useState(0);
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(1); // 1: Amount selection, 2: Confirmation
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
 
-    const handlePayment = async () => {
+    const handlePayment = async (overrideAmount?: number) => {
         setIsProcessing(true);
+        const finalAmount = overrideAmount || amount;
         try {
             const { data: { session } } = await supabase.auth.getSession();
             
@@ -1393,7 +1409,7 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                     'Authorization': `Bearer ${session.access_token}`,
                 },
                 body: {
-                    amount: amount,
+                    amount: finalAmount,
                     customer: {
                         email: user?.email || '',
                         phone: profile?.phone || '',
@@ -1485,6 +1501,32 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                 </Tooltip>
             </TooltipProvider>
         )
+    }
+
+    if (isMobile) {
+        return (
+            <>
+                <Button 
+                    variant="outline" 
+                    className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-105 transition-all duration-200"
+                    onClick={async () => {
+                        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                        setOpen(true);
+                    }}
+                >
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
+                      <Coins className="h-5 w-5 text-green-500" />
+                    </div>
+                    <span className="font-semibold text-xs">Fund Wallet</span>
+                </Button>
+                <FundWalletFlow 
+                    open={open}
+                    onOpenChange={setOpen}
+                    onPaymentInitiate={handlePayment}
+                    isProcessing={isProcessing}
+                />
+            </>
+        );
     }
 
     const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
@@ -1628,7 +1670,10 @@ const AirtimeButton = ({ onSuccess }: { onSuccess?: () => void }) => {
       <Button 
         variant="outline" 
         className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
-        onClick={() => setOpen(true)}
+        onClick={async () => {
+          if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+          setOpen(true);
+        }}
       >
         <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 group-hover:from-orange-500/30 group-hover:to-orange-600/20 transition-all">
           <Smartphone className="h-5 w-5 text-orange-500" />
@@ -1649,7 +1694,10 @@ const DataButton = ({ onClick }: { onClick: () => void }) => {
     <Button 
       variant="outline" 
       className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
-      onClick={onClick}
+      onClick={async () => {
+        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+        onClick();
+      }}
     >
       <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 group-hover:from-blue-500/30 group-hover:to-blue-600/20 transition-all">
         <Wifi className="h-5 w-5 text-blue-500" />
@@ -1664,7 +1712,10 @@ const RedeemButton = ({ onClick }: { onClick: () => void }) => {
     <Button 
       variant="outline" 
       className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
-      onClick={onClick}
+      onClick={async () => {
+        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+        onClick();
+      }}
     >
       <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all">
         <Gift className="h-5 w-5 text-purple-500" />

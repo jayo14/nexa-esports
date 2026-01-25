@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ArrowUpDown, ArrowRight, Coins, Loader2, CheckCircle2, Search } from 'lucide-react';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 interface MobileTransferFlowProps {
   open: boolean;
@@ -55,12 +57,13 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
 
   const selectedPlayer = players?.find(p => p.ign === recipient);
 
-  const handleRecipientNext = () => {
+  const handleRecipientNext = async () => {
     if (!recipient) return;
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('amount');
   };
 
-  const handleAmountNext = () => {
+  const handleAmountNext = async () => {
     const amountNum = Number(amount);
     
     // Fee is deducted from amount, so sender only needs to have the amount in wallet
@@ -72,10 +75,12 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
       return;
     }
     
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('review');
   };
 
-  const handleReviewNext = () => {
+  const handleReviewNext = async () => {
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
     setShowPinVerify(true);
   };
 

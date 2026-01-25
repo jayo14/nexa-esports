@@ -17,6 +17,7 @@
     "cap:build": "pnpm run build && npx cap sync"
   },
   "dependencies": {
+    "@capacitor/action-sheet": "^8.0.0",
     "@capacitor/android": "^8.0.1",
     "@capacitor/app": "^8.0.0",
     "@capacitor/cli": "^7.4.5",

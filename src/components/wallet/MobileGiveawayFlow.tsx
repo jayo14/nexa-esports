@@ -9,6 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Gift, ArrowRight, Coins, Loader2, CheckCircle2, Copy, Check } from 'lucide-react';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { useToast } from '@/hooks/use-toast';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 interface MobileGiveawayFlowProps {
   open: boolean;
@@ -66,7 +68,7 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
 
   const totalCost = Number(codeValue) * Number(totalCodes);
 
-  const handleDetailsNext = () => {
+  const handleDetailsNext = async () => {
     if (!title.trim()) {
       toast({
         title: "Title required",
@@ -75,10 +77,11 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
       });
       return;
     }
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('config');
   };
 
-  const handleConfigNext = () => {
+  const handleConfigNext = async () => {
     if (totalCost > walletBalance) {
       toast({
         title: "Insufficient funds",
@@ -87,10 +90,12 @@ export const MobileGiveawayFlow: React.FC<MobileGiveawayFlowProps> = ({
       });
       return;
     }
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('review');
   };
 
-  const handleReviewNext = () => {
+  const handleReviewNext = async () => {
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
     setShowPinVerify(true);
   };
 
