@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Coins, ArrowRight, Shield, Loader2, Check } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { ActionSheet, ActionSheetSelectionStyle } from '@capacitor/action-sheet';
+import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,7 +45,7 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
       message: 'Choose an amount to fund your wallet',
       options: [
         ...presetAmounts.map(a => ({ title: `₦${a.toLocaleString()}` })),
-        { title: 'Cancel', style: ActionSheetSelectionStyle.Destructive }
+        { title: 'Cancel', style: ActionSheetButtonStyle.Cancel }
       ]
     });
 

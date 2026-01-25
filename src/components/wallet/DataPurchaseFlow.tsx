@@ -17,7 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
-import { ActionSheet, ActionSheetSelectionStyle } from '@capacitor/action-sheet';
+import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Dialog } from '@capacitor/dialog';
 
 interface DataPurchaseFlowProps {
@@ -150,7 +150,7 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
       message: 'Choose a bundle to purchase',
       options: [
         ...plans.map(p => ({ title: `${p.name} - ₦${p.price.toLocaleString()}` })),
-        { title: 'Cancel', style: ActionSheetSelectionStyle.Destructive }
+        { title: 'Cancel', style: ActionSheetButtonStyle.Cancel }
       ]
     });
 

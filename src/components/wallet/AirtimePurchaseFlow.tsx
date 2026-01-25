@@ -18,7 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
-import { ActionSheet, ActionSheetSelectionStyle } from '@capacitor/action-sheet';
+import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Dialog } from '@capacitor/dialog';
 
 interface AirtimePurchaseFlowProps {
@@ -121,7 +121,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
       message: 'Choose an amount to purchase',
       options: [
         ...quickAmounts.map(a => ({ title: `₦${a.toLocaleString()}` })),
-        { title: 'Cancel', style: ActionSheetSelectionStyle.Destructive }
+        { title: 'Cancel', style: ActionSheetButtonStyle.Cancel }
       ]
     });
 
