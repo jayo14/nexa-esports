@@ -8,12 +8,36 @@ importers:
 
   .:
     dependencies:
+      '@capacitor/android':
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@8.0.1)
+      '@capacitor/app':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
       '@capacitor/cli':
         specifier: ^7.4.5
         version: 7.4.5
       '@capacitor/core':
         specifier: ^8.0.1
         version: 8.0.1
+      '@capacitor/haptics':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
+      '@capacitor/ios':
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@8.0.1)
+      '@capacitor/keyboard':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
+      '@capacitor/preferences':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
+      '@capacitor/splash-screen':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
+      '@capacitor/status-bar':
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
       '@emailjs/browser':
         specifier: ^4.4.1
         version: 4.4.1
@@ -799,6 +823,16 @@ packages:
   '@canvas/image-data@1.1.0':
     resolution: {integrity: sha512-QdObRRjRbcXGmM1tmJ+MrHcaz1MftF2+W7YI+MsphnsCrmtyfS0d5qJbk0MeSbUeyM/jCb0hmnkXPsy026L7dA==}
 
+  '@capacitor/android@8.0.1':
+    resolution: {integrity: sha512-Mrk2MFKSg9YA4BPLKm03wwFnGKcvzNBERUTcxjW1NkLrF6YhJwygAT69f/YGopFvOhhqdnDPsuZuASUfmpkSpw==}
+    peerDependencies:
+      '@capacitor/core': ^8.0.0
+
+  '@capacitor/app@8.0.0':
+    resolution: {integrity: sha512-OwzIkUs4w433Bu9WWAEbEYngXEfJXZ9Wmdb8eoaqzYBgB0W9/3Ed/mh6sAYPNBAZlpyarmewgP7Nb+d3Vrh+xA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor/cli@7.4.5':
     resolution: {integrity: sha512-ApKxpzcWTqmyTD+WxBvL7UJt+x0xr9Vqa+S4Iqbl/R2kC0tf1ay22wE9pOrdWXbTqFbNhBuUuRvTvZ6Edp7QzQ==}
     engines: {node: '>=20.0.0'}
@@ -806,6 +840,36 @@ packages:
 
   '@capacitor/core@8.0.1':
     resolution: {integrity: sha512-5UqSWxGMp/B8KhYu7rAijqNtYslhcLh+TrbfU48PfdMDsPfaU/VY48sMNzC22xL8BmoFoql/3SKyP+pavTOvOA==}
+
+  '@capacitor/haptics@8.0.0':
+    resolution: {integrity: sha512-DY1IUOjke1T4ITl7mFHQIKCaJJyHYAYRYHG9bVApU7PDOZiMVGMp48Yjzdqjya+wv/AHS5mDabSTUmhJ5uDvBA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/ios@8.0.1':
+    resolution: {integrity: sha512-pDxwQtx3n07DBhRKFGvYh4g00ruIsT7HxPm6IIT+tJD8VuTNgwgWYmEOZzfHkG6mZuCe03KqCsuD+aVmg5Rctg==}
+    peerDependencies:
+      '@capacitor/core': ^8.0.0
+
+  '@capacitor/keyboard@8.0.0':
+    resolution: {integrity: sha512-ycPW6iQyFwzDK95jihesj5EGiyyGSfbBqNek11iNp9tBOB7zDeYkUA2S/vPpOETt3dhP6pWr7a9gNVGuEfj11g==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/preferences@8.0.0':
+    resolution: {integrity: sha512-NsE7Srk9Zr0SxiVelHGiAJR7M238eyCD6dI/sDhu3ckKwFrXn8/GRyGr+SZcnGLlQKy948li8Pfcfr0dqxNf1g==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/splash-screen@8.0.0':
+    resolution: {integrity: sha512-zkFdUSd6C6gd3s3bIEgtO3DVjfwpaX5mmWU9er8xYTg47zr2toEkGtfyE6CPhhErG09fl4rCqrK5DfnGrXLh9w==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/status-bar@8.0.0':
+    resolution: {integrity: sha512-aIj3bc7z8lfPgOen8HlrBrkfnxpFnh21OCx6jCUx4Mvv+B6eEkUQ49b32DOddgVfr+igRHLX2SYi7duqIsNDXg==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -6662,6 +6726,14 @@ snapshots:
 
   '@canvas/image-data@1.1.0': {}
 
+  '@capacitor/android@8.0.1(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
+  '@capacitor/app@8.0.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/cli@7.4.5':
     dependencies:
       '@ionic/cli-framework-output': 2.2.8
@@ -6687,6 +6759,30 @@ snapshots:
   '@capacitor/core@8.0.1':
     dependencies:
       tslib: 2.8.1
+
+  '@capacitor/haptics@8.0.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
+  '@capacitor/ios@8.0.1(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
+  '@capacitor/keyboard@8.0.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
+  '@capacitor/preferences@8.0.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
+  '@capacitor/splash-screen@8.0.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
+  '@capacitor/status-bar@8.0.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

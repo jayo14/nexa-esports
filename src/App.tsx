@@ -69,6 +69,7 @@ import { EventDetails } from '@/pages/EventDetails';
 
 import { SnowEffect } from '@/components/effects/SnowEffect';
 import { FestiveLights } from '@/components/effects/FestiveLights';
+import { useCapacitor } from '@/hooks/useCapacitor';
 
 function App() {
   return (
@@ -84,6 +85,7 @@ function App() {
 
 function AppRoutes() {
   const { loading } = useAuth();
+  useCapacitor();
 
   if (loading) {
     return (
