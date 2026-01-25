@@ -15,6 +15,8 @@ import confetti from 'canvas-confetti';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 interface DataPurchaseFlowProps {
   open: boolean;
@@ -135,29 +137,33 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
     }
   }, [phoneNumber]);
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (step === STEPS.PHONE) {
       if (!validatePhoneNumber(phoneNumber) || !detectedProvider) {
         setError('Please enter a valid Nigerian phone number');
         return;
       }
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
       setStep(STEPS.PLAN);
     } else if (step === STEPS.PLAN) {
       if (!selectedPlanId) {
         setError('Please select a data plan');
         return;
       }
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
       setStep(STEPS.REVIEW);
     }
     setError('');
   };
 
-  const handlePrevStep = () => {
+  const handlePrevStep = async () => {
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep(prev => Math.max(1, prev - 1));
     setError('');
   };
 
-  const handlePinSuccess = () => {
+  const handlePinSuccess = async () => {
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
     setShowPinVerify(false);
     performPurchase();
   };
@@ -356,7 +362,8 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
                                 ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
                                 : "border-border hover:border-primary/30 hover:bg-muted/30"
                             )}
-                            onClick={() => {
+                            onClick={async () => {
+                              if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                               setSelectedPlanId(plan.id);
                               setError('');
                             }}

@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 interface AirtimePurchaseFlowProps {
   open: boolean;
@@ -107,12 +109,13 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     }
   }, [phoneNumber]);
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (step === STEPS.PHONE) {
       if (!validatePhoneNumber(phoneNumber) || !detectedProvider) {
         setError('Please enter a valid Nigerian phone number');
         return;
       }
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
       setStep(STEPS.AMOUNT);
     } else if (step === STEPS.AMOUNT) {
       const numAmount = parseFloat(amount);
@@ -120,17 +123,20 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
         setError(`Amount must be between ₦${airtimeLimits?.min || 50} and ₦${airtimeLimits?.max?.toLocaleString() || '50,000'}`);
         return;
       }
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
       setStep(STEPS.REVIEW);
     }
     setError('');
   };
 
-  const handlePrevStep = () => {
+  const handlePrevStep = async () => {
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep(prev => Math.max(1, prev - 1));
     setError('');
   };
 
-  const handlePinSuccess = () => {
+  const handlePinSuccess = async () => {
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
     setShowPinVerify(false);
     performPurchase();
   };
@@ -313,7 +319,8 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
                                 ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.05]" 
                                 : "hover:border-primary/50 hover:bg-primary/5"
                             )}
-                            onClick={() => {
+                            onClick={async () => {
+                              if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                               setAmount(amt.toString());
                               setError('');
                             }}
