@@ -255,3 +255,12 @@ Give credit if you clone the whole war room ⚔️
 ## 🌐 Demo Link
 
 > [Live App](https://nexa-esports.vercel.app)
+
+---
+
+## 🛠 Next Steps for You
+
+To fully activate native push on your physical devices:
+
+1.  **Firebase Setup**: Ensure your `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) are placed in their respective native project folders.
+2.  **Supabase Secrets**: Add your `FIREBASE_SERVICE_ACCOUNT` (JSON format) to your Supabase Edge Function secrets to allow the server to talk to FCM.
