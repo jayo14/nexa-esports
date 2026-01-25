@@ -16,6 +16,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useNativePush } from "@/hooks/useNativePush";
 import { Switch } from "@/components/ui/switch";
 import {
   Settings as SettingsIcon,
@@ -166,6 +167,11 @@ export const Settings: React.FC = () => {
     subscribe: subscribeToPush,
     unsubscribe: unsubscribeFromPush
   } = usePushNotifications();
+  const { 
+    isSupported: isNativePushSupported, 
+    registerPush, 
+    unregisterPush 
+  } = useNativePush();
 
   const [formData, setFormData] = useState({
     ign: "",
@@ -398,9 +404,17 @@ export const Settings: React.FC = () => {
     if (!user?.id) return;
 
     if (enabled) {
-      await subscribeToPush(user.id);
+      if (isNativePushSupported) {
+        await registerPush(user.id);
+      } else {
+        await subscribeToPush(user.id);
+      }
     } else {
-      await unsubscribeFromPush(user.id);
+      if (isNativePushSupported) {
+        await unregisterPush(user.id);
+      } else {
+        await unsubscribeFromPush(user.id);
+      }
     }
   };
 
@@ -1027,12 +1041,12 @@ export const Settings: React.FC = () => {
                     <Switch
                       checked={isPushSubscribed}
                       onCheckedChange={handlePushNotificationToggle}
-                      disabled={!isPushSupported || isPushLoading}
+                      disabled={(!isPushSupported && !isNativePushSupported) || isPushLoading}
                     />
                   </div>
                 </div>
 
-                {!isPushSupported && (
+                {!isPushSupported && !isNativePushSupported && (
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <div className="flex items-start space-x-3">
                       <BellOff className="w-5 h-5 text-yellow-500 mt-0.5" />
