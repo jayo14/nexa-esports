@@ -18,6 +18,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { ActionSheet, ActionSheetSelectionStyle } from '@capacitor/action-sheet';
+import { Dialog } from '@capacitor/dialog';
 
 interface AirtimePurchaseFlowProps {
   open: boolean;
@@ -108,6 +110,27 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
       setError('');
     }
   }, [phoneNumber]);
+
+  const showNativeAmountSheet = async () => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    await Haptics.impact({ style: ImpactStyle.Medium });
+
+    const result = await ActionSheet.showActions({
+      title: 'Select Airtime Amount',
+      message: 'Choose an amount to purchase',
+      options: [
+        ...quickAmounts.map(a => ({ title: `₦${a.toLocaleString()}` })),
+        { title: 'Cancel', style: ActionSheetSelectionStyle.Destructive }
+      ]
+    });
+
+    if (result.index < quickAmounts.length) {
+      setAmount(quickAmounts[result.index].toString());
+      setError('');
+      await Haptics.notification({ type: ImpactStyle.Light as any });
+    }
+  };
 
   const handleNextStep = async () => {
     if (step === STEPS.PHONE) {
@@ -331,9 +354,21 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
                       </div>
 
                       <div className="space-y-3">
-                        <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                          Or enter custom amount
-                        </Label>
+                        <div className="flex justify-between items-center px-1">
+                          <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                            Or enter custom amount
+                          </Label>
+                          {Capacitor.isNativePlatform() && (
+                            <Button 
+                              variant="link" 
+                              size="sm" 
+                              className="text-primary h-auto p-0 font-bold"
+                              onClick={showNativeAmountSheet}
+                            >
+                              Quick Select
+                            </Button>
+                          )}
+                        </div>
                         <div className="relative">
                           <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-primary">₦</span>
                           <Input
@@ -481,7 +516,27 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
                     step === STEPS.REVIEW ? "bg-green-600 hover:bg-green-700 shadow-green-500/20" : "bg-primary hover:bg-primary/90 shadow-primary/20",
                     "shadow-lg"
                   )}
-                  onClick={step === STEPS.REVIEW ? () => setShowPinVerify(true) : handleNextStep}
+                  onClick={async () => {
+                    if (step === STEPS.REVIEW) {
+                      if (Capacitor.isNativePlatform()) {
+                        await Haptics.impact({ style: ImpactStyle.Medium });
+                        const { value } = await Dialog.confirm({
+                          title: 'Confirm Purchase',
+                          message: `Are you sure you want to purchase ₦${parseFloat(amount || '0').toLocaleString()} airtime for ${formatPhoneNumber(phoneNumber)}?`,
+                          okButtonTitle: 'Purchase',
+                          cancelButtonTitle: 'Cancel'
+                        });
+                        
+                        if (value) {
+                          setShowPinVerify(true);
+                        }
+                      } else {
+                        setShowPinVerify(true);
+                      }
+                    } else {
+                      handleNextStep();
+                    }
+                  }}
                   disabled={
                     (step === STEPS.PHONE && (!phoneNumber || !detectedProvider || isDetecting || phoneNumber.length < 11)) ||
                     (step === STEPS.AMOUNT && !amount) ||

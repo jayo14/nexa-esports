@@ -17,6 +17,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { ActionSheet, ActionSheetSelectionStyle } from '@capacitor/action-sheet';
+import { Dialog } from '@capacitor/dialog';
 
 interface DataPurchaseFlowProps {
   open: boolean;
@@ -136,6 +138,28 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
       setError('');
     }
   }, [phoneNumber]);
+
+  const showNativePlanSheet = async () => {
+    if (!Capacitor.isNativePlatform() || !detectedProvider) return;
+
+    await Haptics.impact({ style: ImpactStyle.Medium });
+
+    const plans = DATA_PLANS[detectedProvider];
+    const result = await ActionSheet.showActions({
+      title: `Select ${detectedProvider} Data Plan`,
+      message: 'Choose a bundle to purchase',
+      options: [
+        ...plans.map(p => ({ title: `${p.name} - ₦${p.price.toLocaleString()}` })),
+        { title: 'Cancel', style: ActionSheetSelectionStyle.Destructive }
+      ]
+    });
+
+    if (result.index < plans.length) {
+      setSelectedPlanId(plans[result.index].id);
+      setError('');
+      await Haptics.notification({ type: ImpactStyle.Light as any });
+    }
+  };
 
   const handleNextStep = async () => {
     if (step === STEPS.PHONE) {
@@ -348,9 +372,21 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
                         <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => setStep(STEPS.PHONE)}>Change</Button>
                       </div>
 
-                      <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                        Available Bundles
-                      </Label>
+                      <div className="flex justify-between items-center px-1">
+                        <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                          Available Bundles
+                        </Label>
+                        {Capacitor.isNativePlatform() && (
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="text-primary h-auto p-0 font-bold"
+                            onClick={showNativePlanSheet}
+                          >
+                            Native Selector
+                          </Button>
+                        )}
+                      </div>
                       
                       <div className="grid grid-cols-1 gap-3">
                         {availablePlans.map((plan) => (
@@ -513,7 +549,27 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
                     step === STEPS.REVIEW ? "bg-green-600 hover:bg-green-700 shadow-green-500/20" : "bg-primary hover:bg-primary/90 shadow-primary/20",
                     "shadow-lg"
                   )}
-                  onClick={step === STEPS.REVIEW ? () => setShowPinVerify(true) : handleNextStep}
+                  onClick={async () => {
+                    if (step === STEPS.REVIEW) {
+                      if (Capacitor.isNativePlatform()) {
+                        await Haptics.impact({ style: ImpactStyle.Medium });
+                        const { value } = await Dialog.confirm({
+                          title: 'Confirm Data Purchase',
+                          message: `Are you sure you want to purchase ${selectedPlan?.name} for ${formatPhoneNumber(phoneNumber)}?`,
+                          okButtonTitle: 'Purchase',
+                          cancelButtonTitle: 'Cancel'
+                        });
+                        
+                        if (value) {
+                          setShowPinVerify(true);
+                        }
+                      } else {
+                        setShowPinVerify(true);
+                      }
+                    } else {
+                      handleNextStep();
+                    }
+                  }}
                   disabled={
                     (step === STEPS.PHONE && (!phoneNumber || !detectedProvider || isDetecting || phoneNumber.length < 11)) ||
                     (step === STEPS.PLAN && !selectedPlanId) ||

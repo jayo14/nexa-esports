@@ -9,6 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
+import { Dialog } from '@capacitor/dialog';
 
 interface RedeemGiveawayDialogProps {
   open: boolean;
@@ -42,6 +45,7 @@ export const RedeemGiveawayDialog: React.FC<RedeemGiveawayDialogProps> = ({
       return;
     }
 
+    if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
     setIsRedeeming(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -205,13 +209,19 @@ export const RedeemGiveawayDialog: React.FC<RedeemGiveawayDialogProps> = ({
                   <Button 
                     variant="outline" 
                     className="w-full h-12 font-rajdhani"
-                    onClick={reset}
+                    onClick={async () => {
+                      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                      reset();
+                    }}
                   >
                     Redeem Another
                   </Button>
                   <Button 
                     className="w-full h-12 font-rajdhani"
-                    onClick={() => handleOpenChange(false)}
+                    onClick={async () => {
+                      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                      handleOpenChange(false);
+                    }}
                   >
                     Done
                   </Button>
