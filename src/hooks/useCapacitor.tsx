@@ -26,7 +26,7 @@ export const useCapacitor = () => {
     const setupStatusBar = async () => {
       try {
         await StatusBar.setStyle({ style: Style.Dark });
-        await StatusBar.setBackgroundColor({ color: '#002368' });
+        await StatusBar.setBackgroundColor({ color: '#18181b' });
       } catch (e) {
         console.warn('StatusBar not available', e);
       }
