@@ -11,7 +11,7 @@ import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
-import { Dialog } from '@capacitor/dialog';
+import { Dialog as CapacitorDialog } from '@capacitor/dialog';
 
 interface RedeemGiveawayDialogProps {
   open: boolean;

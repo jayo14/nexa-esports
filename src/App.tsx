@@ -73,13 +73,15 @@ import { useCapacitor } from '@/hooks/useCapacitor';
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SnowEffect />
-        <FestiveLights />
-        <AppRoutes />
-      </AuthProvider>
-    </ThemeProvider>
+    <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <SnowEffect />
+          <FestiveLights />
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
+    </Router>
   );
 }
 
@@ -96,7 +98,7 @@ function AppRoutes() {
   }
 
   return (
-    <Router>
+    <>
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />
@@ -158,7 +160,7 @@ function AppRoutes() {
       <Toaster />
       <InstallPrompt />
       <UpdatePrompt />
-    </Router>
+    </>
   );
 }
 
