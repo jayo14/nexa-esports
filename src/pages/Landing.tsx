@@ -26,7 +26,7 @@ export const Landing: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between p-4 md:p-6 bg-card/40 backdrop-blur-xl border-b border-border/30 shadow-lg">
+      <nav className="relative z-10 flex items-center justify-between pt-10 pb-4 px-4 md:p-6 bg-card/40 backdrop-blur-xl border-b border-border/30 shadow-lg">
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-12 h-12 md:w-20 md:h-20 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">

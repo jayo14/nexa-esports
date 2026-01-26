@@ -150,7 +150,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
         side="left"
         className="w-80 bg-gradient-to-br from-background/98 to-background/95 backdrop-blur-xl border-r-2 border-[#FF1F44]/30 overflow-y-auto"
       >
-        <SheetHeader className="border-b border-white/10 pb-4">
+        <SheetHeader className="border-b border-white/10 pb-4 pt-10 md:pt-4">
           <SheetTitle className="text-white font-orbitron">
             <div className="flex items-center gap-3">
               <div className="relative">
