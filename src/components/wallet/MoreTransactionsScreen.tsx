@@ -56,7 +56,7 @@ export const MoreTransactionsScreen: React.FC = () => {
             <CardTitle className="text-xl">Additional Services</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {/* Airtime Purchase Button */}
               <Button
                 variant="outline"
