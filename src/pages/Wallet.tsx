@@ -2112,7 +2112,9 @@ const Wallet: React.FC = () => {
               {balanceVisible ? (
                 <>
                   ₦{Math.floor(walletBalance).toLocaleString()}
-                  <span className="text-2xl font-normal text-wallet-text-secondary">.{(walletBalance % 1).toFixed(2).slice(2)}</span>
+                  <span className="text-2xl font-normal text-wallet-text-secondary">
+                    .{String(walletBalance.toFixed(2)).split('.')[1]}
+                  </span>
                 </>
               ) : (
                 '₦••••••'
@@ -2178,7 +2180,13 @@ const Wallet: React.FC = () => {
             <p className="text-sm text-white/80 mb-4 leading-relaxed">
               Earn rewards through tournaments, giveaways, and special events.
             </p>
-            <button className="text-sm font-bold text-white underline hover:no-underline transition-all">
+            <button 
+              onClick={() => {
+                // Navigate to earnings page or show more info
+                window.open('/earnings', '_blank');
+              }}
+              className="text-sm font-bold text-white underline hover:no-underline transition-all"
+            >
               Learn More
             </button>
           </div>
