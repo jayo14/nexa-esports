@@ -48,19 +48,19 @@ const TransactionItem = ({ transaction, onViewReceipt }) => {
   const getStatusBadge = () => {
     if (transaction.status === 'completed' || transaction.status === 'success') {
       return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-wallet-success/10 text-wallet-success">
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
           Success
         </span>
       );
     } else if (transaction.status === 'pending') {
       return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-500/10 text-yellow-600">
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
           Pending
         </span>
       );
     } else if (transaction.status === 'failed') {
       return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-wallet-error/10 text-wallet-error">
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
           Failed
         </span>
       );
@@ -70,19 +70,18 @@ const TransactionItem = ({ transaction, onViewReceipt }) => {
 
   return (
     <div 
-      className="group flex items-center justify-between p-4 bg-wallet-card-white rounded-2xl mb-3 cursor-pointer hover:shadow-md transition-all duration-200 animate-fade-in"
-      style={{ boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.03)' }}
+      className="group flex items-center justify-between p-4 bg-card/50 backdrop-blur-sm rounded-2xl mb-3 cursor-pointer hover:bg-card/80 hover:border-primary/20 border border-transparent transition-all duration-200 animate-fade-in"
       onClick={() => onViewReceipt(transaction)}
     >
       <div className="flex items-center gap-3 flex-1">
         {renderTransactionIcon(transaction.type)}
         <div className="flex-1">
-          <p className="font-semibold text-sm text-wallet-text-primary">{transaction.description}</p>
-          <p className="text-xs text-wallet-text-secondary mt-0.5">{transaction.date}</p>
+          <p className="font-semibold text-sm text-foreground">{transaction.description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{transaction.date}</p>
         </div>
       </div>
       <div className="flex flex-col items-end gap-1">
-        <div className={`font-semibold text-sm ${transaction.amount > 0 ? 'text-wallet-success' : 'text-wallet-error'}`}>
+        <div className={`font-semibold text-sm ${transaction.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
           {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toFixed(0)}
         </div>
         {getStatusBadge()}
@@ -97,8 +96,8 @@ const renderTransactionIcon = (type: string) => {
     case 'Transfer In':
     case 'Giveaway Redeemed':
       return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-success/20 flex items-center justify-center">
-          <ArrowDown className="h-5 w-5 text-wallet-success" strokeWidth={2.5} />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
+          <ArrowDown className="h-5 w-5 text-green-400" strokeWidth={2.5} />
         </div>
       );
     case 'Withdrawal':
@@ -106,26 +105,26 @@ const renderTransactionIcon = (type: string) => {
     case 'Giveaway Created':
     case 'Monthly Tax':
       return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-error/20 flex items-center justify-center">
-          <ArrowUp className="h-5 w-5 text-wallet-error" strokeWidth={2.5} />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+          <ArrowUp className="h-5 w-5 text-red-400" strokeWidth={2.5} />
         </div>
       );
     case 'Airtime Purchase':
       return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-error/20 flex items-center justify-center">
-          <Smartphone className="h-5 w-5 text-wallet-error" strokeWidth={2.5} />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+          <Smartphone className="h-5 w-5 text-red-400" strokeWidth={2.5} />
         </div>
       );
     case 'Giveaway Refund':
       return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-          <Gift className="h-5 w-5 text-blue-500" strokeWidth={2.5} />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+          <Gift className="h-5 w-5 text-blue-400" strokeWidth={2.5} />
         </div>
       );
     default:
       return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-text-secondary/20 flex items-center justify-center">
-          <Coins className="h-5 w-5 text-wallet-text-secondary" strokeWidth={2.5} />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted/50 border border-border flex items-center justify-center">
+          <Coins className="h-5 w-5 text-muted-foreground" strokeWidth={2.5} />
         </div>
       );
   }
@@ -1682,7 +1681,7 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                         className={`flex-[2] h-14 rounded-2xl font-bold text-lg transition-all ${
                             step === 1 ? "bg-primary hover:bg-primary/90" : "bg-green-600 hover:bg-green-700"
                         }`}
-                        onClick={step === 1 ? validateAndNext : handlePayment}
+                        onClick={() => step === 1 ? validateAndNext() : handlePayment()}
                         disabled={amount < 500 || isProcessing}
                     >
                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -1769,10 +1768,10 @@ const MoreButton = () => {
         navigate('/wallet/more-transactions');
       }}
     >
-      <div className="w-[60px] h-[60px] rounded-full bg-wallet-text-secondary/20 flex items-center justify-center shadow-sm hover:shadow-md transition-all">
-        <MoreHorizontal className="h-6 w-6 text-wallet-text-secondary" strokeWidth={2} />
+      <div className="w-[60px] h-[60px] rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm hover:shadow-md hover:bg-primary/20 transition-all">
+        <MoreHorizontal className="h-6 w-6 text-primary" strokeWidth={2} />
       </div>
-      <span className="font-medium text-xs text-wallet-text-primary">More</span>
+      <span className="font-medium text-xs text-foreground">More</span>
     </Button>
   );
 };
@@ -2076,22 +2075,22 @@ const Wallet: React.FC = () => {
   }, [location.search, location.pathname, transactions, navigate, handleViewReceipt]);
 
   return (
-    <div className="min-h-screen bg-wallet-bg-main pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header: Profile & Date */}
-      <div className="sticky top-0 z-10 bg-wallet-bg-main/80 backdrop-blur-sm px-5 pt-6 pb-4">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-primary/10 px-5 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-wallet-purple-primary/20">
+            <Avatar className="h-10 w-10 border-2 border-primary/20">
               <AvatarImage src={profile?.avatar_url} alt={profile?.username || profile?.ign} />
-              <AvatarFallback className="bg-wallet-purple-primary text-white font-semibold">
+              <AvatarFallback className="bg-primary text-white font-semibold">
                 {(profile?.username || profile?.ign || 'U').charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-lg font-semibold text-wallet-text-primary capitalize">
+              <p className="text-lg font-semibold text-foreground capitalize">
                 {profile?.username || profile?.ign || 'User'}
               </p>
-              <p className="text-xs font-medium text-wallet-text-secondary">
+              <p className="text-xs font-medium text-muted-foreground">
                 {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </p>
             </div>
@@ -2101,18 +2100,21 @@ const Wallet: React.FC = () => {
 
       {/* Balance Hero Section */}
       <div className="px-5 pt-8 pb-10 relative">
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-wallet-hero-gradient-start/30 via-transparent to-transparent pointer-events-none" 
+        {/* Gradient Background with red accent */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" 
              style={{ height: '280px' }} />
         
-        <div className="relative">
-          <p className="text-sm font-medium text-wallet-text-tertiary mb-2">Total Balance</p>
+        <div className="relative bg-card/50 backdrop-blur-xl border border-primary/10 rounded-3xl p-6 shadow-2xl">
+          <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+            <Coins className="h-4 w-4 text-primary" />
+            Total Balance
+          </p>
           <div className="flex items-center gap-3 mb-1">
-            <div className="text-4xl font-bold text-wallet-text-primary">
+            <div className="text-4xl font-bold text-foreground">
               {balanceVisible ? (
                 <>
                   ₦{Math.floor(walletBalance).toLocaleString()}
-                  <span className="text-2xl font-normal text-wallet-text-secondary">
+                  <span className="text-2xl font-normal text-muted-foreground">
                     .{String(walletBalance.toFixed(2)).split('.')[1]}
                   </span>
                 </>
@@ -2122,12 +2124,12 @@ const Wallet: React.FC = () => {
             </div>
             <button
               onClick={() => setBalanceVisible(!balanceVisible)}
-              className="p-2 rounded-full hover:bg-wallet-purple-light/30 transition-colors"
+              className="p-2 rounded-full hover:bg-primary/10 transition-colors"
             >
               {balanceVisible ? (
-                <Eye className="h-5 w-5 text-wallet-text-secondary" strokeWidth={1.5} />
+                <Eye className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
               ) : (
-                <EyeOff className="h-5 w-5 text-wallet-text-secondary" strokeWidth={1.5} />
+                <EyeOff className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
               )}
             </button>
           </div>
@@ -2141,9 +2143,9 @@ const Wallet: React.FC = () => {
         </div>
       )}
 
-      {/* Action Bar - 4 Column Grid */}
+      {/* Action Bar - 5 Column Grid */}
       <div className="px-5 mb-10">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-3">
           <FundWalletSheet isDepositsEnabled={walletSettings.deposits_enabled} />
           <WithdrawDialog 
             setWalletBalance={setWalletBalance} 
@@ -2162,34 +2164,7 @@ const Wallet: React.FC = () => {
             onViewReceipt={handleViewReceipt}
           />
           <RedeemButton onClick={() => setShowRedeemSheet(true)} />
-        </div>
-      </div>
-
-      {/* Promotional Card */}
-      <div className="px-5 mb-8">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-wallet-purple-primary to-indigo-600 p-6 shadow-sm"
-             style={{ boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.03)' }}>
-          {/* Background Pattern/Texture */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 right-4 w-24 h-24 rounded-full bg-white/20 blur-2xl" />
-            <div className="absolute bottom-4 left-4 w-32 h-32 rounded-full bg-white/10 blur-3xl" />
-          </div>
-          
-          <div className="relative z-10">
-            <h3 className="text-lg font-bold text-white mb-2">Grow Your Balance</h3>
-            <p className="text-sm text-white/80 mb-4 leading-relaxed">
-              Earn rewards through tournaments, giveaways, and special events.
-            </p>
-            <button 
-              onClick={() => {
-                // Navigate to earnings page or show more info
-                window.open('/earnings', '_blank');
-              }}
-              className="text-sm font-bold text-white underline hover:no-underline transition-all"
-            >
-              Learn More
-            </button>
-          </div>
+          <MoreButton />
         </div>
       </div>
 

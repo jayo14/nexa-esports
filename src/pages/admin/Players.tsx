@@ -30,6 +30,11 @@ type Player = Database['public']['Tables']['profiles']['Row'] & {
 // Constants
 const TOP_RANKS_THRESHOLD = 10;
 
+// Utility function to get player prefix based on status
+const getPlayerPrefix = (status?: string | null) => {
+  return status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂';
+};
+
 const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -66,7 +71,7 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
   const roleName = player.role === 'clan_master' ? 'Clan Master' : player.role.charAt(0).toUpperCase() + player.role.slice(1);
   
   // Get player symbol prefix
-  const playerPrefix = player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂';
+  const playerPrefix = getPlayerPrefix(player.status);
 
   return (
     <Card 
@@ -161,9 +166,16 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
                   Unban
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onBan(player); }} disabled={player.role === 'clan_master'}>
-                  <X className="w-4 h-4 mr-2" />
-                  Ban
+                <DropdownMenuItem 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    onBan(player); 
+                  }} 
+                  disabled={player.role === 'clan_master'}
+                  className="text-red-400 focus:text-red-400"
+                >
+                  <ShieldOff className="w-4 h-4 mr-2" />
+                  Ban Player
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/profile/${player.id}`); }}>
@@ -171,9 +183,12 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
                 Public Profile
               </DropdownMenuItem>
               {profile?.role === 'clan_master' && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(player.id); }} className="text-red-500">
+                <DropdownMenuItem 
+                  onClick={(e) => { e.stopPropagation(); onDelete(player.id); }} 
+                  className="text-red-500 focus:text-red-500"
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  Delete Player
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -603,7 +618,7 @@ export const AdminPlayers: React.FC = () => {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-md border-[#FF1F44]/30">
             <DialogHeader>
               <DialogTitle className="text-foreground font-orbitron text-2xl">
-                Edit Player: {editingPlayer.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{editingPlayer.ign}
+                Edit Player: {getPlayerPrefix(editingPlayer.status)}{editingPlayer.ign}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-6 py-4">
@@ -775,114 +790,6 @@ export const AdminPlayers: React.FC = () => {
                 </div>
               </div>
 
-              {/* Account Actions */}
-              <div className="space-y-4 pt-4 border-t border-white/10">
-                <h3 className="text-lg font-semibold text-red-400">Account Actions</h3>
-                
-                {editingPlayer.is_banned ? (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-red-400">Player is Banned</h4>
-                      <p className="text-sm text-gray-400">
-                        Reason: {editingPlayer.ban_reason || 'No reason provided'}
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={async () => {
-                        await handleUnbanPlayer(editingPlayer);
-                        setEditingPlayer({ ...editingPlayer, is_banned: false, ban_reason: null });
-                      }} 
-                      variant="outline" 
-                      className="border-red-500/50 text-red-400 hover:bg-red-500/20"
-                    >
-                      Unban Player
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4 p-4 border border-red-500/20 rounded-lg bg-red-500/5">
-                    <h4 className="font-medium text-red-400">Ban Player</h4>
-                    
-                    <div className="space-y-2">
-                      <Label>Ban Type</Label>
-                      <RadioGroup value={banType} onValueChange={(v: any) => setBanType(v)} className="flex gap-4">
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="temporary" id="edit-ban-temp" />
-                          <Label htmlFor="edit-ban-temp">Temporary</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="permanent" id="edit-ban-perm" />
-                          <Label htmlFor="edit-ban-perm">Permanent</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    {banType === 'temporary' && (
-                      <div className="space-y-2">
-                        <Label>Ban Until</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal bg-background/50", !banDate && "text-muted-foreground")}>
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {banDate ? format(banDate, "PPP") : <span>Pick a date</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={banDate} onSelect={setBanDate} disabled={(date) => date < new Date()} initialFocus />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label>Reason</Label>
-                      <Input 
-                        value={banReason} 
-                        onChange={(e) => setBanReason(e.target.value)} 
-                        placeholder="Enter ban reason"
-                        className="bg-background/50 border-white/20"
-                      />
-                    </div>
-
-                    <Button 
-                      onClick={async () => {
-                        if (!banReason) {
-                          toast({ title: "Reason Required", description: "Please provide a reason for the ban.", variant: "destructive" });
-                          return;
-                        }
-                        if (banType === 'temporary' && !banDate) return;
-                        
-                        const banExpiresAt = banType === 'temporary' ? banDate?.toISOString() : null;
-                        
-                        await updatePlayer.mutateAsync({
-                          id: editingPlayer.id,
-                          updates: { 
-                            is_banned: true, 
-                            banned_at: new Date().toISOString(), 
-                            ban_reason: banReason, 
-                            ban_expires_at: banExpiresAt, 
-                            banned_by: profile?.id 
-                          }
-                        });
-                        
-                        await logPlayerBan(editingPlayer.id, editingPlayer.ign, banReason);
-                        toast({ title: "Player Banned", description: `${editingPlayer.ign} has been banned.`, variant: 'destructive' });
-                        
-                        setEditingPlayer({ 
-                          ...editingPlayer, 
-                          is_banned: true, 
-                          ban_reason: banReason 
-                        });
-                        setBanReason('');
-                      }} 
-                      variant="destructive" 
-                      className="w-full"
-                    >
-                      Confirm Ban
-                    </Button>
-                  </div>
-                )}
-              </div>
-
               <Button 
                 onClick={() => handleUpdatePlayer({ 
                   ign: editingPlayer.ign,
@@ -912,32 +819,88 @@ export const AdminPlayers: React.FC = () => {
       {/* Ban Player Dialog */}
       {banningPlayer && (
         <Dialog open={!!banningPlayer} onOpenChange={() => setBanningPlayer(null)}>
-          <DialogContent>
-            <DialogHeader><DialogTitle className="text-foreground">Ban Player: {banningPlayer.ign}</DialogTitle></DialogHeader>
+          <DialogContent className="bg-background/95 backdrop-blur-md border-[#FF1F44]/30 max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-foreground font-orbitron text-2xl flex items-center gap-2">
+                <ShieldOff className="w-6 h-6 text-red-400" />
+                Ban Player: {getPlayerPrefix(banningPlayer.status)}{banningPlayer.ign}
+              </DialogTitle>
+            </DialogHeader>
             <div className="space-y-4 py-4">
-              <div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">
+                  This action will restrict the player from accessing clan features and participating in events.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
                 <Label>Ban Type</Label>
                 <RadioGroup value={banType} onValueChange={(v: any) => setBanType(v)} className="flex gap-4 mt-2">
-                  <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="temporary" /> Temporary</Label>
-                  <Label className="flex items-center gap-2 cursor-pointer"><RadioGroupItem value="permanent" /> Permanent</Label>
+                  <Label className="flex items-center gap-2 cursor-pointer">
+                    <RadioGroupItem value="temporary" /> Temporary
+                  </Label>
+                  <Label className="flex items-center gap-2 cursor-pointer">
+                    <RadioGroupItem value="permanent" /> Permanent
+                  </Label>
                 </RadioGroup>
               </div>
+              
               {banType === 'temporary' && (
-                <div>
+                <div className="space-y-2">
                   <Label>Ban Until</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !banDate && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{banDate ? format(banDate, "PPP") : <span>Pick a date</span>}</Button>
+                      <Button 
+                        variant="outline" 
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-background/50 border-white/20", 
+                          !banDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {banDate ? format(banDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={banDate} onSelect={setBanDate} disabled={(date) => date < new Date()} initialFocus /></PopoverContent>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar 
+                        mode="single" 
+                        selected={banDate} 
+                        onSelect={setBanDate} 
+                        disabled={(date) => date < new Date()} 
+                        initialFocus 
+                      />
+                    </PopoverContent>
                   </Popover>
                 </div>
               )}
-              <div>
-                <Label>Reason</Label>
-                <Input value={banReason} onChange={(e) => setBanReason(e.target.value)} placeholder="Enter ban reason" />
+              
+              <div className="space-y-2">
+                <Label>Ban Reason</Label>
+                <Input 
+                  value={banReason} 
+                  onChange={(e) => setBanReason(e.target.value)} 
+                  placeholder="Enter reason for ban (required)"
+                  className="bg-background/50 border-white/20"
+                />
               </div>
-              <Button onClick={handleConfirmBan} variant="destructive" className="w-full">Confirm Ban</Button>
+              
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  onClick={() => setBanningPlayer(null)} 
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleConfirmBan} 
+                  variant="destructive" 
+                  className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+                >
+                  <ShieldOff className="w-4 h-4 mr-2" />
+                  Confirm Ban
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
