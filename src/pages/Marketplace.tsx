@@ -142,6 +142,16 @@ export const Marketplace: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
+          {myListings && myListings.length > 0 && (
+            <Button 
+              onClick={() => navigate('/marketplace/my-listings')}
+              variant="outline"
+              className="w-full md:w-auto font-rajdhani border-primary/20 hover:border-primary/50 transition-all"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              My Listings
+            </Button>
+          )}
           {isApproved ? (
             <Button 
               onClick={() => navigate('/marketplace/list')}
@@ -200,56 +210,6 @@ export const Marketplace: React.FC = () => {
           </select>
         </div>
       </div>
-
-      {/* My Listings Section */}
-      {myListings && myListings.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-orbitron font-bold flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            My Listings
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myListings.map((listing) => (
-              <Card 
-                key={listing.id} 
-                className="group border-primary/10 hover:border-primary/30 transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col shadow-sm hover:shadow-md cursor-pointer"
-                onClick={() => navigate(`/marketplace/listing/${listing.id}`)}
-              >
-                <div className="aspect-video w-full bg-muted/30 flex items-center justify-center relative border-b border-primary/5">
-                  {listing.video_url ? (
-                    <video src={listing.video_url} className="w-full h-full object-cover" muted />
-                  ) : (
-                    <ShoppingCart className="h-12 w-12 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <Badge className="font-rajdhani bg-background/80 backdrop-blur-sm border-primary/20">
-                      {listing.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-base font-orbitron line-clamp-1 group-hover:text-primary transition-colors">
-                    {listing.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 flex-1 flex flex-col justify-between gap-4">
-                  <p className="text-sm text-muted-foreground font-rajdhani line-clamp-2 italic">
-                    {listing.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-orbitron font-bold text-primary">
-                      ₦{listing.price.toLocaleString()}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-rajdhani">
-                      {format(new Date(listing.created_at), 'MMM d')}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* All Listings Section */}
       <div className="space-y-4">

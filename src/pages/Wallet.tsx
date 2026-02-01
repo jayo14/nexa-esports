@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone, Wifi } from 'lucide-react';
+import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone, Wifi, MoreHorizontal } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -1725,6 +1725,26 @@ const RedeemButton = ({ onClick }: { onClick: () => void }) => {
   );
 };
 
+const MoreButton = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <Button 
+      variant="outline" 
+      className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+      onClick={async () => {
+        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+        navigate('/wallet/more-transactions');
+      }}
+    >
+      <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all">
+        <MoreHorizontal className="h-5 w-5 text-primary" />
+      </div>
+      <span className="font-semibold text-xs">More</span>
+    </Button>
+  );
+};
+
 const Wallet: React.FC = () => {
   const { profile, user } = useAuth();
   const location = useLocation();
@@ -1748,7 +1768,6 @@ const Wallet: React.FC = () => {
   const [hasPinSet, setHasPinSet] = useState<boolean | null>(null);
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [showRedeemSheet, setShowRedeemSheet] = useState(false);
-  const [showDataSheet, setShowDataSheet] = useState(false);
   
   // Fetch wallet settings from database
   const { settings: walletSettings, loading: walletSettingsLoading } = useWalletSettings();
@@ -2048,7 +2067,7 @@ const Wallet: React.FC = () => {
         <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
       )}
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <FundWalletSheet isDepositsEnabled={walletSettings.deposits_enabled} />
         <WithdrawDialog 
           setWalletBalance={setWalletBalance} 
@@ -2066,16 +2085,8 @@ const Wallet: React.FC = () => {
           onTransferComplete={fetchWalletData} 
           onViewReceipt={handleViewReceipt}
         />
-        <AirtimeButton onSuccess={fetchWalletData} />
-        <DataButton onClick={() => setShowDataSheet(true)} />
-        <GiveawayDialog 
-          setWalletBalance={setWalletBalance} 
-          walletBalance={walletBalance} 
-          onRedeemComplete={fetchWalletData}
-          redeemCooldown={redeemCooldown}
-          onRedeemSuccess={startRedeemCooldown}
-        />
         <RedeemButton onClick={() => setShowRedeemSheet(true)} />
+        <MoreButton />
       </div>
 
       <RedeemGiveawayDialog
@@ -2084,12 +2095,6 @@ const Wallet: React.FC = () => {
         onSuccess={fetchWalletData}
         redeemCooldown={redeemCooldown}
         onRedeemSuccess={startRedeemCooldown}
-      />
-      
-      <DataPurchaseFlow
-        open={showDataSheet}
-        onOpenChange={setShowDataSheet}
-        onSuccess={fetchWalletData}
       />
 
       <Card className="border-border/50 shadow-xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
