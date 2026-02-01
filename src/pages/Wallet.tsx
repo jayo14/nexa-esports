@@ -515,11 +515,11 @@ const GiveawayDialog = ({ setWalletBalance, walletBalance, onRedeemComplete, red
         <>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200">
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                          <Gift className="h-5 w-5 text-primary" />
+                    <Button variant="outline" className="group w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.02] transition-all duration-200">
+                        <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                          <Gift className="h-4 w-4 text-primary" />
                         </div>
-                        <span className="font-semibold text-xs">Giveaway</span>
+                        <span className="font-semibold text-[10px]">Giveaway</span>
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1034,19 +1034,19 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
             {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
                 <Button 
                     variant="outline" 
-                    className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-105 transition-all duration-200"
+                    className="group w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-[1.02] transition-all duration-200"
                     disabled={cooldown > 0}
                     onClick={async () => {
                         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                         setOpen(true);
                     }}
                 >
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                      <ArrowDown className="h-5 w-5 text-red-500" />
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
+                      <ArrowDown className="h-4 w-4 text-red-500" />
                     </div>
-                    <span className="font-semibold text-xs">
+                    <span className="font-semibold text-[10px]">
                       {cooldown > 0 
-                          ? `Wait: ${Math.floor(cooldown / 3600)}h`
+                          ? `${Math.floor(cooldown / 3600)}h`
                           : 'Withdraw'}
                     </span>
                 </Button>
@@ -1054,11 +1054,11 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
-                                <div className="p-2 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10">
-                                  <ArrowDown className="h-5 w-5 text-red-500" />
+                            <Button variant="outline" className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 opacity-50" disabled>
+                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10">
+                                  <ArrowDown className="h-4 w-4 text-red-500" />
                                 </div>
-                                <span className="font-semibold text-xs">Withdraw</span>
+                                <span className="font-semibold text-[10px]">Withdraw</span>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -1290,16 +1290,16 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
         <>
             <Button 
                 variant="outline" 
-                className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-105 transition-all duration-200"
+                className="group w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.02] transition-all duration-200"
                 onClick={async () => {
                     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                     setOpen(true);
                 }}
             >
-                <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                  <ArrowUpDown className="h-5 w-5 text-primary" />
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
+                  <ArrowUpDown className="h-4 w-4 text-primary" />
                 </div>
-                <span className="font-semibold text-xs">Transfer</span>
+                <span className="font-semibold text-[10px]">Transfer</span>
             </Button>
             
             <MobileTransferFlow
@@ -1488,11 +1488,11 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 opacity-50" disabled>
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
-                              <Coins className="h-5 w-5 text-green-500" />
+                        <Button variant="outline" className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 opacity-50" disabled>
+                            <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
+                              <Coins className="h-4 w-4 text-green-500" />
                             </div>
-                            <span className="font-semibold text-xs">Fund Wallet</span>
+                            <span className="font-semibold text-[10px]">Fund</span>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -1508,16 +1508,16 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
             <>
                 <Button 
                     variant="outline" 
-                    className="group w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-105 transition-all duration-200"
+                    className="group w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-[1.02] transition-all duration-200"
                     onClick={async () => {
                         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                         setOpen(true);
                     }}
                 >
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
-                      <Coins className="h-5 w-5 text-green-500" />
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
+                      <Coins className="h-4 w-4 text-green-500" />
                     </div>
-                    <span className="font-semibold text-xs">Fund Wallet</span>
+                    <span className="font-semibold text-[10px]">Fund</span>
                 </Button>
                 <FundWalletFlow 
                     open={open}
@@ -1537,11 +1537,11 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
             if (!val) setStep(1);
         }}>
             <SheetTrigger asChild>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-105 transition-all duration-200">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10">
-                      <Coins className="h-5 w-5 text-green-500" />
+                <Button variant="outline" className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-[1.02] transition-all duration-200">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
+                      <Coins className="h-4 w-4 text-green-500" />
                     </div>
-                    <span className="font-semibold text-xs">Fund Wallet</span>
+                    <span className="font-semibold text-[10px]">Fund</span>
                 </Button>
             </SheetTrigger>
             <SheetContent side="bottom" className="h-[80vh] sm:h-[600px] rounded-t-[32px] border-t-primary/20 bg-background/95 backdrop-blur-xl overflow-hidden flex flex-col">
@@ -1711,16 +1711,16 @@ const RedeemButton = ({ onClick }: { onClick: () => void }) => {
   return (
     <Button 
       variant="outline" 
-      className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
+      className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
       onClick={async () => {
         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
         onClick();
       }}
     >
-      <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all">
-        <Gift className="h-5 w-5 text-purple-500" />
+      <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all">
+        <Gift className="h-4 w-4 text-purple-500" />
       </div>
-      <span className="font-semibold text-xs">Redeem</span>
+      <span className="font-semibold text-[10px]">Redeem</span>
     </Button>
   );
 };
@@ -1731,16 +1731,16 @@ const MoreButton = () => {
   return (
     <Button 
       variant="outline" 
-      className="w-full h-20 flex flex-col items-center justify-center gap-1.5 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+      className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
       onClick={async () => {
         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
         navigate('/wallet/more-transactions');
       }}
     >
-      <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all">
-        <MoreHorizontal className="h-5 w-5 text-primary" />
+      <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all">
+        <MoreHorizontal className="h-4 w-4 text-primary" />
       </div>
-      <span className="font-semibold text-xs">More</span>
+      <span className="font-semibold text-[10px]">More</span>
     </Button>
   );
 };
@@ -2043,22 +2043,22 @@ const Wallet: React.FC = () => {
   }, [location.search, location.pathname, transactions, navigate, handleViewReceipt]);
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
-      <Card className="relative overflow-hidden border-2 border-primary/20 shadow-2xl">
+    <div className="container mx-auto p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6 animate-fade-in">
+      <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -ml-32 -mb-32" />
+        <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-primary/5 rounded-full blur-3xl -mr-24 md:-mr-32 -mt-24 md:-mt-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 md:w-64 md:h-64 bg-accent/5 rounded-full blur-3xl -ml-24 md:-ml-32 -mb-24 md:-mb-32" />
         
-        <CardHeader className="relative text-center pb-2">
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+        <CardHeader className="relative text-center pb-1.5 md:pb-2 pt-4 md:pt-6">
+          <CardTitle className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Your Wallet
           </CardTitle>
         </CardHeader>
-        <CardContent className="relative text-center pb-8">
-          <div className="text-6xl md:text-7xl font-bold text-primary mb-2 animate-scale-in">
+        <CardContent className="relative text-center pb-5 md:pb-8">
+          <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-1.5 md:mb-2 animate-scale-in">
             ₦{walletBalance.toLocaleString()}
           </div>
-          <p className="text-sm text-muted-foreground tracking-wide uppercase">Available Balance</p>
+          <p className="text-xs md:text-sm text-muted-foreground tracking-wide uppercase">Available Balance</p>
         </CardContent>
       </Card>
 
@@ -2067,7 +2067,7 @@ const Wallet: React.FC = () => {
         <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 md:gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <FundWalletSheet isDepositsEnabled={walletSettings.deposits_enabled} />
         <WithdrawDialog 
           setWalletBalance={setWalletBalance} 

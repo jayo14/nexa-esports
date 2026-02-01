@@ -56,29 +56,29 @@ export const MoreTransactionsScreen: React.FC = () => {
             <CardTitle className="text-xl">Additional Services</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {/* Airtime Purchase Button */}
               <Button
                 variant="outline"
-                className="h-32 flex flex-col items-center justify-center gap-3 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+                className="h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
                 onClick={handleAirtimeClick}
               >
-                <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 group-hover:from-orange-500/30 group-hover:to-orange-600/20 transition-all">
-                  <Smartphone className="h-8 w-8 text-orange-500" />
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 group-hover:from-orange-500/30 group-hover:to-orange-600/20 transition-all">
+                  <Smartphone className="h-6 w-6 text-orange-500" />
                 </div>
-                <span className="font-semibold text-sm">Buy Airtime</span>
+                <span className="font-semibold text-xs">Buy Airtime</span>
               </Button>
 
               {/* Data Purchase Button */}
               <Button
                 variant="outline"
-                className="h-32 flex flex-col items-center justify-center gap-3 border-2 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
+                className="h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
                 onClick={handleDataClick}
               >
-                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 group-hover:from-blue-500/30 group-hover:to-blue-600/20 transition-all">
-                  <Wifi className="h-8 w-8 text-blue-500" />
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 group-hover:from-blue-500/30 group-hover:to-blue-600/20 transition-all">
+                  <Wifi className="h-6 w-6 text-blue-500" />
                 </div>
-                <span className="font-semibold text-sm">Buy Data</span>
+                <span className="font-semibold text-xs">Buy Data</span>
               </Button>
             </div>
           </CardContent>
