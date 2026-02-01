@@ -460,13 +460,7 @@ export const BuyerDashboard: React.FC = () => {
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-border/50">
-                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">User ID</label>
-                    <div className="p-3 bg-background/50 rounded-lg border border-border font-mono text-sm">
-                        {user?.id}
-                    </div>
-                 </div>
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-6 pt-6 border-t border-border/50">
                  <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Joined Date</label>
                     <div className="p-3 bg-background/50 rounded-lg border border-border font-mono text-sm">

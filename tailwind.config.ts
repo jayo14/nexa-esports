@@ -88,10 +88,10 @@ export default {
 				// Wallet redesign color tokens
 				wallet: {
 					'bg-main': '#F8F9FB',
-					'hero-gradient-start': '#F3E8FF',
+					'hero-gradient-start': '#FFE8ED',
 					'hero-gradient-end': '#FFFFFF',
-					'purple-primary': '#6347D9',
-					'purple-light': '#F0EDFF',
+					'red-primary': '#FF1F44',
+					'red-light': '#FFE8ED',
 					'text-primary': '#1A1A1A',
 					'text-secondary': '#9E9E9E',
 					'text-tertiary': '#616161',
