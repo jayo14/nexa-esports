@@ -38,6 +38,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { FlutterwaveHistory } from '@/components/wallet/FlutterwaveHistory';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { useCountUp } from '@/hooks/useCountUp';
 
 // Transaction fee constants
 const TRANSFER_FEE = 50;
@@ -1795,6 +1796,13 @@ const Wallet: React.FC = () => {
   const receiptShownRef = useRef<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
   
+  // Animate balance with count-up effect
+  const animatedBalance = useCountUp({ 
+    end: walletBalance, 
+    duration: 1500,
+    start: 0 
+  });
+  
   // PIN management states
   const { checkPinExists } = useTransactionPin();
   const [hasPinSet, setHasPinSet] = useState<boolean | null>(null);
@@ -2110,12 +2118,12 @@ const Wallet: React.FC = () => {
             Total Balance
           </p>
           <div className="flex items-center gap-3 mb-1">
-            <div className="text-4xl font-bold text-foreground">
+            <div className="text-5xl md:text-6xl font-bold text-foreground">
               {balanceVisible ? (
                 <>
-                  ₦{Math.floor(walletBalance).toLocaleString()}
-                  <span className="text-2xl font-normal text-muted-foreground">
-                    .{String(walletBalance.toFixed(2)).split('.')[1]}
+                  ₦{Math.floor(animatedBalance).toLocaleString()}
+                  <span className="text-3xl md:text-4xl font-normal text-muted-foreground">
+                    .{String(animatedBalance.toFixed(2)).split('.')[1]}
                   </span>
                 </>
               ) : (
