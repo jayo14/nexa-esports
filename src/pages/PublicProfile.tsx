@@ -357,6 +357,20 @@ export const PublicProfile: React.FC = () => {
                       <p className="text-sm font-medium text-foreground font-rajdhani">{user.socials.discord}</p>
                     </div>
                   </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-primary hover:text-primary/80 group-hover:translate-x-1 transition-transform"
+                    onClick={() => {
+                      navigator.clipboard.writeText(user.socials.discord);
+                      toast({
+                        title: "Copied!",
+                        description: "Discord username copied to clipboard",
+                      });
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
                 </div>
               )}
               

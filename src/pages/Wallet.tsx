@@ -1073,7 +1073,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                         setOpen(true);
                     }}
                 >
-                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
                       <Download className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
                     <span className="font-medium text-xs text-wallet-text-primary">
@@ -1087,7 +1087,7 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto opacity-50" disabled>
-                                <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center">
+                                <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center">
                                   <Download className="h-6 w-6 text-white" strokeWidth={2} />
                                 </div>
                                 <span className="font-medium text-xs text-wallet-text-primary">Withdraw</span>
@@ -1328,7 +1328,7 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
                     setOpen(true);
                 }}
             >
-                <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
                   <Send className="h-6 w-6 text-white" strokeWidth={2} />
                 </div>
                 <span className="font-medium text-xs text-wallet-text-primary">Transfer</span>
@@ -1521,7 +1521,7 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="ghost" className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto opacity-50" disabled>
-                            <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center">
+                            <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center">
                               <Upload className="h-6 w-6 text-white" strokeWidth={2} />
                             </div>
                             <span className="font-medium text-xs text-wallet-text-primary">Fund</span>
@@ -1546,7 +1546,7 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
                         setOpen(true);
                     }}
                 >
-                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
                       <Upload className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
                     <span className="font-medium text-xs text-wallet-text-primary">Fund</span>
@@ -1570,7 +1570,7 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
         }}>
             <SheetTrigger asChild>
                 <Button variant="ghost" className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent">
-                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
                       <Upload className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
                     <span className="font-medium text-xs text-wallet-text-primary">Fund</span>
@@ -1749,7 +1749,7 @@ const RedeemButton = ({ onClick }: { onClick: () => void }) => {
         onClick();
       }}
     >
-      <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+      <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
         <Gift className="h-6 w-6 text-white" strokeWidth={2} />
       </div>
       <span className="font-medium text-xs text-wallet-text-primary">Redeem</span>
@@ -2195,25 +2195,25 @@ const Wallet: React.FC = () => {
           <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/50 p-1 rounded-xl border border-wallet-text-secondary/10">
             <TabsTrigger 
               value="all" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
             >
               All
             </TabsTrigger>
             <TabsTrigger 
               value="earnings" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
             >
               Earnings
             </TabsTrigger>
             <TabsTrigger 
               value="withdrawals" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
             >
               Withdrawals
             </TabsTrigger>
             <TabsTrigger 
               value="redeems" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
             >
               Redeems
             </TabsTrigger>
@@ -2309,8 +2309,8 @@ const Wallet: React.FC = () => {
                 ))
               ) : (
                 <div className="text-center py-16 space-y-4">
-                  <div className="inline-flex p-6 rounded-full bg-wallet-purple-primary/10">
-                    <Gift className="h-12 w-12 text-wallet-purple-primary/50" />
+                  <div className="inline-flex p-6 rounded-full bg-wallet-red-primary/10">
+                    <Gift className="h-12 w-12 text-wallet-red-primary/50" />
                   </div>
                   <p className="text-lg text-wallet-text-secondary">No giveaway redeems yet</p>
                   <p className="text-sm text-wallet-text-secondary/70">Redeem codes to earn rewards</p>
