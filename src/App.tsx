@@ -60,6 +60,8 @@ import Activities from '@/pages/admin/Activities';
 import Wallet from '@/pages/Wallet';
 import PaymentSuccess from '@/pages/payment/success';
 import Earnings from '@/pages/Earnings';
+import { MoreTransactionsScreen } from '@/components/wallet/MoreTransactionsScreen';
+import { MyListingsScreen } from '@/components/marketplace/MyListingsScreen';
 
 import InstallPrompt from '@/components/InstallPrompt';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
@@ -127,7 +129,9 @@ function AppRoutes() {
         <Route path="/announcements" element={<ProtectedRoute><Layout showSidebar><Announcements /></Layout></ProtectedRoute>} />
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
+        <Route path="/wallet/more-transactions" element={<ProtectedRoute><Layout showSidebar><MoreTransactionsScreen /></Layout></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Layout showSidebar><Marketplace /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace/my-listings" element={<ProtectedRoute><Layout showSidebar><MyListingsScreen /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/list" element={<ProtectedRoute><Layout showSidebar><ListAccount /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/listing/:listingId" element={<ProtectedRoute><Layout showSidebar><ListingDetails /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/orders" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />
