@@ -1,11 +1,28 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Shield, ExternalLink, Target, Calendar, Award, Users, ArrowLeft, Copy } from 'lucide-react';
+import { Shield, ExternalLink, Target, Calendar, Award, Users, ArrowLeft, Copy, Share2, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  WhatsappShareButton,
+  TelegramShareButton,
+  FacebookIcon,
+  TwitterIcon,
+  WhatsappIcon,
+  TelegramIcon,
+} from 'react-share';
 
 // Mock user data - in real app would fetch based on IGN
 const mockUser = {
@@ -63,6 +80,42 @@ export const PublicProfile: React.FC = () => {
     });
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: `${user.ign} - NeXa Esports Player Profile`,
+      text: `Check out ${user.ign}'s profile on NeXa Esports! Grade ${user.grade} | ${user.tier} | ${user.kills.toLocaleString()} Kills`,
+      url: window.location.href,
+    };
+
+    try {
+      // Check if Web Share API is supported
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast({
+          title: "Shared!",
+          description: "Profile shared successfully",
+        });
+      } else {
+        // Fallback to copying link if Web Share API not supported
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link Copied!",
+          description: "Share link copied to clipboard (Web Share not supported)",
+        });
+      }
+    } catch (error: any) {
+      // User cancelled share or error occurred
+      if (error.name !== 'AbortError') {
+        console.error('Error sharing:', error);
+        toast({
+          title: "Share Failed",
+          description: "Could not share profile",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const getGradeColor = (grade: string) => {
     const colors = {
       'S': 'text-yellow-400 border-yellow-400/50 bg-yellow-400/20',
@@ -96,6 +149,59 @@ export const PublicProfile: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              {/* Share Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="font-rajdhani bg-primary hover:bg-primary/90"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share via System
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-2">
+                    <p className="text-xs text-muted-foreground mb-2">Share on Social Media</p>
+                    <div className="flex items-center gap-2 justify-center">
+                      <FacebookShareButton
+                        url={window.location.href}
+                        quote={`Check out ${user.ign}'s profile on NeXa Esports! Grade ${user.grade} | ${user.tier}`}
+                        hashtag="#NeXaEsports"
+                      >
+                        <FacebookIcon size={32} round />
+                      </FacebookShareButton>
+                      <TwitterShareButton
+                        url={window.location.href}
+                        title={`Check out ${user.ign}'s profile on NeXa Esports!`}
+                        hashtags={['NeXaEsports', 'CODM', user.tier.replace(' ', '')]}
+                      >
+                        <TwitterIcon size={32} round />
+                      </TwitterShareButton>
+                      <WhatsappShareButton
+                        url={window.location.href}
+                        title={`Check out ${user.ign}'s NeXa Esports profile - Grade ${user.grade} | ${user.tier}`}
+                      >
+                        <WhatsappIcon size={32} round />
+                      </WhatsappShareButton>
+                      <TelegramShareButton
+                        url={window.location.href}
+                        title={`${user.ign} - NeXa Esports Player`}
+                      >
+                        <TelegramIcon size={32} round />
+                      </TelegramShareButton>
+                    </div>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 variant="outline"
                 size="sm"
