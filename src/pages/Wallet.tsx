@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone, Wifi, MoreHorizontal } from 'lucide-react';
+import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone, Wifi, MoreHorizontal, Eye, EyeOff, Send, Download, Upload } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Textarea } from '@/components/ui/textarea';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAdminPlayers } from '@/hooks/useAdminPlayers';
 import { sendBroadcastPushNotification } from '@/lib/pushNotifications';
 // Removed flutterwave-react-v3 import - now using server-side payment initiation
@@ -42,23 +43,53 @@ import { Capacitor } from '@capacitor/core';
 const TRANSFER_FEE = 50;
 
 
-const TransactionItem = ({ transaction, onViewReceipt }) => (
-  <div 
-    className="group flex items-center justify-between p-4 bg-card border border-border rounded-xl mb-3 cursor-pointer hover:bg-accent/50 hover:border-primary/20 hover:shadow-lg hover:scale-[1.01] transition-all duration-200 animate-fade-in"
-    onClick={() => onViewReceipt(transaction)}
-  >
-    <div className="flex items-center gap-4 flex-1">
-      {renderTransactionIcon(transaction.type)}
-      <div className="flex-1">
-        <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{transaction.description}</p>
-        <p className="text-sm text-muted-foreground">{transaction.date}</p>
+const TransactionItem = ({ transaction, onViewReceipt }) => {
+  // Determine status badge styling based on transaction type
+  const getStatusBadge = () => {
+    if (transaction.status === 'completed' || transaction.status === 'success') {
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-wallet-success/10 text-wallet-success">
+          Success
+        </span>
+      );
+    } else if (transaction.status === 'pending') {
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-500/10 text-yellow-600">
+          Pending
+        </span>
+      );
+    } else if (transaction.status === 'failed') {
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-wallet-error/10 text-wallet-error">
+          Failed
+        </span>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div 
+      className="group flex items-center justify-between p-4 bg-wallet-card-white rounded-2xl mb-3 cursor-pointer hover:shadow-md transition-all duration-200 animate-fade-in"
+      style={{ boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.03)' }}
+      onClick={() => onViewReceipt(transaction)}
+    >
+      <div className="flex items-center gap-3 flex-1">
+        {renderTransactionIcon(transaction.type)}
+        <div className="flex-1">
+          <p className="font-semibold text-sm text-wallet-text-primary">{transaction.description}</p>
+          <p className="text-xs text-wallet-text-secondary mt-0.5">{transaction.date}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1">
+        <div className={`font-semibold text-sm ${transaction.amount > 0 ? 'text-wallet-success' : 'text-wallet-error'}`}>
+          {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toFixed(0)}
+        </div>
+        {getStatusBadge()}
       </div>
     </div>
-    <div className={`font-bold text-lg transition-transform group-hover:scale-110 ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
-      {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toFixed(0)}
-    </div>
-  </div>
-);
+  );
+};
 
 const renderTransactionIcon = (type: string) => {
   switch (type) {
@@ -66,34 +97,35 @@ const renderTransactionIcon = (type: string) => {
     case 'Transfer In':
     case 'Giveaway Redeemed':
       return (
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-600/10 backdrop-blur-sm border border-green-500/20 group-hover:shadow-lg group-hover:shadow-green-500/20 transition-all">
-          <ArrowDown className="h-7 w-7 text-green-500" />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-success/20 flex items-center justify-center">
+          <ArrowDown className="h-5 w-5 text-wallet-success" strokeWidth={2.5} />
         </div>
       );
     case 'Withdrawal':
     case 'Transfer Out':
     case 'Giveaway Created':
     case 'Monthly Tax':
+      return (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-error/20 flex items-center justify-center">
+          <ArrowUp className="h-5 w-5 text-wallet-error" strokeWidth={2.5} />
+        </div>
+      );
     case 'Airtime Purchase':
       return (
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500/20 to-red-600/10 backdrop-blur-sm border border-red-500/20 group-hover:shadow-lg group-hover:shadow-red-500/20 transition-all">
-          {type === 'Airtime Purchase' ? (
-            <Smartphone className="h-7 w-7 text-red-500" />
-          ) : (
-            <ArrowUp className="h-7 w-7 text-red-500" />
-          )}
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-error/20 flex items-center justify-center">
+          <Smartphone className="h-5 w-5 text-wallet-error" strokeWidth={2.5} />
         </div>
       );
     case 'Giveaway Refund':
       return (
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-sm border border-blue-500/20 group-hover:shadow-lg group-hover:shadow-blue-500/20 transition-all">
-          <Gift className="h-7 w-7 text-blue-500" />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+          <Gift className="h-5 w-5 text-blue-500" strokeWidth={2.5} />
         </div>
       );
     default:
       return (
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/20 backdrop-blur-sm border border-border group-hover:shadow-lg transition-all">
-          <Coins className="h-7 w-7 text-muted-foreground" />
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-wallet-text-secondary/20 flex items-center justify-center">
+          <Coins className="h-5 w-5 text-wallet-text-secondary" strokeWidth={2.5} />
         </div>
       );
   }
@@ -1033,18 +1065,18 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
         <>
             {isWithdrawalServiceAvailable && withdrawalAllowed !== false ? (
                 <Button 
-                    variant="outline" 
-                    className="group w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-red-500/50 hover:bg-red-500/5 hover:scale-[1.02] transition-all duration-200"
+                    variant="ghost" 
+                    className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
                     disabled={cooldown > 0}
                     onClick={async () => {
                         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                         setOpen(true);
                     }}
                 >
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 group-hover:scale-110 transition-transform">
-                      <ArrowDown className="h-4 w-4 text-red-500" />
+                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                      <Download className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
-                    <span className="font-semibold text-[10px]">
+                    <span className="font-medium text-xs text-wallet-text-primary">
                       {cooldown > 0 
                           ? `${Math.floor(cooldown / 3600)}h`
                           : 'Withdraw'}
@@ -1054,11 +1086,11 @@ const WithdrawDialog = ({ setWalletBalance, walletBalance, banks, onWithdrawalCo
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 opacity-50" disabled>
-                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10">
-                                  <ArrowDown className="h-4 w-4 text-red-500" />
+                            <Button variant="ghost" className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto opacity-50" disabled>
+                                <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center">
+                                  <Download className="h-6 w-6 text-white" strokeWidth={2} />
                                 </div>
-                                <span className="font-semibold text-[10px]">Withdraw</span>
+                                <span className="font-medium text-xs text-wallet-text-primary">Withdraw</span>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -1289,17 +1321,17 @@ const TransferDialog = ({ walletBalance, onTransferComplete, onViewReceipt }) =>
     return (
         <>
             <Button 
-                variant="outline" 
-                className="group w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.02] transition-all duration-200"
+                variant="ghost" 
+                className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
                 onClick={async () => {
                     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                     setOpen(true);
                 }}
             >
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform">
-                  <ArrowUpDown className="h-4 w-4 text-primary" />
+                <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                  <Send className="h-6 w-6 text-white" strokeWidth={2} />
                 </div>
-                <span className="font-semibold text-[10px]">Transfer</span>
+                <span className="font-medium text-xs text-wallet-text-primary">Transfer</span>
             </Button>
             
             <MobileTransferFlow
@@ -1488,11 +1520,11 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 opacity-50" disabled>
-                            <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
-                              <Coins className="h-4 w-4 text-green-500" />
+                        <Button variant="ghost" className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto opacity-50" disabled>
+                            <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center">
+                              <Upload className="h-6 w-6 text-white" strokeWidth={2} />
                             </div>
-                            <span className="font-semibold text-[10px]">Fund</span>
+                            <span className="font-medium text-xs text-wallet-text-primary">Fund</span>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -1507,17 +1539,17 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
         return (
             <>
                 <Button 
-                    variant="outline" 
-                    className="group w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-[1.02] transition-all duration-200"
+                    variant="ghost" 
+                    className="group w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
                     onClick={async () => {
                         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                         setOpen(true);
                     }}
                 >
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
-                      <Coins className="h-4 w-4 text-green-500" />
+                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                      <Upload className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
-                    <span className="font-semibold text-[10px]">Fund</span>
+                    <span className="font-medium text-xs text-wallet-text-primary">Fund</span>
                 </Button>
                 <FundWalletFlow 
                     open={open}
@@ -1537,11 +1569,11 @@ const FundWalletSheet = ({ isDepositsEnabled = true }: { isDepositsEnabled?: boo
             if (!val) setStep(1);
         }}>
             <SheetTrigger asChild>
-                <Button variant="outline" className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-green-500/50 hover:bg-green-500/5 hover:scale-[1.02] transition-all duration-200">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
-                      <Coins className="h-4 w-4 text-green-500" />
+                <Button variant="ghost" className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent">
+                    <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+                      <Upload className="h-6 w-6 text-white" strokeWidth={2} />
                     </div>
-                    <span className="font-semibold text-[10px]">Fund</span>
+                    <span className="font-medium text-xs text-wallet-text-primary">Fund</span>
                 </Button>
             </SheetTrigger>
             <SheetContent side="bottom" className="h-[80vh] sm:h-[600px] rounded-t-[32px] border-t-primary/20 bg-background/95 backdrop-blur-xl overflow-hidden flex flex-col">
@@ -1710,17 +1742,17 @@ const DataButton = ({ onClick }: { onClick: () => void }) => {
 const RedeemButton = ({ onClick }: { onClick: () => void }) => {
   return (
     <Button 
-      variant="outline" 
-      className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
+      variant="ghost" 
+      className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
       onClick={async () => {
         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
         onClick();
       }}
     >
-      <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all">
-        <Gift className="h-4 w-4 text-purple-500" />
+      <div className="w-[60px] h-[60px] rounded-full bg-wallet-purple-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+        <Gift className="h-6 w-6 text-white" strokeWidth={2} />
       </div>
-      <span className="font-semibold text-[10px]">Redeem</span>
+      <span className="font-medium text-xs text-wallet-text-primary">Redeem</span>
     </Button>
   );
 };
@@ -1730,17 +1762,17 @@ const MoreButton = () => {
   
   return (
     <Button 
-      variant="outline" 
-      className="w-full h-14 flex flex-col items-center justify-center gap-1 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+      variant="ghost" 
+      className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
       onClick={async () => {
         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
         navigate('/wallet/more-transactions');
       }}
     >
-      <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all">
-        <MoreHorizontal className="h-4 w-4 text-primary" />
+      <div className="w-[60px] h-[60px] rounded-full bg-wallet-text-secondary/20 flex items-center justify-center shadow-sm hover:shadow-md transition-all">
+        <MoreHorizontal className="h-6 w-6 text-wallet-text-secondary" strokeWidth={2} />
       </div>
-      <span className="font-semibold text-[10px]">More</span>
+      <span className="font-medium text-xs text-wallet-text-primary">More</span>
     </Button>
   );
 };
@@ -1762,6 +1794,7 @@ const Wallet: React.FC = () => {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [transferInfo, setTransferInfo] = useState<any>(null);
   const receiptShownRef = useRef<string | null>(null);
+  const [balanceVisible, setBalanceVisible] = useState(true);
   
   // PIN management states
   const { checkPinExists } = useTransactionPin();
@@ -2043,50 +2076,113 @@ const Wallet: React.FC = () => {
   }, [location.search, location.pathname, transactions, navigate, handleViewReceipt]);
 
   return (
-    <div className="container mx-auto p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6 animate-fade-in">
-      <Card className="relative overflow-hidden border-2 border-primary/20 shadow-xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-primary/5 rounded-full blur-3xl -mr-24 md:-mr-32 -mt-24 md:-mt-32" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 md:w-64 md:h-64 bg-accent/5 rounded-full blur-3xl -ml-24 md:-ml-32 -mb-24 md:-mb-32" />
-        
-        <CardHeader className="relative text-center pb-1.5 md:pb-2 pt-4 md:pt-6">
-          <CardTitle className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Your Wallet
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative text-center pb-5 md:pb-8">
-          <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-1.5 md:mb-2 animate-scale-in">
-            ₦{walletBalance.toLocaleString()}
+    <div className="min-h-screen bg-wallet-bg-main pb-24">
+      {/* Header: Profile & Date */}
+      <div className="sticky top-0 z-10 bg-wallet-bg-main/80 backdrop-blur-sm px-5 pt-6 pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border-2 border-wallet-purple-primary/20">
+              <AvatarImage src={profile?.avatar_url} alt={profile?.username || profile?.ign} />
+              <AvatarFallback className="bg-wallet-purple-primary text-white font-semibold">
+                {(profile?.username || profile?.ign || 'U').charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-lg font-semibold text-wallet-text-primary capitalize">
+                {profile?.username || profile?.ign || 'User'}
+              </p>
+              <p className="text-xs font-medium text-wallet-text-secondary">
+                {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </p>
+            </div>
           </div>
-          <p className="text-xs md:text-sm text-muted-foreground tracking-wide uppercase">Available Balance</p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Balance Hero Section */}
+      <div className="px-5 pt-8 pb-10 relative">
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-wallet-hero-gradient-start/30 via-transparent to-transparent pointer-events-none" 
+             style={{ height: '280px' }} />
+        
+        <div className="relative">
+          <p className="text-sm font-medium text-wallet-text-tertiary mb-2">Total Balance</p>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="text-4xl font-bold text-wallet-text-primary">
+              {balanceVisible ? (
+                <>
+                  ₦{Math.floor(walletBalance).toLocaleString()}
+                  <span className="text-2xl font-normal text-wallet-text-secondary">.{(walletBalance % 1).toFixed(2).slice(2)}</span>
+                </>
+              ) : (
+                '₦••••••'
+              )}
+            </div>
+            <button
+              onClick={() => setBalanceVisible(!balanceVisible)}
+              className="p-2 rounded-full hover:bg-wallet-purple-light/30 transition-colors"
+            >
+              {balanceVisible ? (
+                <Eye className="h-5 w-5 text-wallet-text-secondary" strokeWidth={1.5} />
+              ) : (
+                <EyeOff className="h-5 w-5 text-wallet-text-secondary" strokeWidth={1.5} />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* PIN Setup Alert - Show if PIN not set */}
       {hasPinSet === false && (
-        <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
+        <div className="px-5 mb-6">
+          <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
+        </div>
       )}
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 md:gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        <FundWalletSheet isDepositsEnabled={walletSettings.deposits_enabled} />
-        <WithdrawDialog 
-          setWalletBalance={setWalletBalance} 
-          walletBalance={walletBalance} 
-          banks={banks} 
-          onWithdrawalComplete={() => {
-            fetchWalletData();
-            startWithdrawCooldown();
-          }} 
-          isWithdrawalServiceAvailable={walletSettings.withdrawals_enabled}
-          cooldown={withdrawCooldown}
-        />
-        <TransferDialog 
-          walletBalance={walletBalance} 
-          onTransferComplete={fetchWalletData} 
-          onViewReceipt={handleViewReceipt}
-        />
-        <RedeemButton onClick={() => setShowRedeemSheet(true)} />
-        <MoreButton />
+      {/* Action Bar - 4 Column Grid */}
+      <div className="px-5 mb-10">
+        <div className="grid grid-cols-4 gap-4">
+          <FundWalletSheet isDepositsEnabled={walletSettings.deposits_enabled} />
+          <WithdrawDialog 
+            setWalletBalance={setWalletBalance} 
+            walletBalance={walletBalance} 
+            banks={banks} 
+            onWithdrawalComplete={() => {
+              fetchWalletData();
+              startWithdrawCooldown();
+            }} 
+            isWithdrawalServiceAvailable={walletSettings.withdrawals_enabled}
+            cooldown={withdrawCooldown}
+          />
+          <TransferDialog 
+            walletBalance={walletBalance} 
+            onTransferComplete={fetchWalletData} 
+            onViewReceipt={handleViewReceipt}
+          />
+          <RedeemButton onClick={() => setShowRedeemSheet(true)} />
+        </div>
+      </div>
+
+      {/* Promotional Card */}
+      <div className="px-5 mb-8">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-wallet-purple-primary to-indigo-600 p-6 shadow-sm"
+             style={{ boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.03)' }}>
+          {/* Background Pattern/Texture */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-4 right-4 w-24 h-24 rounded-full bg-white/20 blur-2xl" />
+            <div className="absolute bottom-4 left-4 w-32 h-32 rounded-full bg-white/10 blur-3xl" />
+          </div>
+          
+          <div className="relative z-10">
+            <h3 className="text-lg font-bold text-white mb-2">Grow Your Balance</h3>
+            <p className="text-sm text-white/80 mb-4 leading-relaxed">
+              Earn rewards through tournaments, giveaways, and special events.
+            </p>
+            <button className="text-sm font-bold text-white underline hover:no-underline transition-all">
+              Learn More
+            </button>
+          </div>
+        </div>
       </div>
 
       <RedeemGiveawayDialog
@@ -2097,133 +2193,142 @@ const Wallet: React.FC = () => {
         onRedeemSuccess={startRedeemCooldown}
       />
 
-      <Card className="border-border/50 shadow-xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <Coins className="h-6 w-6 text-primary" />
-            Transaction History
-          </CardTitle>
+      {/* Transaction List Section */}
+      <div className="px-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-wallet-text-primary">Transactions</h2>
           <FlutterwaveHistory />
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6 bg-muted/50 p-1 rounded-xl">
-              <TabsTrigger value="all" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
-                All
-              </TabsTrigger>
-              <TabsTrigger value="earnings" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
-                Earnings
-              </TabsTrigger>
-              <TabsTrigger value="withdrawals" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
-                Withdrawals
-              </TabsTrigger>
-              <TabsTrigger value="redeems" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
-                Redeems
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="space-y-2">
-              {transactions.length > 0 ? (
-                <>
-                  {transactions.map((tx, index) => (
-                    <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                      <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                    </div>
-                  ))}
-                  <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-border">
-                    <Button 
-                      variant="outline"
-                      onClick={() => setCurrentPage(prev => prev - 1)} 
-                      disabled={currentPage === 1}
-                      className="hover:scale-105 transition-transform"
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm font-medium px-4 py-2 rounded-lg bg-muted">
-                      Page {currentPage} of {Math.ceil(totalTransactions / transactionsPerPage)}
-                    </span>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setCurrentPage(prev => prev + 1)} 
-                      disabled={currentPage === Math.ceil(totalTransactions / transactionsPerPage)}
-                      className="hover:scale-105 transition-transform"
-                    >
-                      Next
-                    </Button>
+        </div>
+
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/50 p-1 rounded-xl border border-wallet-text-secondary/10">
+            <TabsTrigger 
+              value="all" 
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+            >
+              All
+            </TabsTrigger>
+            <TabsTrigger 
+              value="earnings" 
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+            >
+              Earnings
+            </TabsTrigger>
+            <TabsTrigger 
+              value="withdrawals" 
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+            >
+              Withdrawals
+            </TabsTrigger>
+            <TabsTrigger 
+              value="redeems" 
+              className="rounded-lg text-xs data-[state=active]:bg-wallet-purple-primary data-[state=active]:text-white transition-all"
+            >
+              Redeems
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="space-y-2">
+            {transactions.length > 0 ? (
+              <>
+                {transactions.map((tx, index) => (
+                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
+                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
                   </div>
-                </>
+                ))}
+                <div className="flex justify-center items-center gap-4 mt-6 pt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => prev - 1)} 
+                    disabled={currentPage === 1}
+                    className="hover:scale-105 transition-transform"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm font-medium px-4 py-2 rounded-lg bg-white/50">
+                    Page {currentPage} of {Math.ceil(totalTransactions / transactionsPerPage)}
+                  </span>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => prev + 1)} 
+                    disabled={currentPage === Math.ceil(totalTransactions / transactionsPerPage)}
+                    className="hover:scale-105 transition-transform"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-16 space-y-4">
+                <div className="inline-flex p-6 rounded-full bg-wallet-text-secondary/10">
+                  <Coins className="h-12 w-12 text-wallet-text-secondary/50" />
+                </div>
+                <p className="text-lg text-wallet-text-secondary">No transactions yet</p>
+                <p className="text-sm text-wallet-text-secondary/70">Start by funding your wallet or receiving transfers</p>
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="earnings" className="space-y-2">
+            {(() => {
+              const earningsTx = transactions.filter((tx) => tx.type === 'Deposit' || tx.type === 'Transfer In' || tx.type === 'Giveaway Redeemed');
+              return earningsTx.length > 0 ? (
+                earningsTx.map((tx, index) => (
+                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
+                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
+                  </div>
+                ))
               ) : (
                 <div className="text-center py-16 space-y-4">
-                  <div className="inline-flex p-6 rounded-full bg-muted/50">
-                    <Coins className="h-12 w-12 text-muted-foreground/50" />
+                  <div className="inline-flex p-6 rounded-full bg-wallet-success/10">
+                    <ArrowDown className="h-12 w-12 text-wallet-success/50" />
                   </div>
-                  <p className="text-lg text-muted-foreground">No transactions yet</p>
-                  <p className="text-sm text-muted-foreground/70">Start by funding your wallet or receiving transfers</p>
+                  <p className="text-lg text-wallet-text-secondary">No earnings yet</p>
                 </div>
-              )}
-            </TabsContent>
-            <TabsContent value="earnings" className="space-y-2">
-              {(() => {
-                const earningsTx = transactions.filter((tx) => tx.type === 'Deposit' || tx.type === 'Transfer In' || tx.type === 'Giveaway Redeemed');
-                return earningsTx.length > 0 ? (
-                  earningsTx.map((tx, index) => (
-                    <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                      <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-16 space-y-4">
-                    <div className="inline-flex p-6 rounded-full bg-green-500/10">
-                      <ArrowDown className="h-12 w-12 text-green-500/50" />
-                    </div>
-                    <p className="text-lg text-muted-foreground">No earnings yet</p>
+              );
+            })()}
+          </TabsContent>
+          <TabsContent value="withdrawals" className="space-y-2">
+            {(() => {
+              const withdrawalTx = transactions.filter((tx) => tx.type === 'Withdrawal' || tx.type === 'Transfer Out');
+              return withdrawalTx.length > 0 ? (
+                withdrawalTx.map((tx, index) => (
+                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
+                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
                   </div>
-                );
-              })()}
-            </TabsContent>
-            <TabsContent value="withdrawals" className="space-y-2">
-              {(() => {
-                const withdrawalTx = transactions.filter((tx) => tx.type === 'Withdrawal' || tx.type === 'Transfer Out');
-                return withdrawalTx.length > 0 ? (
-                  withdrawalTx.map((tx, index) => (
-                    <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                      <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-16 space-y-4">
-                    <div className="inline-flex p-6 rounded-full bg-red-500/10">
-                      <ArrowUp className="h-12 w-12 text-red-500/50" />
-                    </div>
-                    <p className="text-lg text-muted-foreground">No withdrawals yet</p>
+                ))
+              ) : (
+                <div className="text-center py-16 space-y-4">
+                  <div className="inline-flex p-6 rounded-full bg-wallet-error/10">
+                    <ArrowUp className="h-12 w-12 text-wallet-error/50" />
                   </div>
-                );
-              })()}
-            </TabsContent>
-            <TabsContent value="redeems" className="space-y-2">
-              {(() => {
-                const redeemTransactions = transactions.filter(
-                  (tx) => tx.type === 'Giveaway Redeemed'
-                );
-                return redeemTransactions.length > 0 ? (
-                  redeemTransactions.map((tx, index) => (
-                    <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                      <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-16 space-y-4">
-                    <div className="inline-flex p-6 rounded-full bg-primary/10">
-                      <Gift className="h-12 w-12 text-primary/50" />
-                    </div>
-                    <p className="text-lg text-muted-foreground">No giveaway redeems yet</p>
-                    <p className="text-sm text-muted-foreground/70">Redeem codes to earn rewards</p>
+                  <p className="text-lg text-wallet-text-secondary">No withdrawals yet</p>
+                </div>
+              );
+            })()}
+          </TabsContent>
+          <TabsContent value="redeems" className="space-y-2">
+            {(() => {
+              const redeemTransactions = transactions.filter(
+                (tx) => tx.type === 'Giveaway Redeemed'
+              );
+              return redeemTransactions.length > 0 ? (
+                redeemTransactions.map((tx, index) => (
+                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
+                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
                   </div>
-                );
-              })()}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                ))
+              ) : (
+                <div className="text-center py-16 space-y-4">
+                  <div className="inline-flex p-6 rounded-full bg-wallet-purple-primary/10">
+                    <Gift className="h-12 w-12 text-wallet-purple-primary/50" />
+                  </div>
+                  <p className="text-lg text-wallet-text-secondary">No giveaway redeems yet</p>
+                  <p className="text-sm text-wallet-text-secondary/70">Redeem codes to earn rewards</p>
+                </div>
+              );
+            })()}
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {selectedTransaction && (
         <TransactionReceipt
