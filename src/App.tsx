@@ -106,6 +106,7 @@ function AppRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/profile/:userId" element={<PublicProfile />} />
+        <Route path="/public-profile/:userId" element={<PublicProfile />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/marketplace-info" element={<MarketplaceInfo />} />
