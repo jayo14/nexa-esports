@@ -84,6 +84,20 @@ export default {
 					'steel-gray': '#6B7280',
 					'tactical-red': '#B11226',
 					'military-orange': '#D97706',
+				},
+				// Wallet redesign color tokens
+				wallet: {
+					'bg-main': '#F8F9FB',
+					'hero-gradient-start': '#F3E8FF',
+					'hero-gradient-end': '#FFFFFF',
+					'purple-primary': '#6347D9',
+					'purple-light': '#F0EDFF',
+					'text-primary': '#1A1A1A',
+					'text-secondary': '#9E9E9E',
+					'text-tertiary': '#616161',
+					'success': '#4CAF50',
+					'error': '#FF5252',
+					'card-white': '#FFFFFF',
 				}
 			},
 			borderRadius: {
@@ -125,13 +139,33 @@ export default {
 						transform: 'translateY(0)',
 						opacity: '1'
 					}
+				},
+				'fade-in': {
+					'0%': {
+						opacity: '0'
+					},
+					'100%': {
+						opacity: '1'
+					}
+				},
+				'scale-in': {
+					'0%': {
+						transform: 'scale(0.95)',
+						opacity: '0'
+					},
+					'100%': {
+						transform: 'scale(1)',
+						opacity: '1'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
-				'slide-up': 'slide-up 0.6s ease-out'
+				'slide-up': 'slide-up 0.6s ease-out',
+				'fade-in': 'fade-in 0.3s ease-out',
+				'scale-in': 'scale-in 0.3s ease-out'
 			}
 		}
 	},

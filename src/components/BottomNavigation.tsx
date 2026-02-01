@@ -58,7 +58,7 @@ export const BottomNavigation: React.FC = () => {
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all duration-300',
                   isActive
-                    ? 'bg-gradient-to-br from-[#FF1F44]/30 to-red-600/20 border border-[#FF1F44]/50 shadow-lg scale-105'
+                    ? 'bg-wallet-purple-primary shadow-lg scale-105'
                     : 'hover:bg-white/5 active:scale-95'
                 )}
               >
@@ -69,11 +69,11 @@ export const BottomNavigation: React.FC = () => {
                   <Icon
                     className={cn(
                       'w-6 h-6 transition-colors duration-300',
-                      isActive ? 'text-[#FF1F44]' : 'text-gray-400'
+                      isActive ? 'text-white' : 'text-gray-400'
                     )}
                   />
                   {isActive && (
-                    <div className="absolute inset-0 bg-[#FF1F44]/20 rounded-xl blur-md -z-10"></div>
+                    <div className="absolute inset-0 bg-wallet-purple-primary/20 rounded-xl blur-md -z-10"></div>
                   )}
                 </div>
                 <span

@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, Crosshair, Trophy, Smartphone, Activity, 
   Shield, Zap, User, Target, BarChart3, 
@@ -12,7 +11,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 interface PlayerProfileModalProps {
@@ -23,43 +21,14 @@ interface PlayerProfileModalProps {
     onEdit?: (player: any) => void;
 }
 
-// 1. Typing Text Effect Component
-const TypingText = ({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) => {
-  const [displayedText, setDisplayedText] = useState("");
-
-  useEffect(() => {
-    setDisplayedText("");
-    let i = 0;
-    const timeout = setTimeout(() => {
-      const timer = setInterval(() => {
-        if (i < text.length) {
-          setDisplayedText((prev) => prev + text.charAt(i));
-          i++;
-        } else {
-          clearInterval(timer);
-        }
-      }, 50);
-      return () => clearInterval(timer);
-    }, delay);
-    return () => clearTimeout(timeout);
-  }, [text, delay]);
-
-  return (
-    <span className={cn("font-mono", className)}>
-      {displayedText}
-      <span className="animate-pulse text-primary">_</span>
-    </span>
-  );
-};
-
-// 2. Neon Stat Bar Component
-const NeonStatBar = ({ label, value, max, color = "primary" }: { label: string; value: number; max: number; color?: "primary" | "cyan" | "purple" }) => {
+// Simplified Stat Bar Component (CSS-based animation)
+const StatBar = ({ label, value, max, color = "primary" }: { label: string; value: number; max: number; color?: "primary" | "cyan" | "purple" }) => {
   const percent = Math.min(100, (value / max) * 100);
   
   const colors = {
-    primary: "bg-primary shadow-[0_0_10px_rgba(255,31,68,0.5)]",
-    cyan: "bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]",
-    purple: "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]",
+    primary: "bg-primary",
+    cyan: "bg-cyan-500",
+    purple: "bg-purple-500",
   };
 
   return (
@@ -69,11 +38,12 @@ const NeonStatBar = ({ label, value, max, color = "primary" }: { label: string; 
         <span className="text-white font-mono">{value.toLocaleString()}</span>
       </div>
       <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${percent}%` }}
-          transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-          className={cn("h-full rounded-full", colors[color])}
+        <div
+          style={{ width: `${percent}%` }}
+          className={cn(
+            "h-full rounded-full transition-all duration-1000 ease-out",
+            colors[color]
+          )}
         />
       </div>
     </div>
@@ -116,12 +86,12 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
       fetchCurrentUser();
     }, []);
 
-    // Fetch full data and rank
+    // Optimized data fetching - single query with rank calculation
     useEffect(() => {
       const fetchData = async (id: string) => {
         setIsLoading(true);
         try {
-          // Fetch profile
+          // Single query with rank calculation
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -131,16 +101,16 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
           if (profileData) {
             setFullPlayer(profileData);
             
-            // Fetch rank if not provided
+            // Only fetch rank if not provided - use COUNT instead of full leaderboard
             if (!initialRank) {
-              const { data: leaderboard, error: rankError } = await supabase
+              const playerKills = profileData.kills || 0;
+              const { count } = await supabase
                 .from('leaderboard')
-                .select('id')
-                .order('total_kills', { ascending: false });
+                .select('id', { count: 'exact', head: true })
+                .gt('total_kills', playerKills);
               
-              if (leaderboard) {
-                const playerRank = leaderboard.findIndex(entry => entry.id === id) + 1;
-                setRank(playerRank > 0 ? playerRank : null);
+              if (count !== null) {
+                setRank(count + 1);
               }
             }
           }
@@ -162,8 +132,8 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
       }
     }, [open, initialPlayer?.id, searchParams, initialRank]);
 
-    // Auto-generated insights
-    const analysis = useMemo(() => {
+    // Simplified insights (removed useMemo for simple operations)
+    const getAnalysis = () => {
       if (!fullPlayer) return [];
       const insights = [];
       const totalKills = fullPlayer.kills || 0;
@@ -171,27 +141,25 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
       const mpKills = fullPlayer.mp_kills || 0;
       
       if (fullPlayer.attendance < 20) {
-        insights.push("Low mission activity detected — limited field data available.");
+        insights.push("Low mission activity detected");
       } else if (fullPlayer.attendance > 80) {
-        insights.push("High operational consistency. Reliable squad member.");
+        insights.push("High operational consistency");
       }
 
       if (Math.abs(brKills - mpKills) < totalKills * 0.2) {
-        insights.push("Balanced participation between Battle Royale and Multiplayer operations.");
+        insights.push("Balanced BR/MP participation");
       } else if (brKills > mpKills) {
-        insights.push("Specializes in large-scale Battle Royale deployments.");
+        insights.push("Battle Royale specialist");
       } else {
-        insights.push("Multiplayer combat specialist. High-intensity engagement profile.");
+        insights.push("Multiplayer combat specialist");
       }
 
       if (totalKills > 1000 || fullPlayer.grade === 'Legendary' || fullPlayer.grade === 'Master') {
-        insights.push("Tier-1 asset. Elite combat performance confirmed.");
-      } else {
-        insights.push("Potential growth candidate based on recent performance trajectory.");
+        insights.push("Elite combat performance");
       }
 
       return insights;
-    }, [fullPlayer]);
+    };
 
     if (!open) return null;
 
@@ -212,9 +180,9 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
       <DialogContent className={cn(
         "p-0 gap-0 bg-black/95 backdrop-blur-2xl border-white/10 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.9)]",
         "max-w-full sm:max-w-[95vw] md:max-w-5xl h-[100dvh] sm:h-[85vh]",
-        "sm:rounded-xl transition-all duration-300"
+        "sm:rounded-xl"
       )}>
-        {/* Animated Background Polish */}
+        {/* Sci-fi Background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-30" />
           <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-primary/5 blur-[80px] rounded-full" />
@@ -222,26 +190,19 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
         <button 
           onClick={() => onOpenChange(false)}
-          className="absolute top-4 right-4 z-50 p-2 text-gray-500 hover:text-primary transition-all rounded-full group"
+          className="absolute top-4 right-4 z-50 p-2 text-gray-500 hover:text-primary transition-colors rounded-full"
         >
-          <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
-          <div className="absolute inset-0 rounded-full group-hover:shadow-[0_0_15px_rgba(255,31,68,0.5)] transition-all" />
+          <X className="w-6 h-6" />
         </button>
 
-        <div className="h-full flex flex-col relative z-10">
-          {/* Scrollable Content Area */}
-          <ScrollArea className="flex-1 min-h-0">
+        <div className="h-full flex flex-col relative z-10 overflow-y-auto">
             
-            {/* 3. Top Header Section (Identity & Presence) */}
-            <div className="p-6 md:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent relative">
+            {/* Header Section */}
+            <div className="p-6 md:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent">
               
               {/* Avatar Card */}
               <div className="relative shrink-0">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-32 h-32 md:w-40 md:h-40 rounded-lg overflow-hidden border-2 border-primary/40 p-1 relative z-10 bg-black/40 shadow-[0_0_30px_rgba(255,31,68,0.2)]"
-                >
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-lg overflow-hidden border-2 border-primary/40 p-1 bg-black/40">
                   <div className="w-full h-full rounded-[4px] overflow-hidden relative">
                     <img 
                       src={p.avatar_url || "/placeholder.svg"} 
@@ -250,48 +211,39 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   </div>
-                </motion.div>
+                </div>
                 
-                {/* Neon Corners for Avatar */}
-                <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-sm z-20" />
-                <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-sm z-20" />
+                {/* Neon Corners */}
+                <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-sm" />
+                <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-sm" />
 
-                {/* Rank Badge Overlay */}
+                {/* Rank Badge */}
                 {(rank || p.kills) && (
-                  <motion.div 
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="absolute -bottom-4 -right-4 bg-black border border-primary/50 text-white px-3 py-1.5 rounded text-xs font-black shadow-2xl flex flex-col items-center min-w-[60px] z-30"
-                  >
+                  <div className="absolute -bottom-4 -right-4 bg-black border border-primary/50 text-white px-3 py-1.5 rounded text-xs font-black shadow-2xl flex flex-col items-center min-w-[60px]">
                     <span className="text-[8px] text-primary uppercase tracking-tighter">Combat Rank</span>
                     <div className="flex items-center gap-1">
                       <Trophy className="w-3 h-3 text-yellow-500" />
                       <span className="font-mono text-lg">#{rank || '??'}</span>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
               </div>
 
               {/* Identity Info */}
               <div className="flex-1 text-center md:text-left pt-2">
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-3"
-                >
-                  <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic animate-glitch">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-3">
+                  <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase">
                     {p.ign}
                   </h1>
                   <div className={cn(
-                    "px-3 py-1 rounded text-[10px] font-black tracking-[0.2em] border shadow-lg",
+                    "px-3 py-1 rounded text-[10px] font-black tracking-[0.2em] border",
                     isActive 
                       ? "border-green-500/50 text-green-400 bg-green-500/10" 
                       : "border-red-500/50 text-red-400 bg-red-500/10"
                   )}>
                     {isActive ? "● ACTIVE" : "● OFFLINE"}
                   </div>
-                </motion.div>
+                </div>
 
                 <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6 text-sm font-mono text-gray-400">
                   <div className="flex items-center gap-2">
@@ -312,7 +264,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
               </div>
             </div>
 
-            {/* 4. Stats Overview Bar */}
+            {/* Stats Overview Bar */}
             <div className="grid grid-cols-2 md:grid-cols-5 border-b border-white/5 bg-black/20">
               <StatQuickCard icon={<Trophy className="text-yellow-500" />} label="Rank" value={rank ? `#${rank}` : 'Unranked'} />
               <StatQuickCard icon={<Shield className="text-purple-500" />} label="Tier" value={p.tier || p.grade || "N/A"} />
@@ -322,16 +274,11 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
             </div>
 
             <div className="p-6 md:p-10 space-y-10">
-              {/* 5. Performance & Combat Analysis */}
+              {/* Performance & Combat Analysis */}
               <div className="grid md:grid-cols-2 gap-8">
                 
                 {/* Left: Combat Stats */}
-                <motion.div 
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-white/[0.02] rounded-xl border border-white/5 p-6 relative overflow-hidden group"
-                >
+                <div className="bg-white/[0.02] rounded-xl border border-white/5 p-6 relative overflow-hidden">
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-sm font-black text-white flex items-center gap-3 uppercase tracking-[0.2em]">
                       <Target className="w-5 h-5 text-primary" />
@@ -341,9 +288,9 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                   </div>
                   
                   <div className="space-y-6">
-                    <NeonStatBar label="Total Eliminations" value={p.kills || 0} max={10000} color="primary" />
-                    <NeonStatBar label="BR Deployments" value={p.br_kills || 0} max={5000} color="cyan" />
-                    <NeonStatBar label="MP Engagements" value={p.mp_kills || 0} max={5000} color="purple" />
+                    <StatBar label="Total Eliminations" value={p.kills || 0} max={10000} color="primary" />
+                    <StatBar label="BR Deployments" value={p.br_kills || 0} max={5000} color="cyan" />
+                    <StatBar label="MP Engagements" value={p.mp_kills || 0} max={5000} color="purple" />
                     
                     <div className="grid grid-cols-2 gap-6 mt-8 pt-6 border-t border-white/10">
                       <div>
@@ -358,16 +305,11 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
 
                 {/* Right: AI Analysis */}
-                <motion.div 
-                  initial={{ x: 20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="relative rounded-xl border border-primary/20 p-1 overflow-hidden group h-full"
-                >
-                  <div className="bg-[#0a0a0a] rounded-lg p-6 relative" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <div className="relative rounded-xl border border-primary/20 p-1 overflow-hidden h-full">
+                  <div className="bg-[#0a0a0a] rounded-lg p-6 relative h-full">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-2">
                         <Cpu className="w-4 h-4 text-primary" />
@@ -377,7 +319,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                     </div>
 
                     <div className="space-y-4 font-mono text-xs leading-relaxed">
-                      {analysis.length > 0 ? analysis.map((insight, idx) => (
+                      {getAnalysis().length > 0 ? getAnalysis().map((insight, idx) => (
                         <div 
                           key={idx}
                           className="flex gap-3 text-gray-400"
@@ -386,19 +328,19 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                           <span>{insight}</span>
                         </div>
                       )) : (
-                        <div className="text-gray-600 italic">Insufficient data for behavioral profiling...</div>
+                        <div className="text-gray-600 italic">Insufficient data...</div>
                       )}
                       
                       <div className="pt-6 flex items-center gap-3 text-[10px] text-green-400 font-black tracking-widest border-t border-white/5">
-                        <span className="w-2 h-2 bg-green-500 rounded-full" />
-                        STATUS: OPTIMIZED CANDIDATE
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        STATUS: OPTIMIZED
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               </div>
 
-              {/* 6. Mode Breakdown (Tabs) */}
+              {/* Mode Breakdown (Tabs) */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 border-b border-white/5">
                   {["BR", "MP"].map((mode) => (
@@ -406,7 +348,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                       key={mode}
                       onClick={() => setActiveTab(mode as "BR" | "MP")}
                       className={cn(
-                        "px-8 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all relative",
+                        "px-8 py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-colors relative",
                         activeTab === mode 
                           ? "text-white" 
                           : "text-gray-600 hover:text-gray-400"
@@ -414,10 +356,7 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                     >
                       {mode} OPS
                       {activeTab === mode && (
-                        <motion.div 
-                          layoutId="activeTabGlow"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_15px_rgba(255,31,68,0.8)]"
-                        />
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary" />
                       )}
                     </button>
                   ))}
@@ -491,9 +430,8 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
               </div>
 
             </div>
-          </ScrollArea>
 
-          {/* 9. Action Buttons (Footer) */}
+          {/* Action Buttons (Footer) */}
           <div className="p-6 border-t border-white/10 bg-black/60 backdrop-blur-xl flex flex-col sm:flex-row justify-end gap-4">
             {currentUserProfile && (currentUserProfile.role === 'admin' || currentUserProfile.role === 'clan_master') && onEdit && (
               <Button 
@@ -525,9 +463,9 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
                 navigate(`/public-profile/${p.id}`);
                 onOpenChange(false);
               }}
-              className="h-14 px-10 bg-primary/10 border-2 border-primary/50 text-primary font-black uppercase tracking-[0.2em] text-[10px] hover:bg-primary hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(255,31,68,0.2)] group"
+              className="h-14 px-10 bg-primary/10 border-2 border-primary/50 text-primary font-black uppercase tracking-[0.2em] text-[10px] hover:bg-primary hover:text-white transition-colors group"
             >
-              <ArrowUpRight className="w-4 h-4 mr-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              <ArrowUpRight className="w-4 h-4 mr-2" />
               Detailed Analytics
             </Button>
           </div>
@@ -541,27 +479,26 @@ const PlayerProfileModal: React.FC<PlayerProfileModalProps> = ({open, onOpenChan
 
 const StatQuickCard = ({ icon, label, value, className }: { icon: React.ReactNode; label: string; value: string; className?: string }) => (
   <div className={cn(
-    "p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-all duration-300 border-r border-white/5 last:border-r-0 group",
+    "p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors border-r border-white/5 last:border-r-0",
     className
   )}>
-    <div className="mb-2 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300">{icon}</div>
+    <div className="mb-2 opacity-50">{icon}</div>
     <div className="text-[8px] text-gray-500 uppercase font-black tracking-[0.3em] mb-1">{label}</div>
-    <div className="text-sm font-mono font-black text-white tracking-tighter group-hover:text-primary transition-colors">{value}</div>
+    <div className="text-sm font-mono font-black text-white tracking-tighter">{value}</div>
   </div>
 );
 
 const ModeDetailCard = ({ title, value, subtext, color }: { title: string; value: string | number; subtext: string; color: "cyan" | "purple" }) => {
   const accentColor = color === "cyan" ? "text-cyan-400" : "text-purple-400";
   const borderColor = color === "cyan" ? "border-cyan-500/20" : "border-purple-500/20";
-  const glowColor = color === "cyan" ? "group-hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]" : "group-hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]";
 
   return (
     <div className={cn(
-      "bg-black/40 p-6 rounded-xl border transition-all duration-500 group", 
-      borderColor, glowColor
+      "bg-black/40 p-6 rounded-xl border transition-colors", 
+      borderColor
     )}>
       <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest">{title}</div>
-      <div className={cn("text-3xl font-mono font-black my-2 tracking-tighter transition-all duration-500", accentColor)}>
+      <div className={cn("text-3xl font-mono font-black my-2 tracking-tighter", accentColor)}>
         {value.toLocaleString()}
       </div>
       <div className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">{subtext}</div>
@@ -570,10 +507,10 @@ const ModeDetailCard = ({ title, value, subtext, color }: { title: string; value
 };
 
 const TimelineEvent = ({ date, title, desc, active }: { date: string; title: string; desc: string; active?: boolean }) => (
-  <div className="relative group">
+  <div className="relative">
     <div className={cn(
-      "absolute -left-[41px] top-1.5 w-4 h-4 rounded-sm border-2 rotate-45 transition-all duration-500 z-10",
-      active ? "bg-primary border-primary shadow-[0_0_15px_rgba(255,31,68,0.8)] scale-110" : "bg-black border-primary/30 group-hover:border-primary/60"
+      "absolute -left-[41px] top-1.5 w-4 h-4 rounded-sm border-2 rotate-45 transition-colors",
+      active ? "bg-primary border-primary" : "bg-black border-primary/30"
     )} />
     <div className="text-[10px] text-primary/60 font-black font-mono mb-1 tracking-widest">{date}</div>
     <div className={cn("font-black text-xs uppercase tracking-[0.2em] mb-1.5", active ? "text-white" : "text-gray-400")}>{title}</div>
