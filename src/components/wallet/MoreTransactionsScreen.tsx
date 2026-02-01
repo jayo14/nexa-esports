@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Smartphone, Wifi, Gift, ArrowLeft } from 'lucide-react';
+import { Smartphone, Wifi, ArrowLeft } from 'lucide-react';
 import { AirtimePurchaseFlow } from './AirtimePurchaseFlow';
 import { DataPurchaseFlow } from './DataPurchaseFlow';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNavigate } from 'react-router-dom';
 
 export const MoreTransactionsScreen: React.FC = () => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const [showAirtimeSheet, setShowAirtimeSheet] = useState(false);
   const [showDataSheet, setShowDataSheet] = useState(false);
 
