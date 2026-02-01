@@ -30,6 +30,11 @@ type Player = Database['public']['Tables']['profiles']['Row'] & {
 // Constants
 const TOP_RANKS_THRESHOLD = 10;
 
+// Utility function to get player prefix based on status
+const getPlayerPrefix = (status?: string | null) => {
+  return status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂';
+};
+
 const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -66,7 +71,7 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
   const roleName = player.role === 'clan_master' ? 'Clan Master' : player.role.charAt(0).toUpperCase() + player.role.slice(1);
   
   // Get player symbol prefix
-  const playerPrefix = player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂';
+  const playerPrefix = getPlayerPrefix(player.status);
 
   return (
     <Card 
@@ -613,7 +618,7 @@ export const AdminPlayers: React.FC = () => {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-md border-[#FF1F44]/30">
             <DialogHeader>
               <DialogTitle className="text-foreground font-orbitron text-2xl">
-                Edit Player: {editingPlayer.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{editingPlayer.ign}
+                Edit Player: {getPlayerPrefix(editingPlayer.status)}{editingPlayer.ign}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-6 py-4">
@@ -818,7 +823,7 @@ export const AdminPlayers: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="text-foreground font-orbitron text-2xl flex items-center gap-2">
                 <ShieldOff className="w-6 h-6 text-red-400" />
-                Ban Player: {banningPlayer.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{banningPlayer.ign}
+                Ban Player: {getPlayerPrefix(banningPlayer.status)}{banningPlayer.ign}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
