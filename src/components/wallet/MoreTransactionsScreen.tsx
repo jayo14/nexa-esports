@@ -1,17 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Smartphone, Wifi, ArrowLeft } from 'lucide-react';
-import { AirtimePurchaseFlow } from './AirtimePurchaseFlow';
-import { DataPurchaseFlow } from './DataPurchaseFlow';
+import { Smartphone, Wifi, ArrowLeft, Gift } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNavigate } from 'react-router-dom';
 
 export const MoreTransactionsScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [showAirtimeSheet, setShowAirtimeSheet] = useState(false);
-  const [showDataSheet, setShowDataSheet] = useState(false);
 
   const handleBack = async () => {
     if (Capacitor.isNativePlatform()) {
@@ -24,18 +20,25 @@ export const MoreTransactionsScreen: React.FC = () => {
     if (Capacitor.isNativePlatform()) {
       await Haptics.impact({ style: ImpactStyle.Light });
     }
-    setShowAirtimeSheet(true);
+    navigate('/wallet/airtime');
   };
 
   const handleDataClick = async () => {
     if (Capacitor.isNativePlatform()) {
       await Haptics.impact({ style: ImpactStyle.Light });
     }
-    setShowDataSheet(true);
+    navigate('/wallet/data');
+  };
+
+  const handleGiveawayClick = async () => {
+    if (Capacitor.isNativePlatform()) {
+        await Haptics.impact({ style: ImpactStyle.Light });
+    }
+    navigate('/wallet/giveaway');
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8 animate-fade-in">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -80,6 +83,18 @@ export const MoreTransactionsScreen: React.FC = () => {
                 </div>
                 <span className="font-semibold text-xs">Buy Data</span>
               </Button>
+
+               {/* Giveaway Button */}
+               <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2 border-2 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
+                onClick={handleGiveawayClick}
+              >
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all">
+                  <Gift className="h-6 w-6 text-purple-500" />
+                </div>
+                <span className="font-semibold text-xs">Create Giveaway</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -88,29 +103,12 @@ export const MoreTransactionsScreen: React.FC = () => {
         <Card className="border-border/50">
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">
-              Access additional transaction services including airtime purchase and data purchase.
+              Access additional transaction services including airtime purchase, data purchase, and giveaways.
               All transactions are secured and processed instantly.
             </p>
           </CardContent>
         </Card>
       </div>
-
-      {/* Transaction Flows */}
-      <AirtimePurchaseFlow
-        open={showAirtimeSheet}
-        onOpenChange={setShowAirtimeSheet}
-        onSuccess={() => {
-          setShowAirtimeSheet(false);
-        }}
-      />
-
-      <DataPurchaseFlow
-        open={showDataSheet}
-        onOpenChange={setShowDataSheet}
-        onSuccess={() => {
-          setShowDataSheet(false);
-        }}
-      />
     </div>
   );
 };

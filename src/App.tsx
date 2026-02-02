@@ -58,6 +58,12 @@ import { MarketplaceManagement } from '@/pages/admin/MarketplaceManagement';
 import { Feedback } from '@/pages/admin/Feedback';
 import Activities from '@/pages/admin/Activities';
 import Wallet from '@/pages/Wallet';
+import Transfer from '@/pages/wallet/Transfer';
+import Withdraw from '@/pages/wallet/Withdraw';
+import FundWallet from '@/pages/wallet/FundWallet';
+import Airtime from '@/pages/wallet/Airtime';
+import Data from '@/pages/wallet/Data';
+import Giveaway from '@/pages/wallet/Giveaway';
 import PaymentSuccess from '@/pages/payment/success';
 import Earnings from '@/pages/Earnings';
 import { MoreTransactionsScreen } from '@/components/wallet/MoreTransactionsScreen';
@@ -130,6 +136,12 @@ function AppRoutes() {
         <Route path="/announcements" element={<ProtectedRoute><Layout showSidebar><Announcements /></Layout></ProtectedRoute>} />
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
+        <Route path="/wallet/transfer" element={<ProtectedRoute><Layout showSidebar><Transfer /></Layout></ProtectedRoute>} />
+        <Route path="/wallet/withdraw" element={<ProtectedRoute><Layout showSidebar><Withdraw /></Layout></ProtectedRoute>} />
+        <Route path="/wallet/fund" element={<ProtectedRoute><Layout showSidebar><FundWallet /></Layout></ProtectedRoute>} />
+        <Route path="/wallet/airtime" element={<ProtectedRoute><Layout showSidebar><Airtime /></Layout></ProtectedRoute>} />
+        <Route path="/wallet/data" element={<ProtectedRoute><Layout showSidebar><Data /></Layout></ProtectedRoute>} />
+        <Route path="/wallet/giveaway" element={<ProtectedRoute><Layout showSidebar><Giveaway /></Layout></ProtectedRoute>} />
         <Route path="/wallet/more-transactions" element={<ProtectedRoute><Layout showSidebar><MoreTransactionsScreen /></Layout></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Layout showSidebar><Marketplace /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/my-listings" element={<ProtectedRoute><Layout showSidebar><MyListingsScreen /></Layout></ProtectedRoute>} />

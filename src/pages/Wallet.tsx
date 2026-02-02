@@ -2154,23 +2154,50 @@ const Wallet: React.FC = () => {
       {/* Action Bar - 5 Column Grid */}
       <div className="px-5 mb-10">
         <div className="grid grid-cols-5 gap-3">
-          <FundWalletSheet isDepositsEnabled={walletSettings.deposits_enabled} />
-          <WithdrawDialog 
-            setWalletBalance={setWalletBalance} 
-            walletBalance={walletBalance} 
-            banks={banks} 
-            onWithdrawalComplete={() => {
-              fetchWalletData();
-              startWithdrawCooldown();
-            }} 
-            isWithdrawalServiceAvailable={walletSettings.withdrawals_enabled}
-            cooldown={withdrawCooldown}
-          />
-          <TransferDialog 
-            walletBalance={walletBalance} 
-            onTransferComplete={fetchWalletData} 
-            onViewReceipt={handleViewReceipt}
-          />
+          <Button 
+             variant="ghost" 
+             className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
+             onClick={async () => {
+                if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                navigate('/wallet/fund');
+             }}
+             disabled={!walletSettings.deposits_enabled}
+          >
+             <div className={`w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all`}>
+                <Upload className="h-6 w-6 text-white" strokeWidth={2} />
+             </div>
+             <span className="font-medium text-xs text-foreground">Fund</span>
+          </Button>
+
+          <Button 
+             variant="ghost" 
+             className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
+             onClick={async () => {
+                if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                navigate('/wallet/withdraw');
+             }}
+             disabled={!walletSettings.withdrawals_enabled}
+          >
+             <div className={`w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all`}>
+                <Download className="h-6 w-6 text-white" strokeWidth={2} />
+             </div>
+             <span className="font-medium text-xs text-foreground">Withdraw</span>
+          </Button>
+
+          <Button 
+             variant="ghost" 
+             className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
+             onClick={async () => {
+                if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                navigate('/wallet/transfer');
+             }}
+          >
+             <div className={`w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all`}>
+                <Send className="h-6 w-6 text-white" strokeWidth={2} />
+             </div>
+             <span className="font-medium text-xs text-foreground">Transfer</span>
+          </Button>
+
           <RedeemButton onClick={() => setShowRedeemSheet(true)} />
           <MoreButton />
         </div>
