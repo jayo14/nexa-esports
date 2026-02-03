@@ -28,6 +28,7 @@ import { useSellerStatus } from '@/hooks/useSellerStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { ListingCard } from '@/components/marketplace/ListingCard';
 
 import { 
   Dialog, 
@@ -235,112 +236,11 @@ export const Marketplace: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredListings.map((listing) => (
-              <Card
-                key={listing.id}
-                className="group hover:border-primary/40 transition-all duration-300 cursor-pointer overflow-hidden bg-card/50 backdrop-blur-sm flex flex-col shadow-sm hover:shadow-xl hover:-translate-y-1"
-                onClick={() => navigate(`/marketplace/listing/${listing.id}`)}
-              >
-                {/* Card Thumbnail */}
-                <div className="aspect-video w-full bg-muted/40 flex items-center justify-center relative border-b border-primary/5 overflow-hidden">
-                  {listing.video_url ? (
-                    <video src={listing.video_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" muted />
-                  ) : (
-                    <ShoppingCart className="h-12 w-12 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
-                  )}
-                  
-                  {listing.verification_status === 'verified' && (
-                    <div className="absolute top-2 left-2">
-                      <Badge className="bg-green-500/90 hover:bg-green-500 text-white border-none font-rajdhani gap-1">
-                        <Shield className="h-3 w-3" />
-                        VERIFIED
-                      </Badge>
-                    </div>
-                  )}
-
-                  {listing.video_url && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md text-white border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewVideoUrl(listing.video_url);
-                      }}
-                    >
-                      <Eye className="h-3 w-3 mr-1" /> Preview
-                    </Button>
-                  )}
-                  
-                  <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                    <div className="bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-rajdhani flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      {listing.views_count || 0}
-                    </div>
-                  </div>
-                </div>
-
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base md:text-lg font-orbitron line-clamp-1 group-hover:text-primary transition-colors">
-                      {listing.title}
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="p-4 pt-0 space-y-4 flex-1">
-                  <div className="flex flex-wrap gap-1.5 h-10 overflow-hidden">
-                    {listing.region && (
-                      <Badge variant="outline" className="font-rajdhani text-[10px] border-primary/20 bg-primary/5">
-                        <Globe className="h-2.5 w-2.5 mr-1" /> {listing.region.toUpperCase()}
-                      </Badge>
-                    )}
-                    {(() => {
-                      const badges = renderAssetBadges(listing.assets);
-                      const displayBadges = badges.slice(0, 3);
-                      const remaining = badges.length - 3;
-                      return (
-                        <>
-                          {displayBadges}
-                          {remaining > 0 && (
-                            <Badge variant="outline" className="font-rajdhani text-[10px] border-primary/10 bg-muted/30">
-                              +{remaining} MORE
-                            </Badge>
-                          )}
-                        </>
-                      );
-                    })()}
-                    {listing.is_negotiable && (
-                      <Badge variant="outline" className="font-rajdhani text-[10px] border-green-500/20 bg-green-500/5 text-green-500">
-                        NEGOTIABLE
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-primary/5">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-muted-foreground font-rajdhani uppercase tracking-tight">Purchase Price</span>
-                      <span className="text-2xl font-orbitron font-black text-primary">
-                        ₦{listing.price.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground font-rajdhani uppercase tracking-tighter">Verified Seller</p>
-                      <p className="text-xs font-semibold font-orbitron text-foreground truncate max-w-[80px]">
-                        {listing.seller?.ign || 'Unknown'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-                
-                <CardFooter className="p-4 pt-0">
-                  <Button
-                    className="w-full font-orbitron bg-secondary hover:bg-primary hover:text-primary-foreground transition-all duration-300 h-10 group-hover:shadow-lg group-hover:shadow-primary/10"
-                    size="sm"
-                  >
-                    View Full Specs
-                  </Button>
-                </CardFooter>
-              </Card>
+              <ListingCard 
+                key={listing.id} 
+                listing={listing} 
+                onPreview={(url) => setPreviewVideoUrl(url)} 
+              />
             ))}
           </div>
         )}
