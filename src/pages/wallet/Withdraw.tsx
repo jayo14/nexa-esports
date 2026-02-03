@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { useWalletSettings } from '@/hooks/useWalletSettings';
 
 type Step = 'amount' | 'review' | 'processing';
 
@@ -19,6 +20,7 @@ const Withdraw = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile } = useAuth();
+  const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
   
   const [walletBalance, setWalletBalance] = useState(0);
   const [step, setStep] = useState<Step>('amount');
@@ -28,23 +30,12 @@ const Withdraw = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const withdrawalInProgressRef = useRef(false);
-
+  
   // Banking info from profile
   const accountName = profile?.banking_info?.account_name || '';
   const accountNumber = profile?.banking_info?.account_number || '';
   const bankName = profile?.banking_info?.bank_name || '';
   const bankCode = profile?.banking_info?.bank_code || '';
-
-  useEffect(() => {
-    fetchWalletBalance();
-    checkCooldowns();
-    
-    // Timer for cooldown
-    const interval = setInterval(() => {
-        checkCooldowns();
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [user]);
 
   const fetchWalletBalance = async () => {
     if (!user?.id) return;
@@ -80,6 +71,37 @@ const Withdraw = () => {
     localStorage.setItem('withdrawCooldownEnd', cooldownEnd.toString());
     setCooldown(WITHDRAW_COOLDOWN_SECONDS);
   };
+
+  const fee = Number(amount) * 0.04;
+  const youWillReceive = Number(amount) * 0.96;
+
+  useEffect(() => {
+    fetchWalletBalance();
+    checkCooldowns();
+    
+    // Timer for cooldown
+    const interval = setInterval(() => {
+        checkCooldowns();
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  if (!settingsLoading && !walletSettings.withdrawals_enabled) {
+    return (
+      <div className="container max-w-lg mx-auto py-12 px-4 text-center space-y-6">
+        <div className="inline-flex p-6 rounded-full bg-red-500/10">
+          <ArrowDown className="h-12 w-12 text-red-500" />
+        </div>
+        <h1 className="text-2xl font-bold">Withdrawals Disabled</h1>
+        <p className="text-muted-foreground">
+          Withdrawals are currently disabled by the clan master. Please try again later.
+        </p>
+        <Button onClick={() => navigate('/wallet')} className="w-full h-14 rounded-2xl">
+          Back to Wallet
+        </Button>
+      </div>
+    );
+  }
 
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
@@ -165,9 +187,6 @@ const Withdraw = () => {
         description: `Your request to withdraw ₦${withdrawAmount.toLocaleString()} has been submitted.`,
     });
   };
-
-  const fee = Number(amount) * 0.04;
-  const youWillReceive = Number(amount) * 0.96;
 
   return (
     <div className="container max-w-lg mx-auto py-6 space-y-6 animate-fade-in">

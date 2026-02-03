@@ -14,7 +14,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
+  const FLUTTERWAVE_SECRET_KEY = (Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY"))?.trim();
 
   // Create a Supabase client with the user's auth token
   const supabaseClient = createClient(
@@ -31,11 +31,29 @@ serve(async (req) => {
     });
   }
 
+  // Check for missing or placeholder key
+  if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY === "your_flutterwave_secret_key_here") {
+    console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
+    return new Response(JSON.stringify({ error: "Transfer service not configured: FLUTTERWAVE_SECRET_KEY is invalid or missing" }), {
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      status: 500,
+    });
+  }
+
   const { endpoint, account_bank, account_number, amount, narration, beneficiary_name } = await req.json();
 
   // Allow clients to check whether withdrawals are allowed for their region (server-side) without initiating a transfer
   if (endpoint === 'check-withdrawal-availability') {
     try {
+      // Also check global withdrawal setting
+      const { data: withdrawalSetting } = await supabaseAdmin
+        .from('clan_settings')
+        .select('value')
+        .eq('key', 'withdrawals_enabled')
+        .maybeSingle();
+
+      const globalAllowed = withdrawalSetting ? withdrawalSetting.value !== false : true;
+
       const { data: profileData } = await supabaseAdmin
         .from('profiles')
         .select('id, timezone, country')
@@ -62,7 +80,16 @@ serve(async (req) => {
         weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
       }
 
-      return new Response(JSON.stringify({ allowed: weekday !== 'Sunday', weekday, timezone: resolvedTz }), {
+      const isSunday = weekday === 'Sunday';
+      const allowed = globalAllowed && !isSunday;
+
+      return new Response(JSON.stringify({ 
+        allowed, 
+        weekday, 
+        timezone: resolvedTz,
+        global_enabled: globalAllowed,
+        reason: !globalAllowed ? 'Withdrawals are currently disabled by the clan master.' : (isSunday ? 'Withdrawals are not allowed on Sundays.' : null)
+      }), {
         headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
         status: 200,
       });
@@ -79,6 +106,23 @@ serve(async (req) => {
     console.log(`Initiating transfer for user ${user.id} of amount ${amount}`);
 
     try {
+      // Check if withdrawals are enabled in clan_settings
+      const { data: withdrawalSetting } = await supabaseAdmin
+        .from('clan_settings')
+        .select('value')
+        .eq('key', 'withdrawals_enabled')
+        .maybeSingle();
+
+      if (withdrawalSetting && withdrawalSetting.value === false) {
+        return new Response(JSON.stringify({ 
+          error: 'withdrawals_disabled', 
+          message: 'Withdrawals are currently disabled by the clan master.' 
+        }), {
+          headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
+          status: 403,
+        });
+      }
+
       // Determine user's timezone from profile
       const { data: profileData } = await supabaseAdmin
         .from('profiles')

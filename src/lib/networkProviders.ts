@@ -4,7 +4,7 @@ export const NETWORK_PROVIDERS = {
     name: 'MTN',
     prefixes: ['0803', '0806', '0703', '0706', '0813', '0816', '0810', '0814', '0903', '0906', '0913', '0916'],
     color: '#FFCC00',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/MTN_Logo.svg/200px-MTN_Logo.svg.png',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/MTN_Logo.ant.svg/200px-MTN_Logo.ant.svg.png',
   },
   GLO: {
     name: 'GLO',

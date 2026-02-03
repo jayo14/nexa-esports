@@ -12,17 +12,36 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
+import { useWalletSettings } from '@/hooks/useWalletSettings';
 
 const FundWallet = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile } = useAuth();
+  const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
   
   const [amount, setAmount] = useState<number>(0);
   const [step, setStep] = useState<1 | 2>(1);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
+
+  if (!settingsLoading && !walletSettings.deposits_enabled) {
+    return (
+      <div className="container max-w-lg mx-auto py-12 px-4 text-center space-y-6">
+        <div className="inline-flex p-6 rounded-full bg-red-500/10">
+          <Shield className="h-12 w-12 text-red-500" />
+        </div>
+        <h1 className="text-2xl font-bold">Funding Disabled</h1>
+        <p className="text-muted-foreground">
+          Wallet funding is currently disabled by the clan master. Please try again later.
+        </p>
+        <Button onClick={() => navigate('/wallet')} className="w-full h-14 rounded-2xl">
+          Back to Wallet
+        </Button>
+      </div>
+    );
+  }
 
   const showNativeActionSheet = async () => {
     if (!Capacitor.isNativePlatform()) return;

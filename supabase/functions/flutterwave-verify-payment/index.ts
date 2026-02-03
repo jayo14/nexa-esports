@@ -8,7 +8,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
+  const FLUTTERWAVE_SECRET_KEY = (Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY"))?.trim();
 
   try {
     const { transaction_id, tx_ref: provided_tx_ref } = await req.json();
@@ -20,9 +20,9 @@ serve(async (req) => {
       });
     }
 
-    if (!FLUTTERWAVE_SECRET_KEY) {
-      console.error("FLUTTERWAVE_SECRET_KEY is not set");
-      return new Response(JSON.stringify({ error: "Server configuration error: FLUTTERWAVE_SECRET_KEY missing" }), {
+    if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY === "your_flutterwave_secret_key_here") {
+      console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
+      return new Response(JSON.stringify({ error: "Server configuration error: FLUTTERWAVE_SECRET_KEY invalid or missing" }), {
         status: 500,
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });

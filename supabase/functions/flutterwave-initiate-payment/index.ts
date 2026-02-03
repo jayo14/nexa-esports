@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -8,7 +9,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
+  const FLUTTERWAVE_SECRET_KEY = (Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY"))?.trim();
 
   try {
     // Create a Supabase client with the user's auth token
@@ -26,10 +27,29 @@ serve(async (req) => {
       });
     }
 
+    // Check if deposits are enabled in clan_settings
+    const { data: depositSetting } = await supabaseAdmin
+      .from('clan_settings')
+      .select('value')
+      .eq('key', 'deposits_enabled')
+      .maybeSingle();
+
+    if (depositSetting && depositSetting.value === false) {
+      return new Response(JSON.stringify({ 
+        error: "Deposits are currently disabled by the clan master.",
+        status: 'error' 
+      }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
     // Validate required environment variables
-    if (!FLUTTERWAVE_SECRET_KEY) {
-      console.error("FLUTTERWAVE_SECRET_KEY is not set");
-      return new Response(JSON.stringify({ error: "Payment service not configured: FLUTTERWAVE_SECRET_KEY missing" }), {
+    if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY === "your_flutterwave_secret_key_here") {
+      console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
+      return new Response(JSON.stringify({ 
+        error: "Payment service not configured: FLUTTERWAVE_SECRET_KEY is invalid or missing" 
+      }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });
