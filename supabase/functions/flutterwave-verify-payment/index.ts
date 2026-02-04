@@ -31,19 +31,16 @@ serve(async (req) => {
       });
     }
 
-    // Determine base URL based on environment
-    const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
-    const FLW_BASE_URL = isDevelopment 
-      ? "https://developersandbox-api.flutterwave.com" 
-      : "https://f4bexperience.flutterwave.com";
+    // Flutterwave v4 API base URL (same for sandbox and production, credentials differ)
+    const FLW_BASE_URL = "https://api.flutterwave.com";
 
     // Verify transaction with Flutterwave v4
     let flutterwaveUrl = "";
 
     if (transaction_id) {
-      flutterwaveUrl = `${FLW_BASE_URL}/transactions/${transaction_id}/verify`;
+      flutterwaveUrl = `${FLW_BASE_URL}/v3/transactions/${transaction_id}/verify`;
     } else {
-      flutterwaveUrl = `${FLW_BASE_URL}/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
+      flutterwaveUrl = `${FLW_BASE_URL}/v3/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
     }
 
     console.log(`Verifying with Flutterwave v4 via ${FLW_BASE_URL}: ${flutterwaveUrl}`);

@@ -36,15 +36,12 @@ serve(async (req) => {
       });
     }
 
-    // Determine base URL based on environment
-    const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
-    const FLW_BASE_URL = isDevelopment 
-      ? "https://developersandbox-api.flutterwave.com" 
-      : "https://f4bexperience.flutterwave.com";
+    // Flutterwave v4 API base URL (same for sandbox and production, credentials differ)
+    const FLW_BASE_URL = "https://api.flutterwave.com";
 
     // Flutterwave v4 account verification endpoint
     const response = await flutterwaveAuthenticatedFetch(
-      `${FLW_BASE_URL}/accounts/resolve`,
+      `${FLW_BASE_URL}/v3/accounts/resolve`,
       {
         method: "POST",
         body: JSON.stringify({
