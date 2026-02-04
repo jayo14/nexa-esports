@@ -1,25 +1,26 @@
-# Deployment Guide: Flutterwave Live Integration
+# Deployment Guide: Flutterwave v4 Live Integration
 
 ## Overview
-This guide walks through deploying the new Flutterwave live integration with server-side payment initiation.
+This guide walks through deploying the Flutterwave v4 integration with OAuth 2.0 authentication and server-side payment initiation.
 
 ## Prerequisites
-1. Flutterwave live account with API credentials
+1. Flutterwave live account with v4 API credentials
 2. Supabase account with edge functions enabled
 3. Access to Supabase project secrets
 
-## Step 1: Get Flutterwave Live Credentials
+## Step 1: Get Flutterwave v4 Live Credentials
 
 1. Log in to your [Flutterwave Dashboard](https://dashboard.flutterwave.com/)
 2. Navigate to **Settings** > **API Keys**
 3. Switch to **Live Mode** (toggle in top-right corner)
-4. Copy the following credentials:
-   - **Secret Key** (starts with `FLWSECK-`)
-   - **Encryption Key** (starts with `FLWSECK-`)
+4. Copy the following v4 credentials:
+   - **Client ID** (for OAuth 2.0 authentication)
+   - **Client Secret** (for OAuth 2.0 authentication)
+   - **Encryption Key** (for card encryption if needed)
 5. Navigate to **Settings** > **Webhooks**
 6. Generate a webhook secret hash and save it
 
-**Note:** As of the latest update, the Client ID is no longer required. Only the Secret Key is needed for authentication.
+**Note:** Flutterwave v4 uses OAuth 2.0 authentication. You need both Client ID and Client Secret instead of the old Secret Key.
 
 ## Step 2: Configure Supabase Edge Functions
 
@@ -28,7 +29,8 @@ This guide walks through deploying the new Flutterwave live integration with ser
 2. Navigate to **Edge Functions** > **Secrets**
 3. Add the following secrets:
    ```
-   FLUTTERWAVE_SECRET_KEY=<your_live_secret_key>
+   FLW_CLIENT_ID=<your_live_client_id>
+   FLW_CLIENT_SECRET=<your_live_client_secret>
    FLUTTERWAVE_ENCRYPTION_KEY=<your_live_encryption_key>
    FLUTTERWAVE_WEBHOOK_SECRET=<your_webhook_secret>
    ENVIRONMENT=production
@@ -37,17 +39,18 @@ This guide walks through deploying the new Flutterwave live integration with ser
 ### Option B: Using Supabase CLI
 ```bash
 # Set secrets via CLI
-supabase secrets set FLUTTERWAVE_SECRET_KEY=<your_live_secret_key>
+supabase secrets set FLW_CLIENT_ID=<your_live_client_id>
+supabase secrets set FLW_CLIENT_SECRET=<your_live_client_secret>
 supabase secrets set FLUTTERWAVE_ENCRYPTION_KEY=<your_live_encryption_key>
 supabase secrets set FLUTTERWAVE_WEBHOOK_SECRET=<your_webhook_secret>
 supabase secrets set ENVIRONMENT=production
 ```
 
-**Note:** `FLUTTERWAVE_CLIENT_ID` is no longer required as the API now uses standard Bearer token authentication.
+**Important:** If you previously had `FLUTTERWAVE_SECRET_KEY` set, you can remove it as it's no longer used in v4.
 
 ## Step 3: Deploy Edge Functions
 
-### Deploy the new payment initiation function:
+### Deploy all Flutterwave v4 functions:
 ```bash
 # Login to Supabase
 supabase login
@@ -55,22 +58,20 @@ supabase login
 # Link to your project
 supabase link --project-ref <your-project-ref>
 
-# Deploy the new function
+# Deploy all updated v4 functions
 supabase functions deploy flutterwave-initiate-payment
+supabase functions deploy flutterwave-verify-payment
+supabase functions deploy flutterwave-get-banks
+supabase functions deploy flutterwave-transfer
+supabase functions deploy flutterwave-verify-bank-account
+supabase functions deploy flutterwave-get-transactions
+supabase functions deploy flutterwave-webhook
 
 # Verify deployment
 supabase functions list
 ```
 
-### Verify existing functions are still deployed:
-```bash
-# These should already be deployed, but verify:
-supabase functions deploy flutterwave-webhook
-supabase functions deploy flutterwave-verify-payment
-supabase functions deploy flutterwave-transfer
-supabase functions deploy flutterwave-get-banks
-supabase functions deploy flutterwave-verify-bank-account
-```
+**Note:** All functions have been updated to use Flutterwave v4 API with OAuth 2.0 authentication.
 
 ## Step 4: Configure Flutterwave Webhooks
 
