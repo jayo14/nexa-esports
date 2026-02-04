@@ -128,13 +128,13 @@ serve(async (req) => {
         },
       };
 
-      // Flutterwave v4 API base URL (same for sandbox and production, credentials differ)
+      // Flutterwave API base URL (same for sandbox and production, credentials differ)
+      // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
       const FLW_BASE_URL = "https://api.flutterwave.com";
 
-      console.log(`Initiating Flutterwave v4 payment via ${FLW_BASE_URL}...`);
+      console.log(`Initiating Flutterwave payment via ${FLW_BASE_URL}...`);
   
-      // Call Flutterwave API to initialize payment (with OAuth)
-      // v4 uses /v3/payments endpoint with OAuth authentication
+      // Call Flutterwave API to initialize payment with OAuth authentication
       const flutterwaveResponse = await flutterwaveAuthenticatedFetch(
         `${FLW_BASE_URL}/v3/payments`,
         {

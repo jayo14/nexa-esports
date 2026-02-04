@@ -31,10 +31,11 @@ serve(async (req) => {
       });
     }
 
-    // Flutterwave v4 API base URL (same for sandbox and production, credentials differ)
+    // Flutterwave API base URL (same for sandbox and production, credentials differ)
+    // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
     const FLW_BASE_URL = "https://api.flutterwave.com";
 
-    // Verify transaction with Flutterwave v4
+    // Verify transaction with Flutterwave
     let flutterwaveUrl = "";
 
     if (transaction_id) {
@@ -43,7 +44,7 @@ serve(async (req) => {
       flutterwaveUrl = `${FLW_BASE_URL}/v3/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
     }
 
-    console.log(`Verifying with Flutterwave v4 via ${FLW_BASE_URL}: ${flutterwaveUrl}`);
+    console.log(`Verifying with Flutterwave via ${FLW_BASE_URL}: ${flutterwaveUrl}`);
     
     const flutterwaveResponse = await flutterwaveAuthenticatedFetch(flutterwaveUrl);
 

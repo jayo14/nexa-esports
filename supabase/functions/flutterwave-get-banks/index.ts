@@ -22,10 +22,11 @@ serve(async (req) => {
       });
     }
 
-    // Flutterwave v4 API base URL (same for sandbox and production, credentials differ)
+    // Flutterwave API base URL (same for sandbox and production, credentials differ)
+    // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
     const FLW_BASE_URL = "https://api.flutterwave.com";
 
-    // Flutterwave v4 endpoint to get list of banks
+    // Flutterwave endpoint to get list of banks
     const flutterwaveUrl = `${FLW_BASE_URL}/v3/banks/NG`; // NG for Nigeria
     const flutterwaveResponse = await flutterwaveAuthenticatedFetch(flutterwaveUrl);
 

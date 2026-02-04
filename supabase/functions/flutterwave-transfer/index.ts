@@ -206,10 +206,11 @@ serve(async (req) => {
         });
       }
 
-      // Flutterwave v4 API base URL (same for sandbox and production, credentials differ)
+      // Flutterwave API base URL (same for sandbox and production, credentials differ)
+      // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
       const FLW_BASE_URL = "https://api.flutterwave.com";
 
-      // 2. Initiate Flutterwave v4 transfer
+      // 2. Initiate Flutterwave transfer
       const flutterwaveUrl = `${FLW_BASE_URL}/v3/transfers`;
       const idempotencyKey = generateIdempotencyKey(`transfer_${user.id}`);
       
@@ -223,7 +224,7 @@ serve(async (req) => {
         reference: `withdrawal_${user.id}_${Date.now()}`,
       };
 
-      console.log(`Initiating Flutterwave v4 transfer via ${FLW_BASE_URL}...`);
+      console.log(`Initiating Flutterwave transfer via ${FLW_BASE_URL}...`);
 
       // Build custom headers for transfer (idempotency + optional test scenario)
       const customHeaders: Record<string, string> = {
@@ -232,11 +233,11 @@ serve(async (req) => {
 
       // Add X-Scenario-Key for testing ONLY in development/test environments
       const scenarioKey = req.headers.get("X-Scenario-Key");
-      const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
-      if (scenarioKey && isDevelopment) {
+      const isDevEnv = Deno.env.get("ENVIRONMENT") !== "production";
+      if (scenarioKey && isDevEnv) {
         customHeaders["X-Scenario-Key"] = scenarioKey;
         console.log("Using test scenario:", scenarioKey);
-      } else if (scenarioKey && !isDevelopment) {
+      } else if (scenarioKey && !isDevEnv) {
         console.warn("X-Scenario-Key header ignored in production environment");
       }
 
