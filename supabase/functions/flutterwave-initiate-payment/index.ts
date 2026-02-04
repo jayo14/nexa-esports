@@ -16,15 +16,24 @@ serve(async (req) => {
 
   // Diagnostic logging (safe)
   console.log("Flutterwave v4 Configuration Check:");
-  console.log("- Client ID present:", !!FLW_CLIENT_ID);
-  console.log("- Client Secret present:", !!FLW_CLIENT_SECRET);
+  console.log("- FLW_CLIENT_ID found:", !!FLW_CLIENT_ID);
+  if (FLW_CLIENT_ID) console.log("- FLW_CLIENT_ID prefix:", FLW_CLIENT_ID.substring(0, 5) + "...");
+  
+  console.log("- FLW_CLIENT_SECRET found:", !!FLW_CLIENT_SECRET);
+  if (FLW_CLIENT_SECRET) console.log("- FLW_CLIENT_SECRET prefix:", FLW_CLIENT_SECRET.substring(0, 5) + "...");
 
   try {
     // Validate required environment variables for v4 OAuth
     if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
-      console.error("Flutterwave v4 credentials not configured");
+      const missing = [];
+      if (!FLW_CLIENT_ID) missing.push("FLW_CLIENT_ID");
+      if (!FLW_CLIENT_SECRET) missing.push("FLW_CLIENT_SECRET");
+      
+      console.error(`Missing Flutterwave v4 credentials: ${missing.join(", ")}`);
+      
       return new Response(JSON.stringify({ 
-        error: "Payment service not configured: FLW_CLIENT_ID and FLW_CLIENT_SECRET are required for v4" 
+        error: `Payment service not configured: ${missing.join(" and ")} are required for v4`,
+        missing_vars: missing
       }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,

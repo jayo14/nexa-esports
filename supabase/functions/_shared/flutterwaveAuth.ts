@@ -36,11 +36,15 @@ export async function getFlutterwaveAccessToken(): Promise<string> {
   const CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
   const CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
+  console.log("Flutterwave OAuth Check:");
+  console.log("- CLIENT_ID found:", !!CLIENT_ID);
+  console.log("- CLIENT_SECRET found:", !!CLIENT_SECRET);
+
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    throw new Error("Flutterwave v4 credentials missing: FLW_CLIENT_ID and FLW_CLIENT_SECRET are required");
+    throw new Error(`Flutterwave v4 credentials missing. Found Client ID: ${!!CLIENT_ID}, Found Secret: ${!!CLIENT_SECRET}`);
   }
 
-  console.log("Requesting new Flutterwave OAuth token...");
+  console.log("Requesting new Flutterwave OAuth token for Client ID:", CLIENT_ID.substring(0, 5) + "...");
 
   try {
     const tokenResponse = await fetch(
