@@ -19,8 +19,8 @@ The following environment variables must be set for Flutterwave v4:
 # Backend (Supabase Edge Functions) - v4 OAuth credentials
 FLW_CLIENT_ID=your_flutterwave_client_id_here
 FLW_CLIENT_SECRET=your_flutterwave_client_secret_here
-FLUTTERWAVE_ENCRYPTION_KEY=your_flutterwave_encryption_key_here
-FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashboard
+FLW_ENCRYPTION_KEY=your_flutterwave_encryption_key_here
+FLW_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashboard
 
 # Environment (for testing scenario keys)
 ENVIRONMENT=production  # Set to 'development' for testing
@@ -279,8 +279,8 @@ For live/production use, set the following environment variables:
 ```bash
 FLW_CLIENT_ID=your_live_client_id
 FLW_CLIENT_SECRET=your_live_client_secret
-FLUTTERWAVE_ENCRYPTION_KEY=your_live_encryption_key
-FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
+FLW_ENCRYPTION_KEY=your_live_encryption_key
+FLW_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
 ENVIRONMENT=production
 ```
 
@@ -311,7 +311,7 @@ Set up webhooks in your Flutterwave dashboard:
 1. Go to Settings > Webhooks
 2. Set webhook URL: `https://your-domain.com/flutterwave-webhook`
 3. Generate and set a webhook secret hash in your dashboard
-4. Add the webhook secret to your environment as `FLUTTERWAVE_WEBHOOK_SECRET`
+4. Add the webhook secret to your environment as `FLW_WEBHOOK_SECRET`
 5. Enable events: `charge.completed`
 
 **Security Note**: Always use a dedicated webhook secret different from your API secret key for signature verification.

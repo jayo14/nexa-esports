@@ -31,8 +31,8 @@ This guide walks through deploying the Flutterwave v4 integration with OAuth 2.0
    ```
    FLW_CLIENT_ID=<your_live_client_id>
    FLW_CLIENT_SECRET=<your_live_client_secret>
-   FLUTTERWAVE_ENCRYPTION_KEY=<your_live_encryption_key>
-   FLUTTERWAVE_WEBHOOK_SECRET=<your_webhook_secret>
+   FLW_ENCRYPTION_KEY=<your_live_encryption_key>
+   FLW_WEBHOOK_SECRET=<your_webhook_secret>
    ENVIRONMENT=production
    ```
 
@@ -41,8 +41,8 @@ This guide walks through deploying the Flutterwave v4 integration with OAuth 2.0
 # Set secrets via CLI
 supabase secrets set FLW_CLIENT_ID=<your_live_client_id>
 supabase secrets set FLW_CLIENT_SECRET=<your_live_client_secret>
-supabase secrets set FLUTTERWAVE_ENCRYPTION_KEY=<your_live_encryption_key>
-supabase secrets set FLUTTERWAVE_WEBHOOK_SECRET=<your_webhook_secret>
+supabase secrets set FLW_ENCRYPTION_KEY=<your_live_encryption_key>
+supabase secrets set FLW_WEBHOOK_SECRET=<your_webhook_secret>
 supabase secrets set ENVIRONMENT=production
 ```
 
@@ -136,7 +136,7 @@ If you need to rollback:
 ## Troubleshooting
 
 ### Payment initiation fails
-- Verify `FLUTTERWAVE_SECRET_KEY` is set correctly
+- Verify `FLW_CLIENT_ID` and `FLW_CLIENT_SECRET` are set correctly
 - Check edge function logs for detailed error messages
 - Ensure ENVIRONMENT is set to `production`
 

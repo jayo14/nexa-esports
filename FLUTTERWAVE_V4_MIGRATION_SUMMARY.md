@@ -111,8 +111,8 @@ FLUTTERWAVE_WEBHOOK_SECRET=xxxxx
 ```bash
 FLW_CLIENT_ID=your_client_id_here
 FLW_CLIENT_SECRET=your_client_secret_here
-FLUTTERWAVE_ENCRYPTION_KEY=your_encryption_key_here
-FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here
+FLW_ENCRYPTION_KEY=your_encryption_key_here
+FLW_WEBHOOK_SECRET=your_webhook_secret_here
 ENVIRONMENT=production
 ```
 
@@ -126,8 +126,8 @@ Using Supabase CLI:
 ```bash
 supabase secrets set FLW_CLIENT_ID=<your_client_id>
 supabase secrets set FLW_CLIENT_SECRET=<your_client_secret>
-supabase secrets set FLUTTERWAVE_ENCRYPTION_KEY=<your_encryption_key>
-supabase secrets set FLUTTERWAVE_WEBHOOK_SECRET=<your_webhook_secret>
+supabase secrets set FLW_ENCRYPTION_KEY=<your_encryption_key>
+supabase secrets set FLW_WEBHOOK_SECRET=<your_webhook_secret>
 supabase secrets set ENVIRONMENT=production
 ```
 
