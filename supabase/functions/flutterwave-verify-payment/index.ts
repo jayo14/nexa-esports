@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { flutterwaveAuthenticatedFetch } from "../_shared/flutterwaveAuth.ts";
 import process from "node:process";
 
 serve(async (req) => {
@@ -9,7 +10,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
+  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
   try {
     const { transaction_id, tx_ref: provided_tx_ref } = await req.json();
@@ -21,31 +23,26 @@ serve(async (req) => {
       });
     }
 
-    if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY === "your_flutterwave_secret_key_here") {
-      console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
-      return new Response(JSON.stringify({ error: "Server configuration error: FLUTTERWAVE_SECRET_KEY invalid or missing" }), {
+    if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
+      console.error("Flutterwave v4 credentials not configured");
+      return new Response(JSON.stringify({ error: "Server configuration error: FLW_CLIENT_ID and FLW_CLIENT_SECRET required" }), {
         status: 500,
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
-    // Verify transaction with Flutterwave
+    // Verify transaction with Flutterwave v4
     let flutterwaveUrl = "";
 
     if (transaction_id) {
-      flutterwaveUrl = `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`;
+      flutterwaveUrl = `https://api.flutterwave.com/v4/transactions/${transaction_id}/verify`;
     } else {
-      flutterwaveUrl = `https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
+      flutterwaveUrl = `https://api.flutterwave.com/v4/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
     }
 
-    console.log(`Verifying with Flutterwave: ${flutterwaveUrl}`);
+    console.log(`Verifying with Flutterwave v4: ${flutterwaveUrl}`);
     
-    const flutterwaveResponse = await fetch(flutterwaveUrl, {
-      headers: {
-        Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const flutterwaveResponse = await flutterwaveAuthenticatedFetch(flutterwaveUrl);
 
     if (flutterwaveResponse.status === 401) {
       console.error("Flutterwave Authorization Failed during verification: Invalid Secret Key");
@@ -65,13 +62,8 @@ serve(async (req) => {
       // If verification by ID failed, try by reference if we have it
       if (transaction_id && provided_tx_ref && flutterwaveResponse.status !== 401) {
         console.log(`Retrying verification with tx_ref: ${provided_tx_ref}`);
-        const retryUrl = `https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
-        const retryResponse = await fetch(retryUrl, {
-          headers: {
-            Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const retryUrl = `https://api.flutterwave.com/v4/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
+        const retryResponse = await flutterwaveAuthenticatedFetch(retryUrl);
 
         if (retryResponse.status === 401) {
           console.error("Flutterwave Authorization Failed during retry: Invalid Secret Key");
