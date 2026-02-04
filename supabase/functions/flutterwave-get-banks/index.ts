@@ -9,6 +9,7 @@ serve(async (req) => {
   }
 
   const FLUTTERWAVE_SECRET_KEY = (process.env.FLUTTERWAVE_SECRET_KEY || process.env.SECRET_KEY || Deno.env.get("FLUTTERWAVE_SECRET_KEY"))?.trim();
+  const FLUTTERWAVE_CLIENT_ID = (process.env.FLUTTERWAVE_CLIENT_ID || Deno.env.get("FLUTTERWAVE_CLIENT_ID"))?.trim();
 
   try {
     // Validate required environment variables
@@ -26,6 +27,8 @@ serve(async (req) => {
       method: "GET",
       headers: {
         Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
+        "Secret-Key": FLUTTERWAVE_SECRET_KEY || "",
+        "Client-Id": FLUTTERWAVE_CLIENT_ID || "",
         "Content-Type": "application/json",
       },
     });
@@ -43,20 +46,29 @@ serve(async (req) => {
 
     const flutterwaveData = await flutterwaveResponse.json();
 
-  // Transform Flutterwave response to match expected format
-  // Flutterwave returns: { status: "success", message: "...", data: [ { id, code, name } ] }
-  // We need to ensure compatibility with existing code that expects: { status: true, data: [ { code, name } ] }
-  
-  if (flutterwaveData.status === "success" && flutterwaveData.data) {
+    // Transform Flutterwave response to match expected format
+    // Flutterwave returns: { status: "success", message: "...", data: [ { id, code, name } ] }
+    if (flutterwaveData.status === "success" && flutterwaveData.data) {
+      return new Response(JSON.stringify({ 
+        status: true, 
+        data: flutterwaveData.data 
+      }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    return new Response(JSON.stringify(flutterwaveData), {
+      headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      status: flutterwaveResponse.status,
+    });
+  } catch (error) {
+    console.error("Error in flutterwave-get-banks:", error);
     return new Response(JSON.stringify({ 
-      status: true, 
-      data: flutterwaveData.data 
+      error: error instanceof Error ? error.message : String(error) 
     }), {
       headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+      status: 500,
     });
   }
-
-  return new Response(JSON.stringify(flutterwaveData), {
-    headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-  });
 });
