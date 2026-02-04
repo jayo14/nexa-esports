@@ -137,7 +137,21 @@ serve(async (req) => {
           body: JSON.stringify(paymentPayload),
         }
       );
-    const flutterwaveData = await flutterwaveResponse.json();
+    const responseText = await flutterwaveResponse.text();
+    let flutterwaveData: any;
+    try {
+      flutterwaveData = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Flutterwave v4 response was not valid JSON:", responseText);
+      return new Response(JSON.stringify({ 
+        error: "Invalid response from payment provider", 
+        details: responseText.substring(0, 200),
+        status: flutterwaveResponse.status
+      }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
     console.log("Flutterwave response status:", flutterwaveResponse.status);
     console.log("Flutterwave response body:", JSON.stringify(flutterwaveData, null, 2));
 

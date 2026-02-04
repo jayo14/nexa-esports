@@ -48,27 +48,43 @@ export async function getFlutterwaveAccessToken(): Promise<string> {
 
   try {
     const tokenResponse = await fetch(
-      "https://api.flutterwave.com/v4/oauth/token",
+      "https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
           client_id: CLIENT_ID,
           client_secret: CLIENT_SECRET,
           grant_type: "client_credentials",
-        }),
+        }).toString(),
       }
     );
 
     if (!tokenResponse.ok) {
-      const errorData: OAuthErrorResponse = await tokenResponse.json();
-      console.error("OAuth token request failed:", errorData);
+      const errorText = await tokenResponse.text();
+      console.error("OAuth token request failed with status:", tokenResponse.status);
+      console.error("Response body:", errorText);
+      
+      let errorData: any;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        throw new Error(`Flutterwave OAuth failed with status ${tokenResponse.status}. Response was not JSON: ${errorText.substring(0, 100)}`);
+      }
+      
       throw new Error(
         `Flutterwave OAuth failed: ${errorData.error || "Unknown error"} - ${errorData.error_description || ""}`
       );
     }
 
-    const tokenData: OAuthTokenResponse = await tokenResponse.json();
+    const tokenText = await tokenResponse.text();
+    let tokenData: OAuthTokenResponse;
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch (e) {
+      console.error("Failed to parse token response as JSON:", tokenText);
+      throw new Error(`Invalid JSON response from Flutterwave OAuth: ${tokenText.substring(0, 100)}`);
+    }
 
     if (!tokenData.access_token) {
       throw new Error("No access token received from Flutterwave OAuth");
