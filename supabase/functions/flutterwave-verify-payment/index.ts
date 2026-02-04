@@ -10,7 +10,6 @@ serve(async (req) => {
   }
 
   const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
-  const FLUTTERWAVE_CLIENT_ID = Deno.env.get("FLUTTERWAVE_CLIENT_ID")?.trim();
 
   try {
     const { transaction_id, tx_ref: provided_tx_ref } = await req.json();
@@ -44,8 +43,6 @@ serve(async (req) => {
     const flutterwaveResponse = await fetch(flutterwaveUrl, {
       headers: {
         Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-        "Secret-Key": FLUTTERWAVE_SECRET_KEY,
-        "Client-Id": FLUTTERWAVE_CLIENT_ID || "",
         "Content-Type": "application/json",
       },
     });
@@ -72,8 +69,6 @@ serve(async (req) => {
         const retryResponse = await fetch(retryUrl, {
           headers: {
             Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-            "Secret-Key": FLUTTERWAVE_SECRET_KEY,
-            "Client-Id": FLUTTERWAVE_CLIENT_ID || "",
             "Content-Type": "application/json",
           },
         });

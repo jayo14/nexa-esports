@@ -11,7 +11,6 @@ serve(async (req) => {
   }
 
   const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
-  const FLUTTERWAVE_CLIENT_ID = Deno.env.get("FLUTTERWAVE_CLIENT_ID")?.trim();
 
   // Diagnostic logging (safe)
   console.log("Flutterwave Configuration Check:");
@@ -19,7 +18,6 @@ serve(async (req) => {
   if (FLUTTERWAVE_SECRET_KEY) {
     console.log("- Secret Key prefix:", FLUTTERWAVE_SECRET_KEY.substring(0, 7) + "...");
   }
-  console.log("- Client ID present:", !!FLUTTERWAVE_CLIENT_ID);
 
   try {
     // Validate required environment variables
@@ -127,8 +125,6 @@ serve(async (req) => {
         method: "POST",
         headers: {
           Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-          "Secret-Key": FLUTTERWAVE_SECRET_KEY,
-          "Client-Id": FLUTTERWAVE_CLIENT_ID || "",
           "Content-Type": "application/json",
         },
         body: JSON.stringify(paymentPayload),
