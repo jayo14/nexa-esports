@@ -14,11 +14,12 @@ This guide walks through deploying the new Flutterwave live integration with ser
 2. Navigate to **Settings** > **API Keys**
 3. Switch to **Live Mode** (toggle in top-right corner)
 4. Copy the following credentials:
-   - **Client ID** (if available)
    - **Secret Key** (starts with `FLWSECK-`)
    - **Encryption Key** (starts with `FLWSECK-`)
 5. Navigate to **Settings** > **Webhooks**
 6. Generate a webhook secret hash and save it
+
+**Note:** As of the latest update, the Client ID is no longer required. Only the Secret Key is needed for authentication.
 
 ## Step 2: Configure Supabase Edge Functions
 
@@ -27,7 +28,6 @@ This guide walks through deploying the new Flutterwave live integration with ser
 2. Navigate to **Edge Functions** > **Secrets**
 3. Add the following secrets:
    ```
-   FLUTTERWAVE_CLIENT_ID=<your_live_client_id>
    FLUTTERWAVE_SECRET_KEY=<your_live_secret_key>
    FLUTTERWAVE_ENCRYPTION_KEY=<your_live_encryption_key>
    FLUTTERWAVE_WEBHOOK_SECRET=<your_webhook_secret>
@@ -37,12 +37,13 @@ This guide walks through deploying the new Flutterwave live integration with ser
 ### Option B: Using Supabase CLI
 ```bash
 # Set secrets via CLI
-supabase secrets set FLUTTERWAVE_CLIENT_ID=<your_live_client_id>
 supabase secrets set FLUTTERWAVE_SECRET_KEY=<your_live_secret_key>
 supabase secrets set FLUTTERWAVE_ENCRYPTION_KEY=<your_live_encryption_key>
 supabase secrets set FLUTTERWAVE_WEBHOOK_SECRET=<your_webhook_secret>
 supabase secrets set ENVIRONMENT=production
 ```
+
+**Note:** `FLUTTERWAVE_CLIENT_ID` is no longer required as the API now uses standard Bearer token authentication.
 
 ## Step 3: Deploy Edge Functions
 
