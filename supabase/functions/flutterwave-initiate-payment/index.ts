@@ -108,6 +108,7 @@ serve(async (req) => {
       // Create payment payload for Flutterwave Standard/Inline
       const paymentPayload = {
         tx_ref,
+        reference: tx_ref, // v4 often uses 'reference' instead of 'tx_ref'
         amount,
         currency: "NGN",
         redirect_url: redirect_url || `${origin}/payment-success`,
@@ -173,12 +174,14 @@ serve(async (req) => {
       });
     }
 
-    if (!flutterwaveResponse.ok || flutterwaveData.status !== "success") {
+    if (!flutterwaveResponse.ok || (flutterwaveData.status !== "success" && flutterwaveData.status !== "successful")) {
       console.error("Flutterwave payment initialization failed:", flutterwaveData);
       return new Response(JSON.stringify({ 
         error: "Payment initialization failed", 
-        details: flutterwaveData.message || "Unknown error",
-        flutterwave_message: flutterwaveData.message 
+        details: flutterwaveData.message || flutterwaveData.error_description || "Unknown error",
+        flutterwave_message: flutterwaveData.message,
+        raw_response: flutterwaveData,
+        status_code: flutterwaveResponse.status
       }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
