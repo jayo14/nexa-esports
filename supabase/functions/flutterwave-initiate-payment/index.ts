@@ -10,27 +10,35 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-    const FLUTTERWAVE_SECRET_KEY = (process.env.FLUTTERWAVE_SECRET_KEY || process.env.SECRET_KEY || Deno.env.get("FLUTTERWAVE_SECRET_KEY"))?.trim();
-    const FLUTTERWAVE_CLIENT_ID = (process.env.FLUTTERWAVE_CLIENT_ID || Deno.env.get("FLUTTERWAVE_CLIENT_ID"))?.trim();
-  
-    try {
-      // Validate required environment variables
-      if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY === "your_flutterwave_secret_key_here") {
-        console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
-        return new Response(JSON.stringify({
-          error: "Payment service not configured: FLUTTERWAVE_SECRET_KEY is invalid or missing"
-        }), {
-          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-          status: 500,
-        });
-      }
-  
-      // Create a Supabase client with the user's auth token
-      const supabaseClient = createClient(
-        process.env.SUPABASE_URL || Deno.env.get('SUPABASE_URL') || '',
-        process.env.SUPABASE_ANON_KEY || Deno.env.get('SUPABASE_ANON_KEY') || '',
-        { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-      );
+  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLUTTERWAVE_CLIENT_ID = Deno.env.get("FLUTTERWAVE_CLIENT_ID")?.trim();
+
+  // Diagnostic logging (safe)
+  console.log("Flutterwave Configuration Check:");
+  console.log("- Secret Key present:", !!FLUTTERWAVE_SECRET_KEY);
+  if (FLUTTERWAVE_SECRET_KEY) {
+    console.log("- Secret Key prefix:", FLUTTERWAVE_SECRET_KEY.substring(0, 7) + "...");
+  }
+  console.log("- Client ID present:", !!FLUTTERWAVE_CLIENT_ID);
+
+  try {
+    // Validate required environment variables
+    if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY.includes("your_flutterwave_secret_key")) {
+      console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
+      return new Response(JSON.stringify({ 
+        error: "Payment service not configured: FLUTTERWAVE_SECRET_KEY is invalid or missing" 
+      }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    // Create a Supabase client with the user's auth token
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
   
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) {

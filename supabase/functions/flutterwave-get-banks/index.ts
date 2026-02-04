@@ -8,8 +8,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = (process.env.FLUTTERWAVE_SECRET_KEY || process.env.SECRET_KEY || Deno.env.get("FLUTTERWAVE_SECRET_KEY"))?.trim();
-  const FLUTTERWAVE_CLIENT_ID = (process.env.FLUTTERWAVE_CLIENT_ID || Deno.env.get("FLUTTERWAVE_CLIENT_ID"))?.trim();
+  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLUTTERWAVE_CLIENT_ID = Deno.env.get("FLUTTERWAVE_CLIENT_ID")?.trim();
 
   try {
     // Validate required environment variables
