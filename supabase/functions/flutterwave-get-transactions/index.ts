@@ -10,7 +10,6 @@ serve(async (req) => {
   }
 
   const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
-  const FLUTTERWAVE_CLIENT_ID = Deno.env.get("FLUTTERWAVE_CLIENT_ID")?.trim();
 
   try {
     // Create a Supabase client with the user's auth token
@@ -52,8 +51,6 @@ serve(async (req) => {
     const fwResponse = await fetch(fwUrl, {
       headers: {
         Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-        "Secret-Key": FLUTTERWAVE_SECRET_KEY || "",
-        "Client-Id": FLUTTERWAVE_CLIENT_ID || "",
         "Content-Type": "application/json",
       },
     });

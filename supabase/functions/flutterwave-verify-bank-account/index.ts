@@ -10,7 +10,6 @@ serve(async (req) => {
   }
 
   const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
-  const FLUTTERWAVE_CLIENT_ID = Deno.env.get("FLUTTERWAVE_CLIENT_ID")?.trim();
 
   try {
     const { account_number, account_bank } = await req.json();
@@ -29,8 +28,6 @@ serve(async (req) => {
       method: "POST",
       headers: {
         Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-        "Secret-Key": FLUTTERWAVE_SECRET_KEY || "",
-        "Client-Id": FLUTTERWAVE_CLIENT_ID || "",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

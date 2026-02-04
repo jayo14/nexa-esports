@@ -17,7 +17,6 @@ The following environment variables must be set:
 
 ```bash
 # Backend (Supabase Edge Functions) - Live API credentials
-FLUTTERWAVE_CLIENT_ID=your_flutterwave_client_id_here
 FLUTTERWAVE_SECRET_KEY=your_flutterwave_secret_key_here
 FLUTTERWAVE_ENCRYPTION_KEY=your_flutterwave_encryption_key_here
 FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashboard
@@ -26,7 +25,7 @@ FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashbo
 ENVIRONMENT=production  # Set to 'development' for testing
 ```
 
-**Note:** The live Flutterwave API does not use a public key. All payment initialization is done server-side for security.
+**Note:** Only the SECRET_KEY is required for server-side authentication. The Flutterwave API uses the standard `Authorization: Bearer <SECRET_KEY>` header for all requests.
 
 ## Edge Functions
 
@@ -277,7 +276,6 @@ Available scenarios:
 For live/production use, set the following environment variables:
 
 ```bash
-FLUTTERWAVE_CLIENT_ID=your_live_client_id
 FLUTTERWAVE_SECRET_KEY=your_live_secret_key
 FLUTTERWAVE_ENCRYPTION_KEY=your_live_encryption_key
 FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
@@ -285,6 +283,8 @@ ENVIRONMENT=production
 ```
 
 Get your live credentials from the Flutterwave dashboard under Settings > API Keys.
+
+**Important:** As of the latest update, only the `FLUTTERWAVE_SECRET_KEY` is required for authentication. The API uses standard Bearer token authentication via the `Authorization` header.
 
 ## Security Best Practices
 
