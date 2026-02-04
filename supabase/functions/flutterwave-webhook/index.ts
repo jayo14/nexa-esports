@@ -9,19 +9,19 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
-  const FLUTTERWAVE_WEBHOOK_SECRET = (process.env.FLUTTERWAVE_WEBHOOK_SECRET || Deno.env.get("FLUTTERWAVE_WEBHOOK_SECRET")) || FLUTTERWAVE_SECRET_KEY;
+  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
+  const FLW_WEBHOOK_SECRET = (process.env.FLW_WEBHOOK_SECRET || Deno.env.get("FLW_WEBHOOK_SECRET")) || FLW_CLIENT_SECRET;
 
   const signature = req.headers.get("verif-hash");
   const body = await req.text();
 
-  if (!FLUTTERWAVE_SECRET_KEY) {
+  if (!FLW_CLIENT_SECRET) {
     console.error("Flutterwave secret key not set");
     return new Response("Flutterwave secret key not set", { status: 500 });
   }
 
   // Verify webhook signature
-  if (!signature || signature !== FLUTTERWAVE_WEBHOOK_SECRET) {
+  if (!signature || signature !== FLW_WEBHOOK_SECRET) {
     console.error("Invalid webhook signature");
     return new Response("Invalid signature", { status: 401 });
   }

@@ -95,10 +95,10 @@ X-Scenario-Key: scenario:insufficient_balance
 
 ### Backend (Supabase Edge Functions) - Live API
 ```
-FLUTTERWAVE_CLIENT_ID=your_live_client_id
-FLUTTERWAVE_SECRET_KEY=your_live_secret_key
-FLUTTERWAVE_ENCRYPTION_KEY=your_live_encryption_key
-FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
+FLW_CLIENT_ID=your_live_client_id
+FLW_CLIENT_SECRET=your_live_client_secret
+FLW_ENCRYPTION_KEY=your_live_encryption_key
+FLW_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
 ENVIRONMENT=production
 ```
 
