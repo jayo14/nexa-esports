@@ -16,12 +16,23 @@ interface OAuthErrorResponse {
   error_description?: string;
 }
 
+// Token cache to avoid excessive OAuth requests
+let cachedToken: string | null = null;
+let tokenExpiryTime: number | null = null;
+
 /**
  * Get OAuth access token from Flutterwave v4 API
+ * Uses token caching to minimize OAuth requests
  * @returns Access token string
  * @throws Error if OAuth authentication fails
  */
 export async function getFlutterwaveAccessToken(): Promise<string> {
+  // Return cached token if still valid (with 60 second buffer)
+  if (cachedToken && tokenExpiryTime && Date.now() < tokenExpiryTime - 60000) {
+    console.log("Using cached OAuth token");
+    return cachedToken;
+  }
+
   const CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
   const CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
@@ -29,7 +40,7 @@ export async function getFlutterwaveAccessToken(): Promise<string> {
     throw new Error("Flutterwave v4 credentials missing: FLW_CLIENT_ID and FLW_CLIENT_SECRET are required");
   }
 
-  console.log("Requesting Flutterwave OAuth token...");
+  console.log("Requesting new Flutterwave OAuth token...");
 
   try {
     const tokenResponse = await fetch(
@@ -59,8 +70,12 @@ export async function getFlutterwaveAccessToken(): Promise<string> {
       throw new Error("No access token received from Flutterwave OAuth");
     }
 
-    console.log("OAuth token obtained successfully");
-    return tokenData.access_token;
+    // Cache the token with expiry time
+    cachedToken = tokenData.access_token;
+    tokenExpiryTime = Date.now() + (tokenData.expires_in * 1000);
+
+    console.log(`OAuth token obtained successfully, expires in ${tokenData.expires_in} seconds`);
+    return cachedToken;
   } catch (error) {
     console.error("Error getting Flutterwave OAuth token:", error);
     throw error;
@@ -70,6 +85,9 @@ export async function getFlutterwaveAccessToken(): Promise<string> {
 /**
  * Make an authenticated request to Flutterwave v4 API
  * Automatically handles OAuth token acquisition
+ * @param url - The API endpoint URL
+ * @param options - Fetch options (method, body, headers, etc.)
+ * @returns Response from the API
  */
 export async function flutterwaveAuthenticatedFetch(
   url: string,
