@@ -37,6 +37,12 @@ serve(async (req) => {
       });
     }
 
+    // Determine base URL based on environment
+    const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
+    const FLW_BASE_URL = isDevelopment 
+      ? "https://developersandbox-api.flutterwave.com" 
+      : "https://f4bexperience.flutterwave.com";
+
     // Get optional query parameters
     const url = new URL(req.url);
     const from = url.searchParams.get("from");
@@ -44,11 +50,11 @@ serve(async (req) => {
     const status = url.searchParams.get("status") || "successful";
     
     // Construct Flutterwave v4 URL
-    let fwUrl = `https://api.flutterwave.com/v4/transactions?customer_email=${encodeURIComponent(user.email)}&status=${status}`;
+    let fwUrl = `${FLW_BASE_URL}/transactions?customer_email=${encodeURIComponent(user.email)}&status=${status}`;
     if (from) fwUrl += `&from=${from}`;
     if (to) fwUrl += `&to=${to}`;
 
-    console.log(`Fetching transactions for ${user.email} from Flutterwave v4...`);
+    console.log(`Fetching transactions for ${user.email} from Flutterwave v4 via ${FLW_BASE_URL}...`);
 
     const fwResponse = await flutterwaveAuthenticatedFetch(fwUrl);
 

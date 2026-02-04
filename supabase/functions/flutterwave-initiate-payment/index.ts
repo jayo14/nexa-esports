@@ -127,11 +127,18 @@ serve(async (req) => {
         },
       };
 
-      console.log("Initiating Flutterwave v4 payment with payload:", JSON.stringify(paymentPayload, null, 2));
+      // Determine base URL based on environment
+      const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
+      const FLW_BASE_URL = isDevelopment 
+        ? "https://developersandbox-api.flutterwave.com" 
+        : "https://f4bexperience.flutterwave.com";
+
+      console.log(`Initiating Flutterwave v4 payment via ${FLW_BASE_URL}...`);
   
       // Call Flutterwave v4 API to initialize payment (with OAuth)
+      // Note: v4 typically uses /payments or /charges depending on the specific setup
       const flutterwaveResponse = await flutterwaveAuthenticatedFetch(
-        "https://api.flutterwave.com/v4/payments",
+        `${FLW_BASE_URL}/payments`,
         {
           method: "POST",
           body: JSON.stringify(paymentPayload),

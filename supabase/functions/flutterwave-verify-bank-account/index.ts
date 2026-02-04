@@ -36,9 +36,15 @@ serve(async (req) => {
       });
     }
 
+    // Determine base URL based on environment
+    const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
+    const FLW_BASE_URL = isDevelopment 
+      ? "https://developersandbox-api.flutterwave.com" 
+      : "https://f4bexperience.flutterwave.com";
+
     // Flutterwave v4 account verification endpoint
     const response = await flutterwaveAuthenticatedFetch(
-      `https://api.flutterwave.com/v4/accounts/resolve`,
+      `${FLW_BASE_URL}/accounts/resolve`,
       {
         method: "POST",
         body: JSON.stringify({

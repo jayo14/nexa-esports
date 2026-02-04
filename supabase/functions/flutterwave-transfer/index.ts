@@ -206,8 +206,14 @@ serve(async (req) => {
         });
       }
 
+      // Determine base URL based on environment
+      const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
+      const FLW_BASE_URL = isDevelopment 
+        ? "https://developersandbox-api.flutterwave.com" 
+        : "https://f4bexperience.flutterwave.com";
+
       // 2. Initiate Flutterwave v4 transfer
-      const flutterwaveUrl = "https://api.flutterwave.com/v4/transfers";
+      const flutterwaveUrl = `${FLW_BASE_URL}/transfers`;
       const idempotencyKey = generateIdempotencyKey(`transfer_${user.id}`);
       
       const transferPayload = {
@@ -220,7 +226,7 @@ serve(async (req) => {
         reference: `withdrawal_${user.id}_${Date.now()}`,
       };
 
-      console.log("Flutterwave v4 transfer payload:", transferPayload);
+      console.log(`Initiating Flutterwave v4 transfer via ${FLW_BASE_URL}...`);
 
       // Build custom headers for transfer (idempotency + optional test scenario)
       const customHeaders: Record<string, string> = {
