@@ -4,7 +4,7 @@ This document describes the Flutterwave payment integration in Nexa Elite Nexus.
 
 ## Overview
 
-The application uses Flutterwave v3 API for payment processing with **server-side payment initiation**, including:
+The application uses Flutterwave v4 API for payment processing with **OAuth 2.0 authentication** and **server-side payment initiation**, including:
 - Card payments
 - Mobile money
 - USSD
@@ -13,11 +13,12 @@ The application uses Flutterwave v3 API for payment processing with **server-sid
 
 ## Environment Variables
 
-The following environment variables must be set:
+The following environment variables must be set for Flutterwave v4:
 
 ```bash
-# Backend (Supabase Edge Functions) - Live API credentials
-FLUTTERWAVE_SECRET_KEY=your_flutterwave_secret_key_here
+# Backend (Supabase Edge Functions) - v4 OAuth credentials
+FLW_CLIENT_ID=your_flutterwave_client_id_here
+FLW_CLIENT_SECRET=your_flutterwave_client_secret_here
 FLUTTERWAVE_ENCRYPTION_KEY=your_flutterwave_encryption_key_here
 FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashboard
 
@@ -25,7 +26,7 @@ FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashbo
 ENVIRONMENT=production  # Set to 'development' for testing
 ```
 
-**Note:** Only the SECRET_KEY is required for server-side authentication. The Flutterwave API uses the standard `Authorization: Bearer <SECRET_KEY>` header for all requests.
+**Note:** Flutterwave v4 uses OAuth 2.0 for authentication. The edge functions will automatically request an access token using the Client ID and Client Secret before making API calls.
 
 ## Edge Functions
 
@@ -276,15 +277,16 @@ Available scenarios:
 For live/production use, set the following environment variables:
 
 ```bash
-FLUTTERWAVE_SECRET_KEY=your_live_secret_key
+FLW_CLIENT_ID=your_live_client_id
+FLW_CLIENT_SECRET=your_live_client_secret
 FLUTTERWAVE_ENCRYPTION_KEY=your_live_encryption_key
 FLUTTERWAVE_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
 ENVIRONMENT=production
 ```
 
-Get your live credentials from the Flutterwave dashboard under Settings > API Keys.
+Get your live v4 credentials from the Flutterwave dashboard under Settings > API Keys.
 
-**Important:** As of the latest update, only the `FLUTTERWAVE_SECRET_KEY` is required for authentication. The API uses standard Bearer token authentication via the `Authorization` header.
+**Important:** Flutterwave v4 uses OAuth 2.0 authentication. The system automatically requests an access token using your Client ID and Client Secret before making API calls.
 
 ## Security Best Practices
 

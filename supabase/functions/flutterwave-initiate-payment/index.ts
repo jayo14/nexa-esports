@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { flutterwaveAuthenticatedFetch } from "../_shared/flutterwaveAuth.ts";
 import process from "node:process";
 
 serve(async (req) => {
@@ -10,21 +11,20 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
+  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
   // Diagnostic logging (safe)
-  console.log("Flutterwave Configuration Check:");
-  console.log("- Secret Key present:", !!FLUTTERWAVE_SECRET_KEY);
-  if (FLUTTERWAVE_SECRET_KEY) {
-    console.log("- Secret Key prefix:", FLUTTERWAVE_SECRET_KEY.substring(0, 7) + "...");
-  }
+  console.log("Flutterwave v4 Configuration Check:");
+  console.log("- Client ID present:", !!FLW_CLIENT_ID);
+  console.log("- Client Secret present:", !!FLW_CLIENT_SECRET);
 
   try {
-    // Validate required environment variables
-    if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY.includes("your_flutterwave_secret_key")) {
-      console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
+    // Validate required environment variables for v4 OAuth
+    if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
+      console.error("Flutterwave v4 credentials not configured");
       return new Response(JSON.stringify({ 
-        error: "Payment service not configured: FLUTTERWAVE_SECRET_KEY is invalid or missing" 
+        error: "Payment service not configured: FLW_CLIENT_ID and FLW_CLIENT_SECRET are required for v4" 
       }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
@@ -118,17 +118,16 @@ serve(async (req) => {
         },
       };
 
-      console.log("Initiating Flutterwave payment with payload:", JSON.stringify(paymentPayload, null, 2));
+      console.log("Initiating Flutterwave v4 payment with payload:", JSON.stringify(paymentPayload, null, 2));
   
-      // Call Flutterwave API to initialize payment
-      const flutterwaveResponse = await fetch("https://api.flutterwave.com/v3/payments", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(paymentPayload),
-      });
+      // Call Flutterwave v4 API to initialize payment (with OAuth)
+      const flutterwaveResponse = await flutterwaveAuthenticatedFetch(
+        "https://api.flutterwave.com/v4/payments",
+        {
+          method: "POST",
+          body: JSON.stringify(paymentPayload),
+        }
+      );
     const flutterwaveData = await flutterwaveResponse.json();
     console.log("Flutterwave response status:", flutterwaveResponse.status);
     console.log("Flutterwave response body:", JSON.stringify(flutterwaveData, null, 2));

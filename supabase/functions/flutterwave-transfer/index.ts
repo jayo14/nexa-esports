@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { flutterwaveAuthenticatedFetch, getFlutterwaveAccessToken } from "../_shared/flutterwaveAuth.ts";
 import process from "node:process";
 
 // Helper to generate unique idempotency key
@@ -15,7 +16,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
+  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
   // Create a Supabase client with the user's auth token
   const supabaseClient = createClient(
@@ -32,10 +34,10 @@ serve(async (req) => {
     });
   }
 
-  // Check for missing or placeholder key
-  if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY === "your_flutterwave_secret_key_here") {
-    console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
-    return new Response(JSON.stringify({ error: "Transfer service not configured: FLUTTERWAVE_SECRET_KEY is invalid or missing" }), {
+  // Check for missing v4 credentials
+  if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
+    console.error("Flutterwave v4 credentials not configured");
+    return new Response(JSON.stringify({ error: "Transfer service not configured: FLW_CLIENT_ID and FLW_CLIENT_SECRET required" }), {
       headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
@@ -204,8 +206,8 @@ serve(async (req) => {
         });
       }
 
-      // 2. Initiate Flutterwave transfer
-      const flutterwaveUrl = "https://api.flutterwave.com/v3/transfers";
+      // 2. Initiate Flutterwave v4 transfer
+      const flutterwaveUrl = "https://api.flutterwave.com/v4/transfers";
       const idempotencyKey = generateIdempotencyKey(`transfer_${user.id}`);
       
       const transferPayload = {
@@ -218,11 +220,14 @@ serve(async (req) => {
         reference: `withdrawal_${user.id}_${Date.now()}`,
       };
 
-      console.log("Flutterwave transfer payload:", transferPayload);
+      console.log("Flutterwave v4 transfer payload:", transferPayload);
+
+      // Get OAuth access token
+      const accessToken = await getFlutterwaveAccessToken();
 
       // Build headers with optional X-Scenario-Key for testing
       const headers: Record<string, string> = {
-        Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
         "X-Idempotency-Key": idempotencyKey,
       };

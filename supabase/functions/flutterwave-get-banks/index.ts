@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { flutterwaveAuthenticatedFetch } from "../_shared/flutterwaveAuth.ts";
 import process from "node:process";
 
 serve(async (req) => {
@@ -8,27 +9,22 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
+  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
   try {
     // Validate required environment variables
-    if (!FLUTTERWAVE_SECRET_KEY || FLUTTERWAVE_SECRET_KEY === "your_flutterwave_secret_key_here") {
-      console.error("FLUTTERWAVE_SECRET_KEY is not set or is still a placeholder");
-      return new Response(JSON.stringify({ error: "Bank service not configured: FLUTTERWAVE_SECRET_KEY missing" }), {
+    if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
+      console.error("Flutterwave v4 credentials not configured");
+      return new Response(JSON.stringify({ error: "Bank service not configured: FLW_CLIENT_ID and FLW_CLIENT_SECRET required" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });
     }
 
-    // Flutterwave endpoint to get list of banks
-    const flutterwaveUrl = "https://api.flutterwave.com/v3/banks/NG"; // NG for Nigeria
-    const flutterwaveResponse = await fetch(flutterwaveUrl, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
+    // Flutterwave v4 endpoint to get list of banks
+    const flutterwaveUrl = "https://api.flutterwave.com/v4/banks/NG"; // NG for Nigeria
+    const flutterwaveResponse = await flutterwaveAuthenticatedFetch(flutterwaveUrl);
 
     if (flutterwaveResponse.status === 401) {
       console.error("Flutterwave Authorization Failed fetching banks: Invalid Secret Key");

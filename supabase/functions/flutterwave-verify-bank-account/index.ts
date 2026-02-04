@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { flutterwaveAuthenticatedFetch } from "../_shared/flutterwaveAuth.ts";
 import process from "node:process";
 
 serve(async (req) => {
@@ -9,7 +10,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
+  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
   try {
     const { account_number, account_bank } = await req.json();
@@ -23,18 +25,28 @@ serve(async (req) => {
       });
     }
 
-    // Flutterwave account verification endpoint
-    const response = await fetch(`https://api.flutterwave.com/v3/accounts/resolve`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        account_number,
-        account_bank,
-      }),
-    });
+    if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
+      console.error("Flutterwave v4 credentials not configured");
+      return new Response(JSON.stringify({ 
+        error: "Account verification service not configured: FLW_CLIENT_ID and FLW_CLIENT_SECRET required",
+        status: 'error'
+      }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    // Flutterwave v4 account verification endpoint
+    const response = await flutterwaveAuthenticatedFetch(
+      `https://api.flutterwave.com/v4/accounts/resolve`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          account_number,
+          account_bank,
+        }),
+      }
+    );
 
     if (response.status === 401) {
       console.error("Flutterwave Authorization Failed resolving account: Invalid Secret Key");

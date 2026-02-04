@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { flutterwaveAuthenticatedFetch } from "../_shared/flutterwaveAuth.ts";
 import process from "node:process";
 
 serve(async (req) => {
@@ -9,7 +10,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY")?.trim();
+  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
+  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
 
   try {
     // Create a Supabase client with the user's auth token
@@ -27,8 +29,8 @@ serve(async (req) => {
       });
     }
 
-    if (!FLUTTERWAVE_SECRET_KEY) {
-      console.error("FLUTTERWAVE_SECRET_KEY is not set");
+    if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
+      console.error("Flutterwave v4 credentials not configured");
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
@@ -41,19 +43,14 @@ serve(async (req) => {
     const to = url.searchParams.get("to");
     const status = url.searchParams.get("status") || "successful";
     
-    // Construct Flutterwave URL
-    let fwUrl = `https://api.flutterwave.com/v3/transactions?customer_email=${encodeURIComponent(user.email)}&status=${status}`;
+    // Construct Flutterwave v4 URL
+    let fwUrl = `https://api.flutterwave.com/v4/transactions?customer_email=${encodeURIComponent(user.email)}&status=${status}`;
     if (from) fwUrl += `&from=${from}`;
     if (to) fwUrl += `&to=${to}`;
 
-    console.log(`Fetching transactions for ${user.email} from Flutterwave...`);
+    console.log(`Fetching transactions for ${user.email} from Flutterwave v4...`);
 
-    const fwResponse = await fetch(fwUrl, {
-      headers: {
-        Authorization: `Bearer ${FLUTTERWAVE_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const fwResponse = await flutterwaveAuthenticatedFetch(fwUrl);
 
     if (fwResponse.status === 401) {
       console.error("Flutterwave Authorization Failed fetching transactions: Invalid Secret Key");
