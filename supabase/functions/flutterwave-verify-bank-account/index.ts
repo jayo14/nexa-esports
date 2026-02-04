@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import process from "node:process";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -8,7 +9,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
+  const FLUTTERWAVE_SECRET_KEY = (process.env.FLUTTERWAVE_SECRET_KEY || process.env.SECRET_KEY || Deno.env.get("FLUTTERWAVE_SECRET_KEY"))?.trim();
 
   try {
     const { account_number, account_bank } = await req.json();
@@ -34,6 +35,17 @@ serve(async (req) => {
         account_bank,
       }),
     });
+
+    if (response.status === 401) {
+      console.error("Flutterwave Authorization Failed resolving account: Invalid Secret Key");
+      return new Response(JSON.stringify({ 
+        error: "Account resolution failed: Authorization error with payment provider.",
+        status: 'error'
+      }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
 
     const data = await response.json();
 

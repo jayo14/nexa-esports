@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -111,7 +111,7 @@ const bankOptions = [
 
 export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
-  const { profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -138,6 +138,22 @@ export const Onboarding: React.FC = () => {
     accountNumber: '',
     bankName: ''
   });
+
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Session Missing",
+        description: "You must be logged in to access onboarding. Please verify your email or sign in.",
+        variant: "destructive",
+      });
+    } else if (!user.email_confirmed_at) {
+      toast({
+        title: "Verification Required",
+        description: "Your email is not yet verified. Please check your inbox to confirm your account.",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => {
@@ -172,26 +188,43 @@ export const Onboarding: React.FC = () => {
 
   const handleComplete = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('No authenticated user');
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !authUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please ensure you have verified your email and are logged in to complete onboarding.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!authUser.email_confirmed_at) {
+        toast({
+          title: "Email Not Verified",
+          description: "Please check your inbox and verify your email before completing onboarding.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const profileUpdates = {
-        ign: formData.ign,
-        player_uid: formData.player_uid,
-        tiktok_handle: formData.tiktok,
+        ign: formData.ign.trim(),
+        player_uid: formData.player_uid.trim(),
+        tiktok_handle: formData.tiktok.trim(),
         preferred_mode: formData.mode,
         device: formData.deviceType === 'Android' ? formData.androidBrand : formData.androidBrand,
         social_links: {
-          tiktok: formData.tiktok,
-          youtube: formData.youtube,
-          discord: formData.discord,
-          x: formData.x,
-          instagram: formData.instagram
+          tiktok: formData.tiktok.trim(),
+          youtube: formData.youtube.trim(),
+          discord: formData.discord.trim(),
+          x: formData.x.trim(),
+          instagram: formData.instagram.trim()
         },
         banking_info: {
-          real_name: formData.realName,
-          account_name: formData.accountName,
-          account_number: formData.accountNumber,
+          real_name: formData.realName.trim(),
+          account_name: formData.accountName.trim(),
+          account_number: formData.accountNumber.trim(),
           bank_name: formData.bankName
         }
       };
@@ -567,25 +600,35 @@ export const Onboarding: React.FC = () => {
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 1}
-              className="border-border/50 hover:bg-muted/50 font-rajdhani"
-            >
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+          <div className="flex flex-col space-y-4 mt-8">
+            {!user?.email_confirmed_at && currentStep === 3 && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-center">
+                <p className="text-sm text-destructive font-rajdhani">
+                  ⚠️ Please verify your email to complete setup. Check your inbox for the confirmation link.
+                </p>
+              </div>
+            )}
+            
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 1}
+                className="border-border/50 hover:bg-muted/50 font-rajdhani"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
 
-            <Button
-              onClick={handleNext}
-              disabled={!isStepValid()}
-              className="bg-primary hover:bg-primary/90 text-white font-rajdhani"
-            >
-              {currentStep === 3 ? 'Complete Setup' : 'Next'}
-              {currentStep < 3 && <ChevronRight className="w-4 h-4 ml-2" />}
-            </Button>
+              <Button
+                onClick={handleNext}
+                disabled={!isStepValid() || (currentStep === 3 && !user?.email_confirmed_at)}
+                className="bg-primary hover:bg-primary/90 text-white font-rajdhani"
+              >
+                {currentStep === 3 ? 'Complete Setup' : 'Next'}
+                {currentStep < 3 && <ChevronRight className="w-4 h-4 ml-2" />}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

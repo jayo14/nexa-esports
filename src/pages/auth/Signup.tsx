@@ -137,6 +137,15 @@ export const Signup: React.FC = () => {
     e.preventDefault();
     
     // Basic validation
+    if (/\s/.test(formData.username)) {
+      toast({
+        title: "Invalid Username",
+        description: "Username cannot contain spaces.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -172,17 +181,17 @@ export const Signup: React.FC = () => {
       }
 
       const success = await signup({
-        username: formData.username,
-        email: formData.email,
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         password: formData.password,
-        ign: formData.username // Default IGN to username
+        ign: formData.username.trim() // Default IGN to username
       });
 
       if (success) {
         // Mark access code as used
         await supabase.rpc('mark_access_code_used', {
           code_input: formData.accessCode.trim().toUpperCase(),
-          email_input: formData.email
+          email_input: formData.email.trim()
         });
 
         toast({

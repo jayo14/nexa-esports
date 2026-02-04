@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import process from "node:process";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -8,13 +9,13 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
+  const FLUTTERWAVE_SECRET_KEY = (process.env.FLUTTERWAVE_SECRET_KEY || process.env.SECRET_KEY || Deno.env.get("FLUTTERWAVE_SECRET_KEY"))?.trim();
 
   try {
     // Create a Supabase client with the user's auth token
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      process.env.SUPABASE_URL || Deno.env.get('SUPABASE_URL') || '',
+      process.env.SUPABASE_ANON_KEY || Deno.env.get('SUPABASE_ANON_KEY') || '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
@@ -53,6 +54,17 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
     });
+
+    if (fwResponse.status === 401) {
+      console.error("Flutterwave Authorization Failed fetching transactions: Invalid Secret Key");
+      return new Response(JSON.stringify({ 
+        error: "Failed to fetch transactions: Authorization error with payment provider.",
+        status: 'error'
+      }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
 
     if (!fwResponse.ok) {
       let errorDetails = "Unknown upstream error";

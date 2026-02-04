@@ -27,7 +27,7 @@ export const Login: React.FC = () => {
 
     try {
       // Currently, only email login is supported. If username logic is added later, it would be handled here.
-      const success = await login(emailOrUsername, password);
+      const success = await login(emailOrUsername.trim(), password);
       if (success) {
         toast({
           title: "Welcome back, warrior!",
@@ -37,9 +37,19 @@ export const Login: React.FC = () => {
       }
     } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       console.error('Login error:', error);
+      
+      let errorMessage = error.message || "Invalid credentials or an error occurred. Please check your email/password and try again.";
+      let errorTitle = "Login Error";
+
+      if (errorMessage.toLowerCase().includes("email not confirmed") || 
+          errorMessage.toLowerCase().includes("verify your email")) {
+        errorTitle = "Verification Required";
+        errorMessage = "Your email address has not been verified yet. Please check your inbox for the confirmation link.";
+      }
+
       toast({
-        title: "Login Error",
-        description: error.message || "Invalid credentials or an error occurred. Please check your email/password and try again.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

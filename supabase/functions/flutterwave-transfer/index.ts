@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import process from "node:process";
 
 // Helper to generate unique idempotency key
 function generateIdempotencyKey(prefix: string): string {
@@ -14,12 +15,12 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = (Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY"))?.trim();
+  const FLUTTERWAVE_SECRET_KEY = (process.env.FLUTTERWAVE_SECRET_KEY || process.env.SECRET_KEY || Deno.env.get("FLUTTERWAVE_SECRET_KEY"))?.trim();
 
   // Create a Supabase client with the user's auth token
   const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    process.env.SUPABASE_URL || Deno.env.get('SUPABASE_URL') || '',
+    process.env.SUPABASE_ANON_KEY || Deno.env.get('SUPABASE_ANON_KEY') || '',
     { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
   );
 
@@ -244,6 +245,17 @@ serve(async (req) => {
 
       const result = await response.json();
       console.log("Flutterwave transfer response:", result);
+
+      if (response.status === 401) {
+        console.error("Flutterwave Authorization Failed during transfer: Invalid Secret Key");
+        return new Response(JSON.stringify({ 
+          error: "Transfer failed: Authorization error with payment provider. Please contact support.",
+          status: 'error'
+        }), {
+          headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
 
       if (!response.ok || result.status !== 'success') {
         const msg = result.message || JSON.stringify(result);

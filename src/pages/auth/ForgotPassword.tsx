@@ -17,11 +17,12 @@ export const ForgotPassword: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) return;
 
     setIsLoading(true);
     
-    const success = await resetPassword(email);
+    const success = await resetPassword(trimmedEmail);
     if (success) {
       setEmailSent(true);
       toast({

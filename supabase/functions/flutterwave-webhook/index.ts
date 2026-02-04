@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import process from "node:process";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -8,8 +9,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLUTTERWAVE_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY") || Deno.env.get("SECRET_KEY");
-  const FLUTTERWAVE_WEBHOOK_SECRET = Deno.env.get("FLUTTERWAVE_WEBHOOK_SECRET") || FLUTTERWAVE_SECRET_KEY;
+  const FLUTTERWAVE_SECRET_KEY = (process.env.FLUTTERWAVE_SECRET_KEY || process.env.SECRET_KEY || Deno.env.get("FLUTTERWAVE_SECRET_KEY"))?.trim();
+  const FLUTTERWAVE_WEBHOOK_SECRET = (process.env.FLUTTERWAVE_WEBHOOK_SECRET || Deno.env.get("FLUTTERWAVE_WEBHOOK_SECRET")) || FLUTTERWAVE_SECRET_KEY;
 
   const signature = req.headers.get("verif-hash");
   const body = await req.text();
