@@ -22,14 +22,12 @@ serve(async (req) => {
       });
     }
 
-    // Determine base URL based on environment
-    const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
-    const FLW_BASE_URL = isDevelopment 
-      ? "https://developersandbox-api.flutterwave.com" 
-      : "https://f4bexperience.flutterwave.com";
+    // Flutterwave API base URL (same for sandbox and production, credentials differ)
+    // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
+    const FLW_BASE_URL = "https://api.flutterwave.com";
 
-    // Flutterwave v4 endpoint to get list of banks
-    const flutterwaveUrl = `${FLW_BASE_URL}/banks/NG`; // NG for Nigeria
+    // Flutterwave endpoint to get list of banks
+    const flutterwaveUrl = `${FLW_BASE_URL}/v3/banks/NG`; // NG for Nigeria
     const flutterwaveResponse = await flutterwaveAuthenticatedFetch(flutterwaveUrl);
 
     if (flutterwaveResponse.status === 401) {

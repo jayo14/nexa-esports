@@ -37,11 +37,9 @@ serve(async (req) => {
       });
     }
 
-    // Determine base URL based on environment
-    const isDevelopment = Deno.env.get("ENVIRONMENT") !== "production";
-    const FLW_BASE_URL = isDevelopment 
-      ? "https://developersandbox-api.flutterwave.com" 
-      : "https://f4bexperience.flutterwave.com";
+    // Flutterwave API base URL (same for sandbox and production, credentials differ)
+    // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
+    const FLW_BASE_URL = "https://api.flutterwave.com";
 
     // Get optional query parameters
     const url = new URL(req.url);
@@ -49,12 +47,12 @@ serve(async (req) => {
     const to = url.searchParams.get("to");
     const status = url.searchParams.get("status") || "successful";
     
-    // Construct Flutterwave v4 URL
-    let fwUrl = `${FLW_BASE_URL}/transactions?customer_email=${encodeURIComponent(user.email)}&status=${status}`;
+    // Construct Flutterwave URL
+    let fwUrl = `${FLW_BASE_URL}/v3/transactions?customer_email=${encodeURIComponent(user.email)}&status=${status}`;
     if (from) fwUrl += `&from=${from}`;
     if (to) fwUrl += `&to=${to}`;
 
-    console.log(`Fetching transactions for ${user.email} from Flutterwave v4 via ${FLW_BASE_URL}...`);
+    console.log(`Fetching transactions for ${user.email} from Flutterwave via ${FLW_BASE_URL}...`);
 
     const fwResponse = await flutterwaveAuthenticatedFetch(fwUrl);
 

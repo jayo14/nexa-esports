@@ -4,29 +4,41 @@ This document describes the Flutterwave payment integration in Nexa Elite Nexus.
 
 ## Overview
 
-The application uses Flutterwave v4 API for payment processing with **OAuth 2.0 authentication** and **server-side payment initiation**, including:
+The application uses Flutterwave for payment processing with **OAuth 2.0 authentication** and **server-side payment initiation**, including:
 - Card payments
 - Mobile money
 - USSD
 - Bank transfers
 - Direct bank transfers for withdrawals
 
+### API Configuration
+
+**Base URL:** `https://api.flutterwave.com` (same for sandbox and production)  
+**API Version:** v3 endpoints (e.g., `/v3/payments`, `/v3/transfers`)  
+**Authentication:** OAuth 2.0 via `FLW_CLIENT_ID` and `FLW_CLIENT_SECRET`
+
+**Note:** The difference between sandbox and production is in the credentials used, not the base URL. Use test credentials for sandbox and live credentials for production.
+
 ## Environment Variables
 
-The following environment variables must be set for Flutterwave v4:
+The following environment variables must be set:
 
 ```bash
-# Backend (Supabase Edge Functions) - v4 OAuth credentials
+# Backend (Supabase Edge Functions) - OAuth 2.0 credentials
 FLW_CLIENT_ID=your_flutterwave_client_id_here
 FLW_CLIENT_SECRET=your_flutterwave_client_secret_here
 FLW_ENCRYPTION_KEY=your_flutterwave_encryption_key_here
 FLW_WEBHOOK_SECRET=your_webhook_secret_here  # Set in Flutterwave dashboard
 
-# Environment (for testing scenario keys)
+# Environment (optional, used for test scenarios)
 ENVIRONMENT=production  # Set to 'development' for testing
 ```
 
-**Note:** Flutterwave v4 uses OAuth 2.0 for authentication. The edge functions will automatically request an access token using the Client ID and Client Secret before making API calls.
+**Important Notes:**
+- OAuth 2.0 is used for authentication. The edge functions automatically request an access token using the Client ID and Client Secret.
+- The same base URL (`https://api.flutterwave.com`) is used for both sandbox and production.
+- Use **test credentials** from your Flutterwave dashboard for sandbox testing.
+- Use **live credentials** from your Flutterwave dashboard for production.
 
 ## Edge Functions
 
@@ -274,7 +286,7 @@ Available scenarios:
 
 ### Production Credentials
 
-For live/production use, set the following environment variables:
+For live/production use, set the following environment variables with your **live credentials** from Flutterwave:
 
 ```bash
 FLW_CLIENT_ID=your_live_client_id
@@ -284,9 +296,14 @@ FLW_WEBHOOK_SECRET=your_webhook_secret_from_dashboard
 ENVIRONMENT=production
 ```
 
-Get your live v4 credentials from the Flutterwave dashboard under Settings > API Keys.
+Get your live credentials from the Flutterwave dashboard under **Settings > API Keys**.
 
-**Important:** Flutterwave v4 uses OAuth 2.0 authentication. The system automatically requests an access token using your Client ID and Client Secret before making API calls.
+For sandbox/testing, use your **test credentials** instead.
+
+**API Details:**
+- **Base URL**: `https://api.flutterwave.com` (same for sandbox and production)
+- **Authentication**: OAuth 2.0 using Client ID and Client Secret
+- **Token Endpoint**: `https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token`
 
 ## Security Best Practices
 
