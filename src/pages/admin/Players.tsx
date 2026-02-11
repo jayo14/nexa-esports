@@ -148,8 +148,12 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
             )}
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="hover:bg-[#FF1F44]/20 h-8 w-8">
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:bg-[#FF1F44]/20 h-8 w-8"
+                >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
