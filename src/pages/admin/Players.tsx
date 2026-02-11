@@ -149,11 +149,7 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="hover:bg-[#FF1F44]/20 h-8 w-8"
-                >
+                <Button variant="ghost" size="icon" className="hover:bg-[#FF1F44]/20 h-8 w-8" onClick={(e) => e.stopPropagation()}>
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -164,39 +160,39 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
                     Edit
                   </DropdownMenuItem>
                 )}
-              {player.is_banned ? (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onUnban(player); }} disabled={player.role === 'clan_master'}>
-                  <Check className="w-4 h-4 mr-2" />
-                  Unban
+                {player.is_banned ? (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onUnban(player); }} disabled={player.role === 'clan_master'}>
+                    <Check className="w-4 h-4 mr-2" />
+                    Unban
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      onBan(player); 
+                    }} 
+                    disabled={player.role === 'clan_master'}
+                    className="text-red-400 focus:text-red-400"
+                  >
+                    <ShieldOff className="w-4 h-4 mr-2" />
+                    Ban Player
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/profile/${player.id}`); }}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Public Profile
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    onBan(player); 
-                  }} 
-                  disabled={player.role === 'clan_master'}
-                  className="text-red-400 focus:text-red-400"
-                >
-                  <ShieldOff className="w-4 h-4 mr-2" />
-                  Ban Player
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/profile/${player.id}`); }}>
-                <Share2 className="w-4 h-4 mr-2" />
-                Public Profile
-              </DropdownMenuItem>
-              {profile?.role === 'clan_master' && (
-                <DropdownMenuItem 
-                  onClick={(e) => { e.stopPropagation(); onDelete(player.id); }} 
-                  className="text-red-500 focus:text-red-500"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Player
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {profile?.role === 'clan_master' && (
+                  <DropdownMenuItem 
+                    onClick={(e) => { e.stopPropagation(); onDelete(player.id); }} 
+                    className="text-red-500 focus:text-red-500"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Player
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
         </div>
       </div>
 
