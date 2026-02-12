@@ -239,7 +239,151 @@ export const useMarketplace = () => {
     },
   });
 
-  // Purchase an account
+  // Purchase an account using new checkout system
+  const checkoutMutation = useMutation({
+    mutationFn: async ({ listingId, buyerId, price }: { listingId: string; buyerId: string; price: number }) => {
+      const { data, error } = await supabase.rpc('marketplace_checkout', {
+        p_listing_id: listingId,
+        p_buyer_id: buyerId,
+        p_price: price
+      });
+
+      if (error) throw error;
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Purchase failed');
+      }
+
+      return data;
+    },
+    onSuccess: async (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
+      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] }); 
+      queryClient.invalidateQueries({ queryKey: ['buyerPurchases'] });
+      
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Send In-App Notification to Buyer
+      if (user) {
+        await supabase.from('notifications').insert([{
+          user_id: user.id,
+          type: 'marketplace_purchase',
+          title: 'Purchase Successful',
+          message: `Your purchase has been completed. Funds are held in escrow for 3 days. View your receipt to access account credentials.`,
+          data: { 
+            transaction_id: data.transaction_id,
+            url: `/marketplace/purchases/${data.transaction_id}` 
+          }
+        }]);
+      }
+
+      toast({
+        title: 'Purchase Successful!',
+        description: 'Your funds are in escrow. Access your account credentials in My Purchases.',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Checkout error:', error);
+      toast({
+        title: 'Purchase Failed',
+        description: error.message || 'An error occurred during checkout',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Reveal account credentials
+  const revealCredentialsMutation = useMutation({
+    mutationFn: async ({ transactionId, userId }: { transactionId: string; userId: string }) => {
+      const { data, error } = await supabase.rpc('reveal_account_credentials', {
+        p_transaction_id: transactionId,
+        p_user_id: userId
+      });
+
+      if (error) throw error;
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to reveal credentials');
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buyerPurchases'] });
+      toast({
+        title: 'Credentials Revealed',
+        description: 'Account login details are now visible. Please change the password immediately.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to Reveal Credentials',
+        description: error.message || 'An error occurred',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Confirm purchase and release escrow
+  const confirmPurchaseMutation = useMutation({
+    mutationFn: async ({ transactionId, buyerId }: { transactionId: string; buyerId: string }) => {
+      const { data, error } = await supabase.rpc('confirm_marketplace_purchase', {
+        p_transaction_id: transactionId,
+        p_buyer_id: buyerId
+      });
+
+      if (error) throw error;
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to confirm purchase');
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buyerPurchases'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      toast({
+        title: 'Purchase Confirmed',
+        description: 'Escrow has been released to the seller. Thank you for your purchase!',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to Confirm Purchase',
+        description: error.message || 'An error occurred',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Fetch buyer purchases
+  const useBuyerPurchases = () => {
+    return useQuery({
+      queryKey: ['buyerPurchases'],
+      queryFn: async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) throw new Error('Not authenticated');
+
+        const { data, error } = await supabase
+          .from('buyer_purchases')
+          .select('*')
+          .eq('buyer_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+      },
+      enabled: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return !!session;
+      },
+    });
+  };
+
+  // Legacy purchase function (keeping for backward compatibility)
   const purchaseAccountMutation = useMutation({
     mutationFn: async ({ listingId, sellerId, price }: { listingId: string; sellerId: string; price: number }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -248,7 +392,7 @@ export const useMarketplace = () => {
         throw new Error('Not authenticated');
       }
 
-      // Call the RPC function for atomic purchase (Wallet -> Escrow)
+      // Call the old RPC function if it exists
       const { data, error } = await supabase.rpc('marketplace_purchase_listing', {
         p_listing_id: listingId,
         p_price: price
@@ -265,7 +409,6 @@ export const useMarketplace = () => {
     onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
       queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
-      // Invalidate wallet query to update balance immediately
       queryClient.invalidateQueries({ queryKey: ['wallet'] }); 
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -366,10 +509,15 @@ export const useMarketplace = () => {
     createListing: createListingMutation.mutate,
     updateListing: updateListingMutation.mutate,
     deleteListing: deleteListingMutation.mutate,
-    purchaseAccount: purchaseAccountMutation.mutate,
+    purchaseAccount: checkoutMutation.mutate,
+    revealCredentials: revealCredentialsMutation.mutate,
+    confirmPurchase: confirmPurchaseMutation.mutate,
+    useBuyerPurchases,
     isCreating: createListingMutation.isPending,
     isUpdating: updateListingMutation.isPending,
     isDeleting: deleteListingMutation.isPending,
-    isPurchasing: purchaseAccountMutation.isPending,
+    isPurchasing: checkoutMutation.isPending,
+    isRevealingCredentials: revealCredentialsMutation.isPending,
+    isConfirmingPurchase: confirmPurchaseMutation.isPending,
   };
 };

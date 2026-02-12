@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '@/hooks/useMarketplace';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,10 +17,12 @@ import {
   Info,
   Globe,
   Lock,
-  MessageSquare
+  MessageSquare,
+  ShoppingCart
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { CheckoutModal } from '@/components/marketplace/CheckoutModal';
 
 export const ListingDetails: React.FC = () => {
   const { listingId } = useParams();
@@ -28,6 +30,8 @@ export const ListingDetails: React.FC = () => {
   const { profile } = useAuth();
   const { useListingDetails, purchaseAccount, isPurchasing } = useMarketplace();
   const { data: listing, isLoading } = useListingDetails(listingId);
+  
+  const [showCheckout, setShowCheckout] = useState(false);
 
   if (isLoading) {
     return (
@@ -47,14 +51,17 @@ export const ListingDetails: React.FC = () => {
     );
   }
 
-  const handlePurchase = () => {
+  const handleCheckout = () => {
+    if (!profile?.id || !listing) return;
+    
     purchaseAccount({
       listingId: listing.id,
-      sellerId: listing.seller_id,
+      buyerId: profile.id,
       price: listing.price,
     }, {
-      onSuccess: () => {
-        navigate('/marketplace/orders');
+      onSuccess: (data: any) => {
+        setShowCheckout(false);
+        navigate(`/marketplace/purchases/${data.transaction_id}`);
       }
     });
   };
@@ -225,12 +232,13 @@ export const ListingDetails: React.FC = () => {
                 {profile?.id !== listing.seller_id ? (
                   <>
                     <Button 
-                      onClick={handlePurchase}
+                      onClick={() => setShowCheckout(true)}
                       disabled={isPurchasing}
                       size="lg" 
-                      className="w-full h-14 font-orbitron text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+                      className="w-full h-14 font-orbitron text-lg bg-gradient-to-r from-primary to-red-600 hover:from-red-600 hover:to-primary shadow-lg shadow-primary/20"
                     >
-                      {isPurchasing ? 'Processing...' : 'Secure Purchase'}
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      Buy Now - ₦{listing.price.toLocaleString()}
                     </Button>
                     <Button 
                       variant="outline" 
@@ -276,6 +284,17 @@ export const ListingDetails: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Checkout Modal */}
+      {listing && (
+        <CheckoutModal
+          open={showCheckout}
+          onOpenChange={setShowCheckout}
+          listing={listing}
+          onConfirm={handleCheckout}
+          isProcessing={isPurchasing}
+        />
+      )}
     </div>
   );
 };

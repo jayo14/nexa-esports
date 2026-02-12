@@ -37,6 +37,8 @@ import { Marketplace } from '@/pages/Marketplace';
 import { ListAccount } from '@/pages/ListAccount';
 import { ListingDetails } from '@/pages/ListingDetails';
 import { BuyerDashboard } from '@/pages/BuyerDashboard';
+import { MyPurchases } from '@/pages/MyPurchases';
+import { PurchaseDetails } from '@/pages/PurchaseDetails';
 
 // Admin pages
 import { AdminPlayers } from '@/pages/admin/Players';
@@ -147,6 +149,8 @@ function AppRoutes() {
         <Route path="/marketplace/my-listings" element={<ProtectedRoute><Layout showSidebar><MyListingsScreen /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/list" element={<ProtectedRoute><Layout showSidebar><ListAccount /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/listing/:listingId" element={<ProtectedRoute><Layout showSidebar><ListingDetails /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace/purchases" element={<ProtectedRoute><Layout showSidebar><MyPurchases /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace/purchases/:transactionId" element={<ProtectedRoute><Layout showSidebar><PurchaseDetails /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/orders" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />
         <Route path="/payment-success" element={<ProtectedRoute><Layout showSidebar><PaymentSuccess /></Layout></ProtectedRoute>} />
 
