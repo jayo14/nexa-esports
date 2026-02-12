@@ -30,8 +30,11 @@ export const useActivities = () => {
     queryKey: ['unread-activities-count'],
     queryFn: async () => {
       // Get activities from the last 24 hours
+      // Round to nearest minute to improve potential for caching
       const twentyFourHoursAgo = new Date();
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+      twentyFourHoursAgo.setSeconds(0);
+      twentyFourHoursAgo.setMilliseconds(0);
       
       const { data, error } = await supabase
         .from('activities')

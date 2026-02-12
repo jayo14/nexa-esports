@@ -136,15 +136,41 @@ const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank 
           
           <div className="flex items-center gap-1">
             {(profile?.role === 'admin' || profile?.role === 'clan_master') && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="hover:bg-[#FF1F44]/20 h-8 w-8 text-white"
-                onClick={(e) => { e.stopPropagation(); onEdit(player); }}
-                title="Edit Player"
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:bg-[#FF1F44]/20 h-8 w-8 text-white"
+                  onClick={(e) => { e.stopPropagation(); onEdit(player); }}
+                  title="Edit Player"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+
+                {player.is_banned ? (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="hover:bg-green-500/20 h-8 w-8 text-green-400"
+                    onClick={(e) => { e.stopPropagation(); onUnban(player); }}
+                    title="Unban Player"
+                    disabled={player.role === 'clan_master'}
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="hover:bg-red-500/20 h-8 w-8 text-red-400"
+                    onClick={(e) => { e.stopPropagation(); onBan(player); }}
+                    title="Ban Player"
+                    disabled={player.role === 'clan_master'}
+                  >
+                    <ShieldOff className="w-4 h-4" />
+                  </Button>
+                )}
+              </>
             )}
 
             <DropdownMenu>
@@ -844,6 +870,61 @@ export const AdminPlayers: React.FC = () => {
                   </Label>
                 </RadioGroup>
               </div>
+
+              <div className="space-y-2">
+                <Label>Quick Duration</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs bg-background/50"
+                    onClick={() => {
+                      setBanType('temporary');
+                      const date = new Date();
+                      date.setDate(date.getDate() + 1);
+                      setBanDate(date);
+                    }}
+                  >
+                    24 Hours
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs bg-background/50"
+                    onClick={() => {
+                      setBanType('temporary');
+                      const date = new Date();
+                      date.setDate(date.getDate() + 7);
+                      setBanDate(date);
+                    }}
+                  >
+                    7 Days
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs bg-background/50"
+                    onClick={() => {
+                      setBanType('temporary');
+                      const date = new Date();
+                      date.setDate(date.getDate() + 30);
+                      setBanDate(date);
+                    }}
+                  >
+                    30 Days
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs bg-background/50"
+                    onClick={() => {
+                      setBanType('permanent');
+                    }}
+                  >
+                    Forever
+                  </Button>
+                </div>
+              </div>
               
               {banType === 'temporary' && (
                 <div className="space-y-2">
@@ -875,11 +956,11 @@ export const AdminPlayers: React.FC = () => {
               )}
               
               <div className="space-y-2">
-                <Label>Ban Reason</Label>
+                <Label>Ban Message</Label>
                 <Input 
                   value={banReason} 
                   onChange={(e) => setBanReason(e.target.value)} 
-                  placeholder="Enter reason for ban (required)"
+                  placeholder="Enter message for the banned player (required)"
                   className="bg-background/50 border-white/20"
                 />
               </div>

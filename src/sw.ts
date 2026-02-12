@@ -43,7 +43,15 @@ registerRoute(
                               url.hostname.endsWith('.supabase.in');
     const isApiPath = url.pathname.includes('/rest/v1/') || 
                       url.pathname.includes('/functions/v1/');
-    return isSupabaseRequest && isApiPath;
+    
+    // Don't cache requests with highly dynamic query parameters (like gte.timestamp)
+    // as they will rarely hit the cache and can cause 'no-response' errors
+    const hasDynamicQueries = url.search.includes('gte.') || 
+                               url.search.includes('lte.') ||
+                               url.search.includes('gt.') ||
+                               url.search.includes('lt.');
+
+    return isSupabaseRequest && isApiPath && !hasDynamicQueries;
   },
   new NetworkFirst({
     cacheName: 'api-cache',
@@ -55,6 +63,34 @@ registerRoute(
     ],
     networkTimeoutSeconds: 10, // Fall back to cache if network takes > 10s
   })
+);
+
+// Fallback for dynamic Supabase requests that we don't want to cache but still need to handle
+registerRoute(
+  ({ url }) => {
+    const isSupabaseRequest = url.hostname.endsWith('.supabase.co') || 
+                              url.hostname.endsWith('.supabase.in');
+    const isApiPath = url.pathname.includes('/rest/v1/') || 
+                      url.pathname.includes('/functions/v1/');
+    const hasDynamicQueries = url.search.includes('gte.') || 
+                               url.search.includes('lte.') ||
+                               url.search.includes('gt.') ||
+                               url.search.includes('lt.');
+
+    return isSupabaseRequest && isApiPath && hasDynamicQueries;
+  },
+  async ({ request }) => {
+    try {
+      return await fetch(request);
+    } catch (error) {
+      // Return a 503 Service Unavailable response instead of letting Workbox throw 'no-response'
+      return new Response(JSON.stringify({ error: 'Offline', message: 'Network request failed' }), {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
 );
 
 // Cache images with CacheFirst strategy (check cache first, then network)
