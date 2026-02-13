@@ -10,8 +10,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
-  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
+  const FLW_SECRET_KEY = Deno.env.get("FLW_SECRET_KEY")?.trim();
 
   try {
     const { transaction_id, tx_ref: provided_tx_ref } = await req.json();
@@ -23,16 +22,15 @@ serve(async (req) => {
       });
     }
 
-    if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
-      console.error("Flutterwave v4 credentials not configured");
-      return new Response(JSON.stringify({ error: "Server configuration error: FLW_CLIENT_ID and FLW_CLIENT_SECRET required" }), {
+    if (!FLW_SECRET_KEY) {
+      console.error("Flutterwave v3 credentials not configured");
+      return new Response(JSON.stringify({ error: "Server configuration error: FLW_SECRET_KEY required" }), {
         status: 500,
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       });
     }
 
-    // Flutterwave API base URL (same for sandbox and production, credentials differ)
-    // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
+    // Flutterwave v3 API base URL
     const FLW_BASE_URL = "https://api.flutterwave.com";
 
     // Verify transaction with Flutterwave
@@ -66,7 +64,7 @@ serve(async (req) => {
       // If verification by ID failed, try by reference if we have it
       if (transaction_id && provided_tx_ref && flutterwaveResponse.status !== 401) {
         console.log(`Retrying verification with tx_ref: ${provided_tx_ref}`);
-        const retryUrl = `https://api.flutterwave.com/v4/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
+        const retryUrl = `${FLW_BASE_URL}/v3/transactions/verify_by_reference?tx_ref=${provided_tx_ref}`;
         const retryResponse = await flutterwaveAuthenticatedFetch(retryUrl);
 
         if (retryResponse.status === 401) {

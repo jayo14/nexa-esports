@@ -16,8 +16,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
-  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
+  const FLW_SECRET_KEY = Deno.env.get("FLW_SECRET_KEY")?.trim();
 
   // Create a Supabase client with the user's auth token
   const supabaseClient = createClient(
@@ -34,10 +33,10 @@ serve(async (req) => {
     });
   }
 
-  // Check for missing v4 credentials
-  if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
-    console.error("Flutterwave v4 credentials not configured");
-    return new Response(JSON.stringify({ error: "Transfer service not configured: FLW_CLIENT_ID and FLW_CLIENT_SECRET required" }), {
+  // Check for missing v3 credentials
+  if (!FLW_SECRET_KEY) {
+    console.error("Flutterwave v3 credentials not configured");
+    return new Response(JSON.stringify({ error: "Transfer service not configured: FLW_SECRET_KEY required" }), {
       headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
@@ -206,8 +205,7 @@ serve(async (req) => {
         });
       }
 
-      // Flutterwave API base URL (same for sandbox and production, credentials differ)
-      // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
+      // Flutterwave v3 API base URL
       const FLW_BASE_URL = "https://api.flutterwave.com";
 
       // 2. Initiate Flutterwave transfer
@@ -224,7 +222,7 @@ serve(async (req) => {
         reference: `withdrawal_${user.id}_${Date.now()}`,
       };
 
-      console.log(`Initiating Flutterwave transfer via ${FLW_BASE_URL}...`);
+      console.log(`Initiating Flutterwave v3 transfer via ${FLW_BASE_URL}...`);
 
       // Build custom headers for transfer (idempotency + optional test scenario)
       const customHeaders: Record<string, string> = {

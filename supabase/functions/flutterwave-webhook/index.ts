@@ -9,13 +9,13 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
-  const FLW_WEBHOOK_SECRET = (process.env.FLW_WEBHOOK_SECRET || Deno.env.get("FLW_WEBHOOK_SECRET")) || FLW_CLIENT_SECRET;
+  const FLW_SECRET_KEY = Deno.env.get("FLW_SECRET_KEY")?.trim();
+  const FLW_WEBHOOK_SECRET = (process.env.FLW_WEBHOOK_SECRET || Deno.env.get("FLW_WEBHOOK_SECRET")) || FLW_SECRET_KEY;
 
   const signature = req.headers.get("verif-hash");
   const body = await req.text();
 
-  if (!FLW_CLIENT_SECRET) {
+  if (!FLW_SECRET_KEY) {
     console.error("Flutterwave secret key not set");
     return new Response("Flutterwave secret key not set", { status: 500 });
   }
