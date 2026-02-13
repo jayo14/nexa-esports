@@ -11,29 +11,21 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const FLW_CLIENT_ID = Deno.env.get("FLW_CLIENT_ID")?.trim();
-  const FLW_CLIENT_SECRET = Deno.env.get("FLW_CLIENT_SECRET")?.trim();
+  const FLW_SECRET_KEY = Deno.env.get("FLW_SECRET_KEY")?.trim();
 
   // Diagnostic logging (safe)
-  console.log("Flutterwave v4 Configuration Check:");
-  console.log("- FLW_CLIENT_ID found:", !!FLW_CLIENT_ID);
-  if (FLW_CLIENT_ID) console.log("- FLW_CLIENT_ID prefix:", FLW_CLIENT_ID.substring(0, 5) + "...");
-  
-  console.log("- FLW_CLIENT_SECRET found:", !!FLW_CLIENT_SECRET);
-  if (FLW_CLIENT_SECRET) console.log("- FLW_CLIENT_SECRET prefix:", FLW_CLIENT_SECRET.substring(0, 5) + "...");
+  console.log("Flutterwave v3 Configuration Check:");
+  console.log("- FLW_SECRET_KEY found:", !!FLW_SECRET_KEY);
+  if (FLW_SECRET_KEY) console.log("- FLW_SECRET_KEY prefix:", FLW_SECRET_KEY.substring(0, 5) + "...");
 
   try {
-    // Validate required environment variables for v4 OAuth
-    if (!FLW_CLIENT_ID || !FLW_CLIENT_SECRET) {
-      const missing = [];
-      if (!FLW_CLIENT_ID) missing.push("FLW_CLIENT_ID");
-      if (!FLW_CLIENT_SECRET) missing.push("FLW_CLIENT_SECRET");
-      
-      console.error(`Missing Flutterwave v4 credentials: ${missing.join(", ")}`);
+    // Validate required environment variables for v3
+    if (!FLW_SECRET_KEY) {
+      console.error("Missing Flutterwave v3 credentials: FLW_SECRET_KEY");
       
       return new Response(JSON.stringify({ 
-        error: `Payment service not configured: ${missing.join(" and ")} are required for v4`,
-        missing_vars: missing
+        error: "Payment service not configured: FLW_SECRET_KEY is required",
+        missing_vars: ["FLW_SECRET_KEY"]
       }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
@@ -128,13 +120,12 @@ serve(async (req) => {
         },
       };
 
-      // Flutterwave API base URL (same for sandbox and production, credentials differ)
-      // Note: v4 refers to OAuth 2.0 authentication, but API endpoints still use /v3/ paths
+      // Flutterwave v3 API base URL
       const FLW_BASE_URL = "https://api.flutterwave.com";
 
-      console.log(`Initiating Flutterwave payment via ${FLW_BASE_URL}...`);
+      console.log(`Initiating Flutterwave v3 payment via ${FLW_BASE_URL}...`);
   
-      // Call Flutterwave API to initialize payment with OAuth authentication
+      // Call Flutterwave v3 API to initialize payment
       const flutterwaveResponse = await flutterwaveAuthenticatedFetch(
         `${FLW_BASE_URL}/v3/payments`,
         {
