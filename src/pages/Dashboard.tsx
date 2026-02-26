@@ -1,61 +1,37 @@
+
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useNotifications } from "@/hooks/useNotifications"; // Import the hook
-import { EventCard } from "@/components/EventCard";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
+  Search,
+  ShoppingCart,
+  Bell,
+  Flame,
+  Smartphone,
+  Tablet,
+  ThumbsUp,
+  ChevronRight,
+  Play,
+  ArrowRight,
   Trophy,
-  Target,
-  Calendar,
-  TrendingUp,
-  Award,
-  Zap,
-  Users,
-  Clock,
+  Star,
+  Target
 } from "lucide-react";
 
 export const Dashboard: React.FC = () => {
   const { profile, user } = useAuth();
-  const { notifications: recentNotifications } = useNotifications(); // Use the hook
-
-  const { data: userEvents = [] } = useQuery({
-    queryKey: ["user-events", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-
-      const { data, error } = await supabase
-        .from("event_participants")
-        .select("id")
-        .eq("player_id", user.id);
-
-      if (error) {
-        console.error("Error fetching user events count:", error);
-        return [];
-      }
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
+  const navigate = useNavigate();
 
   // Fetch all recent events
-  const { data: allEvents = [], isLoading: isLoadingEvents } = useQuery({
-    queryKey: ["all-recent-events"],
+  const { data: allEvents = [] } = useQuery({
+    queryKey: ["all-recent-events-dashboard"],
     queryFn: async () => {
-      // First, update event status
-      await supabase.rpc('update_event_status');
-      
-      // Get current date minus 3 days for filtering old completed events
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      
       const { data, error } = await supabase
         .from("events")
         .select("*")
-        .or(`status.neq.completed,updated_at.gte.${threeDaysAgo.toISOString()}`)
         .order("date", { ascending: true })
         .limit(10);
 
@@ -69,14 +45,14 @@ export const Dashboard: React.FC = () => {
 
   // Fetch recent announcements
   const { data: announcements = [] } = useQuery({
-    queryKey: ["recent-announcements"],
+    queryKey: ["recent-announcements-dashboard"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("announcements")
         .select("*")
         .eq("is_published", true)
         .order("created_at", { ascending: false })
-        .limit(1);
+        .limit(2);
 
       if (error) {
         console.error("Error fetching announcements:", error);
@@ -86,302 +62,153 @@ export const Dashboard: React.FC = () => {
     },
   });
 
-  const getGradeColor = (grade: string) => {
-    const colors = {
-      S: "text-yellow-400",
-      A: "text-green-400",
-      B: "text-blue-400",
-      C: "text-orange-400",
-      D: "text-red-400",
-    };
-    return colors[grade as keyof typeof colors] || "text-gray-400";
-  };
-
-  const featuredAnnouncement = announcements[0];
-
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex items-center justify-between">
+    <>
+      <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back,{" "}
-            <span className="text-[#FF1F44]">{profile?.username}</span>
-          </h1>
-          <p className="text-gray-400">Your tactical command center awaits</p>
+          <h1 className="text-white/60 text-lg font-sans">Good evening, <span className="text-white font-bold">COMMANDER</span></h1>
         </div>
-        <div className="flex items-center space-x-4">
-          <div
-            className={`px-4 py-2 rounded-lg bg-black/30 border ${getGradeColor(
-              profile?.grade || "D"
-            )} border-current/30`}
-          >
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold ${getGradeColor(
-                  profile?.grade || "D"
-                )}`}
-              >
-                {profile?.grade}
-              </div>
-              <div className="text-xs text-gray-400">GRADE</div>
-            </div>
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 w-5 h-5" />
+            <input
+              className="bg-black/20 border-none rounded-2xl py-3 pl-12 pr-6 w-80 text-sm focus:ring-1 focus:ring-accent-red/50 outline-none placeholder:text-white/20 font-sans"
+              placeholder="Search operations..."
+              type="text"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="w-11 h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60">
+              <ShoppingCart className="w-5 h-5" />
+            </button>
+            <button className="w-11 h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60">
+              <Bell className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
-              Total Kills
-            </CardTitle>
-            <Target className="h-4 w-4 text-[#FF1F44]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {profile?.kills?.toLocaleString() || 0}
+      <div className="grid grid-cols-12 gap-6">
+        <section className="col-span-8 relative h-[420px] rounded-[3rem] overflow-hidden group">
+          <img
+            alt="Hero"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTrbZ0jBYUuhYsF0KsULEkZN4O3NpDQtXkwGJVLffgtEiJY8-DRVG6VDIDbsz69zWfthJuYOr_dQll3b1DjgfXCtTv37ulohGI71WkSamNc9c1Er3-yZpehESDP877Jeq5RiwouWgib0IvdWIIsBtTk9Wr0y-btUMhQiu5XyLFHfWtXa8hrEAPh190YvrP0amn4RWmlkt9EXVqeOdzORGpgT1AwZtPIYpiiO0kP4ReOijDrUvwrvM5reRhB-XbLY2QvzjqEtGoBpY"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-wine-dark via-wine-dark/60 to-transparent"></div>
+          <div className="relative h-full flex flex-col justify-center p-12 max-w-xl gap-6">
+            <div className="flex items-center gap-4">
+              <span className="bg-white text-wine-dark px-4 py-1.5 rounded-full text-xs font-bold uppercase flex items-center gap-2 font-sans">
+                <Flame className="w-4 h-4 fill-accent-red text-accent-red" /> Popular
+              </span>
+              <div className="flex gap-2">
+                <span className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center border border-white/20 text-white">
+                  <Smartphone className="w-4 h-4" />
+                </span>
+                <span className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center border border-white/20 text-white">
+                  <Tablet className="w-4 h-4" />
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-gray-400">
-              <span className="text-blue-400">BR: {profile?.br_kills || 0}</span> • <span className="text-green-400">MP: {profile?.mp_kills || 0}</span>
+            <h2 className="text-6xl font-display font-bold text-white tracking-tight leading-none uppercase">
+              Elite <br/>Commando
+            </h2>
+            <p className="text-white/60 text-sm leading-relaxed max-w-sm font-sans">
+              Dominate the frontlines with our specialized mobile tactical division. Join the top 1% of Global Clan Wars.
             </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
-              Attendance
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-[#FF1F44]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {profile?.attendance || 0}%
+            <div className="flex items-center gap-4">
+              <div className="flex -space-x-2">
+                <img alt="User" className="w-9 h-9 rounded-full border-2 border-wine-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBk5ULNyVxQ4Q60CUUdP6SbOlFqlYbJCvjHwey3_6U8Vn3GGHZo_NRv1iBeER9qi1jqYOBEzhBG9Euvu61QpIvh1s9d81lwRyfxmeLqwPHF1sWuIK0ThisGDkEDBxC7cqqnAaCvY2UVnNqDl_AAdJbjEtDcvPNl9qQchDlrSq74HYoL5NKwd5rZAnsqyeXyop5atudqwzMXom1vVkzbIZ-bQd2lnEHUFgABQ0RHCrokNxdx_sb8Je6H17QZ5maEHIFO2QpJGzfU1x8"/>
+                <img alt="User" className="w-9 h-9 rounded-full border-2 border-wine-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9kkryAoDqFNMIwBionXxk-7SGBfBWinGRLoHtmla6zf1Pc_bvPR-NXzRFMvRe_3EGBCSt3qo3aTAcEkSFly8VTNrisuJ8063U_GHDU1QNPhOFpS5pQ4NcCiYZZJ6t7rfZAssM5VtqE9cqpkRawECM6w4Nse3ud7cPmdcbFHMlqCQWOWfHVEQyBM-kSODGquAPumBQM8gvsdaEnSc-qYKwXbN2p6nM4rUVB0mpYv8CI6xtp_v4D4Ss8rxMHxbtoD1FZol_V9FgVdw"/>
+                <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border-2 border-wine-dark text-[10px] font-bold text-white">BG</div>
+              </div>
+              <button className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 text-white font-sans">
+                <ThumbsUp className="w-4 h-4 fill-accent-red text-accent-red" /> +53 Reviews
+              </button>
             </div>
-            <Progress value={profile?.attendance || 0} className="mt-2" />
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
-              Events Participated
-            </CardTitle>
-            <Trophy className="h-4 w-4 text-[#FF1F44]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {userEvents.length}
+        <div className="col-span-4 flex flex-col gap-4">
+          {[
+            { title: "War Zone S4", desc: "Season Pass Activated", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDOXfULjLZRxiXN5lXpRiXOInTiGV3Zd3Uj2geI_n_D9fI0emBCjP9PKOmxBcya0J5zKEBOKBdGEODaCfRJL3u-MmdhTGZU9Gm0bkc61gDSFdvzX60P9JkTqiVGJtxcDQzZPtTcLQqmHLovA7sAvJAhFCpaPU7x_UzM8kS8MjF2bjTwq0xS3TH8r3SbkplJNETRmeRRbsaWoYCJ8vSAgFh4R6J8lZiPGJQ8f3IKMolTZgL5BH91lvzM33Zb6_Mdig4Ho8G-cGTzFJ8" },
+            { title: "Ghost Ops", desc: "Multiplayer Combat", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBEKYAxpGsdl9qpotRIGCKwUqeIHOyyks13BL7dQ6bFhqxXVVq7Vp0lQT2tM6BC4ZFHQVMoSveIGkyJk_Iag8VfLmZSmGBl-WEk_-mDFAExJ9T8HRMZE7O3jzlfA25JqKBiZdVLsOoHZMHghB1cZXoa4BeDvfY7hx75Mm_MEzmLYc-iH3ubNTPzDYVpM4PJhu9ddHQ7otqOOUij6TfaKnVzWLIb5lYoIC2dlVQ-HLQKRh0ht8JjnIC9dP0WQ_mB-CkM1Z1Wa6A2Xks" },
+            { title: "Sniper Mastery", desc: "Elite Training Course", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB-NaakwIKjMhFvDVnluy48USw9OUC8WDVFUc3sN1bp6ykdv78oojwLGX_ocV-Q2AHB1ezyaU09__yv6fxqpsK3TM-PQSHd7mpCvWDajN9IPCL9S6_OuOUdenuODY99o25tXhGWz4clXNTBrJKsXdcwpNQagHzwbYsiYZSSaB11n6p3nYaYsvnXaB5GF_vA08fA-tBXP2s9bnIASgYkkX5LynjQO6rtD6ys6JyBkUJGfj08UWe6-Q9S46WVU6rx2FnDam4YhBxRay0" }
+          ].map((card, i) => (
+            <div key={i} className="bg-black/30 p-5 rounded-[2.5rem] flex items-center justify-between border border-white/5 hover:bg-black/40 transition-all cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <img alt="Thumb" className="w-14 h-14 rounded-2xl object-cover" src={card.img}/>
+                <div>
+                  <h4 className="font-bold text-sm text-white font-sans">{card.title}</h4>
+                  <p className="text-white/40 text-xs mt-1 font-sans">{card.desc}</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-xs text-gray-400">total events</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
-              Tier Status
-            </CardTitle>
-            <Award className="h-4 w-4 text-[#FF1F44]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-white">
-              {profile?.tier || "Rookie"}
-            </div>
-            <p className="text-xs text-gray-400">
-              Since {profile?.date_joined}
-            </p>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       </div>
 
-      {/* Performance & Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Events */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-[#FF1F44]" />
-              Recent Events
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {isLoadingEvents ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  Loading events...
-                </div>
-              ) : allEvents.length > 0 ? (
-                allEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))
-              ) : (
-                <div className="text-center py-4 text-muted-foreground">
-                  No upcoming events
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Weekly Performance */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-[#FF1F44]" />
-              Weekly Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
-              ].map((day, index) => (
-                <div key={day} className="flex items-center space-x-4">
-                  <div className="w-16 text-sm text-gray-400">
-                    {day.slice(0, 3)}
-                  </div>
-                  <div className="flex-1">
-                    <Progress value={Math.random() * 100} className="h-2" />
-                  </div>
-                  <div className="w-12 text-sm text-white text-right">
-                    {Math.floor(Math.random() * 50 + 50)}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Featured Announcement */}
-      {featuredAnnouncement && (
-        <Card className="bg-gradient-to-r from-[#FF1F44]/10 to-red-600/5 border-[#FF1F44]/30 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Zap className="w-5 h-5 mr-2 text-[#FF1F44]" />
-              Featured Announcement
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold text-white">
-                {featuredAnnouncement.title}
-              </h3>
-              <p className="text-gray-300">{featuredAnnouncement.content}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 text-sm text-gray-400">
-                  <span>
-                    📅{" "}
-                    {new Date(
-                      featuredAnnouncement.created_at
-                    ).toLocaleDateString()}
+      <div className="grid grid-cols-12 gap-8 items-start mb-4">
+        <div className="col-span-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-white font-display">New Operations</h3>
+            <button className="text-white/40 text-sm font-medium hover:text-white transition-colors font-sans">See More</button>
+          </div>
+          <div className="flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
+            {allEvents.length > 0 ? allEvents.map((event, i) => (
+              <div key={event.id} className="min-w-[300px] h-[360px] glass-card rounded-[3rem] p-6 flex flex-col justify-end relative group cursor-pointer shadow-xl overflow-hidden" onClick={() => navigate(`/events/${event.id}`)}>
+                <div className="absolute top-6 left-6 flex gap-2 z-10">
+                  <span className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white">
+                    <Play className="w-5 h-5 fill-current" />
                   </span>
                 </div>
-                <Button
-                  onClick={() => (window.location.href = "/announcements")}
-                  className="bg-[#FF1F44] hover:bg-red-600 text-white"
-                >
-                  View All
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Notifications - Now using the same hook as NotificationBell */}
-      {recentNotifications.length > 0 && (
-        <Card className="bg-gradient-to-r from-blue-500/10 to-purple-600/5 border-blue-500/30 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-blue-400" />
-              Recent Notifications
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentNotifications.slice(0, 3).map((notification) => (
-                <div
-                  key={notification.id}
-                  className="flex items-start space-x-3 p-3 bg-background/20 rounded-lg"
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full mt-2 ${
-                      notification.status === "unread"
-                        ? "bg-blue-400"
-                        : "bg-gray-600"
-                    }`}
-                  ></div>
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium">
-                      {notification.title || notification.message}
-                    </h4>
-                    {notification.title &&
-                      notification.message !== notification.title && (
-                        <p className="text-gray-300 text-sm">
-                          {notification.message}
-                        </p>
-                      )}
-                    <p className="text-gray-400 text-xs mt-1">
-                      {new Date(notification.timestamp).toLocaleDateString()}
-                    </p>
-                  </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-wine-dark/90 to-transparent rounded-[3rem] z-[1]"></div>
+                <div className="relative z-10">
+                  <h4 className="text-2xl font-bold mb-2 text-white font-display">{event.name}</h4>
+                  <p className="text-white/60 text-xs font-sans">{event.type} • {new Date(event.date).toLocaleDateString()}</p>
                 </div>
-              ))}
-            </div>
-            {recentNotifications.length > 3 && (
-              <div className="mt-4 text-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    /* Navigate to notifications page or show more */
-                  }}
-                  className="text-blue-400 border-blue-400 hover:bg-blue-400/10"
-                >
-                  View All Notifications ({recentNotifications.length})
-                </Button>
               </div>
+            )) : (
+              <div className="text-white/40 font-sans italic">No new operations available.</div>
             )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-
-        <Button
-          onClick={() => (window.location.href = "/loadouts")}
-          className="p-6 h-auto bg-white/5 hover:bg-white/10 border border-white/10 text-white"
-        >
-          <div className="flex flex-col items-center space-y-2">
-            <Target className="w-8 h-8 text-[#FF1F44]" />
-            <span className="font-medium">My Loadouts</span>
-            <span className="text-xs text-gray-400">Manage your gear</span>
           </div>
-        </Button>
+        </div>
 
-        <Button
-          onClick={() => (window.location.href = "/scrims")}
-          className="p-6 h-auto bg-white/5 hover:bg-white/10 border border-white/10 text-white"
-        >
-          <div className="flex flex-col items-center space-y-2">
-            <Trophy className="w-8 h-8 text-[#FF1F44]" />
-            <span className="font-medium">View Scrims</span>
-            <span className="text-xs text-gray-400">Check schedules</span>
+        <div className="col-span-4">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-white font-display">Clan Victory</h3>
+            <ArrowRight className="w-6 h-6 text-white/40" />
           </div>
-        </Button>
+          <div className="glass-card rounded-[3rem] p-8 flex flex-col items-center gap-8 border border-white/10 shadow-2xl relative overflow-hidden h-[360px] justify-center">
+            <div className="relative w-44 h-44 flex items-center justify-center">
+              <div className="absolute inset-0 blur-3xl bg-accent-red/20 rounded-full"></div>
+              <div className="donut-chart w-full h-full rounded-full"></div>
+              <div className="absolute flex flex-col items-center justify-center text-center">
+                <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest font-sans">Total Wins</p>
+                <span className="text-3xl font-display font-bold text-white">12,340</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 w-full gap-2">
+              {[
+                { label: "2,340", icon: Trophy, color: "text-accent-red", bg: "bg-accent-red/20", border: "border-accent-red/30" },
+                { label: "5,420", icon: Star, color: "text-indigo-400", bg: "bg-indigo-500/20", border: "border-indigo-500/30" },
+                { label: "4,580", icon: Target, color: "text-amber-400", bg: "bg-amber-500/20", border: "border-amber-500/30" }
+              ].map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div className={cn("w-8 h-8 rounded-full flex items-center justify-center border", item.bg, item.border)}>
+                      <Icon className={cn("w-4 h-4 fill-current", item.color)} />
+                    </div>
+                    <span className="text-[10px] font-bold text-white font-sans">{item.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
