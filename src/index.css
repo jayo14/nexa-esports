@@ -298,6 +298,41 @@ All colors MUST be HSL.
     background: rgba(255, 31, 68, 0.5);
     box-shadow: 0 0 10px rgba(255, 31, 68, 0.4);
   }
+
+  .glass-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .main-gradient {
+    background: radial-gradient(circle at top left, #5A242B 0%, #2D1418 100%);
+  }
+
+  .sidebar-narrow-gradient {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .floating-glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
+  }
+
+  .active-glow-icon {
+    filter: drop-shadow(0 0 5px rgba(233, 69, 96, 0.8));
+  }
+
+  .donut-chart {
+    background: conic-gradient(
+      #E94560 0deg 240deg,
+      #4338ca 240deg 300deg,
+      #fbbf24 300deg 360deg
+    );
+    mask: radial-gradient(farthest-side, transparent 65%, white 66%);
+    -webkit-mask: radial-gradient(farthest-side, transparent 65%, white 66%);
+  }
 }
 
 @keyframes scan-line {

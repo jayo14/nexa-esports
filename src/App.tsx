@@ -25,6 +25,7 @@ import { Onboarding } from '@/pages/auth/Onboarding';
 
 // Protected pages
 import { Dashboard } from '@/pages/Dashboard';
+import { Chat } from '@/pages/Chat';
 import { Profile } from '@/pages/Profile';
 import { Settings } from '@/pages/Settings';
 
@@ -132,6 +133,8 @@ function AppRoutes() {
         <Route path="/dashboard" element={<ProtectedRoute><Layout showSidebar><Dashboard /></Layout></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Layout showSidebar><Profile /></Layout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Layout showSidebar><Settings /></Layout></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><Layout showSidebar><Chat /></Layout></ProtectedRoute>} />
+        <Route path="/chat/:conversationId" element={<ProtectedRoute><Layout showSidebar><Chat /></Layout></ProtectedRoute>} />
         <Route path="/scrims" element={<ProtectedRoute><Layout showSidebar><Scrims /></Layout></ProtectedRoute>} />
         <Route path="/weapon-layouts" element={<ProtectedRoute><Layout showSidebar><WeaponLoadouts /></Layout></ProtectedRoute>} />
         <Route path="/loadouts" element={<ProtectedRoute><Layout showSidebar><Loadouts /></Layout></ProtectedRoute>} />

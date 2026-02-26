@@ -10,93 +10,27 @@ import { Label } from '@/components/ui/label';
 import { Shield, ChevronRight, ChevronLeft, Gamepad2, Users, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 // Device and brand data
 const deviceData = {
   iPhone: [
-  "iPhone X",
-
-  // 2018
-  "iPhone XR",
-  "iPhone XS",
-  "iPhone XS Max",
-
-  // 2019
-  "iPhone 11",
-  "iPhone 11 Pro",
-  "iPhone 11 Pro Max",
-
-  // 2020
-  "iPhone SE (2nd generation)",
-  "iPhone 12 mini",
-  "iPhone 12",
-  "iPhone 12 Pro",
-  "iPhone 12 Pro Max",
-
-  // 2021
-  "iPhone 13 mini",
-  "iPhone 13",
-  "iPhone 13 Pro",
-  "iPhone 13 Pro Max",
-
-  // 2022
-  "iPhone SE (3rd generation)",
-  "iPhone 14",
-  "iPhone 14 Plus",
-  "iPhone 14 Pro",
-  "iPhone 14 Pro Max",
-
-  // 2023
-  "iPhone 15",
-  "iPhone 15 Plus",
-  "iPhone 15 Pro",
-  "iPhone 15 Pro Max",
-
-  // 2024 (Expected)
-  "iPhone 16",
-  "iPhone 16 Plus",
-  "iPhone 16 Pro",
-  "iPhone 16 Pro Max",
-
-  // 2025 (Speculative, based on Apple’s naming pattern)
-  "iPhone 17",
-  "iPhone 17 Plus",
-  "iPhone 17 Pro",
-  "iPhone 17 Pro Max"],
+  "iPhone X", "iPhone XR", "iPhone XS", "iPhone XS Max", "iPhone 11", "iPhone 11 Pro", "iPhone 11 Pro Max",
+  "iPhone SE (2nd generation)", "iPhone 12 mini", "iPhone 12", "iPhone 12 Pro", "iPhone 12 Pro Max",
+  "iPhone 13 mini", "iPhone 13", "iPhone 13 Pro", "iPhone 13 Pro Max",
+  "iPhone SE (3rd generation)", "iPhone 14", "iPhone 14 Plus", "iPhone 14 Pro", "iPhone 14 Pro Max",
+  "iPhone 15", "iPhone 15 Plus", "iPhone 15 Pro", "iPhone 15 Pro Max",
+  "iPhone 16", "iPhone 16 Plus", "iPhone 16 Pro", "iPhone 16 Pro Max",
+  "iPhone 17", "iPhone 17 Plus", "iPhone 17 Pro", "iPhone 17 Pro Max"],
   Android: ['Samsung', 'Xiaomi', 'Infinix', 'Redmi', 'Itel', 'Tecno', 'Nokia', 'OnePlus', 'Huawei', 'Oppo', 'Vivo', 'Realme', 'Honor', 'Nothing'],
   iPad: [
-  "iPad (5th generation)",        // 2017
-  "iPad (6th generation)",        // 2018
-  "iPad (7th generation)",        // 2019
-  "iPad (8th generation)",        // 2020
-  "iPad (9th generation)",        // 2021
-  "iPad (10th generation)",       // 2022
-  "iPad (11th generation)",       // 2025 (expected)
-
-  // 📱 iPad mini
-  "iPad mini (5th generation)",   // 2019
-  "iPad mini (6th generation)",   // 2021
-  "iPad mini (7th generation)",   // 2025 (expected)
-
-  // 📱 iPad Air
-  "iPad Air (3rd generation)",    // 2019
-  "iPad Air (4th generation)",    // 2020
-  "iPad Air (5th generation)",    // 2022
-  "iPad Air (6th generation)",    // 2024
-
-  // 💼 iPad Pro
-  "iPad Pro 10.5-inch",                         // 2017
-  "iPad Pro 12.9-inch (2nd generation)",        // 2017
-  "iPad Pro 11-inch (1st generation)",          // 2018
-  "iPad Pro 12.9-inch (3rd generation)",        // 2018
-  "iPad Pro 11-inch (2nd generation)",          // 2020
-  "iPad Pro 12.9-inch (4th generation)",        // 2020
-  "iPad Pro 11-inch (3rd generation)",          // 2021
-  "iPad Pro 12.9-inch (5th generation)",        // 2021
-  "iPad Pro 11-inch (4th generation)",          // 2022
-  "iPad Pro 12.9-inch (6th generation)",        // 2022
-  "iPad Pro 11-inch (M4, 5th generation)",      // 2024
-  "iPad Pro 13-inch (M4, 7th generation)" ]
+  "iPad (5th generation)", "iPad (6th generation)", "iPad (7th generation)", "iPad (8th generation)", "iPad (9th generation)", "iPad (10th generation)", "iPad (11th generation)",
+  "iPad mini (5th generation)", "iPad mini (6th generation)", "iPad mini (7th generation)",
+  "iPad Air (3rd generation)", "iPad Air (4th generation)", "iPad Air (5th generation)", "iPad Air (6th generation)",
+  "iPad Pro 10.5-inch", "iPad Pro 12.9-inch (2nd generation)", "iPad Pro 11-inch (1st generation)", "iPad Pro 12.9-inch (3rd generation)", "iPad Pro 11-inch (2nd generation)", "iPad Pro 12.9-inch (4th generation)", "iPad Pro 11-inch (3rd generation)", "iPad Pro 12.9-inch (5th generation)", "iPad Pro 11-inch (4th generation)", "iPad Pro 12.9-inch (6th generation)", "iPad Pro 11-inch (M4, 5th generation)", "iPad Pro 13-inch (M4, 7th generation)" ]
 };
 
 const classOptions = {
@@ -109,34 +43,74 @@ const bankOptions = [
   'First Bank', 'UBA', 'Zenith Bank', 'Fidelity Bank'
 ];
 
+const onboardingSchema = z.object({
+  ign: z.string().min(3, "IGN must be at least 3 characters"),
+  player_uid: z.string().min(8, "Player UID must be at least 8 characters"),
+  deviceType: z.string().min(1, "Device Type is required"),
+  androidBrand: z.string().min(1, "Device model/brand is required"),
+  mode: z.string().min(1, "Preferred Mode is required"),
+  brClass: z.string().optional(),
+  mpClass: z.string().optional(),
+  bestGun: z.string().optional(),
+  favoriteLoadout: z.string().optional(),
+  tiktok: z.string().min(1, "TikTok handle is required"),
+  youtube: z.string().optional(),
+  discord: z.string().optional(),
+  x: z.string().optional(),
+  instagram: z.string().optional(),
+  realName: z.string().min(3, "Real Name is required"),
+  accountName: z.string().min(3, "Account Name is required"),
+  accountNumber: z.string().length(10, "Account Number must be 10 digits"),
+  bankName: z.string().min(1, "Bank Name is required"),
+}).refine((data) => {
+  if (data.mode === 'BR' || data.mode === 'Both') {
+    return !!data.brClass;
+  }
+  return true;
+}, {
+  message: "BR Class is required",
+  path: ["brClass"]
+}).refine((data) => {
+  if (data.mode === 'MP' || data.mode === 'Both') {
+    return !!data.mpClass;
+  }
+  return true;
+}, {
+  message: "MP Class is required",
+  path: ["mpClass"]
+});
+
+type OnboardingValues = z.infer<typeof onboardingSchema>;
+
 export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    // Gaming Info
-    ign: '',
-    player_uid: '',
-    deviceType: '',
-    androidBrand: '',
-    mode: '',
-    brClass: '',
-    mpClass: '',
-    bestGun: '',
-    favoriteLoadout: '',
-    dateJoined: new Date().toISOString().split('T')[0],
-    // Social Media (TikTok compulsory)
-    tiktok: '',
-    youtube: '',
-    discord: '',
-    x: '',
-    instagram: '',
-    // Personal Info
-    realName: '',
-    accountName: '',
-    accountNumber: '',
-    bankName: ''
+
+  const form = useForm<OnboardingValues>({
+    resolver: zodResolver(onboardingSchema),
+    mode: 'onChange',
+    defaultValues: {
+      ign: '',
+      player_uid: '',
+      deviceType: '',
+      androidBrand: '',
+      mode: '',
+      brClass: '',
+      mpClass: '',
+      bestGun: '',
+      favoriteLoadout: '',
+      tiktok: '',
+      youtube: '',
+      discord: '',
+      x: '',
+      instagram: '',
+      realName: '',
+      accountName: '',
+      accountNumber: '',
+      bankName: ''
+    }
   });
 
   useEffect(() => {
@@ -155,28 +129,17 @@ export const Onboarding: React.FC = () => {
     }
   }, [user, toast]);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-      
-      // Reset dependent fields when parent changes
-      if (field === 'deviceType') {
-        newData.androidBrand = '';
-      }
-      if (field === 'mode') {
-        newData.brClass = '';
-        newData.mpClass = '';
-      }
-      
-      return newData;
-    });
-  };
+  const handleNext = async () => {
+    let fieldsToValidate: (keyof OnboardingValues)[] = [];
+    if (currentStep === 1) {
+      fieldsToValidate = ['ign', 'player_uid', 'deviceType', 'androidBrand', 'mode', 'brClass', 'mpClass'];
+    } else if (currentStep === 2) {
+      fieldsToValidate = ['tiktok'];
+    }
 
-  const handleNext = () => {
-    if (currentStep < 3) {
+    const isValid = await form.trigger(fieldsToValidate);
+    if (isValid) {
       setCurrentStep(currentStep + 1);
-    } else {
-      handleComplete();
     }
   };
 
@@ -186,7 +149,7 @@ export const Onboarding: React.FC = () => {
     }
   };
 
-  const handleComplete = async () => {
+  const onSubmit = async (values: OnboardingValues) => {
     try {
       const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
       
@@ -199,33 +162,24 @@ export const Onboarding: React.FC = () => {
         return;
       }
 
-      if (!authUser.email_confirmed_at) {
-        toast({
-          title: "Email Not Verified",
-          description: "Please check your inbox and verify your email before completing onboarding.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const profileUpdates = {
-        ign: formData.ign.trim(),
-        player_uid: formData.player_uid.trim(),
-        tiktok_handle: formData.tiktok.trim(),
-        preferred_mode: formData.mode,
-        device: formData.deviceType === 'Android' ? formData.androidBrand : formData.androidBrand,
+        ign: values.ign.trim(),
+        player_uid: values.player_uid.trim(),
+        tiktok_handle: values.tiktok.trim(),
+        preferred_mode: values.mode,
+        device: values.androidBrand,
         social_links: {
-          tiktok: formData.tiktok.trim(),
-          youtube: formData.youtube.trim(),
-          discord: formData.discord.trim(),
-          x: formData.x.trim(),
-          instagram: formData.instagram.trim()
+          tiktok: values.tiktok.trim(),
+          youtube: values.youtube.trim(),
+          discord: values.discord.trim(),
+          x: values.x.trim(),
+          instagram: values.instagram.trim()
         },
         banking_info: {
-          real_name: formData.realName.trim(),
-          account_name: formData.accountName.trim(),
-          account_number: formData.accountNumber.trim(),
-          bank_name: formData.bankName
+          real_name: values.realName.trim(),
+          account_name: values.accountName.trim(),
+          account_number: values.accountNumber.trim(),
+          bank_name: values.bankName
         }
       };
 
@@ -236,8 +190,6 @@ export const Onboarding: React.FC = () => {
           title: "Welcome to NeXa_Esports!",
           description: "Your profile has been set up successfully.",
         });
-
-        // Navigate based on user role
         navigate(profile?.role === 'admin' ? '/admin' : '/dashboard');
       }
     } catch (error) {
@@ -250,33 +202,11 @@ export const Onboarding: React.FC = () => {
     }
   };
 
-  const isStepValid = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.ign && formData.player_uid && formData.deviceType && 
-               (formData.deviceType === 'Android' ? formData.androidBrand : true) &&
-               formData.mode && 
-               (formData.mode === 'BR' ? formData.brClass : 
-                formData.mode === 'MP' ? formData.mpClass : 
-                (formData.brClass && formData.mpClass));
-      case 2:
-        return formData.tiktok; // TikTok is compulsory
-      case 3:
-        return formData.realName && formData.accountName && 
-               formData.accountNumber && formData.bankName;
-      default:
-        return false;
-    }
-  };
-
   const getDeviceOptions = () => {
-    if (formData.deviceType === 'iPhone') {
-      return deviceData.iPhone;
-    } else if (formData.deviceType === 'Android') {
-      return deviceData.Android;
-    } else if (formData.deviceType === 'iPad') {
-      return deviceData.iPad;
-    }
+    const deviceType = form.watch('deviceType');
+    if (deviceType === 'iPhone') return deviceData.iPhone;
+    if (deviceType === 'Android') return deviceData.Android;
+    if (deviceType === 'iPad') return deviceData.iPad;
     return [];
   };
 
@@ -299,7 +229,6 @@ export const Onboarding: React.FC = () => {
         </CardHeader>
 
         <CardContent>
-          {/* Progress Steps */}
           <div className="flex justify-center mb-8">
             {[1, 2, 3].map((step) => {
               const StepIcon = stepIcons[step - 1];
@@ -323,313 +252,318 @@ export const Onboarding: React.FC = () => {
             })}
           </div>
 
-          {/* Step 1: Gaming Setup */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-orbitron text-foreground mb-4">Gaming Setup</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ign" className="text-foreground font-rajdhani">In-Game Name (IGN) *</Label>
-                  <Input
-                    id="ign"
-                    value={formData.ign}
-                    onChange={(e) => handleInputChange('ign', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="SlayerX"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="player_uid" className="text-foreground font-rajdhani">Player UID *</Label>
-                  <Input
-                    id="player_uid"
-                    value={formData.player_uid}
-                    onChange={(e) => handleInputChange('player_uid', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="CDM001234567"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="deviceType" className="text-foreground font-rajdhani">Device Type *</Label>
-                  <Select value={formData.deviceType} onValueChange={(value) => handleInputChange('deviceType', value)}>
-                    <SelectTrigger className="bg-background/50 border-border/50 text-foreground font-rajdhani">
-                      <SelectValue placeholder="Select device type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="iPhone">iPhone</SelectItem>
-                      <SelectItem value="Android">Android</SelectItem>
-                      <SelectItem value="iPad">iPad</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.deviceType === 'Android' && (
-                  <div>
-                    <Label htmlFor="androidBrand" className="text-foreground font-rajdhani">Android Brand *</Label>
-                    <Select value={formData.androidBrand} onValueChange={(value) => handleInputChange('androidBrand', value)}>
-                      <SelectTrigger className="bg-background/50 border-border/50 text-foreground font-rajdhani">
-                        <SelectValue placeholder="Select Android brand" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {deviceData.Android.map(brand => (
-                          <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-orbitron text-foreground mb-4">Gaming Setup</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="ign"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">In-Game Name (IGN) *</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="SlayerX" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="player_uid"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">Player UID *</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="CDM001234567" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="deviceType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">Device Type *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="bg-background/50 border-border/50 font-rajdhani">
+                                <SelectValue placeholder="Select device type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="iPhone">iPhone</SelectItem>
+                              <SelectItem value="Android">Android</SelectItem>
+                              <SelectItem value="iPad">iPad</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="androidBrand"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">Device Model/Brand *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!form.watch('deviceType')}>
+                            <FormControl>
+                              <SelectTrigger className="bg-background/50 border-border/50 font-rajdhani">
+                                <SelectValue placeholder="Select device" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getDeviceOptions().map(model => (
+                                <SelectItem key={model} value={model}>{model}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="mode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">Preferred Mode *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="bg-background/50 border-border/50 font-rajdhani">
+                                <SelectValue placeholder="Select mode" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="BR">Battle Royale</SelectItem>
+                              <SelectItem value="MP">Multiplayer</SelectItem>
+                              <SelectItem value="Both">Both</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {(form.watch('mode') === 'BR' || form.watch('mode') === 'Both') && (
+                      <FormField
+                        control={form.control}
+                        name="brClass"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-rajdhani">BR Class *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-background/50 border-border/50 font-rajdhani">
+                                  <SelectValue placeholder="Select BR class" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {classOptions.BR.map(cls => (
+                                  <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                    {(form.watch('mode') === 'MP' || form.watch('mode') === 'Both') && (
+                      <FormField
+                        control={form.control}
+                        name="mpClass"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-rajdhani">MP Class *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-background/50 border-border/50 font-rajdhani">
+                                  <SelectValue placeholder="Select MP class" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {classOptions.MP.map(cls => (
+                                  <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
-                {(formData.deviceType === 'iPhone' || formData.deviceType === 'iPad') && (
-                  <div>
-                    <Label htmlFor="deviceModel" className="text-foreground font-rajdhani">Device Model *</Label>
-                    <Select 
-                      value={formData.androidBrand} 
-                      onValueChange={(value) => handleInputChange('androidBrand', value)}
+              {currentStep === 2 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-orbitron text-foreground mb-4">Social Media Handles</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="tiktok"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">TikTok * (Required)</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="@slayerx_gaming" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="youtube"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">YouTube</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="SlayerX Gaming" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="discord"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">Discord</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="slayerx#1337" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="x"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">X (Twitter)</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="@slayerx_codm" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 3 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-orbitron text-foreground mb-4">Banking Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="realName"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="font-rajdhani">Real Name *</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="Alex Mitchell" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="accountName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">Account Name *</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="Alex Mitchell" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="accountNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-rajdhani">Account Number *</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="bg-background/50 border-border/50 font-rajdhani" placeholder="1234567890" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="bankName"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="font-rajdhani">Bank Name *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="bg-background/50 border-border/50 font-rajdhani">
+                                <SelectValue placeholder="Select bank" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {bankOptions.map(bank => (
+                                <SelectItem key={bank} value={bank}>{bank}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col space-y-4 mt-8">
+                <div className="flex justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={currentStep === 1}
+                    className="border-border/50 hover:bg-muted/50 font-rajdhani"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" /> Back
+                  </Button>
+
+                  {currentStep < 3 ? (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      className="bg-primary hover:bg-primary/90 text-white font-rajdhani"
                     >
-                      <SelectTrigger className="bg-background/50 border-border/50 text-foreground font-rajdhani">
-                        <SelectValue placeholder="Select device model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getDeviceOptions().map(model => (
-                          <SelectItem key={model} value={model}>{model}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div>
-                  <Label htmlFor="mode" className="text-foreground font-rajdhani">Preferred Mode *</Label>
-                  <Select value={formData.mode} onValueChange={(value) => handleInputChange('mode', value)}>
-                    <SelectTrigger className="bg-background/50 border-border/50 text-foreground font-rajdhani">
-                      <SelectValue placeholder="Select mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BR">Battle Royale</SelectItem>
-                      <SelectItem value="MP">Multiplayer</SelectItem>
-                      <SelectItem value="Both">Both</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {(formData.mode === 'BR' || formData.mode === 'Both') && (
-                  <div>
-                    <Label htmlFor="brClass" className="text-foreground font-rajdhani">BR Class *</Label>
-                    <Select value={formData.brClass} onValueChange={(value) => handleInputChange('brClass', value)}>
-                      <SelectTrigger className="bg-background/50 border-border/50 text-foreground font-rajdhani">
-                        <SelectValue placeholder="Select BR class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classOptions.BR.map(cls => (
-                          <SelectItem key={cls} value={cls}>{cls}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {(formData.mode === 'MP' || formData.mode === 'Both') && (
-                  <div>
-                    <Label htmlFor="mpClass" className="text-foreground font-rajdhani">MP Class *</Label>
-                    <Select value={formData.mpClass} onValueChange={(value) => handleInputChange('mpClass', value)}>
-                      <SelectTrigger className="bg-background/50 border-border/50 text-foreground font-rajdhani">
-                        <SelectValue placeholder="Select MP class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classOptions.MP.map(cls => (
-                          <SelectItem key={cls} value={cls}>{cls}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="bestGun" className="text-foreground font-rajdhani">Best Gun</Label>
-                  <Input
-                    id="bestGun"
-                    value={formData.bestGun}
-                    onChange={(e) => handleInputChange('bestGun', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="AK-47"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="favoriteLoadout" className="text-foreground font-rajdhani">Favorite Loadout</Label>
-                  <Input
-                    id="favoriteLoadout"
-                    value={formData.favoriteLoadout}
-                    onChange={(e) => handleInputChange('favoriteLoadout', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="Assault + SMG"
-                  />
+                      Next <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={!form.formState.isValid || !user?.email_confirmed_at}
+                      className="bg-primary hover:bg-primary/90 text-white font-rajdhani"
+                    >
+                      Complete Setup
+                    </Button>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Step 2: Social Media */}
-          {currentStep === 2 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-orbitron text-foreground mb-4">Social Media Handles</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="tiktok" className="text-foreground font-rajdhani">TikTok * (Required)</Label>
-                  <Input
-                    id="tiktok"
-                    value={formData.tiktok}
-                    onChange={(e) => handleInputChange('tiktok', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="@slayerx_gaming"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="youtube" className="text-foreground font-rajdhani">YouTube</Label>
-                  <Input
-                    id="youtube"
-                    value={formData.youtube}
-                    onChange={(e) => handleInputChange('youtube', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="SlayerX Gaming"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="discord" className="text-foreground font-rajdhani">Discord</Label>
-                  <Input
-                    id="discord"
-                    value={formData.discord}
-                    onChange={(e) => handleInputChange('discord', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="slayerx#1337"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="x" className="text-foreground font-rajdhani">X (Twitter)</Label>
-                  <Input
-                    id="x"
-                    value={formData.x}
-                    onChange={(e) => handleInputChange('x', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="@slayerx_codm"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label htmlFor="instagram" className="text-foreground font-rajdhani">Instagram</Label>
-                  <Input
-                    id="instagram"
-                    value={formData.instagram}
-                    onChange={(e) => handleInputChange('instagram', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="@slayerx_codm"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Banking Info */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-orbitron text-foreground mb-4">Banking Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="realName" className="text-foreground font-rajdhani">Real Name *</Label>
-                  <Input
-                    id="realName"
-                    value={formData.realName}
-                    onChange={(e) => handleInputChange('realName', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="Alex Mitchell"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="accountName" className="text-foreground font-rajdhani">Account Name *</Label>
-                  <Input
-                    id="accountName"
-                    value={formData.accountName}
-                    onChange={(e) => handleInputChange('accountName', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="Alex Mitchell"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="accountNumber" className="text-foreground font-rajdhani">Account Number *</Label>
-                  <Input
-                    id="accountNumber"
-                    value={formData.accountNumber}
-                    onChange={(e) => handleInputChange('accountNumber', e.target.value)}
-                    className="bg-background/50 border-border/50 text-foreground font-rajdhani"
-                    placeholder="1234567890"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label htmlFor="bankName" className="text-foreground font-rajdhani">Bank Name *</Label>
-                  <Select value={formData.bankName} onValueChange={(value) => handleInputChange('bankName', value)}>
-                    <SelectTrigger className="bg-background/50 border-border/50 text-foreground font-rajdhani">
-                      <SelectValue placeholder="Select bank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bankOptions.map(bank => (
-                        <SelectItem key={bank} value={bank}>{bank}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground font-rajdhani">
-                  💰 Payment information is used for tournament prizes and clan rewards distribution.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex flex-col space-y-4 mt-8">
-            {!user?.email_confirmed_at && currentStep === 3 && (
-              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-center">
-                <p className="text-sm text-destructive font-rajdhani">
-                  ⚠️ Please verify your email to complete setup. Check your inbox for the confirmation link.
-                </p>
-              </div>
-            )}
-            
-            <div className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                disabled={currentStep === 1}
-                className="border-border/50 hover:bg-muted/50 font-rajdhani"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-
-              <Button
-                onClick={handleNext}
-                disabled={!isStepValid() || (currentStep === 3 && !user?.email_confirmed_at)}
-                className="bg-primary hover:bg-primary/90 text-white font-rajdhani"
-              >
-                {currentStep === 3 ? 'Complete Setup' : 'Next'}
-                {currentStep < 3 && <ChevronRight className="w-4 h-4 ml-2" />}
-              </Button>
-            </div>
-          </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>

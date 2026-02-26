@@ -23,13 +23,15 @@ import {
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckoutModal } from '@/components/marketplace/CheckoutModal';
+import { useChat } from '@/hooks/useChat';
 
 export const ListingDetails: React.FC = () => {
   const { listingId } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { useListingDetails, purchaseAccount, isPurchasing } = useMarketplace();
   const { data: listing, isLoading } = useListingDetails(listingId);
+  const { getOrCreateConversation } = useChat();
   
   const [showCheckout, setShowCheckout] = useState(false);
 
@@ -64,6 +66,19 @@ export const ListingDetails: React.FC = () => {
         navigate(`/marketplace/purchases/${data.transaction_id}`);
       }
     });
+  };
+
+  const handleContactSeller = async () => {
+    if (!user || !listing) return;
+    try {
+      const conversationId = await getOrCreateConversation({
+        listingId: listing.id,
+        sellerId: listing.seller_id
+      });
+      navigate(`/chat/${conversationId}`);
+    } catch (error) {
+      console.error('Error starting chat:', error);
+    }
   };
 
   const assetLabels: Record<string, string> = {
@@ -242,6 +257,7 @@ export const ListingDetails: React.FC = () => {
                     </Button>
                     <Button 
                       variant="outline" 
+                      onClick={handleContactSeller}
                       className="w-full h-12 font-rajdhani border-primary/20 hover:bg-primary/5"
                     >
                       <MessageSquare className="mr-2 h-4 w-4" />
