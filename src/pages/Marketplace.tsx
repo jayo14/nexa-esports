@@ -38,6 +38,7 @@ import {
 
 /* ─── Inline style tokens (mirrors the HTML design) ─── */
 const wine = '#221112';
+const winefaded = '#22111222';
 const burgundy = 'rgba(71,36,38,0.4)';
 const primary = '#ea2a33';
 
@@ -304,8 +305,8 @@ export const Marketplace: React.FC = () => {
 
   return (
     <div
-      className="relative flex min-h-screen w-full flex-col overflow-hidden"
-      style={{ background: wine, fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+      className="relative flex min-h-screen w-full flex-col overflow-hidden rounded-xl"
+      style={{ background: winefaded}}
     >
       {/* Ambient glow blobs */}
       <div
@@ -320,7 +321,7 @@ export const Marketplace: React.FC = () => {
 
       {/* ── Body ── */}
         {/* ── Main Content ── */}
-        <main className="flex-1 lg:ml-20 px-4 md:px-10 pb-24 pt-24">
+        <main className="flex-1 px-4 md:px-10 pb-4 pt-4">
             <div className="max-w-[1200px] mx-auto">
                 {/* Header Section (Title + Desktop Search) */}
                 <div className="flex items-center justify-between gap-4 mb-8">
