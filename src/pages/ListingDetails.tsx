@@ -195,14 +195,12 @@ export const ListingDetails: React.FC = () => {
   /* ── Render ── */
   return (
     <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: '#1a0a0a', fontFamily: "'Space Grotesk', sans-serif" }}
-    >
+      className="flex h-screen overflow-hidden">
      
 
       {/* ── Main scroll area ── */}
       <main
-        className="flex-1 overflow-y-auto bg-[#2b0c0e] p-6 lg:p-10"
+        className="flex-1 overflow-y-auto p-4"
       >
         {/* Back button */}
         <button
