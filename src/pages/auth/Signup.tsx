@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Shield, Mail, Lock, User, Key, Clock, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -79,42 +78,42 @@ export const Signup: React.FC = () => {
           message: `${formData.email} has requested an access code. Code: ${code}`,
           data: {
             email: formData.email,
-            return (
-              <div className="min-h-screen flex flex-col items-center justify-center p-2 xs:p-3 sm:p-6 bg-background relative overflow-hidden">
-                {/* Dramatic Warrior Background with Glassmorphic Overlay */}
-                <div className="fixed inset-0 -z-10">
-                  <img
-                    src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
-                    alt="Warrior Hero"
-                    className="w-full h-full object-cover object-center opacity-70 transition-all duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-br from-wine-dark/80 via-black/60 to-accent-red/40" />
-                </div>
+            code: code,
+          },
+        });
 
-                <div className="w-full max-w-xs xs:max-w-sm sm:max-w-md px-1 xs:px-2 sm:px-6">
-                  {/* Header */}
-                  <div className="text-center mb-10">
-                    <div className="flex items-center justify-center mb-6">
-                      <div className="w-16 h-16 bg-gradient-to-br from-accent-red to-primary rounded-2xl flex items-center justify-center shadow-lg nexa-glow border-2 border-white/10">
-                        <Shield className="w-10 h-10 text-white" />
-                      </div>
-                    </div>
-                    <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold mb-2 font-orbitron tracking-tight uppercase">
-                      <span className="bg-gradient-to-r from-white via-white/90 to-accent-red bg-clip-text text-transparent drop-shadow-lg">
-                        Join the Elite
-                      </span>
-                    </h1>
-                    <p className="text-white/70 font-rajdhani text-sm xs:text-base">Create your tactical account</p>
-                  </div>
+      if (notificationError) throw notificationError;
+      
+      toast({
+        title: "Code Requested",
+        description: "An access code request has been sent to the admin for approval.",
+      });
+      setCodeRequested(true);
+      setCountdown(60);
+    } catch (error: any) {
+      toast({
+        title: "Error Requesting Code",
+        description: error.message || "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                  {/* Glassmorphic Form Card */}
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="p-3 xs:p-4 sm:p-8 bg-white/10 backdrop-blur-2xl rounded-2xl xs:rounded-3xl border border-white/20 shadow-2xl glass-card">
-                      <div className="space-y-5">
-                        {/* ...existing code... */}
-                      </div>
-                    </div>
-                  </form>
+  const validateAccessCode = async (code: string) => {
+    try {
+      if (!formData.email) {
+        toast({
+          title: "Email Required",
+          description: "Something went wrong, email is missing for code validation.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { data, error } = await supabase.rpc('validate_access_code', {
+          code_input: code,
           email_input: formData.email
         });
 
