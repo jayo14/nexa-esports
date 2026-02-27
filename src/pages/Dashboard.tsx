@@ -18,7 +18,9 @@ import {
   ArrowRight,
   Trophy,
   Star,
-  Target
+  Target,
+  Wallet,
+  CalendarCheck
 } from "lucide-react";
 
 export const Dashboard: React.FC = () => {
