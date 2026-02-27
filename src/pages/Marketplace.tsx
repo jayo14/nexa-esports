@@ -38,7 +38,7 @@ import {
 
 /* ─── Inline style tokens (mirrors the HTML design) ─── */
 const wine = '#221112';
-const winefaded = '#22111222';
+const winefaded = '#22111277';
 const burgundy = 'rgba(71,36,38,0.4)';
 const primary = '#ea2a33';
 
@@ -305,7 +305,7 @@ export const Marketplace: React.FC = () => {
 
   return (
     <div
-      className="relative flex min-h-screen w-full flex-col overflow-hidden rounded-xl"
+      className="relative flex min-h-screen w-full flex-col overflow-hidden rounded-3xl"
       style={{ background: winefaded}}
     >
       {/* Ambient glow blobs */}
