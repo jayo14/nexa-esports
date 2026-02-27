@@ -482,7 +482,7 @@ export const Marketplace: React.FC = () => {
                             key={listing.id}
                             listing={listing}
                             onPreview={(url) => setPreviewVideoUrl(url)}
-                            onClick={() => navigate(`/marketplace/${listing.id}`)}
+                            onClick={() => navigate(`/marketplace/listing/${listing.id}`)}
                           />
                         ))}
                     </div>
