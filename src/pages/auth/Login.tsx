@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Shield, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 export const Login: React.FC = () => {
@@ -17,7 +17,6 @@ export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
 
   const from = location.state?.from?.pathname || '/dashboard';
 
