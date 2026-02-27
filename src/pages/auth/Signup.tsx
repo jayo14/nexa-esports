@@ -79,38 +79,42 @@ export const Signup: React.FC = () => {
           message: `${formData.email} has requested an access code. Code: ${code}`,
           data: {
             email: formData.email,
-            code: code,
-            requested_at: new Date().toISOString()
-          }
-        });
+            return (
+              <div className="min-h-screen flex flex-col items-center justify-center p-2 xs:p-3 sm:p-6 bg-background relative overflow-hidden">
+                {/* Dramatic Warrior Background with Glassmorphic Overlay */}
+                <div className="fixed inset-0 -z-10">
+                  <img
+                    src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
+                    alt="Warrior Hero"
+                    className="w-full h-full object-cover object-center opacity-70 transition-all duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-wine-dark/80 via-black/60 to-accent-red/40" />
+                </div>
 
-      if (notificationError) console.error('Notification error:', notificationError);
+                <div className="w-full max-w-xs xs:max-w-sm sm:max-w-md px-1 xs:px-2 sm:px-6">
+                  {/* Header */}
+                  <div className="text-center mb-10">
+                    <div className="flex items-center justify-center mb-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-accent-red to-primary rounded-2xl flex items-center justify-center shadow-lg nexa-glow border-2 border-white/10">
+                        <Shield className="w-10 h-10 text-white" />
+                      </div>
+                    </div>
+                    <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold mb-2 font-orbitron tracking-tight uppercase">
+                      <span className="bg-gradient-to-r from-white via-white/90 to-accent-red bg-clip-text text-transparent drop-shadow-lg">
+                        Join the Elite
+                      </span>
+                    </h1>
+                    <p className="text-white/70 font-rajdhani text-sm xs:text-base">Create your tactical account</p>
+                  </div>
 
-      setCodeRequested(true);
-      setCountdown(60);
-
-      toast({
-        title: "Request Sent!",
-        description: "Your request for an access code has been sent to the CLAN Master for approval.",
-      });
-
-    } catch (error: any) {
-      console.error('Error requesting access code:', error);
-      toast({
-        title: "Request Failed",
-        description: error.message || "Failed to request access code. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const validateAccessCode = async (code: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .rpc('validate_access_code', {
-          code_input: code,
+                  {/* Glassmorphic Form Card */}
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="p-3 xs:p-4 sm:p-8 bg-white/10 backdrop-blur-2xl rounded-2xl xs:rounded-3xl border border-white/20 shadow-2xl glass-card">
+                      <div className="space-y-5">
+                        {/* ...existing code... */}
+                      </div>
+                    </div>
+                  </form>
           email_input: formData.email
         });
 

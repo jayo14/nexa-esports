@@ -57,43 +57,47 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-      {/* Background Effects */}
+    <div className="min-h-screen flex flex-col items-center justify-center p-2 xs:p-3 sm:p-6 bg-background relative overflow-hidden">
+      {/* Dramatic Warrior Background with Glassmorphic Overlay */}
       <div className="fixed inset-0 -z-10">
-        <img src="/public/codm-bg.jpg" alt="CODM Warrior" className="w-full h-full object-cover object-center opacity-60" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-black/60 to-red-900/30" />
+        <img
+          src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
+          alt="Warrior Hero"
+          className="w-full h-full object-cover object-center opacity-70 transition-all duration-700"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-wine-dark/80 via-black/60 to-accent-red/40" />
       </div>
 
-      <div className="w-full max-w-md px-4 sm:px-6"> {/* Responsive padding */}
+      <div className="w-full max-w-xs xs:max-w-sm sm:max-w-md px-1 xs:px-2 sm:px-6">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-red-600 rounded-xl flex items-center justify-center shadow-lg nexa-glow">
+            <div className="w-16 h-16 bg-gradient-to-br from-accent-red to-primary rounded-2xl flex items-center justify-center shadow-lg nexa-glow border-2 border-white/10">
               <Shield className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2 font-orbitron">
-            <span className="bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
-              Command Login
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold mb-2 font-orbitron tracking-tight uppercase">
+            <span className="bg-gradient-to-r from-white via-white/90 to-accent-red bg-clip-text text-transparent drop-shadow-lg">
+              Warrior Login
             </span>
           </h1>
-          <p className="text-muted-foreground font-rajdhani">Access your tactical dashboard</p>
+          <p className="text-white/70 font-rajdhani text-sm xs:text-base">Access your tactical dashboard</p>
         </div>
 
-        {/* Form */}
+        {/* Glassmorphic Form Card */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="p-6 sm:p-8 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/30">
+          <div className="p-3 xs:p-4 sm:p-8 bg-white/10 backdrop-blur-2xl rounded-2xl xs:rounded-3xl border border-white/20 shadow-2xl glass-card">
             <div className="space-y-5">
               <div>
-                <Label htmlFor="email" className="text-foreground font-rajdhani block mb-2 text-base">Email Address</Label>
+                <Label htmlFor="email" className="text-white/90 font-rajdhani block mb-2 text-base">Email Address</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
                   <Input
                     id="email"
                     type="email"
                     value={emailOrUsername}
                     onChange={(e) => setEmailOrUsername(e.target.value)}
-                    className="pl-12 h-14 text-base sm:text-lg font-mono tracking-wider text-center bg-background/50 border-border/50 text-foreground focus:border-primary/50 font-rajdhani rounded-xl"
+                    className="pl-10 xs:pl-12 h-10 xs:h-12 sm:h-14 text-sm xs:text-base sm:text-lg font-mono tracking-wider text-center bg-white/10 border-white/20 text-white focus:border-accent-red/60 font-rajdhani rounded-lg xs:rounded-xl placeholder:text-white/40"
                     placeholder="warrior@nexa.gg"
                     required
                   />
@@ -102,26 +106,26 @@ export const Login: React.FC = () => {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="password" className="text-foreground font-rajdhani text-base">Password</Label>
-                  <Link to="/auth/forgot-password" className="text-sm text-primary hover:text-red-300 font-rajdhani transition-colors">
+                  <Label htmlFor="password" className="text-white/90 font-rajdhani text-base">Password</Label>
+                  <Link to="/auth/forgot-password" className="text-sm text-accent-red hover:text-white font-rajdhani transition-colors">
                     Forgot Password?
                   </Link>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 pr-10 h-14 text-base sm:text-lg font-mono tracking-wider text-center bg-background/50 border-border/50 text-foreground focus:border-primary/50 font-rajdhani rounded-xl"
+                    className="pl-10 xs:pl-12 pr-8 xs:pr-10 h-10 xs:h-12 sm:h-14 text-sm xs:text-base sm:text-lg font-mono tracking-wider text-center bg-white/10 border-white/20 text-white focus:border-accent-red/60 font-rajdhani rounded-lg xs:rounded-xl placeholder:text-white/40"
                     placeholder="Enter your secure password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground p-2"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white p-2"
                     aria-label="Toggle password visibility"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -132,7 +136,7 @@ export const Login: React.FC = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-14 rounded-xl text-lg font-bold font-rajdhani bg-gradient-to-r from-primary to-red-600 hover:from-red-600 hover:to-primary text-white shadow-lg shadow-primary/20"
+                className="w-full h-10 xs:h-12 sm:h-14 rounded-lg xs:rounded-xl text-base xs:text-lg font-bold font-rajdhani bg-gradient-to-r from-accent-red to-primary hover:from-primary hover:to-accent-red text-white shadow-lg shadow-accent-red/20"
               >
                 {loading ? (
                   <span className="flex items-center">
