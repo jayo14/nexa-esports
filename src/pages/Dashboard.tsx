@@ -82,7 +82,7 @@ export const Dashboard: React.FC = () => {
   return (
     <>
       {/* Responsive Header */}
-      <header className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 xs:gap-4 sm:gap-0 px-2 xs:px-3 sm:px-4 md:px-6 py-3 xs:py-4 w-full">
+      <header className="flex flex-row items-center xs:flex-col xs:items-start justify-between gap-3 xs:gap-4 sm:gap-0 px-2 xs:px-3 sm:px-4 md:px-6 py-3 xs:py-4 w-full">
         <div className="w-full sm:w-auto">
           <h1 className="text-white/60 text-base sm:text-lg font-sans">
             {getGreeting()}, <span className="text-white font-bold">{getDisplayName()}</span>
