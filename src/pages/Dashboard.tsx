@@ -23,6 +23,21 @@ import {
 
 export const Dashboard: React.FC = () => {
   const { profile, user } = useAuth();
+
+  // Helper to get greeting based on current hour
+  function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }
+
+  // Helper to get display name
+  function getDisplayName() {
+    if (profile?.username) return profile.username;
+    if (user?.email) return user.email.split("@")[0];
+    return "Player";
+  }
   const navigate = useNavigate();
 
   // Fetch all recent events
@@ -64,9 +79,9 @@ export const Dashboard: React.FC = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 px-2 md:px-6 py-4">
         <div>
-          <h1 className="text-white/60 text-lg font-sans">Good evening, <span className="text-white font-bold">COMMANDER</span></h1>
+          <h1 className="text-white/60 text-lg font-sans">{getGreeting()}, <span className="text-white font-bold">{getDisplayName()}</span></h1>
         </div>
         <div className="flex items-center gap-6">
           <div className="relative">
@@ -78,18 +93,22 @@ export const Dashboard: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-3">
-            <button className="w-11 h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60">
+            <button
+              className="w-11 h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60"
+              onClick={() => navigate('/marketplace')}>
               <ShoppingCart className="w-5 h-5" />
             </button>
-            <button className="w-11 h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60">
+            <button
+              className="w-11 h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60"
+              onClick={() => navigate('/notifications')}>
               <Bell className="w-5 h-5" />
             </button>
           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-12 gap-6">
-        <section className="col-span-8 relative h-[420px] rounded-[3rem] overflow-hidden group">
+      <div className="grid grid-cols-12 gap-4 md:gap-6 px-2 md:px-6">
+        <section className="col-span-12 md:col-span-8 relative h-[320px] md:h-[420px] rounded-[2rem] md:rounded-[3rem] overflow-hidden group">
           <img
             alt="Hero"
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
@@ -129,28 +148,58 @@ export const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        <div className="col-span-4 flex flex-col gap-4">
-          {[
-            { title: "War Zone S4", desc: "Season Pass Activated", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDOXfULjLZRxiXN5lXpRiXOInTiGV3Zd3Uj2geI_n_D9fI0emBCjP9PKOmxBcya0J5zKEBOKBdGEODaCfRJL3u-MmdhTGZU9Gm0bkc61gDSFdvzX60P9JkTqiVGJtxcDQzZPtTcLQqmHLovA7sAvJAhFCpaPU7x_UzM8kS8MjF2bjTwq0xS3TH8r3SbkplJNETRmeRRbsaWoYCJ8vSAgFh4R6J8lZiPGJQ8f3IKMolTZgL5BH91lvzM33Zb6_Mdig4Ho8G-cGTzFJ8" },
-            { title: "Ghost Ops", desc: "Multiplayer Combat", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBEKYAxpGsdl9qpotRIGCKwUqeIHOyyks13BL7dQ6bFhqxXVVq7Vp0lQT2tM6BC4ZFHQVMoSveIGkyJk_Iag8VfLmZSmGBl-WEk_-mDFAExJ9T8HRMZE7O3jzlfA25JqKBiZdVLsOoHZMHghB1cZXoa4BeDvfY7hx75Mm_MEzmLYc-iH3ubNTPzDYVpM4PJhu9ddHQ7otqOOUij6TfaKnVzWLIb5lYoIC2dlVQ-HLQKRh0ht8JjnIC9dP0WQ_mB-CkM1Z1Wa6A2Xks" },
-            { title: "Sniper Mastery", desc: "Elite Training Course", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuB-NaakwIKjMhFvDVnluy48USw9OUC8WDVFUc3sN1bp6ykdv78oojwLGX_ocV-Q2AHB1ezyaU09__yv6fxqpsK3TM-PQSHd7mpCvWDajN9IPCL9S6_OuOUdenuODY99o25tXhGWz4clXNTBrJKsXdcwpNQagHzwbYsiYZSSaB11n6p3nYaYsvnXaB5GF_vA08fA-tBXP2s9bnIASgYkkX5LynjQO6rtD6ys6JyBkUJGfj08UWe6-Q9S46WVU6rx2FnDam4YhBxRay0" }
-          ].map((card, i) => (
-            <div key={i} className="bg-black/30 p-5 rounded-[2.5rem] flex items-center justify-between border border-white/5 hover:bg-black/40 transition-all cursor-pointer group">
-              <div className="flex items-center gap-4">
-                <img alt="Thumb" className="w-14 h-14 rounded-2xl object-cover" src={card.img}/>
-                <div>
-                  <h4 className="font-bold text-sm text-white font-sans">{card.title}</h4>
-                  <p className="text-white/40 text-xs mt-1 font-sans">{card.desc}</p>
-                </div>
+        <div className="col-span-12 md:col-span-4 flex flex-col gap-3 md:gap-4 mt-4 md:mt-0">
+          {/* Quick Actions */}
+          <button
+            className="bg-black/30 p-5 rounded-[2.5rem] flex items-center justify-between border border-white/5 hover:bg-black/40 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-accent-red"
+            onClick={() => navigate('/wallet')}
+          >
+            <div className="flex items-center gap-4">
+              <span className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent-red/40 to-primary/30 flex items-center justify-center">
+                <Wallet className="w-8 h-8 text-white" />
+              </span>
+              <div>
+                <h4 className="font-bold text-sm text-white font-sans">Wallet</h4>
+                <p className="text-white/40 text-xs mt-1 font-sans">Manage your funds</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
             </div>
-          ))}
+            <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
+          </button>
+          <button
+            className="bg-black/30 p-5 rounded-[2.5rem] flex items-center justify-between border border-white/5 hover:bg-black/40 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-accent-red"
+            onClick={() => navigate('/marketplace')}
+          >
+            <div className="flex items-center gap-4">
+              <span className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/40 to-primary/30 flex items-center justify-center">
+                <ShoppingCart className="w-8 h-8 text-white" />
+              </span>
+              <div>
+                <h4 className="font-bold text-sm text-white font-sans">Marketplace</h4>
+                <p className="text-white/40 text-xs mt-1 font-sans">Buy and sell assets</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
+          </button>
+          <button
+            className="bg-black/30 p-5 rounded-[2.5rem] flex items-center justify-between border border-white/5 hover:bg-black/40 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-accent-red"
+            onClick={() => navigate('/attendance')}
+          >
+            <div className="flex items-center gap-4">
+              <span className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/40 to-primary/30 flex items-center justify-center">
+                <CalendarCheck className="w-8 h-8 text-white" />
+              </span>
+              <div>
+                <h4 className="font-bold text-sm text-white font-sans">Attendance</h4>
+                <p className="text-white/40 text-xs mt-1 font-sans">Mark your presence</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-8 items-start mb-4">
-        <div className="col-span-8">
+      <div className="grid grid-cols-12 gap-6 md:gap-8 items-start mb-4 px-2 md:px-6">
+        <div className="col-span-12 md:col-span-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-white font-display">New Operations</h3>
             <button className="text-white/40 text-sm font-medium hover:text-white transition-colors font-sans">See More</button>

@@ -11,7 +11,8 @@ import {
   Bell,
   MessageSquare,
   Plus,
-  BarChart3
+  BarChart3,
+  Wallet
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
     { icon: Gamepad2, path: '/scrims', label: 'Scrims' },
     { icon: Trophy, path: '/statistics', label: 'Statistics' },
     { icon: ShoppingBag, path: '/marketplace', label: 'Marketplace' },
+    { icon: Wallet, path: '/wallet', label: 'Wallet' },
     { icon: Bell, path: '/announcements', label: 'Notifications' },
     { icon: MessageSquare, path: '/chat', label: 'Chat' },
   ];

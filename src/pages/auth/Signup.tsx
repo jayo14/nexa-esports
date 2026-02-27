@@ -214,9 +214,9 @@ export const Signup: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       {/* Background Effects */}
-      <div className="fixed inset-0 -z-10 opacity-30">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-red-900/10"></div>
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+      <div className="fixed inset-0 -z-10">
+        <img src="/public/codm-bg.jpg" alt="CODM Warrior" className="w-full h-full object-cover object-center opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-black/60 to-red-900/30" />
       </div>
 
       <div className="w-full max-w-md px-4 sm:px-6">

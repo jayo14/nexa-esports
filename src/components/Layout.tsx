@@ -104,12 +104,18 @@ export const Layout: React.FC<LayoutProps> = ({
                   className="relative group cursor-pointer"
                   onClick={() => navigate(`/profile/${player.id}`)}
                 >
-                  <div className="w-12 h-12 rounded-full border-2 border-white/10 overflow-hidden">
-                    <img
-                      alt={player.username}
-                      className="w-full h-full object-cover"
-                      src={player.avatar_url || "/placeholder.svg"}
-                    />
+                  <div className="w-12 h-12 rounded-full border-2 border-white/10 overflow-hidden bg-white/10 flex items-center justify-center">
+                    {player.avatar_url ? (
+                      <img
+                        alt={player.username}
+                        className="w-full h-full object-cover"
+                        src={player.avatar_url}
+                      />
+                    ) : (
+                      <span className="text-white font-bold text-lg">
+                        {player.username?.split(" ").map((n) => n[0]).join("").slice(0,2).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   {player.status === 'in-game' && (
                     <div className="absolute -top-1 -right-4 bg-accent-red text-[7px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap shadow-lg">
