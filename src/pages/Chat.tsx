@@ -122,7 +122,7 @@ export const Chat: React.FC = () => {
       {/* ── Chat List ── */}
       <section
         className={cn(
-          'w-80 flex-shrink-0 flex-col hidden md:flex rounded-xl back',
+          'w-80 flex-shrink-0 flex-col hidden md:flex rounded-xl backdrop-blur-md',
           conversationId ? 'hidden md:flex' : 'flex'
         )}
         style={glassPanel}

@@ -320,178 +320,173 @@ export const Marketplace: React.FC = () => {
 
       {/* ── Body ── */}
         {/* ── Main Content ── */}
-        <main className="flex-1 lg:ml-20 px-4 md:px-10 pb-24">
-      <div className="flex pt-24 min-h-screen">
-        <div className=" mx-auto flex items-center justify-between gap-4">
-          {/* Brand */}
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-black tracking-tight text-slate-100 flex items-center gap-2">
-              <Store className="w-6 h-6" style={{ color: primary }} />
-              Marketplace
-            </h1>
-            <p className="text-xs font-medium" style={{ color: `${primary}b3` }}>
-              Verified Sellers &amp; Escrow Protected
-            </p>
-          </div>
+        <main className="flex-1 lg:ml-20 px-4 md:px-10 pb-24 pt-24">
+            <div className="max-w-[1200px] mx-auto">
+                {/* Header Section (Title + Desktop Search) */}
+                <div className="flex items-center justify-between gap-4 mb-8">
+                    <div className="flex flex-col">
+                        <h1 className="text-2xl font-black tracking-tight text-slate-100 flex items-center gap-2">
+                            <Store className="w-6 h-6" style={{ color: primary }} />
+                            Marketplace
+                        </h1>
+                        <p className="text-xs font-medium" style={{ color: `${primary}b3` }}>
+                            Verified Sellers & Escrow Protected
+                        </p>
+                    </div>
+                    <div className="hidden md:flex flex-1 max-w-md">
+                         <div className="relative w-full">
+                          <Search
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                            style={{ color: `${primary}99` }}
+                          />
+                          <input
+                            className="w-full rounded-xl pl-10 pr-4 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1"
+                            style={{
+                              background: 'rgba(71,36,38,0.5)',
+                              border: 'none',
+                              // @ts-ignore
+                              '--tw-ring-color': `${primary}80`,
+                            }}
+                            placeholder="Search premium accounts..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                        </div>
+                    </div>
+                </div>
 
-          {/* Search (desktop) */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                style={{ color: `${primary}99` }}
-              />
-              <input
-                className="w-full rounded-xl pl-10 pr-4 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1"
-                style={{
-                  background: 'rgba(71,36,38,0.5)',
-                  border: 'none',
-                  // @ts-ignore
-                  '--tw-ring-color': `${primary}80`,
-                }}
-                placeholder="Search premium accounts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+                {/* Region filters + CTA row */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+                        {REGIONS.map((region) => (
+                          <button
+                            key={region}
+                            onClick={() => setFilterRegion(region)}
+                            className="whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all"
+                            style={
+                              filterRegion === region
+                                ? { background: primary, color: '#fff' }
+                                : { ...glassStyle, color: '#cbd5e1' }
+                            }
+                          >
+                            {region}
+                          </button>
+                        ))}
+                    </div>
+                    
+                    {/* Seller CTA */}
+                    {isApproved ? (
+                    <button
+                        onClick={() => navigate('/marketplace/list')}
+                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                        style={{
+                        ...glassStyle,
+                        background: `${primary}33`,
+                        border: `1px solid ${primary}4d`,
+                        color: primary,
+                        }}
+                        onMouseEnter={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.background =
+                            `${primary}4d`)
+                        }
+                        onMouseLeave={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.background =
+                            `${primary}33`)
+                        }
+                    >
+                        <Plus className="w-4 h-4" />
+                        List Account
+                    </button>
+                    ) : isPending ? (
+                    <button
+                        disabled
+                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm opacity-60 cursor-not-allowed"
+                        style={{ ...glassStyle, color: '#94a3b8' }}
+                    >
+                        <Clock className="w-4 h-4" />
+                        Request Pending
+                    </button>
+                    ) : (
+                    <button
+                        onClick={handleBecomeSeller}
+                        disabled={isRequestingSeller}
+                        className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                        style={{
+                        ...glassStyle,
+                        background: `${primary}33`,
+                        border: `1px solid ${primary}4d`,
+                        color: primary,
+                        }}
+                        onMouseEnter={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.background =
+                            `${primary}4d`)
+                        }
+                        onMouseLeave={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.background =
+                            `${primary}33`)
+                        }
+                    >
+                        <Shield className="w-4 h-4" />
+                        Become a Seller
+                    </button>
+                    )}
+                </div>
+
+                {/* Mobile search */}
+                <div className="md:hidden mb-6 relative">
+                    <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                    style={{ color: `${primary}99` }}
+                    />
+                    <input
+                    className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none"
+                    style={{ background: 'rgba(71,36,38,0.5)', border: 'none' }}
+                    placeholder="Search premium accounts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                {/* ── Listings grid ── */}
+                {listingsLoading ? (
+                    <div className="flex flex-col items-center justify-center py-32">
+                        <div
+                          className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin mb-4"
+                          style={{ borderColor: `${primary}`, borderTopColor: 'transparent' }}
+                        />
+                        <p className="text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse">
+                          Scanning marketplace...
+                        </p>
+                    </div>
+                ) : filteredListings.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-32">
+                        <ShoppingCart
+                          className="w-16 h-16 mb-4"
+                          style={{ color: `${primary}33` }}
+                        />
+                        <p
+                          className="text-xl font-black uppercase tracking-widest mb-1"
+                          style={{ color: `${primary}66` }}
+                        >
+                          No accounts found
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Try adjusting your filters or search query.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {filteredListings.map((listing) => (
+                          <ListingCardStyled
+                            key={listing.id}
+                            listing={listing}
+                            onPreview={(url) => setPreviewVideoUrl(url)}
+                            onClick={() => navigate(`/marketplace/${listing.id}`)}
+                          />
+                        ))}
+                    </div>
+                )}
             </div>
-          </div>
-        </div>
-          <div className="max-w-[1200px] mx-auto">
-
-            {/* Region filters + CTA row */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-4">
-              {/* Region pills */}
-              <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-                {REGIONS.map((region) => (
-                  <button
-                    key={region}
-                    onClick={() => setFilterRegion(region)}
-                    className="whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all"
-                    style={
-                      filterRegion === region
-                        ? { background: primary, color: '#fff' }
-                        : { ...glassStyle, color: '#cbd5e1' }
-                    }
-                  >
-                    {region}
-                  </button>
-                ))}
-              </div>
-
-              {/* Seller CTA */}
-              {isApproved ? (
-                <button
-                  onClick={() => navigate('/marketplace/list')}
-                  className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                  style={{
-                    ...glassStyle,
-                    background: `${primary}33`,
-                    border: `1px solid ${primary}4d`,
-                    color: primary,
-                  }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background =
-                      `${primary}4d`)
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background =
-                      `${primary}33`)
-                  }
-                >
-                  <Plus className="w-4 h-4" />
-                  List Account
-                </button>
-              ) : isPending ? (
-                <button
-                  disabled
-                  className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm opacity-60 cursor-not-allowed"
-                  style={{ ...glassStyle, color: '#94a3b8' }}
-                >
-                  <Clock className="w-4 h-4" />
-                  Request Pending
-                </button>
-              ) : (
-                <button
-                  onClick={handleBecomeSeller}
-                  disabled={isRequestingSeller}
-                  className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                  style={{
-                    ...glassStyle,
-                    background: `${primary}33`,
-                    border: `1px solid ${primary}4d`,
-                    color: primary,
-                  }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background =
-                      `${primary}4d`)
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background =
-                      `${primary}33`)
-                  }
-                >
-                  <Shield className="w-4 h-4" />
-                  Become a Seller
-                </button>
-              )}
-            </div>
-
-            {/* Mobile search */}
-            <div className="md:hidden mb-6 relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                style={{ color: `${primary}99` }}
-              />
-              <input
-                className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none"
-                style={{ background: 'rgba(71,36,38,0.5)', border: 'none' }}
-                placeholder="Search premium accounts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* ── Listings grid ── */}
-            {listingsLoading ? (
-              <div className="flex flex-col items-center justify-center py-32">
-                <div
-                  className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin mb-4"
-                  style={{ borderColor: `${primary}`, borderTopColor: 'transparent' }}
-                />
-                <p className="text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse">
-                  Scanning marketplace...
-                </p>
-              </div>
-            ) : filteredListings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-32">
-                <ShoppingCart
-                  className="w-16 h-16 mb-4"
-                  style={{ color: `${primary}33` }}
-                />
-                <p
-                  className="text-xl font-black uppercase tracking-widest mb-1"
-                  style={{ color: `${primary}66` }}
-                >
-                  No accounts found
-                </p>
-                <p className="text-sm text-slate-500">
-                  Try adjusting your filters or search query.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredListings.map((listing) => (
-                  <ListingCardStyled
-                    key={listing.id}
-                    listing={listing}
-                    onPreview={(url) => setPreviewVideoUrl(url)}
-                    onClick={() => navigate(`/marketplace/${listing.id}`)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
         </main>
 
 
