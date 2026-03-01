@@ -3,12 +3,11 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
-import { Header } from "@/components/Header";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileMenu } from "@/components/MobileMenu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, MessageSquare, LogOut } from "lucide-react";
+import { Users, LogOut, Menu } from "lucide-react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const { user, profile, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Fetch other players for the right sidebar
   const { data: otherPlayers = [] } = useQuery({
@@ -49,6 +49,12 @@ export const Layout: React.FC<LayoutProps> = ({
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  useEffect(() => {
+    if (!isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isMobile]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#1a0b0d]">
@@ -70,6 +76,16 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="p-4 md:p-6 h-screen bg-[#1a0b0d] text-white/90 antialiased overflow-hidden font-sans">
+      {isMobile && (
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="md:hidden fixed top-6 left-6 z-50 w-11 h-11 rounded-xl bg-black/30 border border-white/10 text-white/80 flex items-center justify-center hover:bg-black/40 transition-all"
+          aria-label="Open sidebar menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      )}
+
       <div className="main-gradient w-full h-full rounded-[3.5rem] flex overflow-hidden border border-white/5 relative shadow-2xl">
         {/* Left Sidebar */}
         {!isMobile && <Sidebar />}
@@ -144,6 +160,11 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Mobile Navigation */}
       {isMobile && <BottomNavigation />}
+
+      {/* Mobile Left Sidebar Drawer */}
+      {isMobile && (
+        <MobileMenu open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen} />
+      )}
     </div>
   );
 };

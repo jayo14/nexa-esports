@@ -1,213 +1,205 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
-import { Shield, Coins, ArrowDown, ArrowUp, Gift, Award, ArrowUpDown, Copy, Check, ChevronsUpDown, Loader2, Smartphone, Wifi, MoreHorizontal, Eye, EyeOff, Send, Download, Upload } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Textarea } from '@/components/ui/textarea';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAdminPlayers } from '@/hooks/useAdminPlayers';
-import { sendBroadcastPushNotification } from '@/lib/pushNotifications';
-// Removed flutterwave-react-v3 import - now using server-side payment initiation
+import {
+  Shield, Coins, ArrowDown, ArrowUp, Gift, ArrowUpDown,
+  Eye, EyeOff, Send, Download, Upload, MoreHorizontal,
+  Smartphone, Wallet as WalletIcon, ShoppingCart, Users,
+  Settings, TrendingUp, LayoutGrid,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TransactionReceipt } from '@/components/TransactionReceipt';
 import { useWalletSettings } from '@/hooks/useWalletSettings';
 import { useTransactionPin } from '@/hooks/useTransactionPin';
 import { SetupPinDialog } from '@/components/SetupPinDialog';
-import { VerifyPinDialog } from '@/components/VerifyPinDialog';
-import { PinSetupAlert } from '@/components/PinSetupAlert';
-import { MobileWithdrawFlow } from '@/components/wallet/MobileWithdrawFlow';
-import { MobileTransferFlow } from '@/components/wallet/MobileTransferFlow';
-import { MobileGiveawayFlow } from '@/components/wallet/MobileGiveawayFlow';
-import { AirtimePurchaseFlow } from '@/components/wallet/AirtimePurchaseFlow';
 import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
-import { DataPurchaseFlow } from '@/components/wallet/DataPurchaseFlow';
-import { FundWalletFlow } from '@/components/wallet/FundWalletFlow';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { FlutterwaveHistory } from '@/components/wallet/FlutterwaveHistory';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { useCountUp } from '@/hooks/useCountUp';
+import { PinSetupAlert } from '@/components/PinSetupAlert';
 
-// Transaction fee constants
-const TRANSFER_FEE = 50;
+/* ─── Design tokens ─── */
+const PRIMARY = '#ec131e';
+const CARD_BG = 'rgba(20,10,10,0.6)';
 
+const glassMorphism: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.03)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  border: '1px solid rgba(255,255,255,0.08)',
+};
 
-const TransactionItem = ({ transaction, onViewReceipt }) => {
-  // Determine status badge styling based on transaction type
-  const getStatusBadge = () => {
-    if (transaction.status === 'completed' || transaction.status === 'success') {
-      return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
-          Success
-        </span>
-      );
-    } else if (transaction.status === 'pending') {
-      return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-          Pending
-        </span>
-      );
-    } else if (transaction.status === 'failed') {
-      return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
-          Failed
-        </span>
-      );
-    }
-    return null;
-  };
+const glassButton: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.05)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  border: '1px solid rgba(255,255,255,0.1)',
+};
 
+/* ─── Transaction type helpers ─── */
+const renderTransactionIcon = (type: string) => {
+  const iconClass = 'w-5 h-5';
+  if (['Deposit', 'Transfer In', 'Giveaway Redeemed'].includes(type)) {
+    return (
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+        style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+        <ArrowDown className={`${iconClass} text-emerald-500`} />
+      </div>
+    );
+  }
+  if (['Withdrawal', 'Transfer Out', 'Giveaway Created', 'Monthly Tax'].includes(type)) {
+    return (
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+        style={{ background: `${PRIMARY}1a`, border: `1px solid ${PRIMARY}33` }}>
+        <ArrowUp className={`${iconClass}`} style={{ color: PRIMARY }} />
+      </div>
+    );
+  }
+  if (type === 'Airtime Purchase') {
+    return (
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+        style={{ background: `${PRIMARY}1a`, border: `1px solid ${PRIMARY}33` }}>
+        <Smartphone className={`${iconClass}`} style={{ color: PRIMARY }} />
+      </div>
+    );
+  }
+  if (type === 'Giveaway Refund') {
+    return (
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+        style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+        <Gift className={`${iconClass} text-blue-400`} />
+      </div>
+    );
+  }
   return (
-    <div 
-      className="group flex items-center justify-between p-4 bg-card/50 backdrop-blur-sm rounded-2xl mb-3 cursor-pointer hover:bg-card/80 hover:border-primary/20 border border-transparent transition-all duration-200 animate-fade-in"
-      onClick={() => onViewReceipt(transaction)}
-    >
-      <div className="flex items-center gap-3 flex-1">
-        {renderTransactionIcon(transaction.type)}
-        <div className="flex-1">
-          <p className="font-semibold text-sm text-foreground">{transaction.description}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{transaction.date}</p>
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-1">
-        <div className={`font-semibold text-sm ${transaction.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
-          {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toFixed(0)}
-        </div>
-        {getStatusBadge()}
-      </div>
+    <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <Coins className={`${iconClass} text-slate-500`} />
     </div>
   );
 };
 
-const renderTransactionIcon = (type: string) => {
-  switch (type) {
-    case 'Deposit':
-    case 'Transfer In':
-    case 'Giveaway Redeemed':
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
-          <ArrowDown className="h-5 w-5 text-green-400" strokeWidth={2.5} />
-        </div>
-      );
-    case 'Withdrawal':
-    case 'Transfer Out':
-    case 'Giveaway Created':
-    case 'Monthly Tax':
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
-          <ArrowUp className="h-5 w-5 text-red-400" strokeWidth={2.5} />
-        </div>
-      );
-    case 'Airtime Purchase':
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
-          <Smartphone className="h-5 w-5 text-red-400" strokeWidth={2.5} />
-        </div>
-      );
-    case 'Giveaway Refund':
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-          <Gift className="h-5 w-5 text-blue-400" strokeWidth={2.5} />
-        </div>
-      );
-    default:
-      return (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted/50 border border-border flex items-center justify-center">
-          <Coins className="h-5 w-5 text-muted-foreground" strokeWidth={2.5} />
-        </div>
-      );
+const getStatusBadge = (status: string) => {
+  if (status === 'completed' || status === 'success') {
+    return (
+      <span className="px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-widest"
+        style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
+        Success
+      </span>
+    );
   }
+  if (status === 'pending') {
+    return (
+      <span className="px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-widest"
+        style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>
+        Pending
+      </span>
+    );
+  }
+  if (status === 'failed') {
+    return (
+      <span className="px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-widest"
+        style={{ background: `${PRIMARY}1a`, color: PRIMARY }}>
+        Failed
+      </span>
+    );
+  }
+  return null;
 };
 
-const RedeemButton = ({ onClick }: { onClick: () => void }) => {
-  return (
-    <Button 
-      variant="ghost" 
-      className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
-      onClick={async () => {
-        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
-        onClick();
-      }}
-    >
-      <div className="w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all">
-        <Gift className="h-6 w-6 text-white" strokeWidth={2} />
+/* ─── Transaction Item ─── */
+const TransactionItem: React.FC<{ transaction: any; onViewReceipt: (t: any) => void }> = ({
+  transaction, onViewReceipt,
+}) => (
+  <div
+    onClick={() => onViewReceipt(transaction)}
+    className="flex items-center justify-between p-6 rounded-2xl cursor-pointer transition-all group"
+    style={{ ...glassMorphism }}
+    onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)')}
+    onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)')}
+  >
+    <div className="flex items-center gap-6 flex-1">
+      {renderTransactionIcon(transaction.type)}
+      <div className="flex-1">
+        <p className="font-bold text-sm text-slate-100">{transaction.description}</p>
+        <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-bold">{transaction.date}</p>
       </div>
-      <span className="font-medium text-xs text-wallet-text-primary">Redeem</span>
-    </Button>
-  );
-};
+    </div>
+    <div className="flex flex-col items-end gap-2">
+      <p className={`text-xl font-black tracking-tight ${transaction.amount > 0 ? 'text-emerald-500' : 'text-white'}`}>
+        {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toFixed(0)}
+      </p>
+      {getStatusBadge(transaction.status)}
+    </div>
+  </div>
+);
 
-const MoreButton = () => {
-  const navigate = useNavigate();
-  
-  return (
-    <Button 
-      variant="ghost" 
-      className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
-      onClick={async () => {
-        if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
-        navigate('/wallet/more-transactions');
-      }}
-    >
-      <div className="w-[60px] h-[60px] rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm hover:shadow-md hover:bg-primary/20 transition-all">
-        <MoreHorizontal className="h-6 w-6 text-primary" strokeWidth={2} />
-      </div>
-      <span className="font-medium text-xs text-foreground">More</span>
-    </Button>
-  );
-};
+/* ─── Action Button ─── */
+const ActionBtn: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  accent?: boolean;
+}> = ({ icon, label, onClick, disabled, accent }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className="flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+    style={accent ? { background: PRIMARY, color: '#fff', boxShadow: `0 8px 30px ${PRIMARY}4d` } : glassButton}
+    onMouseEnter={(e) => {
+      if (!disabled && !accent) {
+        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)';
+        (e.currentTarget as HTMLButtonElement).style.borderColor = `${PRIMARY}66`;
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (!disabled && !accent) {
+        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)';
+        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
+      }
+    }}
+  >
+    <span style={accent ? {} : { color: PRIMARY }}>{icon}</span>
+    <span>{label}</span>
+  </button>
+);
 
+/* ─── Tab nav ─── */
+const TABS = ['All', 'Earnings', 'Withdrawals', 'Redeems'];
+
+/* ─── Main Wallet Component ─── */
 const Wallet: React.FC = () => {
   const { profile, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [banks, setBanks] = useState<any[]>([]);
-  const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
-  const [transactionsPerPage] = useState(10);
+  const transactionsPerPage = 10;
   const [totalTransactions, setTotalTransactions] = useState(0);
-  const [withdrawCooldown, setWithdrawCooldown] = useState(0);
-  const [redeemCooldown, setRedeemCooldown] = useState(0);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [transferInfo, setTransferInfo] = useState<any>(null);
   const receiptShownRef = useRef<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
-  
-  // Animate balance with count-up effect
-  const animatedBalance = useCountUp({ 
-    end: walletBalance, 
-    duration: 1500,
-    start: 0 
-  });
-  
-  // PIN management states
-  const { checkPinExists } = useTransactionPin();
+  const [activeTab, setActiveTab] = useState('All');
   const [hasPinSet, setHasPinSet] = useState<boolean | null>(null);
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [showRedeemSheet, setShowRedeemSheet] = useState(false);
-  
-  // Fetch wallet settings from database
-  const { settings: walletSettings, loading: walletSettingsLoading } = useWalletSettings();
-  
-  const WITHDRAW_COOLDOWN_SECONDS = 43200; // 12 hours
-  const REDEEM_COOLDOWN_SECONDS = 600; // 10 minutes
+  const [withdrawCooldown, setWithdrawCooldown] = useState(0);
+  const [redeemCooldown, setRedeemCooldown] = useState(0);
 
-  // Check if user has PIN set
+  const animatedBalance = useCountUp({ end: walletBalance, duration: 1500, start: 0 });
+  const { checkPinExists } = useTransactionPin();
+  const { settings: walletSettings } = useWalletSettings();
+
+  const REDEEM_COOLDOWN_SECONDS = 600;
+
   useEffect(() => {
     const checkPin = async () => {
       if (user?.id) {
@@ -220,188 +212,86 @@ const Wallet: React.FC = () => {
 
   const fetchWalletData = async (page = 1) => {
     if (!user?.id) return;
-
     try {
-      // Fetch wallet balance
-      const { data: walletData, error: walletError } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data: walletData } = await supabase
+        .from('wallets').select('balance').eq('user_id', user.id).maybeSingle();
+      if (walletData) setWalletBalance(Number(walletData.balance) || 0);
 
-      if (walletError) {
-        console.error('Error fetching wallet:', walletError);
-      } else if (walletData) {
-        setWalletBalance(Number(walletData.balance) || 0);
-      }
-
-      // Fetch transactions
       const { data: walletIdData } = await supabase
-        .from('wallets')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .from('wallets').select('id').eq('user_id', user.id).maybeSingle();
+      if (!walletIdData) return;
 
-      if (walletIdData) {
-        const from = (page - 1) * transactionsPerPage;
-        const to = from + transactionsPerPage - 1;
+      const from = (page - 1) * transactionsPerPage;
+      const { data: txData, count } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact' })
+        .eq('wallet_id', walletIdData.id)
+        .order('created_at', { ascending: false })
+        .range(from, from + transactionsPerPage - 1);
 
-        const { data: transactionsData, error: transactionsError, count } = await supabase
-          .from('transactions')
-          .select('*', { count: 'exact' })
-          .eq('wallet_id', walletIdData.id)
-          .order('created_at', { ascending: false })
-          .range(from, to);
-
-        if (transactionsError) {
-          console.error('Error fetching transactions:', transactionsError);
-        } else if (transactionsData) {
-          // Extract user names from references for transfers
-          const enrichedTransactions = await Promise.all(transactionsData.map(async (tx) => {
-            const typeMapping: Record<string, string> = {
-              'deposit': 'Deposit',
-              'withdrawal': 'Withdrawal',
-              'transfer_in': 'Transfer In',
-              'transfer_out': 'Transfer Out',
-              'giveaway_created': 'Giveaway Created',
-              'giveaway_redeemed': 'Giveaway Redeemed',
-              'giveaway_refund': 'Giveaway Refund',
-              'tax_deduction': 'Monthly Tax',
-            };
-            
-            const isDebit = ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction'].includes(tx.type);
-            let displayName = '';
-            
-            // Extract username from reference for transfers
-            if (tx.type === 'transfer_in' || tx.type === 'transfer_out') {
-              const match = tx.reference.match(/transfer_(from|to)_(.+)_\d/);
-              if (match) {
-                displayName = match[2];
-              }
-            }
-            
-            let description = typeMapping[tx.type] || tx.type;
-            if (displayName) {
-              description += tx.type === 'transfer_in' ? ` from ${displayName}` : ` to ${displayName}`;
-            } else if (tx.type === 'giveaway_created') {
-              description = 'Giveaway Created';
-            } else if (tx.type === 'giveaway_redeemed') {
-              description = 'Giveaway Redeemed';
-            }
-            
-            return {
-              id: tx.id,
-              description: `${description} - ${tx.status}`,
-              date: new Date(tx.created_at).toLocaleDateString(),
-              amount: isDebit ? -Number(tx.amount) : Number(tx.amount),
-              type: typeMapping[tx.type] || 'Other',
-              // Include raw data for receipt
-              raw_type: tx.type,
-              status: tx.status,
-              reference: tx.reference,
-              created_at: tx.created_at,
-              currency: tx.currency || 'NGN'
-            };
-          }));
-          
-          setTransactions(enrichedTransactions);
-          setTotalTransactions(count || 0);
+      if (!txData) return;
+      const typeMapping: Record<string, string> = {
+        deposit: 'Deposit', withdrawal: 'Withdrawal',
+        transfer_in: 'Transfer In', transfer_out: 'Transfer Out',
+        giveaway_created: 'Giveaway Created', giveaway_redeemed: 'Giveaway Redeemed',
+        giveaway_refund: 'Giveaway Refund', tax_deduction: 'Monthly Tax',
+      };
+      const enriched = await Promise.all(txData.map(async (tx) => {
+        const isDebit = ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction'].includes(tx.type);
+        let displayName = '';
+        if (tx.type === 'transfer_in' || tx.type === 'transfer_out') {
+          const match = tx.reference.match(/transfer_(from|to)_(.+)_\d/);
+          if (match) displayName = match[2];
         }
-      }
-    } catch (error) {
-      console.error('Error fetching wallet data:', error);
+        let description = typeMapping[tx.type] || tx.type;
+        if (displayName) description += tx.type === 'transfer_in' ? ` from ${displayName}` : ` to ${displayName}`;
+        return {
+          id: tx.id,
+          description: `${description}`,
+          date: new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+            ' • ' + new Date(tx.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          amount: isDebit ? -Number(tx.amount) : Number(tx.amount),
+          type: typeMapping[tx.type] || 'Other',
+          raw_type: tx.type,
+          status: tx.status,
+          reference: tx.reference,
+          created_at: tx.created_at,
+          currency: tx.currency || 'NGN',
+        };
+      }));
+      setTransactions(enriched);
+      setTotalTransactions(count || 0);
+    } catch (err) {
+      console.error(err);
     }
-  };
-
-  const checkCooldowns = () => {
-    const withdrawCooldownEnd = localStorage.getItem('withdrawCooldownEnd');
-    if (withdrawCooldownEnd) {
-      const remaining = Math.floor((parseInt(withdrawCooldownEnd) - Date.now()) / 1000);
-      if (remaining > 0) {
-        setWithdrawCooldown(remaining);
-      }
-    }
-
-    const redeemCooldownEnd = localStorage.getItem('redeemCooldownEnd');
-    if (redeemCooldownEnd) {
-      const remaining = Math.floor((parseInt(redeemCooldownEnd) - Date.now()) / 1000);
-      if (remaining > 0) {
-        setRedeemCooldown(remaining);
-      }
-    }
-  };
-
-  const startWithdrawCooldown = () => {
-    const cooldownEnd = Date.now() + (WITHDRAW_COOLDOWN_SECONDS * 1000);
-    localStorage.setItem('withdrawCooldownEnd', cooldownEnd.toString());
-    setWithdrawCooldown(WITHDRAW_COOLDOWN_SECONDS);
   };
 
   const startRedeemCooldown = () => {
-    const cooldownEnd = Date.now() + (REDEEM_COOLDOWN_SECONDS * 1000);
-    localStorage.setItem('redeemCooldownEnd', cooldownEnd.toString());
+    const end = Date.now() + REDEEM_COOLDOWN_SECONDS * 1000;
+    localStorage.setItem('redeemCooldownEnd', end.toString());
     setRedeemCooldown(REDEEM_COOLDOWN_SECONDS);
   };
 
-  // Parse transfer info from transaction reference
   const getTransferInfo = useCallback(async (transaction: any) => {
     if (!transaction?.reference) return null;
-    
     const ref = transaction.reference;
     const type = transaction.raw_type;
-    
-    // For transfer_out: reference is "transfer_to_{recipient_ign}_{timestamp}"
     if (type === 'transfer_out' && ref.startsWith('transfer_to_')) {
       const parts = ref.split('_');
-      if (parts.length >= 3) {
-        // Extract IGN between 'transfer_to_' and the timestamp
-        const recipient = parts.slice(2, -1).join('_');
-        
-        // Fetch recipient's player type
-        try {
-          const { data: recipientProfile } = await supabase
-            .from('profiles')
-            .select('status, player_type')
-            .eq('ign', recipient)
-            .maybeSingle();
-          
-          return { 
-            recipient,
-            recipientPlayerType: recipientProfile?.status === 'beta' ? 'beta' : 'main'
-          };
-        } catch (error) {
-          console.error('Error fetching recipient profile:', error);
-          return { recipient };
-        }
-      }
+      const recipient = parts.slice(2, -1).join('_');
+      try {
+        const { data } = await supabase.from('profiles').select('status').eq('ign', recipient).maybeSingle();
+        return { recipient, recipientPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
+      } catch { return { recipient }; }
     }
-    
-    // For transfer_in: reference is "transfer_from_{sender_ign}_{timestamp}"
     if (type === 'transfer_in' && ref.startsWith('transfer_from_')) {
       const parts = ref.split('_');
-      if (parts.length >= 3) {
-        // Extract IGN between 'transfer_from_' and the timestamp
-        const sender = parts.slice(2, -1).join('_');
-        
-        // Fetch sender's player type
-        try {
-          const { data: senderProfile } = await supabase
-            .from('profiles')
-            .select('status, player_type')
-            .eq('ign', sender)
-            .maybeSingle();
-          
-          return { 
-            sender,
-            senderPlayerType: senderProfile?.status === 'beta' ? 'beta' : 'main'
-          };
-        } catch (error) {
-          console.error('Error fetching sender profile:', error);
-          return { sender };
-        }
-      }
+      const sender = parts.slice(2, -1).join('_');
+      try {
+        const { data } = await supabase.from('profiles').select('status').eq('ign', sender).maybeSingle();
+        return { sender, senderPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
+      } catch { return { sender }; }
     }
-    
     return null;
   }, []);
 
@@ -412,311 +302,310 @@ const Wallet: React.FC = () => {
     setReceiptOpen(true);
   }, [getTransferInfo]);
 
-  useEffect(() => {
-    fetchWalletData(currentPage);
-    checkCooldowns();
-  }, [user?.id, currentPage]);
-
-  useEffect(() => {
-    const fetchBanks = async () => {
-      const { data, error } = await supabase.functions.invoke('flutterwave-get-banks');
-      if (data?.status && data?.data) {
-        setBanks(data.data);
-      }
-    };
-    fetchBanks();
-  }, []);
-
-  useEffect(() => {
-    if (withdrawCooldown > 0) {
-      const timer = setInterval(() => {
-        setWithdrawCooldown(prev => Math.max(0, prev - 1));
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [withdrawCooldown]);
+  useEffect(() => { fetchWalletData(currentPage); }, [user?.id, currentPage]);
 
   useEffect(() => {
     if (redeemCooldown > 0) {
-      const timer = setInterval(() => {
-        setRedeemCooldown(prev => Math.max(0, prev - 1));
-      }, 1000);
-      return () => clearInterval(timer);
+      const t = setInterval(() => setRedeemCooldown(p => Math.max(0, p - 1)), 1000);
+      return () => clearInterval(t);
     }
   }, [redeemCooldown]);
 
-  // Handle showing receipt after successful payment
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const showReceiptRef = query.get('showReceipt');
-    
-    // Only proceed if we have a reference and haven't shown this receipt yet
     if (showReceiptRef && transactions.length > 0 && receiptShownRef.current !== showReceiptRef) {
-      // Find the transaction with the matching reference
-      const transaction = transactions.find(tx => tx.reference === showReceiptRef);
-      
-      if (transaction) {
-        // Mark this receipt as shown
+      const tx = transactions.find(t => t.reference === showReceiptRef);
+      if (tx) {
         receiptShownRef.current = showReceiptRef;
-        
-        // Show the receipt for this transaction
-        handleViewReceipt(transaction);
-        
-        // Remove the query parameter from the URL
-        const newSearch = new URLSearchParams(location.search);
-        newSearch.delete('showReceipt');
-        const newSearchStr = newSearch.toString();
-        navigate(
-          location.pathname + (newSearchStr ? '?' + newSearchStr : ''),
-          { replace: true }
-        );
+        handleViewReceipt(tx);
+        const ns = new URLSearchParams(location.search);
+        ns.delete('showReceipt');
+        navigate(location.pathname + (ns.toString() ? '?' + ns.toString() : ''), { replace: true });
       }
     }
-  }, [location.search, location.pathname, transactions, navigate, handleViewReceipt]);
+  }, [location.search, transactions, navigate, handleViewReceipt]);
+
+  /* ── Filter transactions ── */
+  const filterMap: Record<string, string[]> = {
+    All: [],
+    Earnings: ['Deposit', 'Transfer In', 'Giveaway Redeemed'],
+    Withdrawals: ['Withdrawal', 'Transfer Out'],
+    Redeems: ['Giveaway Redeemed'],
+  };
+
+  const visibleTx = activeTab === 'All'
+    ? transactions
+    : transactions.filter(t => filterMap[activeTab]?.includes(t.type));
+
+  const totalPages = Math.ceil(totalTransactions / transactionsPerPage);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Balance Hero Section */}
-      <div className="px-5 pt-8 pb-10 relative">
-        {/* Gradient Background with red accent */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" 
-             style={{ height: '280px' }} />
-        
-        <div className="relative bg-card/50 backdrop-blur-xl border border-primary/10 rounded-3xl p-6 shadow-2xl">
-          <p className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-            <Coins className="h-4 w-4 text-primary" />
-            Total Balance
-          </p>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="text-5xl md:text-6xl font-bold text-foreground">
-              {balanceVisible ? (
-                <>
-                  ₦{Math.floor(animatedBalance).toLocaleString()}
-                  <span className="text-3xl md:text-4xl font-normal text-muted-foreground">
-                    .{String(animatedBalance.toFixed(2)).split('.')[1]}
-                  </span>
-                </>
-              ) : (
-                '₦••••••'
-              )}
-            </div>
-            <button
-              onClick={() => setBalanceVisible(!balanceVisible)}
-              className="p-2 rounded-full hover:bg-primary/10 transition-colors"
+    <div className="flex overflow-hidden">
+      
+      {/* ── Main content ── */}
+      <main
+        className="flex-1 flex flex-col overflow-y-auto"
+        style={{ scrollbarWidth: 'none' }}
+      >
+               <div className="px-10 pb-12 space-y-10">
+          {/* ── Balance Hero ── */}
+          <section className="relative">
+            <div className="absolute inset-0 rounded-[32px]"
+              style={{ background: `${PRIMARY}1a`, filter: 'blur(100px)' }} />
+
+            <div
+              className="relative rounded-[32px] p-10 overflow-hidden flex flex-col justify-between min-h-[280px]"
+              style={{ ...glassMorphism, boxShadow: `0 0 60px -15px ${PRIMARY}4d` }}
             >
-              {balanceVisible ? (
-                <Eye className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-              ) : (
-                <EyeOff className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+              {/* Glow blobs */}
+              <div className="absolute -right-20 -top-20 w-96 h-96 rounded-full"
+                style={{ background: `${PRIMARY}33`, filter: 'blur(120px)' }} />
+              <div className="absolute right-40 top-1/2 -translate-y-1/2 w-40 h-40 rounded-full"
+                style={{ background: `${PRIMARY}4d`, filter: 'blur(60px)' }} />
 
-      {/* PIN Setup Alert - Show if PIN not set */}
-      {hasPinSet === false && (
-        <div className="px-5 mb-6">
-          <PinSetupAlert onSetupClick={() => setShowPinSetup(true)} />
-        </div>
-      )}
+              <div className="flex justify-between items-start relative z-10">
+                <div>
+                  <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-xs mb-2">
+                    Total Balance
+                  </p>
+                  <div className="flex items-baseline gap-4">
+                    <h3 className="text-7xl font-black tracking-tighter text-white">
+                      {balanceVisible
+                        ? `₦${Math.floor(animatedBalance).toLocaleString()}`
+                        : '₦••••••'}
+                    </h3>
+                    {balanceVisible && (
+                      <div className="px-3 py-1 rounded-full flex items-center gap-1.5"
+                        style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        <span className="text-emerald-500 text-xs font-bold">Active</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setBalanceVisible(!balanceVisible)}
+                    className="p-3 rounded-2xl transition-all"
+                    style={glassButton}
+                  >
+                    {balanceVisible
+                      ? <Eye className="w-5 h-5 text-slate-300" />
+                      : <EyeOff className="w-5 h-5 text-slate-300" />}
+                  </button>
+                  <div className="p-4 rounded-2xl" style={glassButton}>
+                    <WalletIcon className="w-7 h-7" style={{ color: PRIMARY }} />
+                  </div>
+                </div>
+              </div>
 
-      {/* Action Bar - 5 Column Grid */}
-      <div className="px-5 mb-10">
-        <div className="grid grid-cols-5 gap-3">
-          <Button 
-             variant="ghost" 
-             className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
-             onClick={async () => {
+              {/* Stats row */}
+              <div className="flex items-center gap-12 relative z-10 mt-auto">
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">
+                    Available
+                  </p>
+                  <p className="text-xl font-bold text-white">
+                    ₦{walletBalance.toLocaleString()}
+                  </p>
+                </div>
+                <div className="h-10 w-px bg-white/10" />
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">
+                    Currency
+                  </p>
+                  <p className="text-xl font-bold" style={{ color: PRIMARY }}>NGN</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* PIN setup alert */}
+          {hasPinSet === false && (
+            <div
+              className="p-4 rounded-2xl flex items-center gap-4"
+              style={{ background: `${PRIMARY}0d`, border: `1px solid ${PRIMARY}33` }}
+            >
+              <Shield className="w-6 h-6 flex-shrink-0" style={{ color: PRIMARY }} />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-slate-100">Secure your wallet</p>
+                <p className="text-xs text-slate-400 mt-0.5">Set up a 4-digit PIN to protect your transactions.</p>
+              </div>
+              <button
+                onClick={() => setShowPinSetup(true)}
+                className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-white"
+                style={{ background: PRIMARY }}
+              >
+                Set PIN
+              </button>
+            </div>
+          )}
+
+          {/* ── Action Bar ── */}
+          <section className="flex flex-wrap items-center gap-4">
+            <ActionBtn
+              icon={<Upload className="w-5 h-5" />}
+              label="Fund"
+              accent
+              onClick={async () => {
                 if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                 navigate('/wallet/fund');
-             }}
-             disabled={!walletSettings.deposits_enabled}
-          >
-             <div className={`w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all`}>
-                <Upload className="h-6 w-6 text-white" strokeWidth={2} />
-             </div>
-             <span className="font-medium text-xs text-foreground">Fund</span>
-          </Button>
-
-          <Button 
-             variant="ghost" 
-             className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
-             onClick={async () => {
+              }}
+              disabled={!walletSettings.deposits_enabled}
+            />
+            <ActionBtn
+              icon={<Download className="w-5 h-5" />}
+              label="Withdraw"
+              onClick={async () => {
                 if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                 navigate('/wallet/withdraw');
-             }}
-             disabled={!walletSettings.withdrawals_enabled}
-          >
-             <div className={`w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all`}>
-                <Download className="h-6 w-6 text-white" strokeWidth={2} />
-             </div>
-             <span className="font-medium text-xs text-foreground">Withdraw</span>
-          </Button>
-
-          <Button 
-             variant="ghost" 
-             className="w-full flex flex-col items-center justify-center gap-2 p-0 h-auto hover:bg-transparent"
-             onClick={async () => {
+              }}
+              disabled={!walletSettings.withdrawals_enabled}
+            />
+            <ActionBtn
+              icon={<Send className="w-5 h-5" />}
+              label="Transfer"
+              onClick={async () => {
                 if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                 navigate('/wallet/transfer');
-             }}
-          >
-             <div className={`w-[60px] h-[60px] rounded-full bg-wallet-red-primary flex items-center justify-center shadow-sm hover:shadow-md transition-all`}>
-                <Send className="h-6 w-6 text-white" strokeWidth={2} />
-             </div>
-             <span className="font-medium text-xs text-foreground">Transfer</span>
-          </Button>
+              }}
+            />
+            <ActionBtn
+              icon={<Gift className="w-5 h-5" />}
+              label="Redeem"
+              onClick={async () => {
+                if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+                setShowRedeemSheet(true);
+              }}
+            />
+            <button
+              className="flex items-center justify-center w-14 h-14 rounded-2xl transition-all"
+              style={glassButton}
+              onClick={() => navigate('/wallet/more-transactions')}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = `${PRIMARY}66`;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
+              }}
+            >
+              <MoreHorizontal className="w-5 h-5 text-slate-300" />
+            </button>
+          </section>
 
-          <RedeemButton onClick={() => setShowRedeemSheet(true)} />
-          <MoreButton />
+          {/* ── Transactions ── */}
+          <section className="space-y-6">
+            {/* Tabs + heading */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                {/* Verify CTA */}
+                <button
+                  className="flex items-center gap-3 px-6 py-4 rounded-2xl font-bold text-sm text-white transition-all"
+                  style={{ background: PRIMARY, boxShadow: `0 8px 30px ${PRIMARY}4d` }}
+                  onClick={() => navigate('/wallet/verify')}
+                >
+                  <Shield className="w-5 h-5" />
+                  Verify Payments
+                </button>
+
+                {/* Tab nav */}
+                <nav
+                  className="flex p-1.5 rounded-2xl"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
+                >
+                  {TABS.map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                      style={
+                        activeTab === tab
+                          ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
+                          : { color: '#64748b' }
+                      }
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+
+            {/* Transaction list */}
+            <div className="space-y-3">
+              {visibleTx.length > 0 ? (
+                <>
+                  {visibleTx.map((tx) => (
+                    <TransactionItem key={tx.id} transaction={tx} onViewReceipt={handleViewReceipt} />
+                  ))}
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between px-2 pt-4">
+                    <button
+                      onClick={() => setCurrentPage(p => p - 1)}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] transition-colors disabled:opacity-30"
+                      style={{ color: '#64748b' }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#fff')}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#64748b')}
+                    >
+                      <ArrowUp className="w-4 h-4 rotate-[-90deg]" />
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-4">
+                      <span
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-white text-xs font-bold"
+                        style={{ background: PRIMARY }}
+                      >
+                        {currentPage}
+                      </span>
+                      <span className="text-xs font-black text-slate-600">OF {totalPages}</span>
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(p => p + 1)}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] transition-colors disabled:opacity-30"
+                      style={{ color: '#64748b' }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#fff')}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#64748b')}
+                    >
+                      Next
+                      <ArrowDown className="w-4 h-4 rotate-[-90deg]" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-24"
+                  style={{ ...glassMorphism, borderRadius: '24px' }}>
+                  <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+                    style={{ background: `${PRIMARY}1a`, border: `1px solid ${PRIMARY}33` }}>
+                    <Coins className="w-10 h-10" style={{ color: `${PRIMARY}66` }} />
+                  </div>
+                  <p className="text-xl font-black text-slate-100 uppercase tracking-widest mb-2">
+                    No {activeTab === 'All' ? '' : activeTab.toLowerCase()} transactions
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {activeTab === 'All' ? 'Start by funding your wallet.' : 'Nothing here yet.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
 
+
+      {/* ── Dialogs ── */}
       <RedeemGiveawayDialog
-        open={showRedeemSheet} 
+        open={showRedeemSheet}
         onOpenChange={setShowRedeemSheet}
         onSuccess={fetchWalletData}
         redeemCooldown={redeemCooldown}
         onRedeemSuccess={startRedeemCooldown}
       />
-
-      {/* Transaction List Section */}
-      <div className="px-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-wallet-text-primary">Transactions</h2>
-          <FlutterwaveHistory />
-        </div>
-
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/50 p-1 rounded-xl border border-wallet-text-secondary/10">
-            <TabsTrigger 
-              value="all" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
-            >
-              All
-            </TabsTrigger>
-            <TabsTrigger 
-              value="earnings" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
-            >
-              Earnings
-            </TabsTrigger>
-            <TabsTrigger 
-              value="withdrawals" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
-            >
-              Withdrawals
-            </TabsTrigger>
-            <TabsTrigger 
-              value="redeems" 
-              className="rounded-lg text-xs data-[state=active]:bg-wallet-red-primary data-[state=active]:text-white transition-all"
-            >
-              Redeems
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="all" className="space-y-2">
-            {transactions.length > 0 ? (
-              <>
-                {transactions.map((tx, index) => (
-                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                  </div>
-                ))}
-                <div className="flex justify-center items-center gap-4 mt-6 pt-4">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setCurrentPage(prev => prev - 1)} 
-                    disabled={currentPage === 1}
-                    className="hover:scale-105 transition-transform"
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm font-medium px-4 py-2 rounded-lg bg-white/50">
-                    Page {currentPage} of {Math.ceil(totalTransactions / transactionsPerPage)}
-                  </span>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setCurrentPage(prev => prev + 1)} 
-                    disabled={currentPage === Math.ceil(totalTransactions / transactionsPerPage)}
-                    className="hover:scale-105 transition-transform"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-16 space-y-4">
-                <div className="inline-flex p-6 rounded-full bg-wallet-text-secondary/10">
-                  <Coins className="h-12 w-12 text-wallet-text-secondary/50" />
-                </div>
-                <p className="text-lg text-wallet-text-secondary">No transactions yet</p>
-                <p className="text-sm text-wallet-text-secondary/70">Start by funding your wallet or receiving transfers</p>
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value="earnings" className="space-y-2">
-            {(() => {
-              const earningsTx = transactions.filter((tx) => tx.type === 'Deposit' || tx.type === 'Transfer In' || tx.type === 'Giveaway Redeemed');
-              return earningsTx.length > 0 ? (
-                earningsTx.map((tx, index) => (
-                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-16 space-y-4">
-                  <div className="inline-flex p-6 rounded-full bg-wallet-success/10">
-                    <ArrowDown className="h-12 w-12 text-wallet-success/50" />
-                  </div>
-                  <p className="text-lg text-wallet-text-secondary">No earnings yet</p>
-                </div>
-              );
-            })()}
-          </TabsContent>
-          <TabsContent value="withdrawals" className="space-y-2">
-            {(() => {
-              const withdrawalTx = transactions.filter((tx) => tx.type === 'Withdrawal' || tx.type === 'Transfer Out');
-              return withdrawalTx.length > 0 ? (
-                withdrawalTx.map((tx, index) => (
-                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-16 space-y-4">
-                  <div className="inline-flex p-6 rounded-full bg-wallet-error/10">
-                    <ArrowUp className="h-12 w-12 text-wallet-error/50" />
-                  </div>
-                  <p className="text-lg text-wallet-text-secondary">No withdrawals yet</p>
-                </div>
-              );
-            })()}
-          </TabsContent>
-          <TabsContent value="redeems" className="space-y-2">
-            {(() => {
-              const redeemTransactions = transactions.filter(
-                (tx) => tx.type === 'Giveaway Redeemed'
-              );
-              return redeemTransactions.length > 0 ? (
-                redeemTransactions.map((tx, index) => (
-                  <div key={tx.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                    <TransactionItem transaction={tx} onViewReceipt={handleViewReceipt} />
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-16 space-y-4">
-                  <div className="inline-flex p-6 rounded-full bg-wallet-red-primary/10">
-                    <Gift className="h-12 w-12 text-wallet-red-primary/50" />
-                  </div>
-                  <p className="text-lg text-wallet-text-secondary">No giveaway redeems yet</p>
-                  <p className="text-sm text-wallet-text-secondary/70">Redeem codes to earn rewards</p>
-                </div>
-              );
-            })()}
-          </TabsContent>
-        </Tabs>
-      </div>
 
       {selectedTransaction && (
         <TransactionReceipt
@@ -740,14 +629,10 @@ const Wallet: React.FC = () => {
         />
       )}
 
-      {/* PIN Setup Dialog */}
-      <SetupPinDialog 
+      <SetupPinDialog
         open={showPinSetup}
         onOpenChange={setShowPinSetup}
-        onSuccess={() => {
-          setHasPinSet(true);
-          setShowPinSetup(false);
-        }}
+        onSuccess={() => { setHasPinSet(true); setShowPinSetup(false); }}
       />
     </div>
   );
