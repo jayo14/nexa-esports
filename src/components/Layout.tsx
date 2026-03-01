@@ -8,7 +8,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileMenu } from "@/components/MobileMenu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, MessageSquare } from "lucide-react";
+import { Users, MessageSquare, LogOut } from "lucide-react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,7 +19,7 @@ export const Layout: React.FC<LayoutProps> = ({
   children,
   showSidebar = false,
 }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
 
@@ -128,17 +128,15 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
 
             <div className="floating-glass w-full rounded-[2rem] py-4 flex flex-col items-center gap-5 mt-auto">
-              <div className="text-white/30">
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <div className="relative cursor-pointer">
-                <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
-                  <div className="flex -space-x-4">
-                    <img className="w-7 h-7 rounded-full border border-black/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBk5ULNyVxQ4Q60CUUdP6SbOlFqlYbJCvjHwey3_6U8Vn3GGHZo_NRv1iBeER9qi1jqYOBEzhBG9Euvu61QpIvh1s9d81lwRyfxmeLqwPHF1sWuIK0ThisGDkEDBxC7cqqnAaCvY2UVnNqDl_AAdJbjEtDcvPNl9qQchDlrSq74HYoL5NKwd5rZAnsqyeXyop5atudqwzMXom1vVkzbIZ-bQd2lnEHUFgABQ0RHCrokNxdx_sb8Je6H17QZ5maEHIFO2QpJGzfU1x8"/>
-                    <img className="w-7 h-7 rounded-full border border-black/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9kkryAoDqFNMIwBionXxk-7SGBfBWinGRLoHtmla6zf1Pc_bvPR-NXzRFMvRe_3EGBCSt3qo3aTAcEkSFly8VTNrisuJ8063U_GHDU1QNPhOFpS5pQ4NcCiYZZJ6t7rfZAssM5VtqE9cqpkRawECM6w4Nse3ud7cPmdcbFHMlqCQWOWfHVEQyBM-kSODGquAPumBQM8gvsdaEnSc-qYKwXbN2p6nM4rUVB0mpYv8CI6xtp_v4D4Ss8rxMHxbtoD1FZol_V9FgVdw"/>
-                  </div>
-                </div>
-              </div>
+             
+              
+              <button
+                onClick={logout}
+                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all"
+                aria-label="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </aside>
         )}
