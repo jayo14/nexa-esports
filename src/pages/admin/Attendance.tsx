@@ -10,7 +10,6 @@ import {
   Home, Gamepad2, Package, BarChart2, MessageSquare, Plus,
   Bell, ShoppingBag, Send, ChevronRight,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 type Player = Database['public']['Tables']['profiles']['Row'];
 type AttendanceRecord = Database['public']['Tables']['attendance']['Row'] & {
@@ -23,6 +22,7 @@ type AttendanceMode = 'MP' | 'BR';
 const C = {
   primary:  '#ec131e',
   bgDark:   '#120809',
+  burgundy: '#411d21',
   sidebar:  '#1a0b0d',
   panel:    'rgba(25,12,14,0.6)',
 };
@@ -203,15 +203,9 @@ export const AdminAttendance: React.FC = () => {
     try {
       const newRecord = await markAttendanceMutation.mutateAsync({ playerId, status, kills, lobby: selectedLobby });
       if (newRecord) {
-        const { dismiss } = toast({
+        toast({
           title: 'Attendance Marked',
           description: `${playerIgn} → ${status} (${kills || 0} kills) — ${attendanceMode} Lobby ${selectedLobby}`,
-          duration: 60000,
-          action: (
-            <Button variant="outline" onClick={() => { undoAttendanceMutation.mutate(newRecord.id); dismiss(); }}>
-              Undo
-            </Button>
-          ),
         });
       }
     } catch {
@@ -264,21 +258,31 @@ export const AdminAttendance: React.FC = () => {
 
   return (
     <div
-      className="flex h-screen overflow-hidden"
+      className="rounded-2xl p-3 sm:p-4 md:p-6"
+      style={{
+        background: `linear-gradient(135deg, ${C.burgundy}66 0%, ${C.bgDark}66 100%)`,
+        border: '1px solid rgba(255,255,255,0.06)',
+      }}
     >
    
 
       {/* ══════════ MAIN CONTENT ══════════ */}
       <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="mb-4 sm:mb-6 px-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Attendance Management</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Track player presence, kill records, and attendance activity across MP and BR lobbies.
+          </p>
+        </div>
         
 
         {/* Scrollable body */}
         <div
-          className="flex-1 overflow-y-auto p-10 space-y-10"
+          className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 space-y-5 sm:space-y-6 lg:space-y-8"
           style={{ scrollbarWidth: 'thin', scrollbarColor: `${C.primary}33 transparent` }}
         >
           {/* ── Stat Cards ── */}
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             <StatCard label="Total Players"    value={players.length} iconName={<Users className="w-8 h-8" />} />
             <StatCard label="Avg Attendance"   value={`${avgAttendance}%`} iconName={<BarChart2 className="w-8 h-8" />} />
             <StatCard label="Present Records"  value={presentCount} iconName={<CheckCircle className="w-8 h-8" />} iconColor="#22c55e" />
@@ -289,7 +293,7 @@ export const AdminAttendance: React.FC = () => {
           <div className="flex flex-col gap-6">
             {/* Mode + Lobby toggles */}
             <div
-              className="flex items-center justify-between p-2 rounded-2xl"
+              className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-2 rounded-2xl"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
             >
               <PillToggle
@@ -297,12 +301,12 @@ export const AdminAttendance: React.FC = () => {
                 value={attendanceMode}
                 onChange={(v) => setAttendanceMode(v as AttendanceMode)}
               />
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto hide-scrollbar">
                 {[1, 2, 3, 4].map((lobby) => (
                   <button
                     key={lobby}
                     onClick={() => setSelectedLobby(lobby)}
-                    className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+                    className="px-4 sm:px-5 py-2.5 rounded-xl text-sm font-medium transition-all shrink-0"
                     style={
                       selectedLobby === lobby
                         ? { background: 'rgba(255,255,255,0.15)', color: '#fff' }
@@ -317,9 +321,24 @@ export const AdminAttendance: React.FC = () => {
               </div>
             </div>
 
-            {/* Date + role filter + exports */}
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-4">
+            {/* Search + Date + role filter + exports */}
+            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 px-1 sm:px-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+                <div
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search players by IGN..."
+                    className="bg-transparent border-none outline-none text-sm w-full min-w-0"
+                    style={{ color: '#f1f5f9' }}
+                  />
+                </div>
+
                 <div
                   className="flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
@@ -361,7 +380,7 @@ export const AdminAttendance: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-start xl:self-auto">
                 <button
                   onClick={() => exportData('csv')}
                   className="p-2.5 rounded-xl transition-all"
@@ -390,11 +409,11 @@ export const AdminAttendance: React.FC = () => {
           <section className="rounded-[32px] overflow-hidden" style={glass}>
             {/* Section Header */}
             <div
-              className="p-8 flex items-center justify-between"
+              className="p-4 sm:p-6 lg:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
             >
               <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white tracking-tight">
                   {attendanceMode} Lobby {selectedLobby} Attendance
                 </h2>
                 <p className="text-slate-500 text-sm font-medium mt-1">
@@ -404,7 +423,7 @@ export const AdminAttendance: React.FC = () => {
                 </p>
               </div>
               <button
-                className="px-8 py-3 rounded-2xl font-bold text-sm text-white transition-all"
+                className="px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm text-white transition-all w-full sm:w-auto"
                 style={{ background: C.primary, boxShadow: `0 8px 24px ${C.primary}4d` }}
                 onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
                 onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
@@ -668,10 +687,8 @@ export const AdminAttendance: React.FC = () => {
               </table>
             </div>
           </section>
-        </div>
+      </div>
       </main>
-
-    
     </div>
   );
 };
