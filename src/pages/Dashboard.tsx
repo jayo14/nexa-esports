@@ -187,8 +187,20 @@ export const Dashboard: React.FC = () => {
             <button className="text-white/40 text-xs sm:text-sm font-medium hover:text-white transition-colors font-sans">See More</button>
           </div>
           <div className="flex gap-2 xs:gap-4 sm:gap-6 overflow-x-auto pb-1 xs:pb-2 sm:pb-4 custom-scrollbar">
-            {allEvents.length > 0 ? allEvents.map((event, i) => (
+            {allEvents.length > 0 ? allEvents.map((event, i) => {
+              const thumbnailUrl = (event as { thumbnail_url?: string | null }).thumbnail_url;
+
+              return (
               <div key={event.id} className="min-w-[140px] xs:min-w-[180px] sm:min-w-[300px] h-[140px] xs:h-[180px] sm:h-[360px] glass-card rounded-lg xs:rounded-2xl sm:rounded-[3rem] p-2 xs:p-4 sm:p-6 flex flex-col justify-end relative group cursor-pointer shadow-xl overflow-hidden" onClick={() => navigate(`/events/${event.id}`)}>
+                {thumbnailUrl ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt={event.name}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/25 to-wine-dark/70" />
+                )}
                 <div className="absolute top-4 sm:top-6 left-4 sm:left-6 flex gap-2 z-10">
                   <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white">
                     <Play className="w-5 h-5 fill-current" />
@@ -200,7 +212,8 @@ export const Dashboard: React.FC = () => {
                   <p className="text-white/60 text-[10px] xs:text-xs font-sans">{event.type} • {new Date(event.date).toLocaleDateString()}</p>
                 </div>
               </div>
-            )) : (
+              );
+            }) : (
               <div className="text-white/40 font-sans italic">No new operations available.</div>
             )}
           </div>
