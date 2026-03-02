@@ -177,7 +177,7 @@ export const Layout: React.FC<LayoutProps> = ({
       {isMobile && (
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className={`md:hidden fixed top-6 left-6 z-50 w-11 h-11 rounded-2xl text-white/80 flex items-center justify-center transition-all duration-300 ${showMobileControls ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}
+          className={`md:hidden fixed top-6 left-6 z-50 w-11 h-11 rounded-2xl text-white/80 flex items-center justify-center ${lockMobileContentScroll ? 'transition-none translate-y-0 opacity-100 pointer-events-none' : `transition-all duration-300 ${showMobileControls ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}`}
           style={{
             background: `${C.bgDark}80`,
             border: "1px solid rgba(255,255,255,0.08)",
