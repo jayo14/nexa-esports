@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
+import PullToRefresh from 'pulltorefreshjs';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Layout } from '@/components/Layout';
@@ -83,6 +84,26 @@ import { FestiveLights } from '@/components/effects/FestiveLights';
 import { useCapacitor } from '@/hooks/useCapacitor';
 
 function App() {
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(window.navigator.userAgent);
+    const isInWebAppiOS =
+      isIOS &&
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    if (!isInWebAppiOS) return;
+
+    PullToRefresh.init({
+      mainElement: 'body',
+      onRefresh() {
+        window.location.reload();
+      },
+    });
+
+    return () => {
+      PullToRefresh.destroyAll();
+    };
+  }, []);
+
   return (
     <Router>
       <ThemeProvider>

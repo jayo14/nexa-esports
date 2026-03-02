@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Home,
+  Wallet,
   Gamepad2,
   Package,
   Tv,
@@ -80,6 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
       <ScrollArea className="flex-1 w-full [&>[data-orientation='vertical']]:hidden">
         <nav className="flex flex-col items-center gap-5 pb-2">
           <SideNavIcon icon={<Home className="w-5 h-5" />} onClick={() => navigate('/')} active={isActive('/')} />
+          <SideNavIcon icon={<Wallet className="w-5 h-5" />} onClick={() => navigate('/wallet')} active={isActive('/wallet')} />
           <SideNavIcon
             icon={<Gamepad2 className="w-5 h-5" />}
             onClick={() => navigate('/scrims')}

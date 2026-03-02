@@ -265,14 +265,14 @@ export const Chat: React.FC = () => {
         style={glassPanel}
       >
         {/* Search */}
-        <div className="p-4 sm:p-5 md:p-6">
+        <div className="p-4 max-[359px]:p-3 sm:p-5 md:p-6">
           <div className="relative">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
               style={{ color: '#64748b' }}
             />
             <input
-              className="w-full rounded-lg py-2 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 transition-all"
+              className="w-full rounded-lg py-2 max-[359px]:py-1.5 pl-10 pr-4 text-sm max-[359px]:text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 transition-all"
               style={{
                 background: `${PRIMARY}0d`,
                 border: `1px solid ${PRIMARY}1a`,
@@ -283,7 +283,7 @@ export const Chat: React.FC = () => {
         </div>
 
         {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto px-2 sm:px-3 space-y-1 custom-scrollbar"
+        <div className="flex-1 overflow-y-auto px-2 max-[359px]:px-1.5 sm:px-3 space-y-1 custom-scrollbar"
           style={{ scrollbarWidth: 'thin', scrollbarColor: `${BURGUNDY} transparent` }}
         >
           {isLoadingConversations ? (
@@ -298,7 +298,7 @@ export const Chat: React.FC = () => {
                 <div
                   key={conv.id}
                   onClick={() => navigate(`/chat/${conv.id}`)}
-                  className="flex items-center gap-3 sm:gap-4 p-3 rounded-xl cursor-pointer transition-all"
+                  className="flex items-center gap-3 max-[359px]:gap-2 sm:gap-4 p-3 max-[359px]:p-2.5 rounded-xl cursor-pointer transition-all"
                   style={
                     isActive
                       ? {
@@ -318,7 +318,7 @@ export const Chat: React.FC = () => {
                 >
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 rounded-xl bg-slate-800 overflow-hidden border"
+                    <div className="w-12 h-12 max-[359px]:w-10 max-[359px]:h-10 rounded-xl bg-slate-800 overflow-hidden border"
                       style={{ borderColor: `${PRIMARY}33` }}
                     >
                       {other?.avatar_url ? (
@@ -344,7 +344,7 @@ export const Chat: React.FC = () => {
                   <div className="flex-1 overflow-hidden">
                     <div className="flex justify-between items-center">
                       <h3
-                        className="font-bold text-sm truncate"
+                        className="font-bold text-sm max-[359px]:text-xs truncate"
                         style={{ color: isActive ? '#f1f5f9' : '#cbd5e1' }}
                       >
                         {other?.ign || other?.username || 'Unknown'}
@@ -356,7 +356,7 @@ export const Chat: React.FC = () => {
                         {format(new Date(conv.updated_at), 'HH:mm')}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 truncate mt-0.5">
+                    <p className="text-xs max-[359px]:text-[11px] text-slate-500 truncate mt-0.5">
                       {conv.listing?.title || 'Account listing'}
                     </p>
                   </div>
