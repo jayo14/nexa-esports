@@ -138,18 +138,36 @@ export const useChat = (conversationId?: string) => {
       if (!user) throw new Error('Not authenticated');
       if (!otherUserId || otherUserId === user.id) throw new Error('Invalid recipient');
 
-      const { data: existing, error: fetchError } = await supabase
+      const { data: recipientProfile, error: recipientError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', otherUserId)
+        .maybeSingle();
+
+      if (recipientError) throw recipientError;
+      if (!recipientProfile) throw new Error('Recipient not found');
+
+      const { data: existingAsBuyer, error: existingAsBuyerError } = await supabase
         .from('conversations')
         .select('id')
         .is('listing_id', null)
-        .or(
-          `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`
-        )
-        .order('updated_at', { ascending: false })
-        .limit(1);
+        .eq('buyer_id', user.id)
+        .eq('seller_id', otherUserId)
+        .maybeSingle();
 
-      if (fetchError) throw fetchError;
-      if (existing && existing.length > 0) return existing[0].id;
+      if (existingAsBuyerError) throw existingAsBuyerError;
+      if (existingAsBuyer?.id) return existingAsBuyer.id;
+
+      const { data: existingAsSeller, error: existingAsSellerError } = await supabase
+        .from('conversations')
+        .select('id')
+        .is('listing_id', null)
+        .eq('buyer_id', otherUserId)
+        .eq('seller_id', user.id)
+        .maybeSingle();
+
+      if (existingAsSellerError) throw existingAsSellerError;
+      if (existingAsSeller?.id) return existingAsSeller.id;
 
       const { data: created, error: createError } = await supabase
         .from('conversations')
@@ -157,7 +175,12 @@ export const useChat = (conversationId?: string) => {
         .select('id')
         .single();
 
-      if (createError) throw createError;
+      if (createError) {
+        if (createError.code === '23503') {
+          throw new Error('Recipient account is unavailable for direct chat');
+        }
+        throw createError;
+      }
       return created.id;
     },
   });

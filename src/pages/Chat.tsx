@@ -130,6 +130,7 @@ export const Chat: React.FC = () => {
     },
     enabled: isDraftConversation,
   });
+  const canComposeDraft = isDraftConversation && !!draftRecipient?.id;
 
   const compressImageToDataUrl = async (file: File) => {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -193,6 +194,15 @@ export const Chat: React.FC = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!newMessage.trim() && !pendingImage) || isSending) return;
+
+    if (isDraftConversation && !draftRecipient?.id) {
+      toast({
+        title: 'Conversation unavailable',
+        description: 'This user cannot be messaged right now.',
+      });
+      return;
+    }
+
     const content = newMessage.trim();
 
     try {
@@ -412,7 +422,7 @@ export const Chat: React.FC = () => {
                       <h2 className="font-bold text-lg text-slate-100">
                         {activeTarget?.ign ||
                           activeTarget?.username ||
-                          'Unknown'}
+                          'Unavailable User'}
                       </h2>
                       <Shield className="w-4 h-4" style={{ color: PRIMARY }} />
                     </div>
@@ -578,9 +588,13 @@ export const Chat: React.FC = () => {
                       </div>
                     );
                   })
-                ) : (
+                ) : canComposeDraft ? (
                   <div className="text-center text-slate-500 py-8 text-sm">
                     First message will start this conversation.
+                  </div>
+                ) : (
+                  <div className="text-center text-slate-500 py-8 text-sm">
+                    User unavailable for direct messaging.
                   </div>
                 )}
                 <div ref={scrollRef} />
@@ -600,6 +614,7 @@ export const Chat: React.FC = () => {
                   style={{
                     ...glassPanel,
                     outline: `1px solid ${PRIMARY}33`,
+                    opacity: isDraftConversation && !canComposeDraft ? 0.6 : 1,
                   }}
                 >
                   <input
@@ -616,6 +631,7 @@ export const Chat: React.FC = () => {
                       type="button"
                       className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
                       onClick={openImagePicker}
+                      disabled={isDraftConversation && !canComposeDraft}
                     >
                       <Icon className="w-5 h-5" />
                     </button>
@@ -626,11 +642,13 @@ export const Chat: React.FC = () => {
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Transmit intel..."
                     className="flex-1 bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 py-2"
+                    disabled={isDraftConversation && !canComposeDraft}
                   />
 
                   <button
                     type="button"
                     className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
+                    disabled={isDraftConversation && !canComposeDraft}
                   >
                     <Smile className="w-5 h-5" />
                   </button>
