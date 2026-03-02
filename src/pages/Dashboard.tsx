@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   Search,
   ShoppingCart,
+  ShoppingBag,
   Bell,
   Flame,
   Smartphone,
@@ -22,6 +23,12 @@ import {
   Wallet,
   CalendarCheck
 } from "lucide-react";
+
+const C = {
+  primary: '#ec131e',
+  bgDark: '#1a0b0d',
+  burgundy: '#411d21',
+};
 
 export const Dashboard: React.FC = () => {
   const { profile, user } = useAuth();
@@ -82,38 +89,53 @@ export const Dashboard: React.FC = () => {
   return (
     <>
       {/* Responsive Header */}
-      <header className="flex flex-row items-center xs:flex-col xs:items-start justify-between gap-3 xs:gap-4 sm:gap-0 px-2 xs:px-3 sm:px-4 md:px-6 py-3 xs:py-4 w-full">
+      <header
+        className="sticky top-0 z-20 flex flex-row items-center xs:flex-col xs:items-start justify-between gap-3 xs:gap-4 sm:gap-0 px-2 xs:px-3 sm:px-4 md:px-6 py-3 xs:py-4 w-full rounded-2xl"
+        style={{
+          background: `${C.burgundy}80`,
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
         <div className="w-full sm:w-auto">
-          <h1 className="text-white/60 text-base sm:text-lg font-sans">
+          <h1 className="text-slate-300 text-base sm:text-lg font-sans">
             {getGreeting()}, <span className="text-white font-bold">{getDisplayName()}</span>
           </h1>
         </div>
         <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
           <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
-              className="bg-black/20 border-none rounded-2xl py-2.5 sm:py-3 pl-12 pr-4 sm:pr-6 w-full sm:w-80 text-sm focus:ring-1 focus:ring-accent-red/50 outline-none placeholder:text-white/20 font-sans"
+              className="rounded-full py-2.5 pl-12 pr-4 sm:pr-6 w-full sm:w-80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans"
+              style={{ background: `${C.bgDark}80`, border: 'none' }}
               placeholder="Search operations..."
               type="text"
             />
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
-              className="w-10 h-10 sm:w-11 sm:h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all"
+              style={{ background: `${C.bgDark}80` }}
               onClick={() => navigate('/marketplace')}>
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingBag className="w-5 h-5" />
             </button>
             <button
-              className="w-10 h-10 sm:w-11 sm:h-11 bg-black/20 rounded-full flex items-center justify-center hover:bg-black/40 transition-colors text-white/60"
-              onClick={() => navigate('/notifications')}>
+              className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white relative"
+              style={{ background: `${C.bgDark}80` }}
+              onClick={() => navigate('/announcements')}>
               <Bell className="w-5 h-5" />
+              <span
+                className="absolute top-2 right-2.5 w-2 h-2 rounded-full"
+                style={{ background: C.primary, border: `2px solid ${C.bgDark}` }}
+              />
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content Grid - Responsive */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-12 gap-2 xs:gap-4 md:gap-6 px-2 xs:px-3 sm:px-4 md:px-6">
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-12 gap-2 xs:gap-4 md:gap-6 px-2 xs:px-3 sm:px-4 md:px-6 pt-2">
         {/* Hero Section */}
         <section className="col-span-1 xs:col-span-2 md:col-span-8 relative h-[160px] xs:h-[220px] sm:h-[320px] md:h-[420px] rounded-xl xs:rounded-2xl md:rounded-[3rem] overflow-hidden group mb-3 xs:mb-4 md:mb-0">
           <img

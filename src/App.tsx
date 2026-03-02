@@ -130,7 +130,7 @@ function AppRoutes() {
         <Route path="/auth/onboarding" element={<Onboarding />} />
 
         {/* Protected routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Layout showSidebar><Dashboard /></Layout></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Layout showSidebar pageScroll><Dashboard /></Layout></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Layout showSidebar><Profile /></Layout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Layout showSidebar><Settings /></Layout></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Layout showSidebar><Chat /></Layout></ProtectedRoute>} />

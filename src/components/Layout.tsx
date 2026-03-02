@@ -7,16 +7,24 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileMenu } from "@/components/MobileMenu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, LogOut, Menu } from "lucide-react";
+import { Users, LogOut, Menu, MessageSquare, Settings } from "lucide-react";
+
+const C = {
+  primary: "#ec131e",
+  bgDark: "#1a0b0d",
+  burgundy: "#411d21",
+};
 
 interface LayoutProps {
   children: React.ReactNode;
   showSidebar?: boolean;
+  pageScroll?: boolean;
 }
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
   showSidebar = false,
+  pageScroll = false,
 }) => {
   const { user, profile, loading, logout } = useAuth();
   const navigate = useNavigate();
@@ -60,13 +68,15 @@ export const Layout: React.FC<LayoutProps> = ({
   }, [isMobile]);
 
   useEffect(() => {
-    if (!isMobile || !mainContentRef.current) return;
+    if (!isMobile) return;
 
-    const container = mainContentRef.current;
-    lastScrollTopRef.current = container.scrollTop;
+    const getScrollTop = () => {
+      if (pageScroll) return window.scrollY;
+      return mainContentRef.current?.scrollTop ?? 0;
+    };
 
     const onScroll = () => {
-      const currentScrollTop = container.scrollTop;
+      const currentScrollTop = getScrollTop();
       const delta = currentScrollTop - lastScrollTopRef.current;
 
       if (currentScrollTop <= 10) {
@@ -80,13 +90,26 @@ export const Layout: React.FC<LayoutProps> = ({
       lastScrollTopRef.current = currentScrollTop;
     };
 
+    if (pageScroll) {
+      lastScrollTopRef.current = window.scrollY;
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => window.removeEventListener("scroll", onScroll);
+    }
+
+    const container = mainContentRef.current;
+    if (!container) return;
+
+    lastScrollTopRef.current = container.scrollTop;
     container.addEventListener("scroll", onScroll, { passive: true });
     return () => container.removeEventListener("scroll", onScroll);
-  }, [isMobile]);
+  }, [isMobile, pageScroll]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a0b0d]">
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: `linear-gradient(135deg, ${C.burgundy} 0%, ${C.bgDark} 100%)` }}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-red mx-auto"></div>
           <p className="mt-2 text-white/60">Loading...</p>
@@ -100,35 +123,82 @@ export const Layout: React.FC<LayoutProps> = ({
   }
 
   if (!showSidebar) {
-    return <div className="min-h-screen bg-[#1a0b0d]">{children}</div>;
+    return (
+      <div
+        className="min-h-screen"
+        style={{ background: `linear-gradient(135deg, ${C.burgundy} 0%, ${C.bgDark} 100%)` }}
+      >
+        {children}
+      </div>
+    );
   }
 
   return (
-    <div className="p-4 md:p-6 h-screen bg-[#1a0b0d] text-white/90 antialiased overflow-hidden font-sans">
+    <div
+      className={`text-white/90 antialiased font-sans ${pageScroll ? 'min-h-screen overflow-x-hidden' : 'p-4 md:p-6 h-screen overflow-hidden'}`}
+      style={{ background: `linear-gradient(135deg, ${C.burgundy} 0%, ${C.bgDark} 100%)` }}
+    >
       {isMobile && (
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className={`md:hidden fixed top-6 left-6 z-50 w-11 h-11 rounded-xl bg-black/30 border border-white/10 text-white/80 flex items-center justify-center hover:bg-black/40 transition-all duration-300 ${showMobileControls ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}
+          className={`md:hidden fixed top-6 left-6 z-50 w-11 h-11 rounded-2xl text-white/80 flex items-center justify-center transition-all duration-300 ${showMobileControls ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}
+          style={{
+            background: `${C.bgDark}80`,
+            border: "1px solid rgba(255,255,255,0.08)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          }}
           aria-label="Open sidebar menu"
         >
           <Menu className="w-5 h-5" />
         </button>
       )}
 
-      <div className="main-gradient w-full h-full rounded-[3.5rem] flex overflow-hidden border border-white/5 relative shadow-2xl">
+      <div
+        className={pageScroll
+          ? 'w-full min-h-screen relative'
+          : 'w-full h-full rounded-[32px] flex border relative shadow-2xl overflow-hidden'}
+        style={pageScroll
+          ? undefined
+          : {
+              background: `linear-gradient(135deg, ${C.burgundy} 0%, ${C.bgDark} 100%)`,
+              borderColor: "rgba(255,255,255,0.05)",
+            }}
+      >
         {/* Left Sidebar */}
-        {!isMobile && <Sidebar />}
+        {!isMobile && !pageScroll && <Sidebar />}
+        {!isMobile && pageScroll && (
+          <div className="fixed top-4 bottom-4 left-4 lg:top-6 lg:bottom-6 lg:left-6 z-30">
+            <div className="h-full">
+              <Sidebar />
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
-        <main ref={mainContentRef} className="flex-1 overflow-y-auto custom-scrollbar p-8 pr-4 flex flex-col gap-8">
+        <main
+          ref={mainContentRef}
+          className={pageScroll
+            ? 'h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] overflow-y-auto custom-scrollbar flex flex-col gap-6 min-w-0 px-4 lg:px-6 md:ml-[7rem] lg:ml-[8rem] md:mr-[5rem] lg:mr-[6rem]'
+            : 'flex-1 p-4 md:p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar'}
+        >
           {children}
         </main>
 
         {/* Right Sidebar */}
         {!isMobile && (
-          <aside className="w-24 flex flex-col items-center py-8 gap-4 shrink-0 pr-6 pl-2 overflow-y-auto custom-scrollbar">
+          <aside
+            className={`w-16 flex flex-col items-center py-6 gap-6 rounded-[32px] shrink-0 ${pageScroll ? 'fixed top-4 bottom-4 right-4 lg:top-6 lg:bottom-6 lg:right-6 z-30' : 'mr-4 my-4 overflow-y-auto custom-scrollbar'}`}
+            style={{
+              background: `${C.bgDark}66`,
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.05)",
+            }}
+          >
             <div
-              className="w-14 h-14 rounded-full border-2 border-white/20 p-0.5 mb-2 cursor-pointer"
+              className="w-10 h-10 rounded-full overflow-hidden mb-4 flex-shrink-0 cursor-pointer"
+              style={{ border: `2px solid ${C.primary}66` }}
               onClick={() => navigate('/profile')}
             >
               <img
@@ -138,10 +208,14 @@ export const Layout: React.FC<LayoutProps> = ({
               />
             </div>
 
-            <div className="floating-glass w-full rounded-[2rem] py-4 flex flex-col items-center gap-5">
-              <div className="text-white/30">
+            <div className="flex flex-col gap-4">
+              <button
+                className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400"
+                style={{ background: 'rgba(255,255,255,0.05)' }}
+                aria-label="Players"
+              >
                 <Users className="w-5 h-5" />
-              </div>
+              </button>
 
               {otherPlayers.map((player) => (
                 <div
@@ -149,7 +223,10 @@ export const Layout: React.FC<LayoutProps> = ({
                   className="relative group cursor-pointer"
                   onClick={() => navigate(`/profile/${player.id}`)}
                 >
-                  <div className="w-12 h-12 rounded-full border-2 border-white/10 overflow-hidden bg-white/10 flex items-center justify-center">
+                  <div
+                    className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-bold text-sm text-slate-300"
+                    style={{ background: 'rgba(255,255,255,0.08)', border: `2px solid ${C.bgDark}` }}
+                  >
                     {player.avatar_url ? (
                       <img
                         alt={player.username}
@@ -162,27 +239,45 @@ export const Layout: React.FC<LayoutProps> = ({
                       </span>
                     )}
                   </div>
-                  {player.status === 'in-game' && (
-                    <div className="absolute -top-1 -right-4 bg-accent-red text-[7px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter whitespace-nowrap shadow-lg">
-                      In Game
-                    </div>
-                  )}
-                  <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-sidebar-dark ${player.status === 'offline' ? 'bg-slate-500' : 'bg-green-500'}`}></div>
+                  <span
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 ${player.status === 'offline' ? 'bg-slate-500' : 'bg-green-500'}`}
+                    style={{ borderColor: C.bgDark }}
+                  />
                 </div>
               ))}
             </div>
 
-            <div className="floating-glass w-full rounded-[2rem] py-4 flex flex-col items-center gap-5 mt-auto">
-             
-              
-              <button
-                onClick={logout}
-                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all"
-                aria-label="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
+            {pageScroll ? (
+              <div className="mt-auto flex flex-col gap-4">
+                <button
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                  onClick={() => navigate('/chat')}
+                  aria-label="Open chat"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                </button>
+                <button
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                  onClick={() => navigate('/settings')}
+                  aria-label="Open settings"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="mt-auto flex flex-col gap-4">
+                <button
+                  onClick={logout}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </aside>
         )}
       </div>

@@ -1,20 +1,49 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import {
   Home,
   Gamepad2,
-  Trophy,
+  Package,
+  Tv,
+  BarChart2,
   ShoppingBag,
-  Bell,
   MessageSquare,
   Plus,
-  Users,
-  CalendarCheck,
-  LogOut
 } from 'lucide-react';
+
+const C = {
+  primary: '#ec131e',
+  bgDark: '#1a0b0d',
+};
+
+const SideNavIcon: React.FC<{
+  icon: React.ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+}> = ({ icon, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
+    style={
+      active
+        ? { background: `${C.primary}26`, color: C.primary, boxShadow: `0 0 15px ${C.primary}33` }
+        : { color: '#64748b' }
+    }
+    onMouseEnter={(e) => {
+      if (!active) {
+        (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (!active) {
+        (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
+      }
+    }}
+  >
+    {icon}
+  </button>
+);
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -23,99 +52,48 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = () => {
-  const { logout, profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const userRole = profile?.role;
-  const isAdmin = userRole === 'admin';
-  const isClanMaster = userRole === 'clan_master';
-  const isModerator = userRole === 'moderator';
-
-  const navItems = [
-    { icon: Home, path: '/dashboard', label: 'Home' },
-    { icon: Gamepad2, path: '/scrims', label: 'Scrims' },
-    { icon: Trophy, path: '/statistics', label: 'Statistics' },
-    { icon: ShoppingBag, path: '/marketplace', label: 'Marketplace' },
-    { icon: Bell, path: '/announcements', label: 'Notifications' },
-    { icon: MessageSquare, path: '/chat', label: 'Chat' },
-  ];
-
-  const adminNavItems = [
-    {
-      icon: Users,
-      path: '/admin/players',
-      label: 'Player Management',
-      roles: ['admin', 'clan_master'],
-    },
-    {
-      icon: CalendarCheck,
-      path: '/admin/attendance',
-      label: 'Attendance',
-      roles: ['admin', 'clan_master', 'moderator'],
-    },
-  ];
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <aside className="w-20 md:w-24 flex flex-col items-center py-8 gap-6 shrink-0 h-full">
-      <div className="mb-4 cursor-pointer" onClick={() => navigate('/')}>
-        <img src="/nexa-logo.jpg" alt="Nexa Esports" className="w-12 h-12 rounded-full" />
+    <aside
+      className="w-20 rounded-[32px] flex flex-col items-center py-8 shrink-0"
+      style={{
+        background: `${C.bgDark}66`,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255,255,255,0.05)',
+      }}
+    >
+      <div className="mb-12 w-10 h-10 flex items-center justify-center" onClick={() => navigate('/')}>
+        <svg className="w-8 h-8 fill-white" viewBox="0 0 100 100">
+          <path d="M20 20 L20 80 L35 80 L65 35 L65 80 L80 80 L80 20 L65 20 L35 65 L35 20 Z" />
+        </svg>
       </div>
 
-      <nav className="floating-glass w-16 md:w-20 rounded-[2.5rem] py-8 flex flex-col gap-10 items-center flex-1">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={cn(
-                "transition-all duration-300 hover:text-white",
-                isActive ? "text-accent-red active-glow-icon" : "text-white/30"
-              )}
-            >
-              <Icon className={cn("w-6 h-6", isActive && "fill-current")} />
-            </button>
-          );
-        })}
-
-        {/* Admin Links */}
-        {adminNavItems.map((item) => {
-          if (userRole && item.roles.includes(userRole)) {
-            const isActive = location.pathname === item.path;
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={cn(
-                  "transition-all duration-300 hover:text-white",
-                  isActive ? "text-accent-red active-glow-icon" : "text-white/30"
-                )}
-              >
-                <Icon className={cn("w-6 h-6", isActive && "fill-current")} />
-              </button>
-            );
-          }
-          return null;
-        })}
+      <nav className="flex-1 flex flex-col gap-6">
+        <SideNavIcon icon={<Home className="w-5 h-5" />} onClick={() => navigate('/')} active={isActive('/')} />
+        <SideNavIcon
+          icon={<Gamepad2 className="w-5 h-5" />}
+          onClick={() => navigate('/scrims')}
+          active={isActive('/scrims') || location.pathname.startsWith('/events/')}
+        />
+        <SideNavIcon icon={<Package className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/package')} />
+        <SideNavIcon icon={<Tv className="w-5 h-5" />} onClick={() => navigate('/announcements')} active={isActive('/announcements')} />
+        <SideNavIcon icon={<BarChart2 className="w-5 h-5" />} onClick={() => navigate('/statistics')} active={isActive('/statistics')} />
+        <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
+        <SideNavIcon icon={<MessageSquare className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
       </nav>
 
-      <div className="mt-auto flex flex-col items-center gap-4">
-        <button
-          onClick={() => navigate('/list-account')}
-          className="w-12 h-12 rounded-2xl border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 hover:border-accent-red/50 hover:text-accent-red transition-all"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-        <button
-          onClick={logout}
-          className="w-12 h-12 rounded-2xl flex items-center justify-center text-white/30 hover:text-white transition-all"
-        >
-          <LogOut className="w-6 h-6" />
-        </button>
-      </div>
+      <button
+        onClick={() => navigate('/list-account')}
+        className="mt-auto w-10 h-10 rounded-full flex items-center justify-center"
+        style={{ background: `${C.primary}33`, border: `1px solid ${C.primary}66`, color: C.primary }}
+      >
+        <Plus className="w-4 h-4" />
+      </button>
     </aside>
   );
 };
