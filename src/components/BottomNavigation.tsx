@@ -44,7 +44,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ hidden = fal
   return (
     <nav 
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4 flex justify-center transition-all duration-300',
+        'fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4 flex justify-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform',
         hidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       )}
       role="navigation"

@@ -1,72 +1,112 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Label } from '@/components/ui/label';
-import { 
-  Search, 
-  UserCheck, 
-  UserX,
-  Calendar,
-  TrendingUp,
-  Users,
-  CheckCircle,
-  XCircle,
-  Download,
-  CalendarDays,
-  Trash2
-} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/integrations/supabase/types';
+import {
+  Search, UserCheck, UserX, Calendar, TrendingUp, Users,
+  CheckCircle, XCircle, Download, CalendarDays, Trash2,
+  Home, Gamepad2, Package, BarChart2, MessageSquare, Plus,
+  Bell, ShoppingBag, Send, ChevronRight,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type Player = Database['public']['Tables']['profiles']['Row'];
 type AttendanceRecord = Database['public']['Tables']['attendance']['Row'] & {
-  profiles: {
-    username: string;
-    ign: string;
-    status: string;
-  } | null;
-  events: {
-    name: string;
-  } | null;
+  profiles: { username: string; ign: string; status: string } | null;
+  events:   { name: string } | null;
 };
-
 type AttendanceMode = 'MP' | 'BR';
 
-import { useAuth } from '@/contexts/AuthContext';
+/* ─────────────── Design Tokens ─────────────── */
+const C = {
+  primary:  '#ec131e',
+  bgDark:   '#120809',
+  sidebar:  '#1a0b0d',
+  panel:    'rgba(25,12,14,0.6)',
+};
 
+const glass: React.CSSProperties = {
+  background:  'rgba(255,255,255,0.03)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.05)',
+  boxShadow: '0 8px 32px 0 rgba(0,0,0,0.3)',
+};
+
+
+/* ─────────────── Stat Card ─────────────── */
+const StatCard: React.FC<{
+  label: string;
+  value: string | number;
+  iconName: React.ReactNode;
+  iconColor?: string;
+}> = ({ label, value, iconName, iconColor = C.primary }) => (
+  <div
+    className="p-6 rounded-[32px] relative overflow-hidden group hover:bg-white/5 transition-all"
+    style={glass}
+  >
+    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">{label}</p>
+    <div className="flex items-end justify-between mt-3">
+      <h3 className="text-4xl font-bold text-white">{value}</h3>
+      <div style={{ color: `${iconColor}4d` }} className="text-4xl">{iconName}</div>
+    </div>
+  </div>
+);
+
+/* ─────────────── Pill Toggle ─────────────── */
+const PillToggle: React.FC<{
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}> = ({ options, value, onChange }) => (
+  <div className="flex gap-2 bg-white/5 p-2 rounded-2xl border border-white/5">
+    {options.map((opt) => (
+      <button
+        key={opt}
+        onClick={() => onChange(opt)}
+        className="px-8 py-2.5 rounded-xl font-bold text-sm transition-all"
+        style={
+          value === opt
+            ? { background: C.primary, color: '#fff', boxShadow: `0 4px 12px ${C.primary}4d` }
+            : { color: '#64748b' }
+        }
+        onMouseEnter={(e) => { if (value !== opt) (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
+        onMouseLeave={(e) => { if (value !== opt) (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
+      >
+        {opt}
+      </button>
+    ))}
+  </div>
+);
+
+/* ═══════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════ */
 export const AdminAttendance: React.FC = () => {
-  const { profile } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [attendanceMode, setAttendanceMode] = useState<AttendanceMode>('MP');
-  const [selectedLobby, setSelectedLobby] = useState<number>(1);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [killsInput, setKillsInput] = useState<{ [playerId: string]: number}>({});
+  const { profile }    = useAuth();
+  const { toast }      = useToast();
+  const queryClient    = useQueryClient();
 
-  // Fetch players
+  const [attendanceMode, setAttendanceMode] = useState<AttendanceMode>('MP');
+  const [selectedLobby, setSelectedLobby]   = useState<number>(1);
+  const [selectedDate,  setSelectedDate]    = useState(new Date().toISOString().split('T')[0]);
+  const [searchTerm,    setSearchTerm]      = useState('');
+  const [roleFilter,    setRoleFilter]      = useState('all');
+  const [killsInput,    setKillsInput]      = useState<{ [id: string]: number }>({});
+  const [chatMessage,   setChatMessage]     = useState('');
+
+  /* ── Queries ── */
   const { data: players = [], isLoading: playersLoading } = useQuery<Player[]>({
     queryKey: ['players'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('username');
-      
+      const { data, error } = await supabase.from('profiles').select('*').order('username');
       if (error) throw error;
       return data;
-    }
+    },
   });
 
-  // Fetch attendance records with profiles and events
   const { data: rawAttendanceData, isLoading: attendanceLoading } = useQuery({
     queryKey: ['attendance-raw', attendanceMode, selectedLobby],
     queryFn: async () => {
@@ -75,537 +115,563 @@ export const AdminAttendance: React.FC = () => {
         .select('*')
         .eq('attendance_type', attendanceMode)
         .eq('lobby', selectedLobby)
-        .order('created_at', { ascending: false});
-      
+        .order('created_at', { ascending: false });
       if (result.error) throw result.error;
       return result.data;
-    }
+    },
   });
 
-  // Fetch profiles and events separately to avoid type issues
   const { data: profilesData } = useQuery({
     queryKey: ['attendance-profiles'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('profiles')
-        .select('id, username, ign, status');
+      const { data, error } = await (supabase as any).from('profiles').select('id, username, ign, status');
       if (error) throw error;
       return data;
-    }
+    },
   });
 
   const { data: eventsData } = useQuery({
     queryKey: ['attendance-events'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('id, name');
+      const { data, error } = await supabase.from('events').select('id, name');
       if (error) throw error;
       return data;
-    }
+    },
   });
 
-  // Combine the data
   const attendanceRecords: AttendanceRecord[] = (rawAttendanceData || []).map((record: any) => {
-    const profile = profilesData?.find(p => p.id === record.player_id) as any;
-    const event = eventsData?.find(e => e.id === record.event_id);
+    const p  = profilesData?.find((x: any) => x.id === record.player_id);
+    const ev = eventsData?.find((e: any) => e.id === record.event_id);
     return {
       ...record,
-      profiles: profile ? { username: profile.username, ign: profile.ign, status: profile.status } : null,
-      events: event ? { name: event.name } : null
+      profiles: p ? { username: p.username, ign: p.ign, status: p.status } : null,
+      events:   ev ? { name: ev.name } : null,
     };
   });
 
-  // Mark attendance mutation
-  // TODO: Add a 'lobby' column (integer) to the 'attendance' table in the database.
+  /* ── Mutations ── */
+  const invalidate = () => {
+    ['attendance', 'attendance-raw', 'players', 'admin-players', 'profile', 'player-stats', 'weekly-leaderboard']
+      .forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+  };
+
   const markAttendanceMutation = useMutation({
-  mutationFn: async ({ playerId, status, kills, lobby }: { playerId: string; status: 'present' | 'absent'; kills?: number; lobby: number }) => {
-    try {
-      const { data, error } = await supabase
-        .from('attendance')
-        .insert({
-          player_id: playerId,
-          status,
-          attendance_type: attendanceMode,
-          date: selectedDate,
-          event_kills: kills || 0,
-          br_kills: attendanceMode === 'BR' ? (kills || 0) : 0,
-          mp_kills: attendanceMode === 'MP' ? (kills || 0) : 0,
-          lobby: lobby,
-        })
-        .select();
-
-      if (error) throw error;
-      return data?.[0];
-    } catch (error: any) {
-      if (error.code === '23505') {
-        toast({
-          title: "Attendance Already Marked",
-          description: `Attendance has already been marked for this lobby and mode on this day.`,
-          variant: "destructive",
-        });
-        return null;
+    mutationFn: async ({
+      playerId, status, kills, lobby,
+    }: { playerId: string; status: 'present' | 'absent'; kills?: number; lobby: number }) => {
+      try {
+        const { data, error } = await supabase
+          .from('attendance')
+          .insert({
+            player_id:       playerId,
+            status,
+            attendance_type: attendanceMode,
+            date:            selectedDate,
+            event_kills:     kills || 0,
+            br_kills:        attendanceMode === 'BR' ? (kills || 0) : 0,
+            mp_kills:        attendanceMode === 'MP' ? (kills || 0) : 0,
+            lobby,
+          })
+          .select();
+        if (error) throw error;
+        return data?.[0];
+      } catch (error: any) {
+        if (error.code === '23505') {
+          toast({ title: 'Attendance Already Marked', description: 'Already marked for this lobby and mode.', variant: 'destructive' });
+          return null;
+        }
+        throw error;
       }
-      throw error;
-    }
-  },
-  onSuccess: (data) => {
-    if (data) { // Only invalidate queries if the mutation was successful
-      queryClient.invalidateQueries({ queryKey: ['attendance'] });
-      queryClient.invalidateQueries({ queryKey: ['attendance-raw'] });
-      queryClient.invalidateQueries({ queryKey: ['players'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-players'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['player-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['weekly-leaderboard'] });
-    }
-  }
-});
-
-const undoAttendanceMutation = useMutation({
-  mutationFn: async (attendanceId: string) => {
-    const { error } = await supabase
-      .from('attendance')
-      .delete()
-      .eq('id', attendanceId);
-
-    if (error) throw error;
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['attendance'] });
-    queryClient.invalidateQueries({ queryKey: ['attendance-raw'] });
-    queryClient.invalidateQueries({ queryKey: ['players'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-players'] });
-    queryClient.invalidateQueries({ queryKey: ['profile'] });
-    queryClient.invalidateQueries({ queryKey: ['player-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['weekly-leaderboard'] });
-  },
-  onError: (error: any) => {
-    console.error('Error resetting attendance:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Failed to reset attendance.",
-      variant: "destructive",
-    });
-  },
-});
-
-  const handleMarkAttendance = async (
-  playerId: string,
-  playerIgn: string,
-  status: 'present' | 'absent',
-  kills?: number
-) => {
-  try {
-    const newAttendance = await markAttendanceMutation.mutateAsync({ playerId, status, kills, lobby: selectedLobby });
-    
-    if (newAttendance) {
-      const { dismiss } = toast({
-        title: "Attendance Marked",
-        description: `${playerIgn} marked as ${status} (${kills || 0} kills) for ${attendanceMode} - Lobby ${selectedLobby} on ${new Date(selectedDate).toLocaleDateString()}`,
-        duration: 60000, // 1 minute
-        action: (
-          <Button
-            variant="outline"
-            onClick={() => {
-              undoAttendanceMutation.mutate(newAttendance.id);
-              dismiss();
-            }}
-          >
-            Undo
-          </Button>
-        ),
-      });
-    }
-
-  } catch (error) {
-    console.error('Error marking attendance:', error);
-    toast({
-      title: "Error",
-      description: "Failed to mark attendance",
-      variant: "destructive",
-    });
-  }
-};
-
-
-  const setToday = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
-  };
-
-  const exportData = (format: 'csv' | 'xlsx') => {
-    const filteredRecords = attendanceRecords.filter(record => 
-      record.profiles?.ign?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    // Mock export functionality
-    toast({
-      title: "Export Started",
-      description: `Exporting attendance data as ${format.toUpperCase()}...`,
-    });
-  };
-
-  const scrollToPlayer = (playerIgn: string) => {
-    const element = document.getElementById(`player-${playerIgn}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('bg-primary/20');
-      setTimeout(() => {
-        element.classList.remove('bg-primary/20');
-      }, 2000);
-    }
-  };
-
-  const filteredPlayers = players.filter(player => {
-    const matchesSearch = player.ign.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || player.role === roleFilter;
-    return matchesSearch && matchesRole && !player.is_banned;
+    },
+    onSuccess: (data) => { if (data) invalidate(); },
   });
 
-  const filteredRecords = attendanceRecords.filter(record =>
-    record.profiles?.ign?.toLowerCase().includes(searchTerm.toLowerCase())
+  const undoAttendanceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('attendance').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to reset attendance.', variant: 'destructive' });
+    },
+  });
+
+  const handleMarkAttendance = async (
+    playerId: string, playerIgn: string, status: 'present' | 'absent', kills?: number
+  ) => {
+    try {
+      const newRecord = await markAttendanceMutation.mutateAsync({ playerId, status, kills, lobby: selectedLobby });
+      if (newRecord) {
+        const { dismiss } = toast({
+          title: 'Attendance Marked',
+          description: `${playerIgn} → ${status} (${kills || 0} kills) — ${attendanceMode} Lobby ${selectedLobby}`,
+          duration: 60000,
+          action: (
+            <Button variant="outline" onClick={() => { undoAttendanceMutation.mutate(newRecord.id); dismiss(); }}>
+              Undo
+            </Button>
+          ),
+        });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to mark attendance', variant: 'destructive' });
+    }
+  };
+
+  const exportData = (fmt: 'csv' | 'xlsx') => {
+    toast({ title: 'Export Started', description: `Exporting as ${fmt.toUpperCase()}…` });
+  };
+
+  const scrollToPlayer = (ign: string) => {
+    const el = document.getElementById(`player-${ign}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.background = `${C.primary}1a`;
+      setTimeout(() => (el.style.background = ''), 2000);
+    }
+  };
+
+  const filteredPlayers = players.filter((p) => {
+    const matchSearch = p.ign.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchRole   = roleFilter === 'all' || p.role === roleFilter;
+    return matchSearch && matchRole && !p.is_banned;
+  });
+
+  const filteredRecords = attendanceRecords.filter((r) =>
+    r.profiles?.ign?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const avgAttendance = players.length > 0 ? Math.round(players.reduce((sum, p) => sum + (p.attendance || 0), 0) / players.length) : 0;
+  const avgAttendance = players.length > 0
+    ? Math.round(players.reduce((s, p) => s + (p.attendance || 0), 0) / players.length)
+    : 0;
+
+  const presentCount = attendanceRecords.filter((r) => r.status === 'present').length;
+  const absentCount  = attendanceRecords.filter((r) => r.status === 'absent').length;
+
+  const getPlayerPrefix = (status?: string | null) => status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂';
+
+  /* ── Inline styles ── */
+  const inputStyle: React.CSSProperties = {
+    background: 'rgba(0,0,0,0.4)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '8px',
+    padding: '6px 12px',
+    fontSize: '13px',
+    color: '#f1f5f9',
+    outline: 'none',
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground font-orbitron mb-2">Attendance Management</h1>
-          <p className="text-muted-foreground font-rajdhani">Track and manage player attendance</p>
-        </div>
-      </div>
+    <div
+      className="flex h-screen overflow-hidden"
+    >
+   
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-card/50 border-border/30">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary mb-1 font-orbitron">{players.length}</div>
-            <div className="text-sm text-muted-foreground font-rajdhani">Total Players</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 border-border/30">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-400 mb-1 font-orbitron">{avgAttendance}%</div>
-            <div className="text-sm text-muted-foreground font-rajdhani">Avg Attendance</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 border-border/30">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-400 mb-1 font-orbitron">
-              {attendanceRecords.filter(r => r.status === 'present').length}
-            </div>
-            <div className="text-sm text-muted-foreground font-rajdhani">Present Records</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 border-border/30">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-400 mb-1 font-orbitron">
-              {attendanceRecords.filter(r => r.status === 'absent').length}
-            </div>
-            <div className="text-sm text-muted-foreground font-rajdhani">Absent Records</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ══════════ MAIN CONTENT ══════════ */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        
 
-      {/* Attendance Mode & Lobby Selection */}
-      <Card className="bg-card/50 border-border/30">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="grid grid-cols-2 sm:flex rounded-lg bg-background/50 p-1 w-full sm:w-auto gap-1">
-              {(['MP', 'BR'] as AttendanceMode[]).map((mode) => (
-                <Button
-                  key={mode}
-                  variant={attendanceMode === mode ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setAttendanceMode(mode)}
-                  className={`font-rajdhani text-xs sm:text-sm px-2 sm:px-4 ${
-                    attendanceMode === mode 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-muted/50'
-                  }`}
-                >
-                  {mode}
-                </Button>
-              ))}
+        {/* Scrollable body */}
+        <div
+          className="flex-1 overflow-y-auto p-10 space-y-10"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: `${C.primary}33 transparent` }}
+        >
+          {/* ── Stat Cards ── */}
+          <div className="grid grid-cols-4 gap-6">
+            <StatCard label="Total Players"    value={players.length} iconName={<Users className="w-8 h-8" />} />
+            <StatCard label="Avg Attendance"   value={`${avgAttendance}%`} iconName={<BarChart2 className="w-8 h-8" />} />
+            <StatCard label="Present Records"  value={presentCount} iconName={<CheckCircle className="w-8 h-8" />} iconColor="#22c55e" />
+            <StatCard label="Absent Records"   value={absentCount}  iconName={<XCircle className="w-8 h-8" />} />
+          </div>
+
+          {/* ── Mode + Lobby + Filters Row ── */}
+          <div className="flex flex-col gap-6">
+            {/* Mode + Lobby toggles */}
+            <div
+              className="flex items-center justify-between p-2 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              <PillToggle
+                options={['MP', 'BR']}
+                value={attendanceMode}
+                onChange={(v) => setAttendanceMode(v as AttendanceMode)}
+              />
+              <div className="flex items-center gap-3">
+                {[1, 2, 3, 4].map((lobby) => (
+                  <button
+                    key={lobby}
+                    onClick={() => setSelectedLobby(lobby)}
+                    className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+                    style={
+                      selectedLobby === lobby
+                        ? { background: 'rgba(255,255,255,0.15)', color: '#fff' }
+                        : { background: 'rgba(255,255,255,0.05)', color: '#64748b' }
+                    }
+                    onMouseEnter={(e) => { if (selectedLobby !== lobby) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; }}
+                    onMouseLeave={(e) => { if (selectedLobby !== lobby) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                  >
+                    Lobby {lobby}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-4 sm:flex rounded-lg bg-background/50 p-1 w-full sm:w-auto gap-1">
-              {[1, 2, 3, 4].map((lobby) => (
-                <Button
-                  key={lobby}
-                  variant={selectedLobby === lobby ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setSelectedLobby(lobby)}
-                  className={`font-rajdhani text-xs sm:text-sm px-2 sm:px-4 ${
-                    selectedLobby === lobby 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-muted/50'
-                  }`}
+
+            {/* Date + role filter + exports */}
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-4">
+                <div
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
                 >
-                  Lobby {lobby}
-                </Button>
-              ))}
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="text-sm font-medium bg-transparent border-none outline-none"
+                    style={{ color: '#f1f5f9', colorScheme: 'dark' }}
+                  />
+                  <button
+                    onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                    className="text-xs font-bold ml-1 transition-colors hover:text-white"
+                    style={{ color: C.primary }}
+                  >
+                    Today
+                  </button>
+                </div>
+
+                <div
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
+                >
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="text-sm font-medium bg-transparent border-none outline-none cursor-pointer"
+                    style={{ color: '#f1f5f9', appearance: 'none' }}
+                  >
+                    <option value="all" style={{ background: C.bgDark }}>All Roles</option>
+                    <option value="player" style={{ background: C.bgDark }}>Player</option>
+                    <option value="moderator" style={{ background: C.bgDark }}>Moderator</option>
+                    <option value="admin" style={{ background: C.bgDark }}>Admin</option>
+                    <option value="clan_master" style={{ background: C.bgDark }}>Clan Master</option>
+                  </select>
+                  <ChevronRight className="w-4 h-4 text-slate-400 rotate-90" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => exportData('csv')}
+                  className="p-2.5 rounded-xl transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: '#64748b' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  title="Export CSV"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => exportData('xlsx')}
+                  className="p-2.5 rounded-xl transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: '#64748b' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  title="Export Excel"
+                >
+                  <BarChart2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Date Selection & Filters */}
-      <Card className="bg-card/50 border-border/30">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex items-center space-x-2">
-              <Label className="font-rajdhani">Date:</Label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-background/50 border-border/50 font-rajdhani"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={setToday}
-                className="font-rajdhani"
+          {/* ── Main Attendance Table ── */}
+          <section className="rounded-[32px] overflow-hidden" style={glass}>
+            {/* Section Header */}
+            <div
+              className="p-8 flex items-center justify-between"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              <div>
+                <h2 className="text-2xl font-bold text-white tracking-tight">
+                  {attendanceMode} Lobby {selectedLobby} Attendance
+                </h2>
+                <p className="text-slate-500 text-sm font-medium mt-1">
+                  {new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {' • '}
+                  {filteredPlayers.length} Players Scheduled
+                </p>
+              </div>
+              <button
+                className="px-8 py-3 rounded-2xl font-bold text-sm text-white transition-all"
+                style={{ background: C.primary, boxShadow: `0 8px 24px ${C.primary}4d` }}
+                onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
               >
-                Today
-              </Button>
-            </div>
-            
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search players..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background/50 border-border/50 font-rajdhani"
-              />
+                Submit Final Record
+              </button>
             </div>
 
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-40 bg-background/50 border-border/50">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="player">Player</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="moderator">Moderator</SelectItem>
-                <SelectItem value="clan_master">Clan Master</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => exportData('csv')}
-                className="font-rajdhani"
-              >
-                <Download className="w-4 h-4 mr-1" />
-                CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => exportData('xlsx')}
-                className="font-rajdhani"
-              >
-                <Download className="w-4 h-4 mr-1" />
-                Excel
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Players Attendance Table */}
-      <Card className="bg-card/50 border-border/30">
-        <CardHeader>
-          <CardTitle className="text-foreground font-orbitron flex items-center">
-            <UserCheck className="w-5 h-5 mr-2 text-primary" />
-            {attendanceMode} Lobby {selectedLobby} Attendance - {new Date(selectedDate).toLocaleDateString()}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="max-h-96 overflow-y-auto">
-            <Table>
-              <TableHeader className="sticky top-0 bg-card/90 backdrop-blur-sm">
-                <TableRow className="border-border/30">
-                  <TableHead className="text-muted-foreground font-rajdhani">Username</TableHead>
-                  <TableHead className="text-muted-foreground font-rajdhani">Kills</TableHead>
-                  <TableHead className="text-muted-foreground font-rajdhani">Present</TableHead>
-                  <TableHead className="text-muted-foreground font-rajdhani">Absent</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {playersLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
-                      <div className="text-muted-foreground">Loading players...</div>
-                    </TableCell>
-                  </TableRow>
-                ) : filteredPlayers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
-                      <div className="text-muted-foreground">No players found</div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredPlayers.map(player => (
-                    <TableRow 
-                      key={player.id} 
-                      id={`player-${player.ign}`}
-                      className="border-border/30 hover:bg-muted/20 transition-colors"
-                    >
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                            <Users className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-medium text-foreground font-rajdhani">
-                              {(player as any).status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}{player.ign}
-                            </div>
-                            <div className="text-sm text-muted-foreground font-rajdhani">
-                              {player.attendance || 0}% attendance
-                            </div>
-                          </div>
+            {/* Table */}
+            <div className="overflow-x-auto max-h-[480px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: `${C.primary}33 transparent` }}>
+              <table className="w-full">
+                <thead className="sticky top-0 z-10" style={{ background: 'rgba(18,8,9,0.9)', backdropFilter: 'blur(12px)' }}>
+                  <tr className="text-slate-500 text-[10px] uppercase tracking-[0.2em] font-black">
+                    <th className="px-8 py-6 text-left">Player Username</th>
+                    <th className="px-8 py-6 text-center">Attendance %</th>
+                    <th className="px-8 py-6 text-center">Kill Records</th>
+                    <th className="px-8 py-6 text-right">Status Control</th>
+                  </tr>
+                </thead>
+                <tbody style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  {playersLoading ? (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-16 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-full border-2 animate-spin"
+                            style={{ borderColor: `${C.primary} transparent transparent transparent` }}
+                          />
+                          <span className="text-slate-500 text-sm">Loading operatives…</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-  <Input
-    type="number"
-    min="0"
-    placeholder="Kills"
-    value={killsInput[player.id] || ''}
-    onChange={(e) =>
-      setKillsInput((prev) => ({ ...prev, [player.id]: Number(e.target.value) }))
-    }
-    className="w-20 font-rajdhani"
-  />
-</TableCell>
+                      </td>
+                    </tr>
+                  ) : filteredPlayers.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-16 text-center text-slate-500">
+                        No operatives found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPlayers.map((player) => {
+                      const attendedRecord = attendanceRecords.find(
+                        (r) => r.player_id === player.id && r.date === selectedDate
+                      );
+                      const isPresent = attendedRecord?.status === 'present';
+                      const isAbsent  = attendedRecord?.status === 'absent';
 
-                      <TableCell>
-                        <Button
-  size="sm"
-  onClick={() =>
-    handleMarkAttendance(player.id, player.ign, 'present', killsInput[player.id] || 0)
-  }
-  disabled={markAttendanceMutation.isPending}
-  className="bg-green-600 hover:bg-green-700 text-white font-rajdhani"
->
-  <CheckCircle className="w-4 h-4 mr-1" />
-  Present
-</Button>
-
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMarkAttendance(player.id, player.ign, 'absent')}
-                          disabled={markAttendanceMutation.isPending}
-                          className="border-red-500/50 text-red-400 hover:bg-red-500/10 font-rajdhani"
+                      return (
+                        <tr
+                          key={player.id}
+                          id={`player-${player.ign}`}
+                          className="group transition-colors"
+                          style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                          onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = 'rgba(255,255,255,0.03)')}
+                          onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = 'transparent')}
                         >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Absent
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                          {/* Player */}
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-4">
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden"
+                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                              >
+                                {player.avatar_url ? (
+                                  <img src={player.avatar_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-sm font-black" style={{ color: C.primary }}>
+                                    {player.ign?.charAt(0)?.toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-200">
+                                  {getPlayerPrefix((player as any).status)}{player.ign}
+                                </p>
+                                <p
+                                  className="text-[10px] font-black uppercase tracking-widest mt-0.5"
+                                  style={{ color: player.grade ? C.primary : '#64748b' }}
+                                >
+                                  {player.grade || player.role}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
 
-      {/* Recent Attendance Records */}
-      <Card className="bg-card/50 border-border/30">
-        <CardHeader>
-          <CardTitle className="text-foreground font-orbitron flex items-center">
-            <CalendarDays className="w-5 h-5 mr-2 text-primary" />
-            Recent {attendanceMode} Records
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/30">
-                <TableHead className="text-muted-foreground font-rajdhani">Player</TableHead>
-                <TableHead className="text-muted-foreground font-rajdhani">Event</TableHead>
-                <TableHead className="text-muted-foreground font-rajdhani">Date</TableHead>
-                <TableHead className="text-muted-foreground font-rajdhani">Status</TableHead>
-                <TableHead className="text-muted-foreground font-rajdhani">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attendanceLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    <div className="text-muted-foreground">Loading attendance records...</div>
-                  </TableCell>
-                </TableRow>
-              ) : filteredRecords.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    <div className="text-muted-foreground">No attendance records found</div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredRecords.slice(-10).reverse().map(record => (
-                  <TableRow key={record.id} className="border-border/30 hover:bg-muted/20">
-                    <TableCell 
-                      className="font-medium text-foreground font-rajdhani cursor-pointer hover:text-primary"
-                      onClick={() => scrollToPlayer(record.profiles?.ign || '')}
-                    >
-                      {record.profiles ? `${(record.profiles as any).status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}${record.profiles.ign}` : 'Unknown Player'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-rajdhani">
-                      {record.events?.name || `${attendanceMode} Session`}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-rajdhani">
-                      {new Date(record.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={record.status === 'present' 
-                        ? 'bg-green-500/20 text-green-400 border-green-500/50'
-                        : 'bg-red-500/20 text-red-400 border-red-500/50'
-                      }>
-                        {record.status === 'present' ? (
-                          <>
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Present
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Absent
-                          </>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => undoAttendanceMutation.mutate(record.id)}
-                        className="border-red-500/50 text-red-400 hover:bg-red-500/10 font-rajdhani"
+                          {/* Attendance % */}
+                          <td className="px-8 py-5 text-center">
+                            <span className="text-lg font-bold text-slate-300">
+                              {player.attendance || 0}%
+                            </span>
+                          </td>
+
+                          {/* Kills input */}
+                          <td className="px-8 py-5">
+                            <div className="flex justify-center">
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                value={killsInput[player.id] || ''}
+                                onChange={(e) =>
+                                  setKillsInput((prev) => ({ ...prev, [player.id]: Number(e.target.value) }))
+                                }
+                                style={{ ...inputStyle, width: '80px', textAlign: 'center' }}
+                                onFocus={(e) => ((e.target as HTMLInputElement).style.boxShadow = `0 0 0 1px ${C.primary}80`)}
+                                onBlur={(e)  => ((e.target as HTMLInputElement).style.boxShadow = 'none')}
+                              />
+                            </div>
+                          </td>
+
+                          {/* Present / Absent toggle */}
+                          <td className="px-8 py-5 text-right">
+                            <div
+                              className="inline-flex gap-1 p-1 rounded-xl"
+                              style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}
+                            >
+                              <button
+                                onClick={() => handleMarkAttendance(player.id, player.ign, 'present', killsInput[player.id] || 0)}
+                                disabled={markAttendanceMutation.isPending}
+                                className="px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all"
+                                style={
+                                  isPresent
+                                    ? { background: 'rgba(34,197,94,0.2)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }
+                                    : { color: '#475569' }
+                                }
+                                onMouseEnter={(e) => { if (!isPresent) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                                onMouseLeave={(e) => { if (!isPresent) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                              >
+                                Present
+                              </button>
+                              <button
+                                onClick={() => handleMarkAttendance(player.id, player.ign, 'absent')}
+                                disabled={markAttendanceMutation.isPending}
+                                className="px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all"
+                                style={
+                                  isAbsent
+                                    ? { background: `${C.primary}33`, color: C.primary, border: `1px solid ${C.primary}4d` }
+                                    : { color: '#475569' }
+                                }
+                                onMouseEnter={(e) => { if (!isAbsent) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                                onMouseLeave={(e) => { if (!isAbsent) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                              >
+                                Absent
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* ── Recent Records Table ── */}
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Recent {attendanceMode} Records</h2>
+              <button
+                className="text-sm font-black uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors hover:text-white"
+                style={{ color: C.primary }}
+              >
+                See More
+              </button>
+            </div>
+
+            <div className="rounded-[32px] overflow-hidden" style={glass}>
+              <table className="w-full text-left">
+                <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <tr className="text-slate-500 text-[10px] uppercase tracking-widest font-black">
+                    <th className="px-8 py-4">Player</th>
+                    <th className="px-8 py-4">Event Details</th>
+                    <th className="px-8 py-4 text-center">Date</th>
+                    <th className="px-8 py-4 text-center">Status</th>
+                    <th className="px-8 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendanceLoading ? (
+                    <tr>
+                      <td colSpan={5} className="px-8 py-12 text-center text-slate-500">
+                        Loading records…
+                      </td>
+                    </tr>
+                  ) : filteredRecords.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-8 py-12 text-center text-slate-500">
+                        No records found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRecords.slice(-10).reverse().map((record) => (
+                      <tr
+                        key={record.id}
+                        className="transition-all"
+                        style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+                        onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = 'rgba(255,255,255,0.03)')}
+                        onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = 'transparent')}
                       >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Reset
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        {/* Player */}
+                        <td
+                          className="px-8 py-4 cursor-pointer transition-colors"
+                          style={{ color: '#94a3b8' }}
+                          onMouseEnter={(e) => ((e.currentTarget as HTMLTableCellElement).style.color = C.primary)}
+                          onMouseLeave={(e) => ((e.currentTarget as HTMLTableCellElement).style.color = '#94a3b8')}
+                          onClick={() => scrollToPlayer(record.profiles?.ign || '')}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
+                              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#64748b' }}
+                            >
+                              {record.profiles?.ign?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            <span className="font-bold text-sm text-slate-200">
+                              {record.profiles
+                                ? `${getPlayerPrefix(record.profiles.status)}${record.profiles.ign}`
+                                : 'Unknown'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Event */}
+                        <td className="px-8 py-4 text-sm text-slate-400">
+                          {record.events?.name || `${attendanceMode} Session`}
+                        </td>
+
+                        {/* Date */}
+                        <td className="px-8 py-4 text-center text-sm text-slate-500">
+                          {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-8 py-4 text-center">
+                          <span
+                            className="px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-wider"
+                            style={
+                              record.status === 'present'
+                                ? { background: 'rgba(34,197,94,0.1)',  color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }
+                                : { background: `${C.primary}1a`, color: C.primary,  border: `1px solid ${C.primary}33` }
+                            }
+                          >
+                            {record.status === 'present' ? 'Present' : 'Absent'}
+                          </span>
+                        </td>
+
+                        {/* Reset action */}
+                        <td className="px-8 py-4 text-right">
+                          <button
+                            onClick={() => undoAttendanceMutation.mutate(record.id)}
+                            className="text-[10px] font-black uppercase tracking-widest transition-all hover:text-white"
+                            style={{ color: '#475569' }}
+                          >
+                            Reset
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+
+    
     </div>
   );
 };
