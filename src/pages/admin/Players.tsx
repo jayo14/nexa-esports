@@ -1,1001 +1,913 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminPlayers, useUpdatePlayer, useDeletePlayer } from '@/hooks/useAdminPlayers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { logPlayerBan, logPlayerUnban, logRoleChange } from '@/lib/activityLogger';
-import { Search, Edit, Trash2, Eye, CalendarIcon, ShieldCheck, ShieldOff, UserCog, Crown, User, MoreVertical, X, Check, ArrowDown, ArrowUp, BarChart, Users, Target, TrendingUp, Mail, Smartphone, Trophy, Crosshair, ExternalLink, Instagram, Youtube, Twitter, Share2 } from 'lucide-react';
+import {
+  Search, Edit, Trash2, ShieldCheck, ShieldOff, UserCog, Crown, User,
+  MoreVertical, X, Check, ArrowDown, ArrowUp, Users, Target, TrendingUp,
+  Mail, Smartphone, Trophy, CalendarIcon, Share2, Shield,
+} from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import PlayerProfileModal from '@/components/PlayerProfileModal';
 
-type Player = Database['public']['Tables']['profiles']['Row'] & {
-  email?: string | null;
+type Player = Database['public']['Tables']['profiles']['Row'] & { email?: string | null };
+
+/* ─────────────── Design Tokens ─────────────── */
+const C = {
+  primary:  '#ec1313',
+  bgDark:   '#1a0b0b',
+  card:     '#2a1515',
+  border:   'rgba(236,19,19,0.2)',
 };
 
-// Constants
+const glass: React.CSSProperties = {
+  background: 'rgba(42,21,21,0.6)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  border: `1px solid ${C.border}`,
+};
+
 const TOP_RANKS_THRESHOLD = 10;
 
-// Utility function to get player prefix based on status
-const getPlayerPrefix = (status?: string | null) => {
-  return status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂';
+const getPlayerPrefix = (status?: string | null) =>
+  status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂';
+
+/* ─────────────── Role Icon ─────────────── */
+const RoleIcon: React.FC<{ role: string }> = ({ role }) => {
+  switch (role) {
+    case 'clan_master': return <Crown   className="w-3.5 h-3.5" style={{ color: '#a855f7' }} />;
+    case 'admin':       return <ShieldCheck className="w-3.5 h-3.5" style={{ color: C.primary }} />;
+    case 'moderator':   return <UserCog className="w-3.5 h-3.5" style={{ color: '#eab308' }} />;
+    default:            return <User    className="w-3.5 h-3.5" style={{ color: '#22c55e' }} />;
+  }
 };
 
-const PlayerCard = ({ player, onBan, onUnban, onEdit, onDelete, leaderboardRank }) => {
+/* ─────────────── Player Card ─────────────── */
+const PlayerCard: React.FC<{
+  player: Player;
+  leaderboardRank?: number;
+  onBan: (p: Player) => void;
+  onUnban: (p: Player) => void;
+  onEdit: (p: Player) => void;
+  onDelete: (id: string) => void;
+}> = ({ player, leaderboardRank, onBan, onUnban, onEdit, onDelete }) => {
   const { profile } = useAuth();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
+  const [hovered, setHovered] = useState(false);
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'clan_master': return <Crown className="w-4 h-4 text-purple-400" />;
-      case 'admin': return <ShieldCheck className="w-4 h-4 text-red-400" />;
-      case 'moderator': return <UserCog className="w-4 h-4 text-yellow-400" />;
-      default: return <User className="w-4 h-4 text-green-400" />;
-    }
-  };
-
-  const getGradeColor = (grade: string) => {
-    const colors = {
-      'Legendary': 'from-yellow-500 to-orange-500',
-      'Master': 'from-purple-500 to-pink-500',
-      'Pro': 'from-blue-500 to-cyan-500',
-      'Elite': 'from-green-500 to-emerald-500',
-      'Rookie': 'from-gray-500 to-slate-500',
-      'S': 'from-yellow-500 to-orange-500',
-      'A': 'from-green-500 to-emerald-500',
-      'B': 'from-blue-500 to-cyan-500',
-      'C': 'from-orange-500 to-red-500',
-      'D': 'from-gray-500 to-slate-500'
-    };
-    return colors[grade] || 'from-gray-500 to-slate-500';
-  };
-
-  const getInitials = (name: string) => {
-    return name?.charAt(0)?.toUpperCase() || '?';
-  };
-
-  const roleName = player.role === 'clan_master' ? 'Clan Master' : player.role.charAt(0).toUpperCase() + player.role.slice(1);
-  
-  // Get player symbol prefix
-  const playerPrefix = getPlayerPrefix(player.status);
+  const roleName = player.role === 'clan_master'
+    ? 'Clan Master'
+    : player.role.charAt(0).toUpperCase() + player.role.slice(1);
 
   return (
-    <Card 
-      className={cn(
-        "bg-gradient-to-br from-background/40 via-background/20 to-background/40 backdrop-blur-xl border border-[#FF1F44]/20 shadow-2xl relative overflow-hidden group",
-        "transition-all duration-300",
-        player.is_banned && "opacity-50 grayscale"
-      )}
+    <div
+      className="relative overflow-hidden flex flex-col"
+      style={{
+        ...glass,
+        borderRadius: '20px',
+        height: 480,
+        transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+        transform: hovered ? 'scale(1.02)' : 'scale(1)',
+        boxShadow: hovered ? `0 0 30px ${C.primary}4d` : '0 4px 24px rgba(0,0,0,0.4)',
+        opacity: player.is_banned ? 0.55 : 1,
+        filter: player.is_banned ? 'grayscale(40%)' : 'none',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {/* Sci-fi corner decorations */}
-      <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-[#FF1F44]/40"></div>
-      <div className="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-[#FF1F44]/40"></div>
-      <div className="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-[#FF1F44]/40"></div>
-      <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-[#FF1F44]/40"></div>
-      
-      {/* Scan line effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FF1F44]/5 to-transparent animate-pulse pointer-events-none"></div>
-      
-      <CardHeader className="p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3 flex-1">
-            {/* Avatar with soldier silhouette fallback */}
-            <div className="relative">
-              {player.avatar_url ? (
-                <img 
-                  src={player.avatar_url} 
-                  alt={player.username} 
-                  className="w-20 h-20 rounded-lg object-cover border-2 border-[#FF1F44]/30 shadow-lg" 
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-[#FF1F44]/20 to-background/40 border-2 border-[#FF1F44]/30 flex items-center justify-center">
-                  <span className="text-3xl font-bold text-[#FF1F44]">{getInitials(player.ign)}</span>
-                </div>
-              )}
-              {player.is_banned && (
-                <div className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center">
-                  <ShieldOff className="w-10 h-10 text-red-500" />
-                </div>
-              )}
-              {/* Leaderboard rank badge */}
-              {leaderboardRank && leaderboardRank <= TOP_RANKS_THRESHOLD && (
-                <div className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-400 to-orange-500 text-black rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold shadow-lg">
-                  #{leaderboardRank}
-                </div>
-              )}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[#FF1F44] text-xs font-mono">{playerPrefix}</span>
-                <h3 className="text-lg font-bold text-white truncate font-orbitron">{player.ign}</h3>
-              </div>
-              <p className="text-sm text-gray-400 truncate">@{player.username}</p>
-              {player.email && (
-                <div className="flex items-center gap-1 mt-1">
-                  <Mail className="w-3 h-3 text-gray-500" />
-                  <p className="text-xs text-gray-500 truncate">{player.email}</p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1">
+      {/* Action buttons */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+        {(profile?.role === 'admin' || profile?.role === 'clan_master') && (
+          <button
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+            style={{ ...glass, border: `1px solid ${C.primary}4d`, color: C.primary }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = C.primary;
+              (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(42,21,21,0.6)';
+              (e.currentTarget as HTMLButtonElement).style.color = C.primary;
+            }}
+            onClick={(e) => { e.stopPropagation(); onEdit(player); }}
+            title="Edit Player"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+        )}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+              style={{ ...glass, border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-[#1a0b0b]/95 backdrop-blur-md border-[#ec1313]/30">
             {(profile?.role === 'admin' || profile?.role === 'clan_master') && (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="hover:bg-[#FF1F44]/20 h-8 w-8 text-white"
-                  onClick={(e) => { e.stopPropagation(); onEdit(player); }}
-                  title="Edit Player"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-
-                {player.is_banned ? (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="hover:bg-green-500/20 h-8 w-8 text-green-400"
-                    onClick={(e) => { e.stopPropagation(); onUnban(player); }}
-                    title="Unban Player"
-                    disabled={player.role === 'clan_master'}
-                  >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="hover:bg-red-500/20 h-8 w-8 text-red-400"
-                    onClick={(e) => { e.stopPropagation(); onBan(player); }}
-                    title="Ban Player"
-                    disabled={player.role === 'clan_master'}
-                  >
-                    <ShieldOff className="w-4 h-4" />
-                  </Button>
-                )}
-              </>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(player); }}>
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </DropdownMenuItem>
             )}
+            {player.is_banned ? (
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); onUnban(player); }}
+                disabled={player.role === 'clan_master'}
+              >
+                <Check className="w-4 h-4 mr-2" /> Unban
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); onBan(player); }}
+                disabled={player.role === 'clan_master'}
+                className="text-red-400 focus:text-red-400"
+              >
+                <ShieldOff className="w-4 h-4 mr-2" /> Ban Player
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/profile/${player.id}`); }}>
+              <Share2 className="w-4 h-4 mr-2" /> Public Profile
+            </DropdownMenuItem>
+            {profile?.role === 'clan_master' && (
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); onDelete(player.id); }}
+                className="text-red-500 focus:text-red-500"
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> Delete Player
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-[#FF1F44]/20 h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border-[#FF1F44]/30">
-                {(profile?.role === 'admin' || profile?.role === 'clan_master') && (
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(player); }}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                )}
-                {player.is_banned ? (
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onUnban(player); }} disabled={player.role === 'clan_master'}>
-                    <Check className="w-4 h-4 mr-2" />
-                    Unban
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      onBan(player); 
-                    }} 
-                    disabled={player.role === 'clan_master'}
-                    className="text-red-400 focus:text-red-400"
-                  >
-                    <ShieldOff className="w-4 h-4 mr-2" />
-                    Ban Player
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/profile/${player.id}`); }}>
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Public Profile
-                </DropdownMenuItem>
-                {profile?.role === 'clan_master' && (
-                  <DropdownMenuItem 
-                    onClick={(e) => { e.stopPropagation(); onDelete(player.id); }} 
-                    className="text-red-500 focus:text-red-500"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Player
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+      {/* Avatar area */}
+      <div className="relative h-64 w-full overflow-hidden flex-shrink-0">
+        {player.avatar_url ? (
+          <img
+            src={player.avatar_url}
+            alt={player.ign || ''}
+            className="w-full h-full object-cover"
+            style={{
+              transition: 'transform 0.5s ease',
+              transform: hovered ? 'scale(1.1)' : 'scale(1)',
+            }}
+          />
+        ) : (
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${C.primary}33, ${C.bgDark})` }}
+          >
+            <span className="text-7xl font-black" style={{ color: C.primary }}>
+              {player.ign?.charAt(0)?.toUpperCase() || '?'}
+            </span>
+          </div>
+        )}
+
+        {player.is_banned && (
+          <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+            <ShieldOff className="w-14 h-14" style={{ color: C.primary }} />
+          </div>
+        )}
+
+        {leaderboardRank && leaderboardRank <= TOP_RANKS_THRESHOLD && (
+          <div
+            className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center text-xs font-black text-black shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #facc15, #f97316)' }}
+          >
+            #{leaderboardRank}
+          </div>
+        )}
+
+        {/* Name overlay */}
+        <div
+          className="absolute bottom-0 left-0 w-full p-5"
+          style={{ background: `linear-gradient(to top, ${C.bgDark}, ${C.bgDark}cc, transparent)` }}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{
+                background: player.is_banned ? C.primary : '#22c55e',
+                animation: 'pulse 2s infinite',
+              }}
+            />
+            <span
+              className="text-[10px] font-black uppercase tracking-widest"
+              style={{ color: player.is_banned ? C.primary : '#22c55e' }}
+            >
+              {player.is_banned ? 'Banned' : 'Operational'}
+            </span>
+          </div>
+          <h3 className="text-2xl font-black text-white italic leading-tight truncate">
+            {player.ign}
+          </h3>
         </div>
       </div>
 
-      {/* Role and Grade Badges */}
-        <div className="flex gap-2 flex-wrap">
-          <Badge className="bg-gradient-to-r from-[#FF1F44]/20 to-red-600/20 border border-[#FF1F44]/30 text-white">
-            {getRoleIcon(player.role)}
-            <span className="ml-1">{roleName}</span>
-          </Badge>
-          {player.grade && (
-            <Badge className={`bg-gradient-to-r ${getGradeColor(player.grade)} text-white border-0`}>
-              {player.grade}
-            </Badge>
-          )}
-          {player.tier && (
-            <Badge variant="outline" className="border-cyan-500/50 text-cyan-400">
-              Tier {player.tier}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
+      {/* Stats section */}
+      <div className="p-5 flex flex-col justify-between flex-1">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between pb-3"
+            style={{ borderBottom: `1px solid ${C.border}` }}>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Role</span>
+            <div className="flex items-center gap-2" style={{ color: C.primary }}>
+              <RoleIcon role={player.role} />
+              <span className="text-xs font-bold italic">{roleName}</span>
+              {player.grade && (
+                <span className="text-[10px] font-black text-slate-400 ml-1">· {player.grade}</span>
+              )}
+            </div>
+          </div>
 
-      <CardContent className="p-4 space-y-3">
-        {/* Combat Statistics - Soldier Analysis Style */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-gray-400 uppercase tracking-wider">
-            <span className="flex items-center gap-1">
-              <Target className="w-3 h-3" />
-              Combat Stats
+          <div className="flex items-center justify-between pb-3"
+            style={{ borderBottom: `1px solid ${C.border}` }}>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Kills</span>
+            <span className="text-sm font-bold text-slate-200">
+              {(player.kills || 0).toLocaleString()}
+              {leaderboardRank && (
+                <span className="ml-2 text-[10px]" style={{ color: C.primary }}>#{leaderboardRank}</span>
+              )}
             </span>
-            {leaderboardRank && (
-              <span className="text-[#FF1F44]">Rank #{leaderboardRank}</span>
-            )}
           </div>
-          
-          {/* Total Kills */}
-          <div className="bg-gradient-to-r from-[#FF1F44]/10 to-transparent p-3 rounded-lg border-l-2 border-[#FF1F44]">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-400 uppercase">Total Eliminations</span>
-              <span className="text-2xl font-bold text-[#FF1F44] font-mono">{player.kills?.toLocaleString() || 0}</span>
-            </div>
-            <div className="flex justify-between items-center mt-1 text-xs">
-              <span className="text-blue-400">BR: {player.br_kills || 0}</span>
-              <span className="text-green-400">MP: {player.mp_kills || 0}</span>
-            </div>
-          </div>
-          
-          {/* Attendance and Device */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-background/40 p-2 rounded-md border border-green-500/20">
-              <div className="flex items-center justify-between">
-                <TrendingUp className="w-4 h-4 text-green-400" />
-                <span className="text-lg font-bold text-green-400">{player.attendance || 0}</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Attendance</p>
-            </div>
-            <div className="bg-background/40 p-2 rounded-md border border-blue-500/20">
-              <div className="flex items-center justify-between">
-                <Smartphone className="w-4 h-4 text-blue-400" />
-                <span className="text-xs font-bold text-blue-400 truncate">{player.device || 'Mobile'}</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Device</p>
-            </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Device</span>
+            <span className="text-xs font-medium text-slate-200">{player.device || 'Mobile'}</span>
           </div>
         </div>
 
-        {/* Additional Info */}
-        {player.preferred_mode && (
-          <div className="text-xs text-gray-400">
-            <span className="text-gray-500">Mode:</span> <span className="text-white">{player.preferred_mode}</span>
-          </div>
-        )}
-        
-        {/* Status Indicator */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10">
-          <span className="text-xs text-gray-500">Status</span>
-          <div className={cn(
-            "flex items-center gap-1 text-xs font-semibold",
-            player.is_banned ? "text-red-400" : "text-green-400"
-          )}>
-            <div className={cn(
-              "w-2 h-2 rounded-full",
-              player.is_banned ? "bg-red-400 animate-pulse" : "bg-green-400 animate-pulse"
-            )}></div>
-            {player.is_banned ? "BANNED" : "ACTIVE"}
-          </div>
+        <div className="mt-4 pt-4 flex gap-2" style={{ borderTop: `1px solid ${C.border}` }}>
+          <button
+            className="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            style={{ background: `${C.primary}1a`, border: `1px solid ${C.primary}33`, color: C.primary }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = C.primary;
+              (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = `${C.primary}1a`;
+              (e.currentTarget as HTMLButtonElement).style.color = C.primary;
+            }}
+            onClick={() => onEdit(player)}
+          >
+            Inspect
+          </button>
+          {player.is_banned ? (
+            <button
+              className="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+              style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e' }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(34,197,94,0.3)')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(34,197,94,0.1)')}
+              onClick={() => onUnban(player)}
+              disabled={player.role === 'clan_master'}
+            >
+              Revoke Ban
+            </button>
+          ) : (
+            <button
+              className="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#cbd5e1' }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)')}
+              onClick={() => onBan(player)}
+              disabled={player.role === 'clan_master'}
+            >
+              Reassign
+            </button>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
+/* ─────────────── FilterPill ─────────────── */
+const FilterPill: React.FC<{ label: string; active?: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className="flex-none px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+    style={
+      active
+        ? { background: `${C.primary}33`, border: `1px solid ${C.primary}4d`, color: C.primary }
+        : { ...glass, border: `1px solid ${C.primary}0d`, color: '#64748b' }
+    }
+  >
+    {label}
+  </button>
+);
 
-export const AdminPlayers: React.FC = () => {
-  const { profile } = useAuth();
-  const { data: players, isLoading } = useAdminPlayers();
-  const { data: leaderboardData } = useLeaderboard();
-  const updatePlayer = useUpdatePlayer();
-  const deletePlayer = useDeletePlayer();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterGrade, setFilterGrade] = useState('all');
-  const [sortBy, setSortBy] = useState('kills');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
-  const [banningPlayer, setBanningPlayer] = useState<Player | null>(null);
+/* ─────────────── InlineSelect ─────────────── */
+const InlineSelect: React.FC<{
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}> = ({ value, onChange, options, placeholder }) => (
+  <select
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className="text-xs font-bold uppercase tracking-widest rounded-xl py-2.5 px-4 focus:outline-none cursor-pointer"
+    style={{ ...glass, color: '#cbd5e1', border: `1px solid ${C.primary}1a`, appearance: 'none', paddingRight: '32px' }}
+  >
+    {placeholder && <option value="">{placeholder}</option>}
+    {options.map((o) => (
+      <option key={o.value} value={o.value} style={{ background: C.bgDark }}>{o.label}</option>
+    ))}
+  </select>
+);
+
+/* ─────────────── EditPlayerDialog ─────────────── */
+const EditPlayerDialog: React.FC<{
+  player: Player | null;
+  onClose: () => void;
+  onSave: (updates: Partial<Player>) => void;
+}> = ({ player, onClose, onSave }) => {
+  const [p, setP] = useState<Player | null>(player);
+  React.useEffect(() => setP(player), [player]);
+  if (!p) return null;
+
+  const inputStyle: React.CSSProperties = {
+    background: 'rgba(0,0,0,0.3)',
+    border: `1px solid ${C.primary}1a`,
+    borderRadius: '12px',
+    padding: '10px 14px',
+    fontSize: '14px',
+    color: '#f1f5f9',
+    width: '100%',
+    outline: 'none',
+  };
+
+  const sectionTitle = (title: string) => (
+    <h3 className="text-sm font-black uppercase tracking-widest mb-4 pb-2"
+      style={{ color: C.primary, borderBottom: `1px solid ${C.primary}33` }}>
+      {title}
+    </h3>
+  );
+
+  const field = (label: string, key: keyof Player, type: 'text' | 'number' = 'text', disabled = false) => (
+    <div className="flex flex-col gap-1.5" key={key}>
+      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</label>
+      <input
+        type={type}
+        value={(p[key] as string | number) || ''}
+        onChange={(e) => setP({ ...p, [key]: type === 'number' ? parseInt(e.target.value) || 0 : e.target.value })}
+        disabled={disabled}
+        style={{ ...inputStyle, opacity: disabled ? 0.4 : 1 }}
+      />
+    </div>
+  );
+
+  const selectField = (label: string, key: keyof Player, options: { value: string; label: string }[]) => (
+    <div className="flex flex-col gap-1.5" key={key}>
+      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</label>
+      <select
+        value={(p[key] as string) || ''}
+        onChange={(e) => setP({ ...p, [key]: e.target.value })}
+        style={{ ...inputStyle, appearance: 'none' }}
+      >
+        {options.map((o) => <option key={o.value} value={o.value} style={{ background: C.bgDark }}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+
+  return (
+    <Dialog open={!!player} onOpenChange={onClose}>
+      <DialogContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        style={{
+          background: `${C.bgDark}f5`,
+          backdropFilter: 'blur(24px)',
+          border: `1px solid ${C.primary}33`,
+          borderRadius: '24px',
+          fontFamily: "'Space Grotesk', sans-serif",
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+            <Edit className="w-5 h-5" style={{ color: C.primary }} />
+            Edit: {getPlayerPrefix(p.status)}{p.ign}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-8 py-4">
+          <section>
+            {sectionTitle('Basic Information')}
+            <div className="grid grid-cols-2 gap-4">
+              {field('In-Game Name (IGN)', 'ign')}
+              {field('Username', 'username')}
+              {selectField('Status', 'status', [
+                { value: 'active', label: 'Active (Ɲ・乂)' },
+                { value: 'beta',   label: 'Beta (Ɲ・乃)' },
+              ])}
+            </div>
+          </section>
+
+          <section>
+            {sectionTitle('Role & Progression')}
+            <div className="grid grid-cols-3 gap-4">
+              {selectField('Role', 'role', [
+                { value: 'player',      label: 'Player' },
+                { value: 'moderator',   label: 'Moderator' },
+                { value: 'admin',       label: 'Admin' },
+                { value: 'clan_master', label: 'Clan Master' },
+              ])}
+              {selectField('Grade', 'grade', ['Legendary','Master','Pro','Elite','Rookie','S','A','B','C','D'].map((g) => ({ value: g, label: g })))}
+              {field('Tier', 'tier')}
+            </div>
+          </section>
+
+          <section>
+            {sectionTitle('Combat Statistics')}
+            <div className="grid grid-cols-3 gap-4">
+              {field('BR Kills', 'br_kills', 'number')}
+              {field('MP Kills', 'mp_kills', 'number')}
+              {field('Total Kills (auto)', 'kills', 'number', true)}
+              {field('Attendance Score', 'attendance', 'number')}
+            </div>
+          </section>
+
+          <section>
+            {sectionTitle('Game Preferences')}
+            <div className="grid grid-cols-2 gap-4">
+              {field('BR Class', 'br_class')}
+              {field('MP Class', 'mp_class')}
+              {selectField('Player Type', 'player_type', [
+                { value: 'Hybrid', label: 'Hybrid (MP+BR)' },
+                { value: 'BR',     label: 'Battle Royale' },
+                { value: 'MP',     label: 'Multiplayer' },
+              ])}
+            </div>
+          </section>
+
+          <button
+            onClick={() => onSave({
+              ign: p.ign, username: p.username, status: p.status, role: p.role,
+              grade: p.grade, tier: p.tier, br_kills: p.br_kills, mp_kills: p.mp_kills,
+              kills: (p.br_kills || 0) + (p.mp_kills || 0),
+              attendance: p.attendance, br_class: p.br_class, mp_class: p.mp_class,
+              player_type: p.player_type,
+            })}
+            className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-sm text-white transition-all"
+            style={{ background: C.primary, boxShadow: `0 8px 24px ${C.primary}4d` }}
+            onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
+            onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
+          >
+            <Check className="w-4 h-4 inline mr-2" />
+            Save Changes
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/* ─────────────── BanDialog ─────────────── */
+const BanDialog: React.FC<{
+  player: Player | null;
+  onClose: () => void;
+  onConfirm: (reason: string, type: 'temporary' | 'permanent', date?: Date) => void;
+}> = ({ player, onClose, onConfirm }) => {
   const [banReason, setBanReason] = useState('');
-  const [banType, setBanType] = useState<'temporary' | 'permanent'>('temporary');
-  const [banDate, setBanDate] = useState<Date | undefined>(new Date(new Date().setDate(new Date().getDate() + 7)));
-  const { toast } = useToast();
+  const [banType,   setBanType]   = useState<'temporary' | 'permanent'>('temporary');
+  const [banDate,   setBanDate]   = useState<Date | undefined>(
+    new Date(new Date().setDate(new Date().getDate() + 7))
+  );
 
-  // Create leaderboard rank map
+  const DURATIONS = [
+    { label: '24 Hours',  days: 1,    meta: 'Minor Warning' },
+    { label: '7 Days',    days: 7,    meta: 'Major Disciplinary' },
+    { label: 'Permanent', days: null, meta: 'Clan Blacklist' },
+  ];
+
+  const isSelected = (days: number | null) => {
+    if (days === null) return banType === 'permanent';
+    if (banType !== 'temporary') return false;
+    const target = new Date(); target.setDate(target.getDate() + days);
+    return banDate?.toDateString() === target.toDateString();
+  };
+
+  const selectDuration = (days: number | null) => {
+    if (days === null) { setBanType('permanent'); return; }
+    setBanType('temporary');
+    const d = new Date(); d.setDate(d.getDate() + days);
+    setBanDate(d);
+  };
+
+  return (
+    <Dialog open={!!player} onOpenChange={onClose}>
+      <DialogContent
+        className="max-w-lg"
+        style={{
+          background: `${C.bgDark}f5`,
+          backdropFilter: 'blur(24px)',
+          border: `1px solid ${C.primary}33`,
+          borderTop: `4px solid ${C.primary}`,
+          borderRadius: '24px',
+          fontFamily: "'Space Grotesk', sans-serif",
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+            <ShieldOff className="w-6 h-6" style={{ color: C.primary }} />
+            Ban Execution: {player?.ign}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6 py-2">
+          {/* Warning */}
+          <div
+            className="flex items-start gap-4 p-5 rounded-2xl"
+            style={{ background: `${C.primary}1a`, borderLeft: `4px solid ${C.primary}` }}
+          >
+            <ShieldOff className="w-6 h-6 flex-shrink-0 mt-0.5" style={{ color: C.primary }} />
+            <div>
+              <h4 className="font-black uppercase tracking-wide text-sm text-white mb-1">
+                High-Alert Status: Sanction Pending
+              </h4>
+              <p className="text-slate-400 text-xs leading-relaxed">
+                Execution of this order will restrict the operative from all clan operations.{' '}
+                <span className="text-white font-bold">Action may be permanent unless manually appealed.</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Duration options */}
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">
+              Set Ban Duration
+            </p>
+            <div className="space-y-2">
+              {DURATIONS.map(({ label, days, meta }) => {
+                const selected = isSelected(days);
+                return (
+                  <label
+                    key={label}
+                    className="flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all"
+                    style={
+                      selected
+                        ? { background: `${C.primary}26`, border: `2px solid ${C.primary}` }
+                        : { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)' }
+                    }
+                    onClick={() => selectDuration(days)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                        style={{ borderColor: selected ? C.primary : '#475569', background: selected ? C.primary : 'transparent' }}
+                      >
+                        {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <span className={`text-sm font-bold ${selected ? 'text-white' : 'text-slate-400'}`}>{label}</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest"
+                      style={{ color: selected ? C.primary : '#475569' }}>
+                      {meta}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Reason */}
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+              Ban Message / Reason
+            </p>
+            <input
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+              placeholder="Enter reason for the ban (required)…"
+              className="w-full rounded-xl py-3 px-4 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
+              style={{ background: 'rgba(0,0,0,0.3)', border: `1px solid ${C.primary}1a` }}
+            />
+          </div>
+
+          {/* CTAs */}
+          <div className="space-y-3">
+            <button
+              onClick={() => onConfirm(banReason, banType, banDate)}
+              className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-lg text-white transition-all"
+              style={{ background: C.primary, boxShadow: `0 0 20px ${C.primary}66` }}
+              onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
+            >
+              Confirm Ban
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-2 text-slate-500 hover:text-white font-bold uppercase tracking-widest text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              <X className="w-4 h-4" /> Abort Mission
+            </button>
+          </div>
+
+          {/* Footer intel */}
+          <p className="text-slate-500 text-xs italic leading-relaxed px-1">
+            By confirming, this action will be logged into the clan's Global Intelligence Network.
+            Target operative will be notified via in-game secure channel.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/* ─────────────── StatCard ─────────────── */
+const StatCard: React.FC<{ label: string; value: string; sub: string; trend?: 'up' | 'down' }> = ({
+  label, value, sub, trend,
+}) => (
+  <div className="p-5 rounded-2xl" style={{ ...glass, borderLeft: `4px solid ${C.primary}` }}>
+    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+    <p className="text-3xl font-black text-slate-100 mt-1">{value}</p>
+    <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+      {trend === 'up'   && <TrendingUp className="w-3 h-3 text-green-500" />}
+      {trend === 'down' && <ArrowDown  className="w-3 h-3" style={{ color: C.primary }} />}
+      {sub}
+    </p>
+  </div>
+);
+
+/* ═══════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════ */
+export const AdminPlayers: React.FC = () => {
+  const { profile }                  = useAuth();
+  const { data: players, isLoading } = useAdminPlayers();
+  const { data: leaderboardData }    = useLeaderboard();
+  const updatePlayer                 = useUpdatePlayer();
+  const deletePlayer                 = useDeletePlayer();
+  const { toast }                    = useToast();
+
+  const [searchTerm,     setSearchTerm]     = useState('');
+  const [filterStatus,   setFilterStatus]   = useState('all');
+  const [filterRole,     setFilterRole]     = useState('all');
+  const [filterGrade,    setFilterGrade]    = useState('all');
+  const [sortBy,         setSortBy]         = useState('kills');
+  const [sortOrder,      setSortOrder]      = useState('desc');
+  const [editingPlayer,  setEditingPlayer]  = useState<Player | null>(null);
+  const [banningPlayer,  setBanningPlayer]  = useState<Player | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
   const leaderboardRankMap = useMemo(() => {
-    const map = new Map();
-    leaderboardData?.forEach((entry, index) => {
-      map.set(entry.id, index + 1);
-    });
+    const map = new Map<string, number>();
+    leaderboardData?.forEach((e, i) => map.set(e.id, i + 1));
     return map;
   }, [leaderboardData]);
 
-  const filteredPlayers = useMemo(() => players?.filter(player => {
-    const matchesSearch = player.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         player.ign?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         player.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === 'all' || player.role === filterRole;
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'active' && !player.is_banned) ||
-                         (filterStatus === 'banned' && player.is_banned);
-    const matchesGrade = filterGrade === 'all' || player.grade === filterGrade;
-    return matchesSearch && matchesRole && matchesStatus && matchesGrade;
-  }).sort((a, b) => {
-    let aValue, bValue;
-    
-    switch (sortBy) {
-      case 'kills':
-        aValue = a.kills || 0;
-        bValue = b.kills || 0;
-        break;
-      case 'br_kills':
-        aValue = a.br_kills || 0;
-        bValue = b.br_kills || 0;
-        break;
-      case 'mp_kills':
-        aValue = a.mp_kills || 0;
-        bValue = b.mp_kills || 0;
-        break;
-      case 'attendance':
-        aValue = a.attendance || 0;
-        bValue = b.attendance || 0;
-        break;
-      case 'name':
-        aValue = a.ign?.toLowerCase() || '';
-        bValue = b.ign?.toLowerCase() || '';
-        return sortOrder === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      case 'date_joined':
-        aValue = new Date(a.date_joined || 0).getTime();
-        bValue = new Date(b.date_joined || 0).getTime();
-        break;
-      case 'rank':
-        aValue = leaderboardRankMap.get(a.id) || 9999;
-        bValue = leaderboardRankMap.get(b.id) || 9999;
-        break;
-      default:
-        aValue = a.kills || 0;
-        bValue = b.kills || 0;
-    }
-    
-    return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-  }) || [], [players, searchTerm, filterRole, filterStatus, filterGrade, sortBy, sortOrder, leaderboardRankMap]);
+  const filteredPlayers = useMemo(
+    () =>
+      (players || [])
+        .filter((p) => {
+          const s = searchTerm.toLowerCase();
+          const ok1 = p.username?.toLowerCase().includes(s) || p.ign?.toLowerCase().includes(s) || p.email?.toLowerCase().includes(s);
+          const ok2 = filterRole   === 'all'    || p.role  === filterRole;
+          const ok3 = filterStatus === 'all'    || (filterStatus === 'active' && !p.is_banned) || (filterStatus === 'banned' && p.is_banned);
+          const ok4 = filterGrade  === 'all'    || p.grade === filterGrade;
+          return ok1 && ok2 && ok3 && ok4;
+        })
+        .sort((a, b) => {
+          const dir = sortOrder === 'asc' ? 1 : -1;
+          switch (sortBy) {
+            case 'kills':      return ((a.kills || 0) - (b.kills || 0)) * dir;
+            case 'attendance': return ((a.attendance || 0) - (b.attendance || 0)) * dir;
+            case 'rank':       return ((leaderboardRankMap.get(a.id) || 9999) - (leaderboardRankMap.get(b.id) || 9999)) * dir;
+            case 'name':       return (a.ign?.toLowerCase() || '').localeCompare(b.ign?.toLowerCase() || '') * dir;
+            default:           return ((a.kills || 0) - (b.kills || 0)) * dir;
+          }
+        }),
+    [players, searchTerm, filterRole, filterStatus, filterGrade, sortBy, sortOrder, leaderboardRankMap]
+  );
 
   const handleUpdatePlayer = async (updates: Partial<Player>) => {
     if (!editingPlayer) return;
-    if (updates.role && updates.role !== editingPlayer.role) {
+    if (updates.role && updates.role !== editingPlayer.role)
       await logRoleChange(editingPlayer.id, editingPlayer.ign, editingPlayer.role, updates.role);
-    }
     await updatePlayer.mutateAsync({ id: editingPlayer.id, updates });
     setEditingPlayer(null);
   };
 
-  const handleDeletePlayer = async (playerId: string) => {
-    await deletePlayer.mutateAsync(playerId);
+  const handleDeletePlayer = async (id: string) => {
+    const p = players?.find((x) => x.id === id);
+    if (p && confirm(`Delete ${p.ign}? This action is irreversible.`))
+      await deletePlayer.mutateAsync(id);
   };
 
-  const handleBanPlayer = (player: Player) => {
-    if (player.role === 'clan_master') {
-      toast({ title: "Permission Denied", description: "The Clan Master cannot be banned.", variant: "destructive" });
+  const handleBanPlayer = (p: Player) => {
+    if (p.role === 'clan_master') {
+      toast({ title: 'Permission Denied', description: 'The Clan Master cannot be banned.', variant: 'destructive' });
       return;
     }
-    setBanningPlayer(player);
-    setBanReason('');
-    setBanType('temporary');
-    setBanDate(new Date(new Date().setDate(new Date().getDate() + 7)));
+    setBanningPlayer(p);
   };
 
-  const handleConfirmBan = async () => {
+  const handleConfirmBan = async (reason: string, type: 'temporary' | 'permanent', date?: Date) => {
     if (!banningPlayer) return;
-    if (banningPlayer.role === 'clan_master') {
-      toast({ title: "Permission Denied", description: "The Clan Master cannot be banned.", variant: "destructive" });
+    if (!reason) {
+      toast({ title: 'Reason Required', description: 'Please provide a reason for the ban.', variant: 'destructive' });
       return;
     }
-    if (!banReason) {
-      toast({ title: "Reason Required", description: "Please provide a reason for the ban.", variant: "destructive" });
-      return;
-    }
-    if (banType === 'temporary' && !banDate) return;
-
-    const banExpiresAt = banType === 'temporary' ? banDate?.toISOString() : null;
     await updatePlayer.mutateAsync({
       id: banningPlayer.id,
-      updates: { is_banned: true, banned_at: new Date().toISOString(), ban_reason: banReason, ban_expires_at: banExpiresAt, banned_by: profile?.id }
+      updates: {
+        is_banned: true, banned_at: new Date().toISOString(),
+        ban_reason: reason,
+        ban_expires_at: type === 'temporary' ? date?.toISOString() : null,
+        banned_by: profile?.id,
+      },
     });
-    await logPlayerBan(banningPlayer.id, banningPlayer.ign, banReason);
-    toast({ title: "Player Banned", description: `${banningPlayer.ign} has been banned.`, variant: 'destructive' });
+    await logPlayerBan(banningPlayer.id, banningPlayer.ign, reason);
+    toast({ title: 'Player Banned', description: `${banningPlayer.ign} has been banned.`, variant: 'destructive' });
     setBanningPlayer(null);
   };
 
-  const handleUnbanPlayer = async (player: Player) => {
+  const handleUnbanPlayer = async (p: Player) => {
     await updatePlayer.mutateAsync({
-      id: player.id,
-      updates: { is_banned: false, banned_at: null, ban_reason: null, ban_expires_at: null, banned_by: null }
+      id: p.id,
+      updates: { is_banned: false, banned_at: null, ban_reason: null, ban_expires_at: null, banned_by: null },
     });
-    await logPlayerUnban(player.id, player.ign);
-    toast({ title: "Player Unbanned", description: `${player.ign} has been unbanned.` });
+    await logPlayerUnban(p.id, p.ign);
+    toast({ title: 'Player Unbanned', description: `${p.ign} has been unbanned.` });
   };
+
+  const activeCount = players?.filter((p) => !p.is_banned).length || 0;
+  const bannedCount = players?.filter((p) => p.is_banned).length || 0;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-foreground">Loading players...</div>
+      <div
+        className="flex items-center justify-center min-h-screen"
+        style={{ background: `radial-gradient(circle, ${C.card}, ${C.bgDark})`, fontFamily: "'Space Grotesk', sans-serif" }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-full border-2 animate-spin"
+            style={{ borderColor: `${C.primary} transparent transparent transparent` }} />
+          <p className="text-slate-400 text-sm font-black uppercase tracking-widest">Loading operatives…</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground font-orbitron">Players Management</h1>
-          <p className="text-muted-foreground">Monitor, manage, and moderate all clan members.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 p-2 bg-card/50 border-border/30 rounded-lg">
-            <Users className="w-5 h-5 text-primary" />
-            <span className="font-bold text-foreground">{players?.length || 0}</span>
-            <span className="text-muted-foreground">Total Players</span>
+    <div
+      className="min-h-screen"
+      style={{
+        background: `radial-gradient(circle at center, ${C.card} 0%, ${C.bgDark} 100%)`,
+        fontFamily: "'Space Grotesk', sans-serif",
+      }}
+    >
+      <div className="max-w-[1600px] mx-auto p-6 lg:p-10 space-y-8">
+
+        {/* ── Page Header ── */}
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
+                style={{ background: `${C.primary}33`, color: C.primary }}>
+                Legendary Tier
+              </span>
+              <span className="text-slate-500 text-sm">Season 14 Combat Log</span>
+            </div>
+            <h1 className="text-5xl font-black tracking-tighter text-slate-100 uppercase">
+              Member <span style={{ color: C.primary }}>Management</span>
+            </h1>
+            <p className="text-slate-400 max-w-md mt-2">
+              Track performance, discipline attendance records, and optimize clan roles for upcoming tournaments.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all"
+              style={{ background: `${C.bgDark}80`, border: `1px solid ${C.primary}4d`, color: '#94a3b8' }}
+            >
+              <ArrowDown className="w-4 h-4" /> Export CSV
+            </button>
+            <button
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest text-white"
+              style={{ background: C.primary, boxShadow: `0 4px 16px ${C.primary}4d` }}
+            >
+              <Users className="w-4 h-4" /> Add Member
+            </button>
           </div>
         </div>
-      </div>
 
-      <Card className="bg-card/50 border-border/30 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Search */}
-            <div className="relative lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
+        {/* ── Stats ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Total Members"      value={`${players?.length || 0}/100`} sub="+4 this week"      trend="up" />
+          <StatCard label="Active Operatives"  value={`${activeCount}`}              sub="Currently operational" trend="up" />
+          <StatCard label="Banned Operatives"  value={`${bannedCount}`}              sub="Restricted access" trend="down" />
+          <StatCard label="Combat Efficiency"  value="Legendary"                     sub="Top 1% global rank" />
+        </div>
+
+        {/* ── Filters ── */}
+        <div className="p-4 rounded-2xl" style={{ background: `${C.card}66`, border: `1px solid ${C.primary}1a` }}>
+          <div className="flex flex-wrap gap-3 mb-4">
+            <FilterPill label="ALL UNITS" active={filterStatus === 'all'}    onClick={() => setFilterStatus('all')} />
+            <FilterPill label="ACTIVE"    active={filterStatus === 'active'} onClick={() => setFilterStatus('active')} />
+            <FilterPill label="RESERVES"  active={false}                     onClick={() => {}} />
+            <FilterPill label="BANNED"    active={filterStatus === 'banned'} onClick={() => setFilterStatus('banned')} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background/50 border-border/50 text-foreground"
-                placeholder="Search by name, username, or email..."
+                className="w-full rounded-full py-2.5 pl-12 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
+                style={{ background: `${C.bgDark}80`, border: `1px solid ${C.primary}1a` }}
+                placeholder="Search operatives by IGN or UID…"
               />
             </div>
-            
-            {/* Role Filter */}
-            <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
-                <SelectValue placeholder="Filter by Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="player">Player</SelectItem>
-                <SelectItem value="moderator">Moderator</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="clan_master">Clan Master</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Status Filter */}
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
-                <SelectValue placeholder="Filter by Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active Only</SelectItem>
-                <SelectItem value="banned">Banned Only</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Grade Filter */}
-            <Select value={filterGrade} onValueChange={setFilterGrade}>
-              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
-                <SelectValue placeholder="Filter by Grade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Grades</SelectItem>
-                <SelectItem value="Legendary">Legendary</SelectItem>
-                <SelectItem value="Master">Master</SelectItem>
-                <SelectItem value="Pro">Pro</SelectItem>
-                <SelectItem value="Elite">Elite</SelectItem>
-                <SelectItem value="Rookie">Rookie</SelectItem>
-                <SelectItem value="S">S</SelectItem>
-                <SelectItem value="A">A</SelectItem>
-                <SelectItem value="B">B</SelectItem>
-                <SelectItem value="C">C</SelectItem>
-                <SelectItem value="D">D</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Sort Options - Second Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {/* Sort By */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="kills">
-                  <div className="flex items-center">
-                    <Target className="w-4 h-4 mr-2" />
-                    Total Kills
-                  </div>
-                </SelectItem>
-                <SelectItem value="br_kills">
-                  <div className="flex items-center">
-                    <Target className="w-4 h-4 mr-2 text-blue-400" />
-                    BR Kills
-                  </div>
-                </SelectItem>
-                <SelectItem value="mp_kills">
-                  <div className="flex items-center">
-                    <Target className="w-4 h-4 mr-2 text-green-400" />
-                    MP Kills
-                  </div>
-                </SelectItem>
-                <SelectItem value="attendance">
-                  <div className="flex items-center">
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Attendance Score
-                  </div>
-                </SelectItem>
-                <SelectItem value="rank">
-                  <div className="flex items-center">
-                    <Trophy className="w-4 h-4 mr-2 text-yellow-400" />
-                    Leaderboard Rank
-                  </div>
-                </SelectItem>
-                <SelectItem value="name">
-                  <div className="flex items-center">
-                    <User className="w-4 h-4 mr-2" />
-                    Name (A-Z)
-                  </div>
-                </SelectItem>
-                <SelectItem value="date_joined">
-                  <div className="flex items-center">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    Date Joined
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Sort Order */}
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">
-                  <div className="flex items-center">
-                    <ArrowDown className="w-4 h-4 mr-2" />
-                    Descending (High to Low)
-                  </div>
-                </SelectItem>
-                <SelectItem value="asc">
-                  <div className="flex items-center">
-                    <ArrowUp className="w-4 h-4 mr-2" />
-                    Ascending (Low to High)
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredPlayers.map((player) => (
-          <PlayerCard 
-            key={player.id} 
-            player={player}
-            leaderboardRank={leaderboardRankMap.get(player.id)}
-            onBan={handleBanPlayer}
-            onUnban={handleUnbanPlayer}
-            onEdit={setEditingPlayer}
-            onDelete={(id) => {
-              const playerToDelete = players?.find(p => p.id === id);
-              if (playerToDelete) {
-                if (confirm(`Are you sure you want to delete ${playerToDelete.ign}? This action is irreversible.`)) {
-                  handleDeletePlayer(id);
-                }
-              }
-            }}
-          />
-        ))}
+            <InlineSelect value={filterRole} onChange={setFilterRole} options={[
+              { value: 'all', label: 'All Roles' },
+              { value: 'player', label: 'Player' },
+              { value: 'moderator', label: 'Moderator' },
+              { value: 'admin', label: 'Admin' },
+              { value: 'clan_master', label: 'Clan Master' },
+            ]} />
+
+            <InlineSelect value={filterGrade} onChange={setFilterGrade} options={[
+              { value: 'all', label: 'All Grades' },
+              ...['Legendary','Master','Pro','Elite','Rookie','S','A','B','C','D'].map((g) => ({ value: g, label: g })),
+            ]} />
+
+            <InlineSelect
+              value={`${sortBy}_${sortOrder}`}
+              onChange={(v) => { const parts = v.split('_'); setSortBy(parts[0]); setSortOrder(parts[1]); }}
+              options={[
+                { value: 'kills_desc',      label: 'Most Kills' },
+                { value: 'kills_asc',       label: 'Fewest Kills' },
+                { value: 'attendance_desc', label: 'Top Attendance' },
+                { value: 'rank_asc',        label: 'Leaderboard Rank' },
+                { value: 'name_asc',        label: 'Name A-Z' },
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* ── Grid ── */}
+        {filteredPlayers.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredPlayers.map((player) => (
+              <PlayerCard
+                key={player.id}
+                player={player}
+                leaderboardRank={leaderboardRankMap.get(player.id)}
+                onBan={handleBanPlayer}
+                onUnban={handleUnbanPlayer}
+                onEdit={setEditingPlayer}
+                onDelete={handleDeletePlayer}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-24">
+            <Shield className="w-16 h-16 mx-auto mb-4 opacity-20" style={{ color: C.primary }} />
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">
+              No operatives found matching your criteria.
+            </p>
+          </div>
+        )}
+
+        {/* ── Load More ── */}
+        <div className="flex justify-center pt-4">
+          <button
+            className="group flex items-center gap-3 px-8 py-4 rounded-full transition-all"
+            style={{ ...glass, border: `1px solid ${C.primary}4d` }}
+            onMouseEnter={(e) => (e.currentTarget.style.boxShadow = `0 0 20px ${C.primary}33`)}
+            onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
+          >
+            <span className="text-xs font-black tracking-[0.2em] text-slate-100 uppercase">
+              Load More Operatives
+            </span>
+            <ArrowDown className="w-4 h-4 transition-transform group-hover:translate-y-1" style={{ color: C.primary }} />
+          </button>
+        </div>
       </div>
 
-      {filteredPlayers.length === 0 && !isLoading && (
-        <div className="text-center py-12 col-span-full">
-          <p className="text-muted-foreground">No players found matching your criteria.</p>
-        </div>
-      )}
+      {/* ── Dialogs ── */}
+      <EditPlayerDialog player={editingPlayer} onClose={() => setEditingPlayer(null)} onSave={handleUpdatePlayer} />
+      <BanDialog        player={banningPlayer} onClose={() => setBanningPlayer(null)} onConfirm={handleConfirmBan} />
 
-      {/* Edit Player Dialog */}
-      {editingPlayer && (
-        <Dialog open={!!editingPlayer} onOpenChange={() => setEditingPlayer(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-md border-[#FF1F44]/30">
-            <DialogHeader>
-              <DialogTitle className="text-foreground font-orbitron text-2xl">
-                Edit Player: {getPlayerPrefix(editingPlayer.status)}{editingPlayer.ign}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-[#FF1F44]">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>In-Game Name (IGN)</Label>
-                    <Input 
-                      value={editingPlayer.ign || ''} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, ign: e.target.value})}
-                      className="bg-background/50 border-white/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Username</Label>
-                    <Input 
-                      value={editingPlayer.username || ''} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, username: e.target.value})}
-                      className="bg-background/50 border-white/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={editingPlayer.status || 'active'} onValueChange={(value) => setEditingPlayer({...editingPlayer, status: value})}>
-                      <SelectTrigger className="bg-background/50 border-white/20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active (Ɲ・乂)</SelectItem>
-                        <SelectItem value="beta">Beta (Ɲ・乃)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Role & Progression */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-[#FF1F44]">Role & Progression</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Role</Label>
-                    <Select value={editingPlayer.role} onValueChange={(value: any) => setEditingPlayer({...editingPlayer, role: value})}>
-                      <SelectTrigger className="bg-background/50 border-white/20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="player">Player</SelectItem>
-                        <SelectItem value="moderator">Moderator</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="clan_master">Clan Master</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Grade</Label>
-                    <Select value={editingPlayer.grade || ''} onValueChange={(value) => setEditingPlayer({...editingPlayer, grade: value})}>
-                      <SelectTrigger className="bg-background/50 border-white/20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Legendary">Legendary</SelectItem>
-                        <SelectItem value="Master">Master</SelectItem>
-                        <SelectItem value="Pro">Pro</SelectItem>
-                        <SelectItem value="Elite">Elite</SelectItem>
-                        <SelectItem value="Rookie">Rookie</SelectItem>
-                        <SelectItem value="S">S</SelectItem>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                        <SelectItem value="D">D</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tier</Label>
-                    <Input 
-                      value={editingPlayer.tier || ''} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, tier: e.target.value})}
-                      placeholder="e.g., I, II, III"
-                      className="bg-background/50 border-white/20"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Combat Statistics */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-[#FF1F44]">Combat Statistics</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>BR Kills</Label>
-                    <Input 
-                      type="number"
-                      value={editingPlayer.br_kills || 0} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, br_kills: parseInt(e.target.value) || 0})}
-                      className="bg-background/50 border-white/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>MP Kills</Label>
-                    <Input 
-                      type="number"
-                      value={editingPlayer.mp_kills || 0} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, mp_kills: parseInt(e.target.value) || 0})}
-                      className="bg-background/50 border-white/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Total Kills (Auto-calculated)</Label>
-                    <Input 
-                      type="number"
-                      value={(editingPlayer.br_kills || 0) + (editingPlayer.mp_kills || 0)} 
-                      disabled
-                      className="bg-background/30 border-white/20 text-gray-400"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Attendance Score</Label>
-                    <Input 
-                      type="number"
-                      value={editingPlayer.attendance || 0} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, attendance: parseInt(e.target.value) || 0})}
-                      min="0"
-                      className="bg-background/50 border-white/20"
-                    />
-                    <p className="text-xs text-gray-500">Number of times present</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Game Preferences */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-[#FF1F44]">Game Preferences</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>BR Class</Label>
-                    <Input 
-                      value={editingPlayer.br_class || ''} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, br_class: e.target.value})}
-                      placeholder="e.g., Medic, Scout"
-                      className="bg-background/50 border-white/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>MP Class</Label>
-                    <Input 
-                      value={editingPlayer.mp_class || ''} 
-                      onChange={(e) => setEditingPlayer({...editingPlayer, mp_class: e.target.value})}
-                      placeholder="e.g., Assault, Sniper"
-                      className="bg-background/50 border-white/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Player Type</Label>
-                    <Select value={editingPlayer.player_type || ''} onValueChange={(value: any) => setEditingPlayer({...editingPlayer, player_type: value})}>
-                      <SelectTrigger className="bg-background/50 border-white/20">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Hybrid">Hybrid(MP+BR)</SelectItem>
-                        <SelectItem value="BR">Battle Royale(BR)</SelectItem>
-                        <SelectItem value="MP">Multiplayer(MP)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <Button 
-                onClick={() => handleUpdatePlayer({ 
-                  ign: editingPlayer.ign,
-                  username: editingPlayer.username,
-                  status: editingPlayer.status,
-                  role: editingPlayer.role, 
-                  grade: editingPlayer.grade,
-                  tier: editingPlayer.tier,
-                  br_kills: editingPlayer.br_kills,
-                  mp_kills: editingPlayer.mp_kills,
-                  kills: (editingPlayer.br_kills || 0) + (editingPlayer.mp_kills || 0),
-                  attendance: editingPlayer.attendance,
-                  br_class: editingPlayer.br_class,
-                  mp_class: editingPlayer.mp_class,
-                  player_type: editingPlayer.player_type
-                })} 
-                className="w-full bg-gradient-to-r from-[#FF1F44] to-red-600 hover:from-red-600 hover:to-[#FF1F44]"
-              >
-                <Check className="w-4 h-4 mr-2" />
-                Save Changes
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Ban Player Dialog */}
-      {banningPlayer && (
-        <Dialog open={!!banningPlayer} onOpenChange={() => setBanningPlayer(null)}>
-          <DialogContent className="bg-background/95 backdrop-blur-md border-[#FF1F44]/30 max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-foreground font-orbitron text-2xl flex items-center gap-2">
-                <ShieldOff className="w-6 h-6 text-red-400" />
-                Ban Player: {getPlayerPrefix(banningPlayer.status)}{banningPlayer.ign}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">
-                  This action will restrict the player from accessing clan features and participating in events.
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Ban Type</Label>
-                <RadioGroup value={banType} onValueChange={(v: any) => setBanType(v)} className="flex gap-4 mt-2">
-                  <Label className="flex items-center gap-2 cursor-pointer">
-                    <RadioGroupItem value="temporary" /> Temporary
-                  </Label>
-                  <Label className="flex items-center gap-2 cursor-pointer">
-                    <RadioGroupItem value="permanent" /> Permanent
-                  </Label>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Quick Duration</Label>
-                <div className="flex flex-wrap gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 text-xs bg-background/50"
-                    onClick={() => {
-                      setBanType('temporary');
-                      const date = new Date();
-                      date.setDate(date.getDate() + 1);
-                      setBanDate(date);
-                    }}
-                  >
-                    24 Hours
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 text-xs bg-background/50"
-                    onClick={() => {
-                      setBanType('temporary');
-                      const date = new Date();
-                      date.setDate(date.getDate() + 7);
-                      setBanDate(date);
-                    }}
-                  >
-                    7 Days
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 text-xs bg-background/50"
-                    onClick={() => {
-                      setBanType('temporary');
-                      const date = new Date();
-                      date.setDate(date.getDate() + 30);
-                      setBanDate(date);
-                    }}
-                  >
-                    30 Days
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 text-xs bg-background/50"
-                    onClick={() => {
-                      setBanType('permanent');
-                    }}
-                  >
-                    Forever
-                  </Button>
-                </div>
-              </div>
-              
-              {banType === 'temporary' && (
-                <div className="space-y-2">
-                  <Label>Ban Until</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className={cn(
-                          "w-full justify-start text-left font-normal bg-background/50 border-white/20", 
-                          !banDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {banDate ? format(banDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar 
-                        mode="single" 
-                        selected={banDate} 
-                        onSelect={setBanDate} 
-                        disabled={(date) => date < new Date()} 
-                        initialFocus 
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label>Ban Message</Label>
-                <Input 
-                  value={banReason} 
-                  onChange={(e) => setBanReason(e.target.value)} 
-                  placeholder="Enter message for the banned player (required)"
-                  className="bg-background/50 border-white/20"
-                />
-              </div>
-              
-              <div className="flex gap-3 pt-2">
-                <Button 
-                  onClick={() => setBanningPlayer(null)} 
-                  variant="outline" 
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleConfirmBan} 
-                  variant="destructive" 
-                  className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
-                >
-                  <ShieldOff className="w-4 h-4 mr-2" />
-                  Confirm Ban
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Player Details Dialog */}
-      <PlayerProfileModal 
-        open={!!selectedPlayer} 
-        onOpenChange={(open) => !open && setSelectedPlayer(null)} 
-        player={selectedPlayer ? { name: selectedPlayer.ign, id: selectedPlayer.id } : null} 
-        onEdit={(player) => {
-          setEditingPlayer(player);
-          setSelectedPlayer(null);
-        }}
+      <PlayerProfileModal
+        open={!!selectedPlayer}
+        onOpenChange={(open) => !open && setSelectedPlayer(null)}
+        player={selectedPlayer ? { name: selectedPlayer.ign, id: selectedPlayer.id } : null}
+        onEdit={(p) => { setEditingPlayer(p); setSelectedPlayer(null); }}
       />
     </div>
   );
