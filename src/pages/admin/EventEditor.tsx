@@ -21,6 +21,9 @@ const C = {
   border:  'rgba(218,11,29,0.1)',
 };
 
+const MAX_THUMBNAIL_SIZE_MB = 5;
+const ALLOWED_THUMBNAIL_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 const glassMorphism: React.CSSProperties = {
   background:  'rgba(218,11,29,0.05)',
   backdropFilter: 'blur(12px)',
@@ -276,6 +279,16 @@ export const EventEditor: React.FC = () => {
       setUploading(true);
       if (!e.target.files?.length) throw new Error('You must select an image to upload.');
       const file = e.target.files[0];
+      const maxSizeInBytes = MAX_THUMBNAIL_SIZE_MB * 1024 * 1024;
+
+      if (!ALLOWED_THUMBNAIL_TYPES.includes(file.type)) {
+        throw new Error('Only JPEG, PNG, or WEBP images are allowed.');
+      }
+
+      if (file.size > maxSizeInBytes) {
+        throw new Error(`Image must be ${MAX_THUMBNAIL_SIZE_MB}MB or smaller.`);
+      }
+
       const fileExt = file.name.split('.').pop() || 'jpg';
       const filePath = `${profile?.id || 'anonymous'}/${crypto.randomUUID()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
@@ -289,6 +302,7 @@ export const EventEditor: React.FC = () => {
       toast({ title: 'Error uploading image', description: error.message, variant: 'destructive' });
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -557,7 +571,7 @@ export const EventEditor: React.FC = () => {
                               style={{ color: `${C.primary}99` }}
                             />
                             <p className="text-sm font-medium text-slate-300">Upload Event Thumbnail</p>
-                            <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-1">1920×1080 · JPG/PNG</p>
+                            <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-1">1920×1080 · JPG/PNG/WEBP · MAX {MAX_THUMBNAIL_SIZE_MB}MB</p>
                           </div>
                           <input
                             id="file-upload"

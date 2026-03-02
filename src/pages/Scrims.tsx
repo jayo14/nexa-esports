@@ -99,7 +99,11 @@ export const Scrims: React.FC = () => {
         console.error('Error fetching events:', error);
         return [];
       }
-      return data as Event[];
+      return ((data || []) as Partial<Event>[]).map((event) => ({
+        ...event,
+        event_participants: Array.isArray(event.event_participants) ? event.event_participants : [],
+        event_groups: Array.isArray(event.event_groups) ? event.event_groups : [],
+      })) as Event[];
     },
   });
 
@@ -169,12 +173,12 @@ export const Scrims: React.FC = () => {
   };
 
   const isUserParticipating = (eventId: string) => {
-    return events.find(e => e.id === eventId)?.event_participants.some(p => p.player_id === user?.id);
+    return (events.find(e => e.id === eventId)?.event_participants ?? []).some((participant) => participant.player_id === user?.id);
   };
 
   const getUserKills = (eventId: string) => {
     const event = events.find(e => e.id === eventId);
-    const participation = event?.event_participants.find(p => p.player_id === user?.id);
+    const participation = (event?.event_participants ?? []).find((participant) => participant.player_id === user?.id);
     return participation?.kills || 0;
   };
 
@@ -330,11 +334,11 @@ export const Scrims: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="flex items-center text-sm text-gray-400">
                         <Users className="w-4 h-4 mr-1" />
-                        {event.event_participants.length} participants
+                        {(event.event_participants ?? []).length} participants
                       </span>
                       <span className="flex items-center text-sm text-gray-400">
                         <MapPin className="w-4 h-4 mr-1" />
-                        {event.event_groups.length} groups
+                        {(event.event_groups ?? []).length} groups
                       </span>
                     </div>
                     
