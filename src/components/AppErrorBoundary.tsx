@@ -6,6 +6,34 @@ type AppErrorBoundaryState = {
   errorMessage: string;
 };
 
+const normalizeErrorMessage = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+
+  if (value instanceof Error) {
+    return value.message || 'Unexpected application error.';
+  }
+
+  if (value && typeof value === 'object') {
+    const maybeTitle = (value as { title?: unknown }).title;
+    const maybeDescription = (value as { description?: unknown }).description;
+    const maybeMessage = (value as { message?: unknown }).message;
+
+    if (typeof maybeMessage === 'string') return maybeMessage;
+
+    if (typeof maybeTitle === 'string' || typeof maybeDescription === 'string') {
+      return [maybeTitle, maybeDescription].filter((part): part is string => typeof part === 'string' && part.length > 0).join(' — ');
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return 'Unexpected application error.';
+    }
+  }
+
+  return 'Unexpected application error.';
+};
+
 export class AppErrorBoundary extends React.Component<React.PropsWithChildren, AppErrorBoundaryState> {
   private lastTelemetryAt = 0;
   private telemetryClient = supabase as any;
@@ -48,7 +76,7 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
   };
 
   private handleGlobalError = (event: ErrorEvent) => {
-    const message = event.error?.message || event.message || 'Unexpected application error.';
+    const message = normalizeErrorMessage(event.error || event.message);
 
     if (this.isIgnorableServiceWorkerError(message)) {
       console.warn('Ignored service worker registration error:', message);
@@ -69,9 +97,7 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
 
   private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
     const reason = event.reason;
-    const message = typeof reason === 'string'
-      ? reason
-      : reason?.message || 'Unhandled async error.';
+    const message = normalizeErrorMessage(reason);
 
     if (this.isIgnorableServiceWorkerError(message)) {
       console.warn('Ignored service worker registration rejection:', message);
