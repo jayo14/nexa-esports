@@ -229,21 +229,86 @@ export const useChat = (conversationId?: string) => {
 
     const channel = supabase
       .channel(`messages:${conversationId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${conversationId}`
-      }, (payload) => {
-        queryClient.setQueryData(['messages', conversationId], (old: Message[] = []) => [...old, payload.new as Message]);
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const incoming = payload.new as Message;
+          queryClient.setQueryData(['messages', conversationId], (old: Message[] = []) => {
+            if (old.some((message) => message.id === incoming.id)) return old;
+            return [...old, incoming];
+          });
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Message;
+          queryClient.setQueryData(['messages', conversationId], (old: Message[] = []) =>
+            old.map((message) => (message.id === updated.id ? { ...message, ...updated } : message))
+          );
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [conversationId, queryClient]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const conversationsChannel = supabase
+      .channel(`conversations:${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(conversationsChannel);
+    };
+  }, [user, queryClient]);
+
+  useEffect(() => {
+    if (!conversationId || !user || messages.length === 0) return;
+
+    const unreadIncomingIds = messages
+      .filter((message) => message.sender_id !== user.id && !message.is_read)
+      .map((message) => message.id);
+
+    if (unreadIncomingIds.length === 0) return;
+
+    const markAsRead = async () => {
+      const { error } = await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .in('id', unreadIncomingIds);
+
+      if (error) {
+        console.error('Failed to mark messages as read:', error);
+      }
+    };
+
+    void markAsRead();
+  }, [conversationId, messages, user]);
 
   return {
     conversations,

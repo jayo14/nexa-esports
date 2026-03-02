@@ -32,6 +32,7 @@ import {
   Settings,
   FileText,
   Map,
+  Check,
   CheckCheck,
 } from 'lucide-react';
 
@@ -582,7 +583,11 @@ export const Chat: React.FC = () => {
                             {format(new Date(msg.created_at), 'HH:mm')}
                           </span>
                           {isMe && (
-                            <CheckCheck className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
+                            msg.is_read ? (
+                              <CheckCheck className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
+                            ) : (
+                              <Check className="w-3.5 h-3.5 text-slate-500" />
+                            )
                           )}
                         </div>
                       </div>

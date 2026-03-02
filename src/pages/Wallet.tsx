@@ -168,7 +168,12 @@ const ActionBtn: React.FC<{
 );
 
 /* ─── Tab nav ─── */
-const TABS = ['All', 'Earnings', 'Withdrawals', 'Redeems'];
+const TABS = [
+  { key: 'All', label: 'All', icon: LayoutGrid },
+  { key: 'Earnings', label: 'Earnings', icon: TrendingUp },
+  { key: 'Withdrawals', label: 'Withdrawals', icon: ArrowUp },
+  { key: 'Redeems', label: 'Redeems', icon: Gift },
+] as const;
 
 /* ─── Main Wallet Component ─── */
 const Wallet: React.FC = () => {
@@ -503,23 +508,26 @@ const Wallet: React.FC = () => {
               <div className="flex items-center gap-6">
                 {/* Tab nav */}
                 <nav
-                  className="flex p-1.5 rounded-2xl"
+                  className="flex p-1.5 rounded-2xl overflow-x-auto hide-scrollbar max-w-full"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
                 >
-                  {TABS.map((tab) => (
+                  {TABS.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
                     <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className="shrink-0 inline-flex items-center justify-center gap-2 px-3 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-[0.14em] sm:tracking-widest transition-all"
                       style={
-                        activeTab === tab
+                        activeTab === tab.key
                           ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
                           : { color: '#64748b' }
                       }
                     >
-                      {tab}
+                      <Icon className="w-4 h-4" />
+                      <span className="hidden min-[430px]:inline">{tab.label}</span>
                     </button>
-                  ))}
+                  )})}
                 </nav>
               </div>
             </div>
