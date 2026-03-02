@@ -11,6 +11,7 @@ import {
   Mail, Smartphone, Trophy, CalendarIcon, Share2, Shield,
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -658,6 +659,10 @@ export const AdminPlayers: React.FC = () => {
   const [editingPlayer,  setEditingPlayer]  = useState<Player | null>(null);
   const [banningPlayer,  setBanningPlayer]  = useState<Player | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteFullName, setInviteFullName] = useState('');
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   const leaderboardRankMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -740,6 +745,51 @@ export const AdminPlayers: React.FC = () => {
     toast({ title: 'Player Unbanned', description: `${p.ign} has been unbanned.` });
   };
 
+  const handleSendInvite = async () => {
+    const normalizedEmail = inviteEmail.trim().toLowerCase();
+    const normalizedFullName = inviteFullName.trim();
+
+    if (!normalizedEmail || !normalizedFullName) {
+      toast({
+        title: 'Missing information',
+        description: 'Enter full name and email address to send invite.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSendingInvite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('invite-member', {
+        body: {
+          email: normalizedEmail,
+          fullName: normalizedFullName,
+          redirectTo: `${window.location.origin}/auth/reset-password`,
+        },
+      });
+
+      if (error) throw new Error(error.message || 'Failed to send invite.');
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: 'Invite sent',
+        description: `Invite email sent to ${normalizedEmail}.`,
+      });
+
+      setInviteDialogOpen(false);
+      setInviteEmail('');
+      setInviteFullName('');
+    } catch (error: any) {
+      toast({
+        title: 'Invite failed',
+        description: error.message || 'Could not send invite email.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
   const activeCount = players?.filter((p) => !p.is_banned).length || 0;
   const bannedCount = players?.filter((p) => p.is_banned).length || 0;
 
@@ -793,6 +843,7 @@ export const AdminPlayers: React.FC = () => {
             <button
               className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest text-white"
               style={{ background: C.primary, boxShadow: `0 4px 16px ${C.primary}4d` }}
+              onClick={() => setInviteDialogOpen(true)}
             >
               <Users className="w-4 h-4" /> Add Member
             </button>
@@ -905,6 +956,63 @@ export const AdminPlayers: React.FC = () => {
         player={selectedPlayer ? { name: selectedPlayer.ign, id: selectedPlayer.id } : null}
         onEdit={(p) => { setEditingPlayer(p); setSelectedPlayer(null); }}
       />
+
+      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <DialogContent
+          className="max-w-md"
+          style={{ background: `${C.bgDark}f2`, border: `1px solid ${C.primary}33` }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-white text-xl font-black uppercase tracking-wider">
+              Invite New Member
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Full Name</label>
+              <input
+                value={inviteFullName}
+                onChange={(e) => setInviteFullName(e.target.value)}
+                placeholder="John Doe"
+                className="w-full rounded-xl px-4 py-3 text-sm text-slate-100"
+                style={{ background: `${C.bgDark}cc`, border: `1px solid ${C.primary}1f`, outline: 'none' }}
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Email Address</label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="player@email.com"
+                className="w-full rounded-xl px-4 py-3 text-sm text-slate-100"
+                style={{ background: `${C.bgDark}cc`, border: `1px solid ${C.primary}1f`, outline: 'none' }}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-100"
+                onClick={() => setInviteDialogOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={sendingInvite}
+                className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-white"
+                style={{ background: C.primary, opacity: sendingInvite ? 0.7 : 1 }}
+                onClick={handleSendInvite}
+              >
+                {sendingInvite ? 'Sending…' : 'Send Invite'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

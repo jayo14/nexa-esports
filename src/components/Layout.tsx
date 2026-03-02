@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -14,6 +14,14 @@ interface GlobalSearchResults {
   loadouts: Array<{ id: string; weapon_name: string; weapon_type: string; mode: string }>;
   events: Array<{ id: string; name: string; type: string; status: string | null }>;
   leaderboard: Array<{ id: string | null; ign: string | null; username: string | null; total_kills: number | null }>;
+}
+
+interface GlobalSearchItem {
+  key: string;
+  group: "players" | "events" | "loadouts" | "leaderboard";
+  title: string;
+  subtitle: string;
+  path: string;
 }
 
 const C = {
@@ -44,6 +52,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
   const [debouncedGlobalSearchTerm, setDebouncedGlobalSearchTerm] = useState("");
   const [showGlobalSearchResults, setShowGlobalSearchResults] = useState(false);
+  const [highlightedSearchIndex, setHighlightedSearchIndex] = useState(0);
   const mainContentRef = useRef<HTMLElement | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = useRef(0);
@@ -162,11 +171,89 @@ export const Layout: React.FC<LayoutProps> = ({
     globalSearchResults.leaderboard.length > 0
   );
 
+  const globalSearchItems = useMemo<GlobalSearchItem[]>(() => {
+    if (!globalSearchResults) return [];
+
+    return [
+      ...globalSearchResults.players.map((player) => ({
+        key: `player-${player.id}`,
+        group: "players" as const,
+        title: player.ign || "Unknown Player",
+        subtitle: `@${player.username || "unknown"}`,
+        path: `/profile/${player.id}`,
+      })),
+      ...globalSearchResults.events.map((eventItem) => ({
+        key: `event-${eventItem.id}`,
+        group: "events" as const,
+        title: eventItem.name,
+        subtitle: `${eventItem.type} • ${eventItem.status || "unknown"}`,
+        path: `/events/${eventItem.id}`,
+      })),
+      ...globalSearchResults.loadouts.map((loadout) => ({
+        key: `loadout-${loadout.id}`,
+        group: "loadouts" as const,
+        title: loadout.weapon_name,
+        subtitle: `${loadout.weapon_type} • ${loadout.mode}`,
+        path: "/loadouts",
+      })),
+      ...globalSearchResults.leaderboard.map((leader, index) => ({
+        key: `leader-${leader.id || index}`,
+        group: "leaderboard" as const,
+        title: leader.ign || leader.username || "Unknown",
+        subtitle: `Kills: ${leader.total_kills || 0}`,
+        path: leader.id ? `/profile/${leader.id}` : "/statistics",
+      })),
+    ];
+  }, [globalSearchResults]);
+
   const handleSelectGlobalResult = (path: string) => {
     navigate(path);
     setShowGlobalSearchResults(false);
     setGlobalSearchTerm("");
     setDebouncedGlobalSearchTerm("");
+    setHighlightedSearchIndex(0);
+  };
+
+  useEffect(() => {
+    setHighlightedSearchIndex(0);
+  }, [debouncedGlobalSearchTerm]);
+
+  const handleGlobalSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showGlobalSearchResults) {
+      if (event.key === "ArrowDown" && globalSearchItems.length > 0) {
+        setShowGlobalSearchResults(true);
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (globalSearchItems.length === 0) return;
+      setHighlightedSearchIndex((prev) => (prev + 1) % globalSearchItems.length);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (globalSearchItems.length === 0) return;
+      setHighlightedSearchIndex((prev) => (prev - 1 + globalSearchItems.length) % globalSearchItems.length);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (globalSearchItems.length === 0) return;
+      event.preventDefault();
+      const item = globalSearchItems[highlightedSearchIndex];
+      if (item) handleSelectGlobalResult(item.path);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setShowGlobalSearchResults(false);
+      return;
+    }
   };
 
   useEffect(() => {
@@ -327,6 +414,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     value={globalSearchTerm}
                     onChange={(event) => setGlobalSearchTerm(event.target.value)}
                     onFocus={() => setShowGlobalSearchResults(true)}
+                    onKeyDown={handleGlobalSearchKeyDown}
                   />
 
                   {showGlobalSearchResults && debouncedGlobalSearchTerm.trim().length >= 2 && (
@@ -346,14 +434,24 @@ export const Layout: React.FC<LayoutProps> = ({
                               <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Players</p>
                               <div className="space-y-1">
                                 {globalSearchResults.players.map((player) => (
+                                  (() => {
+                                    const itemKey = `player-${player.id}`;
+                                    const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
+                                    const isActive = itemIndex === highlightedSearchIndex;
+
+                                    return (
                                   <button
                                     key={player.id}
-                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
                                     onClick={() => handleSelectGlobalResult(`/profile/${player.id}`)}
+                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
                                   >
                                     <p className="text-sm text-slate-100 font-semibold">{player.ign || "Unknown Player"}</p>
                                     <p className="text-xs text-slate-400">@{player.username || "unknown"}</p>
                                   </button>
+                                    );
+                                  })()
                                 ))}
                               </div>
                             </div>
@@ -364,14 +462,24 @@ export const Layout: React.FC<LayoutProps> = ({
                               <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Events</p>
                               <div className="space-y-1">
                                 {globalSearchResults.events.map((eventItem) => (
+                                  (() => {
+                                    const itemKey = `event-${eventItem.id}`;
+                                    const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
+                                    const isActive = itemIndex === highlightedSearchIndex;
+
+                                    return (
                                   <button
                                     key={eventItem.id}
-                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
                                     onClick={() => handleSelectGlobalResult(`/events/${eventItem.id}`)}
+                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
                                   >
                                     <p className="text-sm text-slate-100 font-semibold">{eventItem.name}</p>
                                     <p className="text-xs text-slate-400">{eventItem.type} • {eventItem.status || "unknown"}</p>
                                   </button>
+                                    );
+                                  })()
                                 ))}
                               </div>
                             </div>
@@ -382,14 +490,24 @@ export const Layout: React.FC<LayoutProps> = ({
                               <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Loadouts</p>
                               <div className="space-y-1">
                                 {globalSearchResults.loadouts.map((loadout) => (
+                                  (() => {
+                                    const itemKey = `loadout-${loadout.id}`;
+                                    const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
+                                    const isActive = itemIndex === highlightedSearchIndex;
+
+                                    return (
                                   <button
                                     key={loadout.id}
-                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
                                     onClick={() => handleSelectGlobalResult("/loadouts")}
+                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
                                   >
                                     <p className="text-sm text-slate-100 font-semibold">{loadout.weapon_name}</p>
                                     <p className="text-xs text-slate-400">{loadout.weapon_type} • {loadout.mode}</p>
                                   </button>
+                                    );
+                                  })()
                                 ))}
                               </div>
                             </div>
@@ -400,14 +518,24 @@ export const Layout: React.FC<LayoutProps> = ({
                               <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Leaderboard</p>
                               <div className="space-y-1">
                                 {globalSearchResults.leaderboard.map((leader) => (
+                                  (() => {
+                                    const itemKey = `leader-${leader.id || leader.ign || leader.username || 'unknown'}`;
+                                    const itemIndex = globalSearchItems.findIndex((item) => item.title === (leader.ign || leader.username || "Unknown") && item.group === "leaderboard");
+                                    const isActive = itemIndex === highlightedSearchIndex;
+
+                                    return (
                                   <button
                                     key={`${leader.id}-${leader.ign}`}
-                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
                                     onClick={() => handleSelectGlobalResult(leader.id ? `/profile/${leader.id}` : "/statistics")}
+                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
                                   >
                                     <p className="text-sm text-slate-100 font-semibold">{leader.ign || leader.username || "Unknown"}</p>
                                     <p className="text-xs text-slate-400">Kills: {leader.total_kills || 0}</p>
                                   </button>
+                                    );
+                                  })()
                                 ))}
                               </div>
                             </div>

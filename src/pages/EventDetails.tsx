@@ -15,11 +15,12 @@ import {
   Calendar, Clock, Users, Link as LinkIcon, Lock, Copy,
   MapPin, ShieldAlert, Video, Loader2,
   BarChart2, ShoppingBag,
-  ChevronRight, Download, Play, X,
+  ChevronRight, ExternalLink,
   Shield, Settings, ArrowRight, Flame,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Event } from '@/types/events';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 /* ─────────────── Design tokens ─────────────── */
 const C = {
@@ -82,11 +83,38 @@ export const EventDetails: React.FC = () => {
       if (!eventId) throw new Error('Event ID is required');
       const { data, error } = await supabase
         .from('events')
-        .select('*, host:host_id (username, avatar_url)')
+        .select(`
+          *,
+          host:host_id (id, username, ign, avatar_url),
+          event_participants (
+            id,
+            verified,
+            player_id,
+            profiles:player_id (id, ign, avatar_url, status)
+          )
+        `)
         .eq('id', eventId)
         .single();
       if (error) throw error;
-      return data as unknown as Event;
+      return data as (Event & {
+        event_participants?: Array<{
+          id: string;
+          verified: boolean | null;
+          player_id: string | null;
+          profiles?: {
+            id: string;
+            ign: string;
+            avatar_url: string | null;
+            status: string | null;
+          } | null;
+        }>;
+        host?: {
+          id?: string;
+          username?: string;
+          ign?: string;
+          avatar_url?: string;
+        };
+      });
     },
   });
 
@@ -151,6 +179,31 @@ export const EventDetails: React.FC = () => {
 
   const [titleMain, ...titleRest] = event.name.split(':');
   const titleSub = titleRest.join(':').trim();
+  const participantRecords = event.event_participants || [];
+  const participantCount = participantRecords.length;
+  const confirmedCount = participantRecords.filter((participant) => participant.verified).length;
+  const maxParticipants = Math.max(50, (event.lobbies || 1) * 50);
+  const participationRate = maxParticipants > 0 ? Math.round((confirmedCount / maxParticipants) * 100) : 0;
+  const missionIntelStrokeDashOffset = 440 - Math.round((Math.min(100, participationRate) / 100) * 440);
+
+  const activeWarriors = participantRecords
+    .filter((participant) => participant.profiles?.ign)
+    .slice(0, 3)
+    .map((participant) => ({
+      name: participant.profiles?.ign || 'Unknown',
+      status: participant.verified ? 'Confirmed' : 'Pending Verification',
+      dot: participant.verified ? '#22c55e' : '#64748b',
+      img: participant.profiles?.avatar_url || null,
+    }));
+
+  if (activeWarriors.length === 0) {
+    activeWarriors.push({
+      name: event.host?.ign || event.host?.username || 'Host',
+      status: 'Commanding',
+      dot: '#22c55e',
+      img: event.host?.avatar_url || null,
+    });
+  }
 
   return (
     <div
@@ -223,13 +276,13 @@ export const EventDetails: React.FC = () => {
 
                 <div className="flex items-center gap-4">
                   <div className="flex -space-x-2">
-                    {[...Array(3)].map((_, i) => (
+                    {Array.from({ length: Math.min(3, Math.max(1, participantCount)) }).map((_, i) => (
                       <div key={i} className="w-8 h-8 rounded-full bg-slate-700" style={{ border: `2px solid ${C.bgDark}` }} />
                     ))}
                   </div>
                   <span className="px-4 py-1.5 rounded-full text-xs font-bold"
                     style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    +120 Participants
+                    {participantCount} Participants
                   </span>
                 </div>
               </div>
@@ -246,7 +299,7 @@ export const EventDetails: React.FC = () => {
             <section>
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">Event Briefing</h3>
-                <button className="text-xs font-bold text-slate-400 hover:text-white transition-colors">See More</button>
+                <span className="text-xs font-bold text-slate-400">Live Data</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <BriefingCard iconNode={<Calendar className="w-5 h-5" />} value={formatDate(event.date)} label="Deployment Date" />
@@ -254,10 +307,10 @@ export const EventDetails: React.FC = () => {
                 <BriefingCard
                   iconNode={
                     event.host?.avatar_url
-                      ? <img src={event.host.avatar_url} alt={event.host.username} className="w-12 h-12 rounded-2xl object-cover" />
+                      ? <img src={event.host.avatar_url} alt={event.host.username || 'Host'} className="w-12 h-12 rounded-2xl object-cover" />
                       : <Users className="w-5 h-5" />
                   }
-                  value={event.host?.username || 'Nexa eSports'}
+                  value={event.host?.ign || event.host?.username || 'Nexa eSports'}
                   label="Commanding Officer"
                 />
                 <BriefingCard iconNode={<MapPin className="w-5 h-5" />} value={`${event.lobbies || 1} Active`} label="Tactical Lobbies" />
@@ -424,20 +477,20 @@ export const EventDetails: React.FC = () => {
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
                     <circle cx="100" cy="100" fill="transparent" r="70" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
                     <circle cx="100" cy="100" fill="transparent" r="70" stroke={C.primary}
-                      strokeDasharray="440" strokeDashoffset="70" strokeLinecap="round" strokeWidth="12" />
+                      strokeDasharray="440" strokeDashoffset={missionIntelStrokeDashOffset} strokeLinecap="round" strokeWidth="12" />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                     <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Confirmed</span>
-                    <span className="text-4xl font-black text-white">42<span className="text-xl text-slate-500">/50</span></span>
+                    <span className="text-4xl font-black text-white">{confirmedCount}<span className="text-xl text-slate-500">/{maxParticipants}</span></span>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-2 mt-auto relative z-10">
                 {[
-                  { icon: <Users className="w-4 h-4" />, label: '84%' },
+                  { icon: <Users className="w-4 h-4" />, label: `${participationRate}%` },
                   { icon: <Shield className="w-4 h-4" />, label: 'Gold' },
-                  { icon: <BarChart2 className="w-4 h-4" />, label: 'Ready' },
+                  { icon: <BarChart2 className="w-4 h-4" />, label: participantCount > 0 ? 'Ready' : 'Standby' },
                 ].map(({ icon, label }) => (
                   <div key={label} className="rounded-2xl p-3 flex flex-col items-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
                     <span style={{ color: C.primary }}>{icon}</span>
@@ -453,16 +506,12 @@ export const EventDetails: React.FC = () => {
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Warriors</h4>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                   style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>
-                  12 ONLINE
+                  {Math.max(1, activeWarriors.length)} ONLINE
                 </span>
               </div>
 
               <div className="flex flex-col gap-3">
-                {[
-                  { name: 'Ghost_One', status: 'In Training', dot: '#22c55e', img: null as string | null },
-                  { name: 'Viper_Nex', status: 'Ready Up',    dot: '#22c55e', img: null as string | null },
-                  { name: event.host?.username || 'TeeMhor', status: 'Commanding', dot: '#22c55e', img: event.host?.avatar_url || null },
-                ].map(({ name, status, dot, img }) => (
+                {activeWarriors.map(({ name, status, dot, img }) => (
                   <div key={name} className="flex items-center gap-3 p-2 rounded-2xl" style={{ background: 'rgba(255,255,255,0.05)' }}>
                     <div className="relative">
                       {img ? (
@@ -487,46 +536,28 @@ export const EventDetails: React.FC = () => {
             </section>
           </div>
         </div>
-
-        {/* ── Footer download bar ── */}
-        <footer>
-          <div className="p-6 rounded-[32px] flex items-center gap-8"
-            style={{ ...glass, border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${C.primary}33`, color: C.primary }}>
-              <Download className="w-6 h-6" />
-            </div>
-            <div className="flex-1 space-y-2 min-w-0">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-white truncate">Mission_Briefing_v4.pdf</h4>
-                  <p className="text-[10px] text-slate-500">Tactical Strategy Guide</p>
-                </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap flex-shrink-0">
-                  1 hour 23 min. remaining
-                </p>
-              </div>
-              <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <div className="h-full w-[45%]" style={{ background: C.primary }} />
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-500">
-                <span>265Mb of 1.23Gb</span>
-                <span>45% Complete</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-all"
-                style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <Play className="w-3.5 h-3.5 text-white" />
-              </button>
-              <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-all"
-                style={{ background: 'rgba(255,255,255,0.05)', color: C.primary }}>
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </footer>
       </div>
+
+      {event.room_link && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href={event.room_link}
+                target="_blank"
+                rel="noreferrer"
+                className="fixed right-6 bottom-24 md:bottom-8 z-50 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl"
+                style={{ background: C.primary }}
+              >
+                <ExternalLink className="w-5 h-5" />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Room Link</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   );
 };

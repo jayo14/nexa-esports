@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { EventFormData } from "@/types/events";
+import { Database } from "@/integrations/supabase/types";
 import {
   Loader2, Upload, ArrowLeft, Save,
   Info, Gamepad2, Image as ImageIcon,
@@ -157,6 +158,47 @@ export const EventEditor: React.FC = () => {
   const [uploading,   setUploading]   = useState(false);
   const [chatMessage, setChatMessage] = useState('');
 
+  type EventRow = Database['public']['Tables']['events']['Row'];
+  const EVENT_THUMBNAILS_BUCKET = 'event-thumbnails';
+
+  const parseTeamsField = (teamsValue: string): Record<string, unknown> | null => {
+    const trimmed = teamsValue.trim();
+    if (!trimmed) return null;
+
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return { value: trimmed };
+    }
+  };
+
+  const buildEventPayload = (data: EventFormData) => {
+    const payload = {
+      name: data.name,
+      type: data.type,
+      season: data.season || null,
+      date: data.date,
+      time: data.time,
+      end_time: data.end_time || null,
+      description: data.description || null,
+      status: data.status,
+      host_id: data.host_id || profile?.id || null,
+      lobbies: data.lobbies || 1,
+      teams: parseTeamsField(data.teams),
+      room_link: data.room_link || null,
+      room_code: data.room_code || null,
+      password: data.password || null,
+      compulsory: !!data.compulsory,
+      public: !!data.public,
+      thumbnail_url: data.thumbnail_url || null,
+      highlight_reel: data.highlight_reel || null,
+      updated_at: new Date().toISOString(),
+      created_by: isEditMode ? undefined : profile?.id,
+    };
+
+    return payload;
+  };
+
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<EventFormData>({
     defaultValues: {
       name: '', type: 'MP', season: '', date: '', time: '', end_time: '',
@@ -186,10 +228,43 @@ export const EventEditor: React.FC = () => {
     enabled: isEditMode,
   });
 
+  const { data: hosts = [] } = useQuery({
+    queryKey: ['event-hosts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, ign, username, role')
+        .in('role', ['admin', 'clan_master', 'moderator'])
+        .order('ign', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   useEffect(() => {
     if (eventData) {
-      // @ts-ignore
-      reset(eventData);
+      const existingEvent = eventData as unknown as EventRow;
+      reset({
+        name: existingEvent.name,
+        type: existingEvent.type as EventFormData['type'],
+        season: (existingEvent as any).season || '',
+        date: existingEvent.date,
+        time: existingEvent.time,
+        end_time: existingEvent.end_time || '',
+        description: existingEvent.description || '',
+        status: (existingEvent.status || 'upcoming') as EventFormData['status'],
+        host_id: (existingEvent as any).host_id || profile?.id || '',
+        lobbies: (existingEvent as any).lobbies || 1,
+        teams: (existingEvent as any).teams ? JSON.stringify((existingEvent as any).teams) : '',
+        room_link: (existingEvent as any).room_link || '',
+        room_code: (existingEvent as any).room_code || '',
+        password: (existingEvent as any).password || '',
+        compulsory: !!(existingEvent as any).compulsory,
+        public: !!(existingEvent as any).public,
+        thumbnail_url: (existingEvent as any).thumbnail_url || '',
+        highlight_reel: (existingEvent as any).highlight_reel || '',
+      });
     } else if (profile?.id) {
       setValue('host_id', profile.id);
     }
@@ -200,12 +275,14 @@ export const EventEditor: React.FC = () => {
     try {
       setUploading(true);
       if (!e.target.files?.length) throw new Error('You must select an image to upload.');
-      const file     = e.target.files[0];
-      const fileExt  = file.name.split('.').pop();
-      const filePath = `${Math.random()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('event-thumbnails').upload(filePath, file);
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const filePath = `${profile?.id || 'anonymous'}/${crypto.randomUUID()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from(EVENT_THUMBNAILS_BUCKET)
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
       if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from('event-thumbnails').getPublicUrl(filePath);
+      const { data } = supabase.storage.from(EVENT_THUMBNAILS_BUCKET).getPublicUrl(filePath);
       setValue('thumbnail_url', data.publicUrl);
       toast({ title: 'Success', description: 'Thumbnail uploaded successfully' });
     } catch (error: any) {
@@ -218,7 +295,7 @@ export const EventEditor: React.FC = () => {
   /* ── Submit ── */
   const mutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      const payload = { ...data, updated_at: new Date().toISOString(), created_by: isEditMode ? undefined : profile?.id };
+      const payload = buildEventPayload(data);
       if (isEditMode) {
         const { error } = await supabase.from('events').update(payload).eq('id', eventId!);
         if (error) throw error;
@@ -389,6 +466,18 @@ export const EventEditor: React.FC = () => {
                       </FieldSelect>
                     </div>
 
+                    <div>
+                      <FieldLabel>Host</FieldLabel>
+                      <FieldSelect value={watch('host_id') || ''} onChange={(e) => setValue('host_id', e.target.value)}>
+                        <option value="" style={{ background: C.bgDark }}>Select Host</option>
+                        {hosts.map((host) => (
+                          <option key={host.id} value={host.id} style={{ background: C.bgDark }}>
+                            {host.ign} ({host.role})
+                          </option>
+                        ))}
+                      </FieldSelect>
+                    </div>
+
                     <div className="md:col-span-2">
                       <FieldLabel>Description</FieldLabel>
                       <FieldTextarea
@@ -409,7 +498,7 @@ export const EventEditor: React.FC = () => {
                     </div>
                     <div>
                       <FieldLabel>Teams Per Lobby</FieldLabel>
-                      <FieldInput {...register('teams')} placeholder="2" />
+                      <FieldInput {...register('teams')} placeholder='{"alpha": 4, "beta": 4}' />
                     </div>
                     <div>
                       <FieldLabel>Season</FieldLabel>

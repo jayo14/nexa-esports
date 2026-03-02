@@ -2,6 +2,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Home,
   Wallet,
@@ -61,6 +62,9 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+
+  const isAdminOrClanMaster = profile?.role === 'admin' || profile?.role === 'clan_master';
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
@@ -74,13 +78,13 @@ export const Sidebar: React.FC<SidebarProps> = () => {
         border: '1px solid rgba(255,255,255,0.05)',
       }}
     >
-      <div className="mb-8 w-12 h-12 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
+      <div className="mb-8 w-12 h-12 flex items-center justify-center cursor-pointer" onClick={() => navigate('/dashboard')}>
         <img src="/nexa-logo.jpg" alt="Nexa Esports" className="w-12 h-12 rounded-full object-cover" />
       </div>
 
       <ScrollArea className="flex-1 w-full [&>[data-orientation='vertical']]:hidden">
         <nav className="flex flex-col items-center gap-5 pb-2">
-          <SideNavIcon icon={<Home className="w-5 h-5" />} onClick={() => navigate('/')} active={isActive('/')} />
+          <SideNavIcon icon={<Home className="w-5 h-5" />} onClick={() => navigate('/dashboard')} active={isActive('/dashboard')} />
           <SideNavIcon icon={<Wallet className="w-5 h-5" />} onClick={() => navigate('/wallet')} active={isActive('/wallet')} />
           <SideNavIcon
             icon={<Gamepad2 className="w-5 h-5" />}
@@ -92,13 +96,17 @@ export const Sidebar: React.FC<SidebarProps> = () => {
           <SideNavIcon icon={<BarChart2 className="w-5 h-5" />} onClick={() => navigate('/statistics')} active={isActive('/statistics')} />
           <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
           <SideNavIcon icon={<MessageSquare className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
-          <SideNavIcon icon={<CalendarCheck className="w-5 h-5" />} onClick={() => navigate('/admin/attendance')} active={isActive('/admin/attendance')} />
-          <SideNavIcon icon={<HandCoins className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
-          <SideNavIcon icon={<Settings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
-          <SideNavIcon icon={<CalendarDays className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
-          <SideNavIcon icon={<Layers className="w-5 h-5" />} onClick={() => navigate('/admin/loadouts')} active={isActive('/admin/loadouts')} />
-          <SideNavIcon icon={<Crosshair className="w-5 h-5" />} onClick={() => navigate('/admin/weapon-layouts')} active={isActive('/admin/weapon-layouts')} />
-          <SideNavIcon icon={<Activity className="w-5 h-5" />} onClick={() => navigate('/admin/activities')} active={isActive('/admin/activities')} />
+          {isAdminOrClanMaster && (
+            <>
+              <SideNavIcon icon={<CalendarDays className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
+              <SideNavIcon icon={<CalendarCheck className="w-5 h-5" />} onClick={() => navigate('/admin/attendance')} active={isActive('/admin/attendance')} />
+              <SideNavIcon icon={<HandCoins className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
+              <SideNavIcon icon={<Settings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
+              <SideNavIcon icon={<Layers className="w-5 h-5" />} onClick={() => navigate('/admin/loadouts')} active={isActive('/admin/loadouts')} />
+              <SideNavIcon icon={<Crosshair className="w-5 h-5" />} onClick={() => navigate('/admin/weapon-layouts')} active={isActive('/admin/weapon-layouts')} />
+              <SideNavIcon icon={<Activity className="w-5 h-5" />} onClick={() => navigate('/admin/activities')} active={isActive('/admin/activities')} />
+            </>
+          )}
         </nav>
       </ScrollArea>
 
