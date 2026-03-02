@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -88,6 +90,8 @@ export const Chat: React.FC = () => {
     conversations,
     messages,
     sendMessage,
+    sendMessageAsync,
+    getOrCreateDirectConversation,
     isSending,
     isLoadingConversations,
     isLoadingMessages,
@@ -99,16 +103,60 @@ export const Chat: React.FC = () => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const activeConversation = conversations.find((c) => c.id === conversationId);
+  const isDraftConversation = !!conversationId && !activeConversation && !isLoadingConversations;
+
+  const { data: draftRecipient } = useQuery({
+    queryKey: ['chat-draft-recipient', conversationId],
+    queryFn: async () => {
+      if (!conversationId) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, ign')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isDraftConversation,
+  });
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || isSending) return;
-    sendMessage({ content: newMessage });
-    setNewMessage('');
+    const content = newMessage.trim();
+
+    if (activeConversation) {
+      sendMessage({ content });
+      setNewMessage('');
+      return;
+    }
+
+    if (isDraftConversation && conversationId) {
+      try {
+        const createdConversationId = await getOrCreateDirectConversation({
+          otherUserId: conversationId,
+        });
+
+        await sendMessageAsync({
+          content,
+          conversationId: createdConversationId,
+        });
+
+        setNewMessage('');
+        navigate(`/chat/${createdConversationId}`, { replace: true });
+      } catch (error) {
+        console.error('Error creating/sending first message:', error);
+      }
+    }
   };
 
-  const activeConversation = conversations.find((c) => c.id === conversationId);
   const otherUserOf = (conv: any) =>
     conv.buyer_id === user?.id ? conv.seller : conv.buyer;
+  const activeTarget = activeConversation
+    ? otherUserOf(activeConversation)
+    : draftRecipient;
 
   return (
     <div
@@ -236,7 +284,7 @@ export const Chat: React.FC = () => {
           className="flex-1 flex flex-col rounded-xl overflow-hidden shadow-2xl"
           style={glassPanel}
         >
-          {activeConversation ? (
+          {activeConversation || isDraftConversation ? (
             <>
               {/* Chat Header */}
               <header
@@ -258,17 +306,17 @@ export const Chat: React.FC = () => {
                   {/* Avatar */}
                   <div className="relative">
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-800">
-                      {otherUserOf(activeConversation)?.avatar_url ? (
+                      {activeTarget?.avatar_url ? (
                         <img
-                          src={otherUserOf(activeConversation).avatar_url}
+                          src={activeTarget.avatar_url}
                           alt=""
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">
                           {(
-                            otherUserOf(activeConversation)?.ign ||
-                            otherUserOf(activeConversation)?.username ||
+                            activeTarget?.ign ||
+                            activeTarget?.username ||
                             '?'
                           )[0].toUpperCase()}
                         </div>
@@ -283,22 +331,26 @@ export const Chat: React.FC = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="font-bold text-lg text-slate-100">
-                        {otherUserOf(activeConversation)?.ign ||
-                          otherUserOf(activeConversation)?.username ||
+                        {activeTarget?.ign ||
+                          activeTarget?.username ||
                           'Unknown'}
                       </h2>
                       <Shield className="w-4 h-4" style={{ color: PRIMARY }} />
                     </div>
-                    <p
-                      className="text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:underline"
-                      style={{ color: `${PRIMARY}b3` }}
-                      onClick={() =>
-                        navigate(`/marketplace/${activeConversation.listing_id}`)
-                      }
-                    >
-                      <ShoppingBag className="w-3 h-3" />
-                      {activeConversation.listing?.title || 'View Listing'}
-                    </p>
+                    {activeConversation?.listing_id ? (
+                      <p
+                        className="text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:underline"
+                        style={{ color: `${PRIMARY}b3` }}
+                        onClick={() => navigate(`/marketplace/${activeConversation.listing_id}`)}
+                      >
+                        <ShoppingBag className="w-3 h-3" />
+                        {activeConversation.listing?.title || 'View Listing'}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] font-medium" style={{ color: `${PRIMARY}b3` }}>
+                        New conversation
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -329,21 +381,22 @@ export const Chat: React.FC = () => {
                 className="flex-1 overflow-y-auto p-6 space-y-6"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: `${BURGUNDY} transparent` }}
               >
-                {/* Date divider */}
-                <div className="flex justify-center">
-                  <span
-                    className="px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
-                    style={{ background: `${PRIMARY}1a`, color: PRIMARY }}
-                  >
-                    Combat Intel — Today
-                  </span>
-                </div>
+                {activeConversation && (
+                  <div className="flex justify-center">
+                    <span
+                      className="px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                      style={{ background: `${PRIMARY}1a`, color: PRIMARY }}
+                    >
+                      Combat Intel — Today
+                    </span>
+                  </div>
+                )}
 
-                {isLoadingMessages ? (
+                {activeConversation && isLoadingMessages ? (
                   <p className="text-center text-slate-500 py-8 text-sm">
                     Decrypting messages...
                   </p>
-                ) : (
+                ) : activeConversation ? (
                   messages.map((msg) => {
                     const isMe = msg.sender_id === user?.id;
                     return (
@@ -384,6 +437,10 @@ export const Chat: React.FC = () => {
                       </div>
                     );
                   })
+                ) : (
+                  <div className="text-center text-slate-500 py-8 text-sm">
+                    First message will start this conversation.
+                  </div>
                 )}
                 <div ref={scrollRef} />
               </div>

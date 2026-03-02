@@ -83,19 +83,23 @@ export const useChat = (conversationId?: string) => {
 
   // Send a message
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ content }: { content: string }) => {
-      if (!user || !conversationId) throw new Error('Not authenticated or no conversation selected');
+    mutationFn: async ({ content, conversationId: targetConversationId }: { content: string; conversationId?: string }) => {
+      const resolvedConversationId = targetConversationId || conversationId;
+      if (!user || !resolvedConversationId) throw new Error('Not authenticated or no conversation selected');
       const { data, error } = await supabase
         .from('messages')
-        .insert([{ conversation_id: conversationId, sender_id: user.id, content }])
+        .insert([{ conversation_id: resolvedConversationId, sender_id: user.id, content }])
         .select()
         .single();
 
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+    onSuccess: (_, variables) => {
+      const resolvedConversationId = variables.conversationId || conversationId;
+      if (resolvedConversationId) {
+        queryClient.invalidateQueries({ queryKey: ['messages', resolvedConversationId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
@@ -120,6 +124,36 @@ export const useChat = (conversationId?: string) => {
       const { data: created, error: createError } = await supabase
         .from('conversations')
         .insert([{ listing_id: listingId, buyer_id: user.id, seller_id: sellerId }])
+        .select('id')
+        .single();
+
+      if (createError) throw createError;
+      return created.id;
+    },
+  });
+
+  // Create or get direct conversation (no listing context)
+  const getOrCreateDirectConversation = useMutation({
+    mutationFn: async ({ otherUserId }: { otherUserId: string }) => {
+      if (!user) throw new Error('Not authenticated');
+      if (!otherUserId || otherUserId === user.id) throw new Error('Invalid recipient');
+
+      const { data: existing, error: fetchError } = await supabase
+        .from('conversations')
+        .select('id')
+        .is('listing_id', null)
+        .or(
+          `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`
+        )
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+      if (existing && existing.length > 0) return existing[0].id;
+
+      const { data: created, error: createError } = await supabase
+        .from('conversations')
+        .insert([{ listing_id: null, buyer_id: user.id, seller_id: otherUserId }])
         .select('id')
         .single();
 
@@ -156,7 +190,9 @@ export const useChat = (conversationId?: string) => {
     messages,
     isLoadingMessages,
     sendMessage: sendMessageMutation.mutate,
+    sendMessageAsync: sendMessageMutation.mutateAsync,
     isSending: sendMessageMutation.isPending,
     getOrCreateConversation: getOrCreateConversation.mutateAsync,
+    getOrCreateDirectConversation: getOrCreateDirectConversation.mutateAsync,
   };
 };
