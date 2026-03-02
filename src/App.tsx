@@ -119,7 +119,7 @@ function AppRoutes() {
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/marketplace-info" element={<MarketplaceInfo />} />
-        <Route path="/events/:eventId" element={<EventDetails />} />
+        <Route path="/events/:eventId" element={<ProtectedRoute><Layout showSidebar pageScroll><EventDetails /></Layout></ProtectedRoute>} />
 
         {/* Auth routes */}
         <Route path="/auth/login" element={<Login />} />

@@ -13,9 +13,9 @@ import {
 } from 'react-share';
 import {
   Calendar, Clock, Users, Link as LinkIcon, Lock, Copy,
-  MapPin, ShieldAlert, Video, Loader2, Home, Package,
-  BarChart2, ShoppingBag, MessageSquare, Gamepad2, Tv,
-  ChevronRight, Download, Play, X, Plus, Bell, Search,
+  MapPin, ShieldAlert, Video, Loader2,
+  BarChart2, ShoppingBag,
+  ChevronRight, Download, Play, X,
   Shield, Settings, ArrowRight, Flame,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -35,27 +35,6 @@ const glass: React.CSSProperties = {
   WebkitBackdropFilter: 'blur(20px)',
   border: '1px solid rgba(255,255,255,0.1)',
 };
-
-/* ─────────────── SideNavIcon ─────────────── */
-const SideNavIcon: React.FC<{
-  icon: React.ReactNode;
-  active?: boolean;
-  onClick?: () => void;
-}> = ({ icon, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
-    style={
-      active
-        ? { background: `${C.primary}26`, color: C.primary, boxShadow: `0 0 15px ${C.primary}33` }
-        : { color: '#64748b' }
-    }
-    onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#fff'; }}
-    onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
-  >
-    {icon}
-  </button>
-);
 
 /* ─────────────── BriefingCard ─────────────── */
 const BriefingCard: React.FC<{ iconNode: React.ReactNode; value: string; label: string }> = ({
@@ -107,7 +86,7 @@ export const EventDetails: React.FC = () => {
         .eq('id', eventId)
         .single();
       if (error) throw error;
-      return data as Event;
+      return data as unknown as Event;
     },
   });
 
@@ -175,9 +154,8 @@ export const EventDetails: React.FC = () => {
 
   return (
     <div
-      className="flex h-screen p-4 lg:p-6 gap-6 overflow-hidden"
+      className="flex flex-col gap-6 min-w-0"
       style={{
-        background: `linear-gradient(135deg, ${C.burgundy} 0%, ${C.bgDark} 100%)`,
         fontFamily: "'Space Grotesk', sans-serif",
       }}
     >
@@ -197,69 +175,10 @@ export const EventDetails: React.FC = () => {
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Helmet>
 
-      {/* ══════════ LEFT SIDEBAR ══════════ */}
-      <aside
-        className="w-20 rounded-[32px] flex flex-col items-center py-8 shrink-0"
-        style={{ background: `${C.bgDark}66`, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.05)' }}
-      >
-        <div className="mb-12 w-10 h-10 flex items-center justify-center">
-          <svg className="w-8 h-8 fill-white" viewBox="0 0 100 100">
-            <path d="M20 20 L20 80 L35 80 L65 35 L65 80 L80 80 L80 20 L65 20 L35 65 L35 20 Z" />
-          </svg>
-        </div>
+      <div className="flex flex-col gap-6 min-w-0">
 
-        <nav className="flex-1 flex flex-col gap-6">
-          <SideNavIcon icon={<Home className="w-5 h-5" />}        onClick={() => navigate('/')} />
-          <SideNavIcon icon={<Gamepad2 className="w-5 h-5" />}    active />
-          <SideNavIcon icon={<Package className="w-5 h-5" />}     onClick={() => navigate('/marketplace')} />
-          <SideNavIcon icon={<Tv className="w-5 h-5" />} />
-          <SideNavIcon icon={<BarChart2 className="w-5 h-5" />} />
-          <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/marketplace')} />
-          <SideNavIcon icon={<MessageSquare className="w-5 h-5" />} onClick={() => navigate('/chat')} />
-        </nav>
-
-        <button
-          className="mt-auto w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ background: `${C.primary}33`, border: `1px solid ${C.primary}66`, color: C.primary }}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </aside>
-
-      {/* ══════════ MAIN ══════════ */}
-      <main className="flex-1 flex flex-col gap-6 min-w-0">
-
-        {/* Header */}
-        <header className="flex items-center justify-between px-2 flex-shrink-0">
-          <h2 className="text-2xl font-semibold text-slate-100">
-            Good evening, <span className="font-bold text-white">NIKITIN</span>
-          </h2>
-          <div className="flex items-center gap-6">
-            <div className="relative hidden md:block">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                className="rounded-full py-2.5 pl-12 pr-6 w-64 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
-                style={{ background: `${C.bgDark}80`, border: 'none' }}
-                placeholder="Search"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all"
-                style={{ background: `${C.bgDark}80` }}>
-                <ShoppingBag className="w-5 h-5" />
-              </button>
-              <button className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white relative"
-                style={{ background: `${C.bgDark}80` }}>
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full"
-                  style={{ background: C.primary, border: `2px solid ${C.burgundy}` }} />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Scrollable body */}
-        <div className="flex-1 flex gap-6 min-h-0 overflow-y-auto pr-2" style={{ scrollbarWidth: 'none' }}>
+        {/* Content body */}
+        <div className="flex flex-col xl:flex-row gap-6 min-w-0">
 
           {/* Left column */}
           <div className="flex-1 space-y-8 pb-8 min-w-0">
@@ -570,7 +489,7 @@ export const EventDetails: React.FC = () => {
         </div>
 
         {/* ── Footer download bar ── */}
-        <footer className="flex-shrink-0">
+        <footer>
           <div className="p-6 rounded-[32px] flex items-center gap-8"
             style={{ ...glass, border: '1px solid rgba(255,255,255,0.05)' }}>
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -607,51 +526,7 @@ export const EventDetails: React.FC = () => {
             </div>
           </div>
         </footer>
-      </main>
-
-      {/* ══════════ RIGHT MINI SIDEBAR ══════════ */}
-      <aside
-        className="w-16 flex flex-col items-center py-6 gap-6 rounded-[32px] shrink-0"
-        style={{ background: `${C.bgDark}66`, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.05)' }}
-      >
-        <div className="w-10 h-10 rounded-full overflow-hidden mb-4 flex-shrink-0"
-          style={{ border: `2px solid ${C.primary}66` }}>
-          <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-sm">N</div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <button className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400"
-            style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <Users className="w-5 h-5" />
-          </button>
-          {[
-            { initial: 'G', dot: '#22c55e' },
-            { initial: 'V', dot: '#f97316' },
-            { initial: 'T', dot: '#22c55e' },
-          ].map(({ initial, dot }, i) => (
-            <div key={i} className="relative">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-slate-300"
-                style={{ background: 'rgba(255,255,255,0.08)', border: `2px solid ${C.bgDark}` }}>
-                {initial}
-              </div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
-                style={{ background: dot, border: `2px solid ${C.bgDark}` }} />
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-auto flex flex-col gap-4">
-          <button className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
-            onClick={() => navigate('/chat')}>
-            <MessageSquare className="w-5 h-5" />
-          </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-            style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <Settings className="w-5 h-5" />
-          </button>
-        </div>
-      </aside>
+      </div>
     </div>
   );
 };
