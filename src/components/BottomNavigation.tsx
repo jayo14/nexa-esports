@@ -1,11 +1,14 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { Dock, DockIcon } from '@/components/magicui/dock';
 import {
   Home,
-  User,
-  Trophy,
+  Swords,
+  ShoppingBag,
+  MessageSquare,
   Wallet,
+  User,
 } from 'lucide-react';
 
 interface BottomNavItem {
@@ -22,10 +25,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ hidden = fal
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Four major pages for dock navigation: Home, Statistics, Wallet, Profile
+  // Mobile dock links
   const majorPages: BottomNavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
-    { icon: Trophy, label: 'Leaderboard', path: '/statistics' },
+    { icon: Swords, label: 'Scrims', path: '/scrims' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
+    { icon: MessageSquare, label: 'Chat', path: '/chat' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
@@ -47,53 +52,31 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ hidden = fal
       role="navigation"
       aria-label="Main navigation"
     >
-      {/* Dock Navigation - Width grows with components */}
-      <div className="bg-gradient-to-t from-background/98 via-background/95 to-background/90 backdrop-blur-xl border-2 border-primary/30 shadow-[0_-4px_30px_rgba(0,0,0,0.5)] rounded-full">
-        <div className="flex items-center justify-center gap-4 px-4 py-3">
-          {majorPages.map((item) => {
-            const Icon = item.icon;
-            const isActive = isActivePath(item.path);
-            
-            return (
+      <Dock className="bg-[rgba(26,11,13,0.72)] border-white/10">
+        {majorPages.map((item) => {
+          const Icon = item.icon;
+          const isActive = isActivePath(item.path);
+
+          return (
+            <DockIcon key={item.path}>
               <button
-                key={item.path}
                 onClick={() => handleNavigation(item.path)}
                 aria-label={`Navigate to ${item.label} page`}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all duration-300',
+                  'w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300',
                   isActive
-                    ? 'bg-wallet-purple-primary shadow-lg scale-105'
-                    : 'hover:bg-white/5 active:scale-95'
+                    ? 'bg-[rgba(236,19,30,0.28)] border border-[rgba(236,19,30,0.45)] text-[#ec131e]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                 )}
+                title={item.label}
               >
-                <div className={cn(
-                  'relative',
-                  isActive && 'animate-pulse'
-                )}>
-                  <Icon
-                    className={cn(
-                      'w-6 h-6 transition-colors duration-300',
-                      isActive ? 'text-white' : 'text-gray-400'
-                    )}
-                  />
-                  {isActive && (
-                    <div className="absolute inset-0 bg-wallet-purple-primary/20 rounded-xl blur-md -z-10"></div>
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    'text-xs font-medium transition-colors duration-300 whitespace-nowrap',
-                    isActive ? 'text-white' : 'text-gray-500'
-                  )}
-                >
-                  {item.label}
-                </span>
+                <Icon className="w-5 h-5" />
               </button>
-            );
-          })}
-        </div>
-      </div>
+            </DockIcon>
+          );
+        })}
+      </Dock>
     </nav>
   );
 };
