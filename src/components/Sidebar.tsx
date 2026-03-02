@@ -54,8 +54,6 @@ const SideNavIcon: React.FC<{
 );
 
 interface SidebarProps {
-  isCollapsed?: boolean;
-  setIsCollapsed?: (collapsed: boolean) => void;
   isMobile?: boolean;
 }
 
@@ -104,7 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
 
       <button
         onClick={() => navigate('/list-account')}
-        className="mt-auto w-10 h-10 rounded-full flex items-center justify-center"
+        className="w-10 h-10 mt-auto rounded-full flex items-center justify-center"
         style={{ background: `${C.primary}33`, border: `1px solid ${C.primary}66`, color: C.primary }}
       >
         <Plus className="w-4 h-4" />

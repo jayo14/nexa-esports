@@ -7,7 +7,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileMenu } from "@/components/MobileMenu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, LogOut, Menu, MessageSquare, Settings } from "lucide-react";
+import { Users, LogOut, Menu, MessageSquare, Settings, Search, ShoppingBag, Bell } from "lucide-react";
 
 const C = {
   primary: "#ec131e",
@@ -33,6 +33,19 @@ export const Layout: React.FC<LayoutProps> = ({
   const [showMobileControls, setShowMobileControls] = useState(true);
   const mainContentRef = useRef<HTMLElement | null>(null);
   const lastScrollTopRef = useRef(0);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const getDisplayName = () => {
+    if (profile?.username) return profile.username;
+    if (user?.email) return user.email.split("@")[0];
+    return "Player";
+  };
 
   // Fetch other players for the right sidebar
   const { data: otherPlayers = [] } = useQuery({
@@ -182,6 +195,54 @@ export const Layout: React.FC<LayoutProps> = ({
             ? 'h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] overflow-y-auto custom-scrollbar flex flex-col gap-6 min-w-0 px-4 lg:px-6 md:ml-[7rem] lg:ml-[8rem] md:mr-[5rem] lg:mr-[6rem]'
             : 'flex-1 p-4 md:p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar'}
         >
+          {pageScroll && (
+            <header
+              className="sticky top-0 z-20 flex flex-row items-center xs:flex-col xs:items-start justify-between gap-3 xs:gap-4 sm:gap-0 px-2 xs:px-3 sm:px-4 md:px-6 py-3 xs:py-4 w-full rounded-2xl"
+              style={{
+                background: `${C.burgundy}80`,
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}
+            >
+              <div className="w-full sm:w-auto">
+                <h1 className="text-slate-300 text-base sm:text-lg font-sans">
+                  {getGreeting()}, <span className="text-white font-bold">{getDisplayName()}</span>
+                </h1>
+              </div>
+              <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
+                <div className="relative flex-1 sm:flex-none">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    className="rounded-full py-2.5 pl-12 pr-4 sm:pr-6 w-full sm:w-80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans"
+                    style={{ background: `${C.bgDark}80`, border: 'none' }}
+                    placeholder="Search operations..."
+                    type="text"
+                  />
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all"
+                    style={{ background: `${C.bgDark}80` }}
+                    onClick={() => navigate('/marketplace')}
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                  </button>
+                  <button
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white relative"
+                    style={{ background: `${C.bgDark}80` }}
+                    onClick={() => navigate('/announcements')}
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span
+                      className="absolute top-2 right-2.5 w-2 h-2 rounded-full"
+                      style={{ background: C.primary, border: `2px solid ${C.bgDark}` }}
+                    />
+                  </button>
+                </div>
+              </div>
+            </header>
+          )}
           {children}
         </main>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Dock, DockIcon } from '@/components/magicui/dock';
+import { Dock, DockItem } from '@/components/magicui/dock';
 import {
   Home,
   Swords,
@@ -58,22 +58,16 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ hidden = fal
           const isActive = isActivePath(item.path);
 
           return (
-            <DockIcon key={item.path}>
-              <button
-                onClick={() => handleNavigation(item.path)}
-                aria-label={`Navigate to ${item.label} page`}
-                aria-current={isActive ? 'page' : undefined}
-                className={cn(
-                  'w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300',
-                  isActive
-                    ? 'bg-[rgba(236,19,30,0.28)] border border-[rgba(236,19,30,0.45)] text-[#ec131e]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                )}
-                title={item.label}
-              >
-                <Icon className="w-5 h-5" />
-              </button>
-            </DockIcon>
+            <DockItem
+              key={item.path}
+              active={isActive}
+              onClick={() => handleNavigation(item.path)}
+              title={item.label}
+              ariaLabel={`Navigate to ${item.label} page`}
+              ariaCurrent={isActive ? 'page' : undefined}
+            >
+              <Icon className="w-5 h-5" />
+            </DockItem>
           );
         })}
       </Dock>
