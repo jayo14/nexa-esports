@@ -10,6 +10,13 @@ import {
   ShoppingBag,
   MessageSquare,
   Plus,
+  CalendarCheck,
+  HandCoins,
+  Settings,
+  CalendarDays,
+  Layers,
+  Crosshair,
+  Activity,
 } from 'lucide-react';
 
 const C = {
@@ -55,11 +62,11 @@ export const Sidebar: React.FC<SidebarProps> = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
     <aside
-      className="w-20 rounded-[32px] flex flex-col items-center py-8 shrink-0"
+      className="w-20 h-full rounded-[32px] flex flex-col items-center py-8 shrink-0"
       style={{
         background: `${C.bgDark}66`,
         backdropFilter: 'blur(12px)',
@@ -73,18 +80,25 @@ export const Sidebar: React.FC<SidebarProps> = () => {
         </svg>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-6">
+      <nav className="flex-1 flex flex-col gap-4 overflow-y-auto hide-scrollbar">
         <SideNavIcon icon={<Home className="w-5 h-5" />} onClick={() => navigate('/')} active={isActive('/')} />
         <SideNavIcon
           icon={<Gamepad2 className="w-5 h-5" />}
           onClick={() => navigate('/scrims')}
           active={isActive('/scrims') || location.pathname.startsWith('/events/')}
         />
-        <SideNavIcon icon={<Package className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/package')} />
+        <SideNavIcon icon={<Package className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
         <SideNavIcon icon={<Tv className="w-5 h-5" />} onClick={() => navigate('/announcements')} active={isActive('/announcements')} />
         <SideNavIcon icon={<BarChart2 className="w-5 h-5" />} onClick={() => navigate('/statistics')} active={isActive('/statistics')} />
         <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
         <SideNavIcon icon={<MessageSquare className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
+        <SideNavIcon icon={<CalendarCheck className="w-5 h-5" />} onClick={() => navigate('/admin/attendance')} active={isActive('/admin/attendance')} />
+        <SideNavIcon icon={<HandCoins className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
+        <SideNavIcon icon={<Settings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
+        <SideNavIcon icon={<CalendarDays className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
+        <SideNavIcon icon={<Layers className="w-5 h-5" />} onClick={() => navigate('/admin/loadouts')} active={isActive('/admin/loadouts')} />
+        <SideNavIcon icon={<Crosshair className="w-5 h-5" />} onClick={() => navigate('/admin/weapon-layouts')} active={isActive('/admin/weapon-layouts')} />
+        <SideNavIcon icon={<Activity className="w-5 h-5" />} onClick={() => navigate('/admin/activities')} active={isActive('/admin/activities')} />
       </nav>
 
       <button

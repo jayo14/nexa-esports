@@ -169,7 +169,7 @@ export const Layout: React.FC<LayoutProps> = ({
         {!isMobile && !pageScroll && <Sidebar />}
         {!isMobile && pageScroll && (
           <div className="fixed top-4 bottom-4 left-4 lg:top-6 lg:bottom-6 lg:left-6 z-30">
-            <div className="h-full">
+            <div className="h-full overflow-y-auto hide-scrollbar">
               <Sidebar />
             </div>
           </div>
@@ -188,7 +188,7 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Right Sidebar */}
         {!isMobile && (
           <aside
-            className={`w-16 flex flex-col items-center py-6 gap-6 rounded-[32px] shrink-0 ${pageScroll ? 'fixed top-4 bottom-4 right-4 lg:top-6 lg:bottom-6 lg:right-6 z-30' : 'mr-4 my-4 overflow-y-auto custom-scrollbar'}`}
+            className={`w-16 flex flex-col items-center py-6 gap-6 rounded-[32px] shrink-0 overflow-y-auto hide-scrollbar ${pageScroll ? 'fixed top-4 bottom-4 right-4 lg:top-6 lg:bottom-6 lg:right-6 z-30' : 'mr-4 my-4'}`}
             style={{
               background: `${C.bgDark}66`,
               backdropFilter: "blur(12px)",
@@ -265,9 +265,25 @@ export const Layout: React.FC<LayoutProps> = ({
                 >
                   <Settings className="w-5 h-5" />
                 </button>
+                <button
+                  onClick={logout}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               </div>
             ) : (
               <div className="mt-auto flex flex-col gap-4">
+                <button
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                  onClick={() => navigate('/settings')}
+                  aria-label="Open settings"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
                 <button
                   onClick={logout}
                   className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
