@@ -31,6 +31,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const C = {
+  primary: '#ec131e',
+  bgDark: '#1a0b0d',
+  burgundy: '#411d21',
+};
+
 interface MobileMenuProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -119,7 +125,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
 
   const renderMenuItems = (items: typeof playerMenuItems) => {
     return (
-      <div className="space-y-1">
+      <div className="space-y-2">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = isActivePath(item.path);
@@ -129,13 +135,27 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
               key={item.path}
               onClick={() => handleNavigation(item.path)}
               className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                'w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all duration-200 border',
                 isActive
-                  ? 'bg-gradient-to-r from-[#FF1F44]/30 to-red-600/20 border border-[#FF1F44]/50 text-white'
-                  : 'hover:bg-white/5 text-gray-300 hover:text-white'
+                  ? 'text-white'
+                  : 'text-slate-300 hover:text-white border-white/0 hover:border-white/10'
               )}
+              style={
+                isActive
+                  ? {
+                      background: `${C.primary}26`,
+                      borderColor: `${C.primary}66`,
+                      boxShadow: `0 0 18px ${C.primary}2E`,
+                    }
+                  : {
+                      background: 'rgba(255,255,255,0.03)',
+                    }
+              }
             >
-              <Icon className={cn('w-5 h-5', isActive ? 'text-[#FF1F44]' : 'text-gray-400')} />
+              <Icon
+                className="w-5 h-5"
+                style={{ color: isActive ? C.primary : '#94a3b8' }}
+              />
               <span className="text-sm font-medium">{item.label}</span>
             </button>
           );
@@ -148,25 +168,32 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent
         side="left"
-        className="w-80 bg-gradient-to-br from-background/98 to-background/95 backdrop-blur-xl border-r-2 border-[#FF1F44]/30 overflow-y-auto"
+        className="w-[85vw] max-w-[340px] border-r overflow-y-auto hide-scrollbar"
+        style={{
+          background: `linear-gradient(160deg, ${C.burgundy}F2 0%, ${C.bgDark}F2 100%)`,
+          borderColor: 'rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}
       >
         <SheetHeader className="border-b border-white/10 pb-4 pt-10 md:pt-4">
-          <SheetTitle className="text-white font-orbitron">
-            <div className="flex items-center gap-3">
-              <div className="relative">
+          <SheetTitle className="text-white">
+            <div className="flex items-center gap-3 rounded-2xl p-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <div className="relative shrink-0">
                 <img
                   src={profile?.avatar_url || '/placeholder.svg'}
                   alt="Avatar"
-                  className="w-12 h-12 rounded-full object-cover border-2 border-[#FF1F44]/30"
+                  className="w-12 h-12 rounded-full object-cover"
+                  style={{ border: `2px solid ${C.primary}66` }}
                 />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-background"></div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2" style={{ borderColor: C.bgDark }}></div>
               </div>
               <div className="text-left">
                 <div className="text-sm font-bold text-white">
                   {profile?.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'}
                   {profile?.ign}
                 </div>
-                <div className="text-xs text-gray-400 capitalize">{profile?.role}</div>
+                <div className="text-xs text-slate-400 capitalize">{profile?.role}</div>
               </div>
             </div>
           </SheetTitle>
@@ -177,13 +204,13 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
           {isPlayer && (
             <div className="space-y-4">
                <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1">
                   Primary
                 </h3>
                 {renderMenuItems(playerMenuItems.filter(i => i.primary))}
               </div>
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1">
                   Secondary
                 </h3>
                 {renderMenuItems(playerMenuItems.filter(i => !i.primary))}
@@ -194,13 +221,13 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
           {isModerator && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1">
                   Primary
                 </h3>
                 {renderMenuItems(moderatorMenuItems.filter(i => i.primary))}
               </div>
               <div className="space-y-2">
-                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1">
                   Secondary
                 </h3>
                 {renderMenuItems(moderatorMenuItems.filter(i => !i.primary))}
@@ -211,13 +238,13 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
           {isAdmin && (
              <div className="space-y-4">
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1">
                   Primary
                 </h3>
                 {renderMenuItems(adminMenuItems.filter(i => i.primary))}
               </div>
               <div className="space-y-2">
-                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-1">
                   Secondary
                 </h3>
                 {renderMenuItems(adminMenuItems.filter(i => !i.primary))}
@@ -229,7 +256,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
           <div className="pt-4 border-t border-white/10">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all duration-200"
+              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-red-300 border border-red-500/25 hover:text-red-200 transition-all duration-200"
+              style={{ background: 'rgba(236, 19, 30, 0.08)' }}
             >
               <LogOut className="w-5 h-5" />
               <span className="text-sm font-medium">Logout</span>

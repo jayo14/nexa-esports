@@ -501,16 +501,6 @@ const Wallet: React.FC = () => {
             {/* Tabs + heading */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-6">
-                {/* Verify CTA */}
-                <button
-                  className="flex items-center gap-3 px-6 py-4 rounded-2xl font-bold text-sm text-white transition-all"
-                  style={{ background: PRIMARY, boxShadow: `0 8px 30px ${PRIMARY}4d` }}
-                  onClick={() => navigate('/wallet/verify')}
-                >
-                  <Shield className="w-5 h-5" />
-                  Verify Payments
-                </button>
-
                 {/* Tab nav */}
                 <nav
                   className="flex p-1.5 rounded-2xl"

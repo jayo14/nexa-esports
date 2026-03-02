@@ -249,7 +249,7 @@ export const Chat: React.FC = () => {
 
   return (
     <div
-      className="flex h-screen overflow-hidden rounded-xl"
+      className="flex h-full min-h-0 overflow-hidden rounded-2xl md:rounded-xl"
       style={{
         background: `radial-gradient(circle at top right, #3d1416, ${BG_DARK} 20%)`,
       }}
@@ -259,13 +259,13 @@ export const Chat: React.FC = () => {
       {/* ── Chat List ── */}
       <section
         className={cn(
-          'w-80 flex-shrink-0 flex-col hidden md:flex rounded-2xl backdrop-blur-md',
-          conversationId ? 'hidden md:flex' : 'flex'
+          'flex-shrink-0 flex-col rounded-2xl backdrop-blur-md',
+          conversationId ? 'hidden md:flex md:w-80 lg:w-96' : 'flex w-full md:w-80 lg:w-96'
         )}
         style={glassPanel}
       >
         {/* Search */}
-        <div className="p-6">
+        <div className="p-4 sm:p-5 md:p-6">
           <div className="relative">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
@@ -283,7 +283,7 @@ export const Chat: React.FC = () => {
         </div>
 
         {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-1 custom-scrollbar"
+        <div className="flex-1 overflow-y-auto px-2 sm:px-3 space-y-1 custom-scrollbar"
           style={{ scrollbarWidth: 'thin', scrollbarColor: `${BURGUNDY} transparent` }}
         >
           {isLoadingConversations ? (
@@ -298,7 +298,7 @@ export const Chat: React.FC = () => {
                 <div
                   key={conv.id}
                   onClick={() => navigate(`/chat/${conv.id}`)}
-                  className="flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all"
+                  className="flex items-center gap-3 sm:gap-4 p-3 rounded-xl cursor-pointer transition-all"
                   style={
                     isActive
                       ? {
@@ -368,7 +368,7 @@ export const Chat: React.FC = () => {
       </section>
 
       {/* ── Main Chat Window ── */}
-      <main className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
+      <main className={cn('flex-1 flex flex-col p-3 sm:p-4 md:p-6 overflow-hidden', !conversationId && 'hidden md:flex')}>
         <div
           className="flex-1 flex flex-col rounded-xl overflow-hidden shadow-2xl"
           style={glassPanel}
@@ -377,13 +377,13 @@ export const Chat: React.FC = () => {
             <>
               {/* Chat Header */}
               <header
-                className="p-5 flex items-center justify-between flex-shrink-0"
+                className="px-3 py-3 sm:px-4 sm:py-4 md:p-5 flex items-center justify-between flex-shrink-0 gap-2"
                 style={{
                   borderBottom: `1px solid ${PRIMARY}1a`,
                   background: `${PRIMARY}0d`,
                 }}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                   {/* Back (mobile) */}
                   <button
                     className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors"
@@ -417,9 +417,9 @@ export const Chat: React.FC = () => {
                     />
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h2 className="font-bold text-lg text-slate-100">
+                      <h2 className="font-bold text-base sm:text-lg text-slate-100 truncate">
                         {activeTarget?.ign ||
                           activeTarget?.username ||
                           'Unavailable User'}
@@ -428,7 +428,7 @@ export const Chat: React.FC = () => {
                     </div>
                     {activeConversation?.listing_id ? (
                       <p
-                        className="text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:underline"
+                        className="text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:underline truncate"
                         style={{ color: `${PRIMARY}b3` }}
                         onClick={() => navigate(`/marketplace/${activeConversation.listing_id}`)}
                       >
@@ -444,11 +444,11 @@ export const Chat: React.FC = () => {
                 </div>
 
                 {/* Header actions */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                   {[Phone, Video].map((Icon, i) => (
                     <button
                       key={i}
-                      className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 transition-all hover:text-red-400"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 transition-all hover:text-red-400"
                       style={{ transition: 'all 0.2s' }}
                       onMouseEnter={(e) =>
                         ((e.currentTarget as HTMLButtonElement).style.background =
@@ -466,7 +466,7 @@ export const Chat: React.FC = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 transition-all hover:text-red-400"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 transition-all hover:text-red-400"
                         onMouseEnter={(e) =>
                           ((e.currentTarget as HTMLButtonElement).style.background =
                             `${PRIMARY}1a`)
@@ -500,7 +500,7 @@ export const Chat: React.FC = () => {
 
               {/* Messages */}
               <div
-                className="flex-1 overflow-y-auto p-6 space-y-6"
+                className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: `${BURGUNDY} transparent` }}
               >
                 {activeConversation && (
@@ -529,7 +529,7 @@ export const Chat: React.FC = () => {
                         key={msg.id}
                         className={cn(
                           'flex flex-col',
-                          isMe ? 'items-end ml-auto max-w-[80%]' : 'items-start max-w-[80%]'
+                          isMe ? 'items-end ml-auto max-w-[88%] sm:max-w-[80%]' : 'items-start max-w-[88%] sm:max-w-[80%]'
                         )}
                       >
                         {isImageMessage && imageUrl ? (
@@ -553,7 +553,7 @@ export const Chat: React.FC = () => {
                             <img
                               src={imageUrl}
                               alt="Shared"
-                              className="max-w-[220px] max-h-[280px] rounded-lg object-cover"
+                              className="max-w-[190px] sm:max-w-[220px] max-h-[260px] sm:max-h-[280px] rounded-lg object-cover"
                             />
                           </div>
                         ) : (
@@ -602,7 +602,7 @@ export const Chat: React.FC = () => {
 
               {/* Input footer */}
               <footer
-                className="p-5 flex-shrink-0"
+                className="px-3 py-3 sm:px-4 sm:py-4 md:p-5 flex-shrink-0"
                 style={{
                   borderTop: `1px solid ${PRIMARY}1a`,
                   background: `${PRIMARY}0d`,
@@ -610,7 +610,7 @@ export const Chat: React.FC = () => {
               >
                 <form
                   onSubmit={handleSendMessage}
-                  className="flex items-center gap-3 p-2 rounded-xl"
+                  className="flex items-center gap-1.5 sm:gap-3 p-2 rounded-xl"
                   style={{
                     ...glassPanel,
                     outline: `1px solid ${PRIMARY}33`,
@@ -629,7 +629,7 @@ export const Chat: React.FC = () => {
                     <button
                       key={i}
                       type="button"
-                      className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
                       onClick={openImagePicker}
                       disabled={isDraftConversation && !canComposeDraft}
                     >
@@ -641,13 +641,13 @@ export const Chat: React.FC = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Transmit intel..."
-                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 py-2"
+                    className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 py-2"
                     disabled={isDraftConversation && !canComposeDraft}
                   />
 
                   <button
                     type="button"
-                    className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
+                    className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
                     disabled={isDraftConversation && !canComposeDraft}
                   >
                     <Smile className="w-5 h-5" />
@@ -656,7 +656,7 @@ export const Chat: React.FC = () => {
                   <button
                     type="submit"
                     disabled={(!newMessage.trim() && !pendingImage) || isSending}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg text-white flex-shrink-0 transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
+                    className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-white flex-shrink-0 transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
                     style={{
                       background: PRIMARY,
                       boxShadow: `0 0 15px ${PRIMARY}80`,
