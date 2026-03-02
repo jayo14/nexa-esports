@@ -10,6 +10,7 @@ export interface Conversation {
   seller_id: string;
   created_at: string;
   updated_at: string;
+  unread_count?: number;
   listing?: {
     title: string;
     price: number;
@@ -66,8 +67,30 @@ export const useChat = (conversationId?: string) => {
         new Set(conversationRows.flatMap((row) => [row.buyer_id, row.seller_id]).filter(Boolean))
       );
 
+      const conversationIds = conversationRows.map((row) => row.id);
+
+      const unreadByConversation = new Map<string, number>();
+      if (conversationIds.length > 0) {
+        const { data: unreadRows, error: unreadError } = await supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', conversationIds)
+          .neq('sender_id', user.id)
+          .eq('is_read', false);
+
+        if (unreadError) throw unreadError;
+
+        for (const row of unreadRows || []) {
+          const key = row.conversation_id;
+          unreadByConversation.set(key, (unreadByConversation.get(key) || 0) + 1);
+        }
+      }
+
       if (userIds.length === 0) {
-        return conversationRows as Conversation[];
+        return conversationRows.map((row) => ({
+          ...row,
+          unread_count: unreadByConversation.get(row.id) || 0,
+        })) as Conversation[];
       }
 
       const { data: profilesData, error: profilesError } = await supabase
@@ -81,6 +104,7 @@ export const useChat = (conversationId?: string) => {
 
       return conversationRows.map((row) => ({
         ...row,
+        unread_count: unreadByConversation.get(row.id) || 0,
         buyer: profilesById.get(row.buyer_id)
           ? {
               id: row.buyer_id,

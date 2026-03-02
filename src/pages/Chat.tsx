@@ -350,12 +350,27 @@ export const Chat: React.FC = () => {
                       >
                         {other?.ign || other?.username || 'Unknown'}
                       </h3>
-                      <span
-                        className="text-[10px] font-bold flex-shrink-0 ml-2"
-                        style={{ color: isActive ? PRIMARY : '#64748b' }}
-                      >
-                        {format(new Date(conv.updated_at), 'HH:mm')}
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <span
+                          className="text-[10px] font-bold"
+                          style={{ color: isActive ? PRIMARY : '#64748b' }}
+                        >
+                          {format(new Date(conv.updated_at), 'HH:mm')}
+                        </span>
+                        {!isActive && (conv.unread_count || 0) > 0 && (
+                          <span
+                            className="min-w-5 h-5 px-1.5 rounded-full inline-flex items-center justify-center text-[10px] font-black"
+                            style={{
+                              background: PRIMARY,
+                              color: '#fff',
+                              boxShadow: `0 0 12px ${PRIMARY}66`,
+                            }}
+                            aria-label={`${conv.unread_count} unread messages`}
+                          >
+                            {conv.unread_count! > 99 ? '99+' : conv.unread_count}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs max-[359px]:text-[11px] text-slate-500 truncate mt-0.5">
                       {conv.listing?.title || 'Account listing'}

@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { Dock, DockItem } from '@/components/magicui/dock';
 import {
   Home,
-  Swords,
   ShoppingBag,
   MessageSquare,
   Wallet,
@@ -28,7 +27,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ hidden = fal
   // Mobile dock links
   const majorPages: BottomNavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
-    { icon: Swords, label: 'Scrims', path: '/scrims' },
     { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: MessageSquare, label: 'Chat', path: '/chat' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },

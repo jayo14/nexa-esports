@@ -31,6 +31,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileControls, setShowMobileControls] = useState(true);
+  const [showMobileDock, setShowMobileDock] = useState(true);
   const mainContentRef = useRef<HTMLElement | null>(null);
   const lastScrollTopRef = useRef(0);
 
@@ -77,6 +78,7 @@ export const Layout: React.FC<LayoutProps> = ({
     if (!isMobile) {
       setIsMobileMenuOpen(false);
       setShowMobileControls(true);
+      setShowMobileDock(true);
     }
   }, [isMobile]);
 
@@ -94,10 +96,13 @@ export const Layout: React.FC<LayoutProps> = ({
 
       if (currentScrollTop <= 10) {
         setShowMobileControls(true);
+        setShowMobileDock(true);
       } else if (delta > 4) {
         setShowMobileControls(false);
+        setShowMobileDock(true);
       } else if (delta < -4) {
         setShowMobileControls(true);
+        setShowMobileDock(false);
       }
 
       lastScrollTopRef.current = currentScrollTop;
@@ -360,7 +365,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Mobile Navigation */}
-      {isMobile && <BottomNavigation hidden={!showMobileControls} />}
+      {isMobile && <BottomNavigation hidden={!showMobileDock} />}
 
       {/* Mobile Left Sidebar Drawer */}
       {isMobile && (
