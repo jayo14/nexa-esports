@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 
 export interface Conversation {
   id: string;
@@ -17,11 +16,13 @@ export interface Conversation {
     images: string[];
   };
   buyer?: {
+    id: string;
     username: string;
     avatar_url: string;
     ign: string;
   };
   seller?: {
+    id: string;
     username: string;
     avatar_url: string;
     ign: string;
@@ -39,7 +40,6 @@ export interface Message {
 
 export const useChat = (conversationId?: string) => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch all conversations for the user
@@ -51,15 +51,53 @@ export const useChat = (conversationId?: string) => {
         .from('conversations')
         .select(`
           *,
-          listing:account_listings(title, price, images),
-          buyer:profiles!buyer_id(username, avatar_url, ign),
-          seller:profiles!seller_id(username, avatar_url, ign)
+          listing:account_listings(title, price, images)
         `)
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      return data as unknown as Conversation[];
+
+      const conversationRows = (data || []) as unknown as Array<
+        Omit<Conversation, 'buyer' | 'seller'>
+      >;
+
+      const userIds = Array.from(
+        new Set(conversationRows.flatMap((row) => [row.buyer_id, row.seller_id]).filter(Boolean))
+      );
+
+      if (userIds.length === 0) {
+        return conversationRows as Conversation[];
+      }
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, ign')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profilesById = new Map((profilesData || []).map((profile) => [profile.id, profile]));
+
+      return conversationRows.map((row) => ({
+        ...row,
+        buyer: profilesById.get(row.buyer_id)
+          ? {
+              id: row.buyer_id,
+              username: profilesById.get(row.buyer_id)!.username,
+              avatar_url: profilesById.get(row.buyer_id)!.avatar_url,
+              ign: profilesById.get(row.buyer_id)!.ign,
+            }
+          : undefined,
+        seller: profilesById.get(row.seller_id)
+          ? {
+              id: row.seller_id,
+              username: profilesById.get(row.seller_id)!.username,
+              avatar_url: profilesById.get(row.seller_id)!.avatar_url,
+              ign: profilesById.get(row.seller_id)!.ign,
+            }
+          : undefined,
+      })) as Conversation[];
     },
     enabled: !!user,
   });
