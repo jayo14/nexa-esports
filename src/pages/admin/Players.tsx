@@ -391,7 +391,6 @@ const EditPlayerDialog: React.FC<{
           backdropFilter: 'blur(24px)',
           border: `1px solid ${C.primary}33`,
           borderRadius: '24px',
-          fontFamily: "'Space Grotesk', sans-serif",
         }}
       >
         <DialogHeader>
@@ -515,7 +514,6 @@ const BanDialog: React.FC<{
           border: `1px solid ${C.primary}33`,
           borderTop: `4px solid ${C.primary}`,
           borderRadius: '24px',
-          fontFamily: "'Space Grotesk', sans-serif",
         }}
       >
         <DialogHeader>
@@ -749,7 +747,6 @@ export const AdminPlayers: React.FC = () => {
     return (
       <div
         className="flex items-center justify-center min-h-screen"
-        style={{ background: `radial-gradient(circle, ${C.card}, ${C.bgDark})`, fontFamily: "'Space Grotesk', sans-serif" }}
       >
         <div className="flex flex-col items-center gap-4">
           <div className="w-14 h-14 rounded-full border-2 animate-spin"
@@ -765,7 +762,6 @@ export const AdminPlayers: React.FC = () => {
       className="min-h-screen"
       style={{
         background: `radial-gradient(circle at center, ${C.card} 0%, ${C.bgDark} 100%)`,
-        fontFamily: "'Space Grotesk', sans-serif",
       }}
     >
       <div className="max-w-[1600px] mx-auto p-6 lg:p-10 space-y-8">
