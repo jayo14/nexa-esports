@@ -37,8 +37,23 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
     }
   };
 
+  private isIgnorableServiceWorkerError = (message?: string) => {
+    if (!message) return false;
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes('failed to register a serviceworker') ||
+      normalized.includes('script resource is behind a redirect') ||
+      normalized.includes('dev-sw.js?dev-sw')
+    );
+  };
+
   private handleGlobalError = (event: ErrorEvent) => {
     const message = event.error?.message || event.message || 'Unexpected application error.';
+
+    if (this.isIgnorableServiceWorkerError(message)) {
+      console.warn('Ignored service worker registration error:', message);
+      return;
+    }
 
     this.setState({
       hasError: true,
@@ -57,6 +72,11 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
     const message = typeof reason === 'string'
       ? reason
       : reason?.message || 'Unhandled async error.';
+
+    if (this.isIgnorableServiceWorkerError(message)) {
+      console.warn('Ignored service worker registration rejection:', message);
+      return;
+    }
 
     this.setState({
       hasError: true,
