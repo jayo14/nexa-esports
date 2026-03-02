@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 type AppErrorBoundaryState = {
   hasError: boolean;
@@ -6,15 +7,48 @@ type AppErrorBoundaryState = {
 };
 
 export class AppErrorBoundary extends React.Component<React.PropsWithChildren, AppErrorBoundaryState> {
+  private lastTelemetryAt = 0;
+  private telemetryClient = supabase as any;
+
   state: AppErrorBoundaryState = {
     hasError: false,
     errorMessage: '',
   };
 
+  private sendTelemetry = async (payload: {
+    error_type: 'render' | 'global' | 'unhandledrejection';
+    message: string;
+    stack?: string | null;
+  }) => {
+    const now = Date.now();
+    if (now - this.lastTelemetryAt < 3000) return;
+    this.lastTelemetryAt = now;
+
+    try {
+      await this.telemetryClient.from('app_error_logs').insert({
+        error_type: payload.error_type,
+        message: payload.message,
+        stack: payload.stack || null,
+        path: window.location.pathname,
+        user_agent: navigator.userAgent,
+      });
+    } catch (telemetryError) {
+      console.error('Telemetry insert failed:', telemetryError);
+    }
+  };
+
   private handleGlobalError = (event: ErrorEvent) => {
+    const message = event.error?.message || event.message || 'Unexpected application error.';
+
     this.setState({
       hasError: true,
-      errorMessage: event.error?.message || event.message || 'Unexpected application error.',
+      errorMessage: message,
+    });
+
+    void this.sendTelemetry({
+      error_type: 'global',
+      message,
+      stack: event.error?.stack || null,
     });
   };
 
@@ -28,6 +62,13 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
       hasError: true,
       errorMessage: message,
     });
+
+    const reasonStack = typeof reason === 'object' && reason?.stack ? String(reason.stack) : null;
+    void this.sendTelemetry({
+      error_type: 'unhandledrejection',
+      message,
+      stack: reasonStack,
+    });
   };
 
   static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
@@ -39,6 +80,13 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('App crashed:', error, errorInfo);
+
+    const mergedStack = [error.stack, errorInfo.componentStack].filter(Boolean).join('\n');
+    void this.sendTelemetry({
+      error_type: 'render',
+      message: error.message || 'Unexpected render error.',
+      stack: mergedStack || null,
+    });
   }
 
   componentDidMount() {
