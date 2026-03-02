@@ -348,7 +348,7 @@ const Wallet: React.FC = () => {
         className="flex-1 flex flex-col overflow-y-auto"
         style={{ scrollbarWidth: 'none' }}
       >
-               <div className="px-10 pb-12 space-y-10">
+               <div className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-0 pb-12 space-y-10">
           {/* ── Balance Hero ── */}
           <section className="relative">
             <div className="absolute inset-0 rounded-[32px]"
