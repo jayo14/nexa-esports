@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -22,6 +22,9 @@ export const Layout: React.FC<LayoutProps> = ({
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showMobileControls, setShowMobileControls] = useState(true);
+  const mainContentRef = useRef<HTMLElement | null>(null);
+  const lastScrollTopRef = useRef(0);
 
   // Fetch other players for the right sidebar
   const { data: otherPlayers = [] } = useQuery({
@@ -52,7 +55,33 @@ export const Layout: React.FC<LayoutProps> = ({
   useEffect(() => {
     if (!isMobile) {
       setIsMobileMenuOpen(false);
+      setShowMobileControls(true);
     }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!isMobile || !mainContentRef.current) return;
+
+    const container = mainContentRef.current;
+    lastScrollTopRef.current = container.scrollTop;
+
+    const onScroll = () => {
+      const currentScrollTop = container.scrollTop;
+      const delta = currentScrollTop - lastScrollTopRef.current;
+
+      if (currentScrollTop <= 10) {
+        setShowMobileControls(true);
+      } else if (delta > 4) {
+        setShowMobileControls(false);
+      } else if (delta < -4) {
+        setShowMobileControls(true);
+      }
+
+      lastScrollTopRef.current = currentScrollTop;
+    };
+
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
   }, [isMobile]);
 
   if (loading) {
@@ -79,7 +108,7 @@ export const Layout: React.FC<LayoutProps> = ({
       {isMobile && (
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className="md:hidden fixed top-6 left-6 z-50 w-11 h-11 rounded-xl bg-black/30 border border-white/10 text-white/80 flex items-center justify-center hover:bg-black/40 transition-all"
+          className={`md:hidden fixed top-6 left-6 z-50 w-11 h-11 rounded-xl bg-black/30 border border-white/10 text-white/80 flex items-center justify-center hover:bg-black/40 transition-all duration-300 ${showMobileControls ? "translate-y-0 opacity-100" : "-translate-y-16 opacity-0 pointer-events-none"}`}
           aria-label="Open sidebar menu"
         >
           <Menu className="w-5 h-5" />
@@ -91,7 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({
         {!isMobile && <Sidebar />}
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-8 pr-4 flex flex-col gap-8">
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto custom-scrollbar p-8 pr-4 flex flex-col gap-8">
           {children}
         </main>
 
@@ -159,7 +188,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Mobile Navigation */}
-      {isMobile && <BottomNavigation />}
+      {isMobile && <BottomNavigation hidden={!showMobileControls} />}
 
       {/* Mobile Left Sidebar Drawer */}
       {isMobile && (

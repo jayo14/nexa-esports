@@ -1,6 +1,5 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
   Home,
@@ -15,10 +14,13 @@ interface BottomNavItem {
   path: string;
 }
 
-export const BottomNavigation: React.FC = () => {
+interface BottomNavigationProps {
+  hidden?: boolean;
+}
+
+export const BottomNavigation: React.FC<BottomNavigationProps> = ({ hidden = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useAuth();
 
   // Four major pages for dock navigation: Home, Statistics, Wallet, Profile
   const majorPages: BottomNavItem[] = [
@@ -38,7 +40,10 @@ export const BottomNavigation: React.FC = () => {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4 flex justify-center"
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4 flex justify-center transition-all duration-300',
+        hidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+      )}
       role="navigation"
       aria-label="Main navigation"
     >
