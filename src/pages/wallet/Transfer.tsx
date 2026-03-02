@@ -10,19 +10,39 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminPlayers } from '@/hooks/useAdminPlayers';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 type Step = 'recipient' | 'amount' | 'review' | 'processing';
 
 const TRANSFER_FEE = 50;
 
+type TransferRecipient = Pick<
+  Database['public']['Tables']['profiles']['Row'],
+  'id' | 'ign' | 'username' | 'avatar_url' | 'status' | 'is_banned'
+>;
+
 const Transfer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: players } = useAdminPlayers();
   const { user } = useAuth();
+
+  const { data: players = [] } = useQuery<TransferRecipient[]>({
+    queryKey: ['transfer-recipients', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, ign, username, avatar_url, status, is_banned')
+        .neq('id', user?.id)
+        .order('ign', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [step, setStep] = useState<Step>('recipient');
@@ -53,13 +73,13 @@ const Transfer = () => {
     }
   };
 
-  const filteredPlayers = players?.filter(p => 
+  const filteredPlayers = players.filter(p => 
     !p.is_banned && 
     (p.ign.toLowerCase().includes(searchTerm.toLowerCase()) ||
      p.username?.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
+  );
 
-  const selectedPlayer = players?.find(p => p.ign === recipient);
+  const selectedPlayer = players.find(p => p.ign === recipient);
 
   const handleRecipientNext = async () => {
     if (!recipient) return;

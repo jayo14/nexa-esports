@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -83,45 +83,6 @@ import { FestiveLights } from '@/components/effects/FestiveLights';
 import { useCapacitor } from '@/hooks/useCapacitor';
 
 function App() {
-  useEffect(() => {
-    const isIOS = /iPad|iPhone|iPod/.test(window.navigator.userAgent);
-    const isInWebAppiOS =
-      isIOS &&
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-
-    if (!isInWebAppiOS) return;
-
-    let startY = 0;
-    let canTrigger = false;
-    let triggered = false;
-    const threshold = 90;
-
-    const onTouchStart = (event: TouchEvent) => {
-      startY = event.touches[0]?.clientY ?? 0;
-      canTrigger = window.scrollY <= 0;
-      triggered = false;
-    };
-
-    const onTouchMove = (event: TouchEvent) => {
-      if (!canTrigger || triggered) return;
-      const currentY = event.touches[0]?.clientY ?? 0;
-      const deltaY = currentY - startY;
-
-      if (deltaY > threshold) {
-        triggered = true;
-        window.location.reload();
-      }
-    };
-
-    document.addEventListener('touchstart', onTouchStart, { passive: true });
-    document.addEventListener('touchmove', onTouchMove, { passive: true });
-
-    return () => {
-      document.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('touchmove', onTouchMove);
-    };
-  }, []);
-
   return (
     <Router>
       <ThemeProvider>

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Mail, Lock, User, Key, Clock, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Key, Clock, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -226,8 +226,8 @@ export const Signup: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-red-600 rounded-xl flex items-center justify-center shadow-lg nexa-glow">
-              <Shield className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 rounded-xl overflow-hidden shadow-lg nexa-glow border border-white/20">
+              <img src="/nexa-logo.jpg" alt="NeXa Logo" className="w-full h-full object-cover" />
             </div>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2 font-orbitron">

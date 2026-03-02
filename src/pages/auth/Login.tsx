@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -61,19 +61,19 @@ export const Login: React.FC = () => {
       {/* Dramatic Warrior Background with Glassmorphic Overlay */}
       <div className="fixed inset-0 -z-10">
         <img
-          src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
-          alt="Warrior Hero"
-          className="w-full h-full object-cover object-center opacity-70 transition-all duration-700"
+          src="https://images.pexels.com/photos/163443/war-desert-guns-gunshow-163443.jpeg?auto=compress&cs=tinysrgb&w=1920"
+          alt="Battlefield Soldiers"
+          className="w-full h-full object-cover object-center opacity-80 transition-all duration-700"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-wine-dark/80 via-black/60 to-accent-red/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/55 to-accent-red/45" />
       </div>
 
       <div className="w-full max-w-xs xs:max-w-sm sm:max-w-md px-1 xs:px-2 sm:px-6">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-accent-red to-primary rounded-2xl flex items-center justify-center shadow-lg nexa-glow border-2 border-white/10">
-              <Shield className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg nexa-glow border-2 border-white/20">
+              <img src="/nexa-logo.jpg" alt="NeXa Logo" className="w-full h-full object-cover" />
             </div>
           </div>
           <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold mb-2 font-orbitron tracking-tight uppercase">
@@ -86,7 +86,7 @@ export const Login: React.FC = () => {
 
         {/* Glassmorphic Form Card */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="p-3 xs:p-4 sm:p-8 bg-white/10 backdrop-blur-2xl rounded-2xl xs:rounded-3xl border border-white/20 shadow-2xl glass-card">
+          <div className="p-3 xs:p-4 sm:p-8 bg-white/12 backdrop-blur-2xl rounded-2xl xs:rounded-3xl border border-white/25 shadow-2xl glass-card">
             <div className="space-y-5">
               <div>
                 <Label htmlFor="email" className="text-white/90 font-rajdhani block mb-2 text-base">Email Address</Label>

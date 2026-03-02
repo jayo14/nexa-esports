@@ -9,6 +9,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, LogOut, Menu, MessageSquare, Settings, Search, ShoppingBag, Bell } from "lucide-react";
 
+interface GlobalSearchResults {
+  players: Array<{ id: string; ign: string | null; username: string | null }>;
+  loadouts: Array<{ id: string; weapon_name: string; weapon_type: string; mode: string }>;
+  events: Array<{ id: string; name: string; type: string; status: string | null }>;
+  leaderboard: Array<{ id: string | null; ign: string | null; username: string | null; total_kills: number | null }>;
+}
+
 const C = {
   primary: "#ec131e",
   bgDark: "#1a0b0d",
@@ -34,7 +41,11 @@ export const Layout: React.FC<LayoutProps> = ({
   const [showMobileDock, setShowMobileDock] = useState(true);
   const [forceHideMobileDock, setForceHideMobileDock] = useState(false);
   const [lockMobileContentScroll, setLockMobileContentScroll] = useState(false);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+  const [debouncedGlobalSearchTerm, setDebouncedGlobalSearchTerm] = useState("");
+  const [showGlobalSearchResults, setShowGlobalSearchResults] = useState(false);
   const mainContentRef = useRef<HTMLElement | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = useRef(0);
 
   const getGreeting = () => {
@@ -66,6 +77,44 @@ export const Layout: React.FC<LayoutProps> = ({
     enabled: !!user?.id,
   });
 
+  const { data: globalSearchResults } = useQuery<GlobalSearchResults>({
+    queryKey: ["global-header-search", debouncedGlobalSearchTerm],
+    enabled: !!user?.id && debouncedGlobalSearchTerm.trim().length >= 2,
+    queryFn: async () => {
+      const term = debouncedGlobalSearchTerm.trim();
+
+      const [playersResult, loadoutsResult, eventsResult, leaderboardResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, ign, username")
+          .or(`ign.ilike.%${term}%,username.ilike.%${term}%`)
+          .limit(5),
+        supabase
+          .from("loadouts")
+          .select("id, weapon_name, weapon_type, mode")
+          .or(`weapon_name.ilike.%${term}%,weapon_type.ilike.%${term}%`)
+          .limit(5),
+        supabase
+          .from("events")
+          .select("id, name, type, status")
+          .or(`name.ilike.%${term}%,description.ilike.%${term}%`)
+          .limit(5),
+        supabase
+          .from("leaderboard")
+          .select("id, ign, username, total_kills")
+          .or(`ign.ilike.%${term}%,username.ilike.%${term}%`)
+          .limit(5),
+      ]);
+
+      return {
+        players: playersResult.data || [],
+        loadouts: loadoutsResult.data || [],
+        events: eventsResult.data || [],
+        leaderboard: leaderboardResult.data || [],
+      };
+    },
+  });
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -85,6 +134,40 @@ export const Layout: React.FC<LayoutProps> = ({
       setLockMobileContentScroll(false);
     }
   }, [isMobile]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedGlobalSearchTerm(globalSearchTerm);
+    }, 250);
+
+    return () => clearTimeout(handler);
+  }, [globalSearchTerm]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!searchContainerRef.current) return;
+      if (!searchContainerRef.current.contains(event.target as Node)) {
+        setShowGlobalSearchResults(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const hasGlobalSearchResults = !!globalSearchResults && (
+    globalSearchResults.players.length > 0 ||
+    globalSearchResults.loadouts.length > 0 ||
+    globalSearchResults.events.length > 0 ||
+    globalSearchResults.leaderboard.length > 0
+  );
+
+  const handleSelectGlobalResult = (path: string) => {
+    navigate(path);
+    setShowGlobalSearchResults(false);
+    setGlobalSearchTerm("");
+    setDebouncedGlobalSearchTerm("");
+  };
 
   useEffect(() => {
     const handleDockVisibility = (event: Event) => {
@@ -234,14 +317,107 @@ export const Layout: React.FC<LayoutProps> = ({
                 </h1>
               </div>
               <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
-                <div className="relative flex-1 sm:flex-none">
+                <div ref={searchContainerRef} className="relative flex-1 sm:flex-none">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
                     className="rounded-full py-2.5 pl-12 pr-4 sm:pr-6 w-full sm:w-80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans"
                     style={{ background: `${C.bgDark}80`, border: 'none' }}
-                    placeholder="Search operations..."
+                    placeholder="Search players, events, loadouts..."
                     type="text"
+                    value={globalSearchTerm}
+                    onChange={(event) => setGlobalSearchTerm(event.target.value)}
+                    onFocus={() => setShowGlobalSearchResults(true)}
                   />
+
+                  {showGlobalSearchResults && debouncedGlobalSearchTerm.trim().length >= 2 && (
+                    <div
+                      className="absolute left-0 right-0 top-[calc(100%+8px)] rounded-2xl p-3 z-50"
+                      style={{
+                        background: `${C.bgDark}f2`,
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        backdropFilter: "blur(12px)",
+                        WebkitBackdropFilter: "blur(12px)",
+                      }}
+                    >
+                      {hasGlobalSearchResults ? (
+                        <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                          {globalSearchResults?.players?.length ? (
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Players</p>
+                              <div className="space-y-1">
+                                {globalSearchResults.players.map((player) => (
+                                  <button
+                                    key={player.id}
+                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    onClick={() => handleSelectGlobalResult(`/profile/${player.id}`)}
+                                  >
+                                    <p className="text-sm text-slate-100 font-semibold">{player.ign || "Unknown Player"}</p>
+                                    <p className="text-xs text-slate-400">@{player.username || "unknown"}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {globalSearchResults?.events?.length ? (
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Events</p>
+                              <div className="space-y-1">
+                                {globalSearchResults.events.map((eventItem) => (
+                                  <button
+                                    key={eventItem.id}
+                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    onClick={() => handleSelectGlobalResult(`/events/${eventItem.id}`)}
+                                  >
+                                    <p className="text-sm text-slate-100 font-semibold">{eventItem.name}</p>
+                                    <p className="text-xs text-slate-400">{eventItem.type} • {eventItem.status || "unknown"}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {globalSearchResults?.loadouts?.length ? (
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Loadouts</p>
+                              <div className="space-y-1">
+                                {globalSearchResults.loadouts.map((loadout) => (
+                                  <button
+                                    key={loadout.id}
+                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    onClick={() => handleSelectGlobalResult("/loadouts")}
+                                  >
+                                    <p className="text-sm text-slate-100 font-semibold">{loadout.weapon_name}</p>
+                                    <p className="text-xs text-slate-400">{loadout.weapon_type} • {loadout.mode}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {globalSearchResults?.leaderboard?.length ? (
+                            <div>
+                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Leaderboard</p>
+                              <div className="space-y-1">
+                                {globalSearchResults.leaderboard.map((leader) => (
+                                  <button
+                                    key={`${leader.id}-${leader.ign}`}
+                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                                    onClick={() => handleSelectGlobalResult(leader.id ? `/profile/${leader.id}` : "/statistics")}
+                                  >
+                                    <p className="text-sm text-slate-100 font-semibold">{leader.ign || leader.username || "Unknown"}</p>
+                                    <p className="text-xs text-slate-400">Kills: {leader.total_kills || 0}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="px-3 py-2 text-sm text-slate-400">No results found.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <button
