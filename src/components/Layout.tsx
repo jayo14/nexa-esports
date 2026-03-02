@@ -33,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [showMobileControls, setShowMobileControls] = useState(true);
   const [showMobileDock, setShowMobileDock] = useState(true);
   const [forceHideMobileDock, setForceHideMobileDock] = useState(false);
+  const [lockMobileContentScroll, setLockMobileContentScroll] = useState(false);
   const mainContentRef = useRef<HTMLElement | null>(null);
   const lastScrollTopRef = useRef(0);
 
@@ -81,13 +82,15 @@ export const Layout: React.FC<LayoutProps> = ({
       setShowMobileControls(true);
       setShowMobileDock(true);
       setForceHideMobileDock(false);
+      setLockMobileContentScroll(false);
     }
   }, [isMobile]);
 
   useEffect(() => {
     const handleDockVisibility = (event: Event) => {
-      const customEvent = event as CustomEvent<{ hidden?: boolean }>;
+      const customEvent = event as CustomEvent<{ hidden?: boolean; lockScroll?: boolean }>;
       setForceHideMobileDock(!!customEvent.detail?.hidden);
+      setLockMobileContentScroll(!!customEvent.detail?.lockScroll);
     };
 
     window.addEventListener("nexa:mobile-dock-visibility", handleDockVisibility as EventListener);
@@ -212,8 +215,8 @@ export const Layout: React.FC<LayoutProps> = ({
         <main
           ref={mainContentRef}
           className={pageScroll
-            ? 'h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] overflow-y-auto custom-scrollbar flex flex-col gap-6 min-w-0 px-4 lg:px-6 md:ml-[7rem] lg:ml-[8rem] md:mr-[5rem] lg:mr-[6rem]'
-            : 'flex-1 p-4 md:p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar'}
+            ? `h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] ${isMobile && lockMobileContentScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto custom-scrollbar'} flex flex-col gap-6 min-w-0 px-4 lg:px-6 md:ml-[7rem] lg:ml-[8rem] md:mr-[5rem] lg:mr-[6rem]`
+            : `flex-1 p-4 md:p-6 flex flex-col gap-6 ${isMobile && lockMobileContentScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto custom-scrollbar'}`}
         >
           {pageScroll && (
             <header

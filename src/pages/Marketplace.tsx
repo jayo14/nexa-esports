@@ -253,14 +253,14 @@ export const Marketplace: React.FC = () => {
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent('nexa:mobile-dock-visibility', {
-        detail: { hidden: !!previewVideoUrl },
+        detail: { hidden: !!previewVideoUrl, lockScroll: !!previewVideoUrl },
       })
     );
 
     return () => {
       window.dispatchEvent(
         new CustomEvent('nexa:mobile-dock-visibility', {
-          detail: { hidden: false },
+          detail: { hidden: false, lockScroll: false },
         })
       );
     };
