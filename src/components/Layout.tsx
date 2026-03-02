@@ -32,6 +32,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileControls, setShowMobileControls] = useState(true);
   const [showMobileDock, setShowMobileDock] = useState(true);
+  const [forceHideMobileDock, setForceHideMobileDock] = useState(false);
   const mainContentRef = useRef<HTMLElement | null>(null);
   const lastScrollTopRef = useRef(0);
 
@@ -79,8 +80,22 @@ export const Layout: React.FC<LayoutProps> = ({
       setIsMobileMenuOpen(false);
       setShowMobileControls(true);
       setShowMobileDock(true);
+      setForceHideMobileDock(false);
     }
   }, [isMobile]);
+
+  useEffect(() => {
+    const handleDockVisibility = (event: Event) => {
+      const customEvent = event as CustomEvent<{ hidden?: boolean }>;
+      setForceHideMobileDock(!!customEvent.detail?.hidden);
+    };
+
+    window.addEventListener("nexa:mobile-dock-visibility", handleDockVisibility as EventListener);
+
+    return () => {
+      window.removeEventListener("nexa:mobile-dock-visibility", handleDockVisibility as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isMobile) return;
@@ -365,7 +380,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Mobile Navigation */}
-      {isMobile && <BottomNavigation hidden={!showMobileDock} />}
+      {isMobile && <BottomNavigation hidden={forceHideMobileDock || !showMobileDock} />}
 
       {/* Mobile Left Sidebar Drawer */}
       {isMobile && (

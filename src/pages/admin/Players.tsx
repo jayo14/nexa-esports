@@ -805,7 +805,7 @@ export const AdminPlayers: React.FC = () => {
 
         {/* ── Stats ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Total Members"      value={`${players?.length || 0}/100`} sub="+4 this week"      trend="up" />
+          <StatCard label="Total Members"      value={`${players?.length || 0}`} sub="+4 this week"      trend="up" />
           <StatCard label="Active Operatives"  value={`${activeCount}`}              sub="Currently operational" trend="up" />
           <StatCard label="Banned Operatives"  value={`${bannedCount}`}              sub="Restricted access" trend="down" />
           <StatCard label="Combat Efficiency"  value="Legendary"                     sub="Top 1% global rank" />

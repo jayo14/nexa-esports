@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,12 +12,6 @@ import {
   Shield,
   Clock,
   Search,
-  Home,
-  Package,
-  MessageCircle,
-  Wallet,
-  Settings,
-  Bell,
   Store,
   User,
   MapPin,
@@ -256,6 +250,22 @@ export const Marketplace: React.FC = () => {
   const [filterRegion, setFilterRegion] = useState('All Regions');
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('nexa:mobile-dock-visibility', {
+        detail: { hidden: !!previewVideoUrl },
+      })
+    );
+
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent('nexa:mobile-dock-visibility', {
+          detail: { hidden: false },
+        })
+      );
+    };
+  }, [previewVideoUrl]);
+
   const handleBecomeSeller = async () => {
     setIsRequestingSeller(true);
     try {
@@ -305,7 +315,7 @@ export const Marketplace: React.FC = () => {
 
   return (
     <div
-      className="relative flex min-h-screen w-full flex-col overflow-hidden rounded-3xl"
+      className="relative flex min-h-screen w-full flex-col rounded-3xl"
       style={{ background: winefaded}}
     >
       {/* Ambient glow blobs */}
@@ -321,7 +331,7 @@ export const Marketplace: React.FC = () => {
 
       {/* ── Body ── */}
         {/* ── Main Content ── */}
-        <main className="flex-1 px-4 md:px-10 pb-4 pt-4">
+        <main className="flex-1 px-4 md:px-10 pb-24 md:pb-6 pt-4">
             <div className="max-w-[1200px] mx-auto">
                 {/* Header Section (Title + Desktop Search) */}
                 <div className="flex items-center justify-between gap-4 mb-8">
@@ -489,62 +499,6 @@ export const Marketplace: React.FC = () => {
                 )}
             </div>
         </main>
-
-
-      {/* ── Mobile Bottom Nav ── */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
-        style={{ ...glassStyle, borderTop: '1px solid rgba(234,42,51,0.1)' }}
-      >
-        <div className="flex items-center justify-around py-4">
-          <button
-            className="flex flex-col items-center gap-1"
-            style={{ color: primary }}
-            onClick={() => navigate('/')}
-          >
-            <Home className="w-6 h-6" />
-            <span className="text-[10px] font-bold">Home</span>
-          </button>
-          <button
-            className="flex flex-col items-center gap-1 text-slate-400"
-            onClick={() => navigate('/marketplace')}
-          >
-            <Store className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Market</span>
-          </button>
-
-          {/* FAB */}
-          <div className="relative -top-8">
-            <button
-              onClick={() => isApproved ? navigate('/marketplace/list') : handleBecomeSeller()}
-              className="flex items-center justify-center w-14 h-14 rounded-full text-white border-4"
-              style={{
-                background: primary,
-                boxShadow: `0 8px 20px ${primary}66`,
-                borderColor: wine,
-              }}
-            >
-              <Plus className="w-6 h-6" />
-            </button>
-          </div>
-
-          <button
-            className="flex flex-col items-center gap-1 text-slate-400"
-            onClick={() => navigate('/chat')}
-          >
-            <MessageCircle className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Chats</span>
-          </button>
-          <button
-            className="flex flex-col items-center gap-1 text-slate-400"
-            onClick={() => navigate('/profile')}
-          >
-            <User className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Profile</span>
-          </button>
-        </div>
-      </nav>
-
       {/* ── Video Preview Dialog ── */}
       <Dialog
         open={!!previewVideoUrl}

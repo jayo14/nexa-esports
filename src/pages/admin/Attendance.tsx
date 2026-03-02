@@ -191,7 +191,10 @@ export const AdminAttendance: React.FC = () => {
       const { error } = await supabase.from('attendance').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Attendance record removed', description: 'The selected attendance record has been undone.' });
+    },
     onError: (error: any) => {
       toast({ title: 'Error', description: error.message || 'Failed to reset attendance.', variant: 'destructive' });
     },
@@ -567,6 +570,18 @@ export const AdminAttendance: React.FC = () => {
                               >
                                 Absent
                               </button>
+                              {attendedRecord && (
+                                <button
+                                  onClick={() => undoAttendanceMutation.mutate(attendedRecord.id)}
+                                  disabled={undoAttendanceMutation.isPending}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all"
+                                  style={{ color: '#94a3b8' }}
+                                  onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)')}
+                                  onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
+                                >
+                                  Undo
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
