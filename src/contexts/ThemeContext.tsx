@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useGlobalTheme } from '@/hooks/useGlobalTheme';
 
 type ThemeMode = 'dark' | 'light';
-export type SeasonalTheme = 'default' | 'christmas' | 'cyber' | 'military' | 'dark-purple';
+export type SeasonalTheme = 'default' | 'christmas' | 'cyber' | 'military' | 'dark-purple' | 'ramadan';
 
 interface ThemeSettings {
   enableSnow: boolean;

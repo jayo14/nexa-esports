@@ -145,6 +145,46 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
     --ring: 271 91% 65%;
   }
+
+  .theme-ramadan {
+    --background: 230 45% 4%; /* Midnight Blue */
+    --foreground: 45 100% 90%; /* Warm White */
+
+    --card: 230 45% 6%;
+    --card-foreground: 45 100% 90%;
+
+    --popover: 230 45% 6%;
+    --popover-foreground: 45 100% 90%;
+
+    /* Keep Primary RED unchanged */
+    --primary: 355 100% 56%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 230 25% 15%;
+    --secondary-foreground: 45 100% 90%;
+
+    --muted: 230 25% 15%;
+    --muted-foreground: 230 15% 60%;
+
+    --accent: 45 100% 50%; /* Ramadan Gold */
+    --accent-foreground: 230 45% 4%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 230 25% 15%;
+    --input: 230 25% 15%;
+    --ring: 45 100% 50%;
+
+    --sidebar-background: 230 45% 3%;
+    --sidebar-foreground: 45 100% 90%;
+    --sidebar-primary: 355 100% 56%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 230 25% 12%;
+    --sidebar-accent-foreground: 45 100% 90%;
+    --sidebar-border: 230 25% 12%;
+    --sidebar-ring: 45 100% 50%;
+  }
 }
 
 @layer base {
@@ -255,6 +295,20 @@ All colors MUST be HSL.
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
     pointer-events: none;
     z-index: 10;
+  }
+
+  /* Ramadan Utilities */
+  .theme-ramadan .ramadan-geometric-bg {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l2.5 17.5L50 20l-17.5 2.5L30 40l-2.5-17.5L10 20l17.5-2.5z' fill='%23FFD700' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+  }
+
+  .theme-ramadan .ramadan-card {
+    @apply relative overflow-hidden border-accent/20;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+  }
+
+  .theme-ramadan .ramadan-glow {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
   }
 }
 
@@ -371,4 +425,20 @@ All colors MUST be HSL.
 
 label {
   text-align: left;
+}
+
+@layer components {
+  /* Global spacing and shadow refinements */
+  .card-premium {
+    @apply rounded-xl border border-border/50 shadow-xl backdrop-blur-md transition-all duration-300;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-hierarchy-title {
+    @apply text-3xl font-bold tracking-tight text-foreground sm:text-4xl;
+  }
+
+  .text-hierarchy-subtitle {
+    @apply text-lg text-muted-foreground font-medium;
+  }
 }

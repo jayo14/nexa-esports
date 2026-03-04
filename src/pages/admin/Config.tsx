@@ -23,6 +23,14 @@ const themes = [
     color: '#FF1F44',
   },
   {
+    id: 'ramadan',
+    name: 'Ramadan Mubarak',
+    description: 'Calm and elegant Ramadan experience with golden accents',
+    image: 'https://images.unsplash.com/photo-1564769662533-4f00a87b4056?w=800&q=80',
+    preview: 'https://images.unsplash.com/photo-1519810755548-39cd217da494?w=400&q=80',
+    color: '#FFD700',
+  },
+  {
     id: 'christmas',
     name: 'Festive Christmas',
     description: 'Holiday spirit with snow and festive lights',
@@ -58,7 +66,10 @@ const themes = [
 
 const ThemeCarousel = () => {
   const { currentTheme, setTheme, isGlobalThemeLoading } = useTheme();
-  const [selectedIndex, setSelectedIndex] = useState(() => themes.findIndex(t => t.id === currentTheme));
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    const index = themes.findIndex(t => t.id === currentTheme);
+    return index !== -1 ? index : 0;
+  });
   const [isApplying, setIsApplying] = useState(false);
   const { toast } = useToast();
 
@@ -177,7 +188,7 @@ const ThemeCarousel = () => {
       </div>
 
       {/* Theme Gallery Thumbnails */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-6 gap-3">
         {themes.map((theme, index) => (
           <button
             key={theme.id}

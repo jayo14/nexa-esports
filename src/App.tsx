@@ -81,6 +81,7 @@ import { Health } from '@/pages/Health';
 
 import { SnowEffect } from '@/components/effects/SnowEffect';
 import { FestiveLights } from '@/components/effects/FestiveLights';
+import { RamadanEffects } from '@/components/effects/RamadanEffects';
 import { useCapacitor } from '@/hooks/useCapacitor';
 
 function App() {
@@ -90,6 +91,7 @@ function App() {
         <AuthProvider>
           <SnowEffect />
           <FestiveLights />
+          <RamadanEffects />
           <AppRoutes />
         </AuthProvider>
       </ThemeProvider>

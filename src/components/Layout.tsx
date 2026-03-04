@@ -1,3 +1,6 @@
+import { RamadanBanner } from "./RamadanBanner";
+import { useTheme } from "@/contexts/ThemeContext";
+import { RamadanDecorations } from "./decorations/RamadanDecorations";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +45,7 @@ export const Layout: React.FC<LayoutProps> = ({
   pageScroll = false,
 }) => {
   const { user, profile, loading, logout } = useAuth();
+  const { currentTheme } = useTheme();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -334,6 +338,7 @@ export const Layout: React.FC<LayoutProps> = ({
         className="min-h-screen"
         style={{ background: `linear-gradient(135deg, ${C.burgundy} 0%, ${C.bgDark} 100%)` }}
       >
+        <RamadanDecorations />
         {children}
       </div>
     );
@@ -341,7 +346,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div
-      className={`text-white/90 antialiased font-sans ${pageScroll ? 'min-h-screen overflow-x-hidden' : 'p-4 md:p-6 h-screen overflow-hidden'}`}
+      className={`text-white/90 antialiased font-sans ${pageScroll ? 'min-h-screen overflow-x-hidden' : 'p-4 md:p-6 h-screen overflow-hidden'} ${currentTheme === 'ramadan' ? 'ramadan-geometric-bg' : ''}`}
       style={{ background: `linear-gradient(135deg, ${C.burgundy} 0%, ${C.bgDark} 100%)` }}
     >
       {isMobile && (
@@ -389,187 +394,191 @@ export const Layout: React.FC<LayoutProps> = ({
             : `flex-1 p-4 md:p-6 flex flex-col gap-6 ${isMobile && lockMobileContentScroll ? 'overflow-hidden touch-none' : 'overflow-y-auto custom-scrollbar'}`}
         >
           {pageScroll && (
-            <header
-              className="sticky top-0 z-20 flex flex-row items-center xs:flex-col xs:items-start justify-between gap-3 xs:gap-4 sm:gap-0 px-2 xs:px-3 sm:px-4 md:px-6 py-3 xs:py-4 w-full rounded-2xl"
-              style={{
-                background: `${C.burgundy}80`,
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255,255,255,0.05)',
-              }}
-            >
-              <div className="w-full sm:w-auto">
-                <h1 className="text-slate-300 text-base sm:text-lg font-sans">
-                  {getGreeting()}, <span className="text-white font-bold">{getDisplayName()}</span>
-                </h1>
-              </div>
-              <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
-                <div ref={searchContainerRef} className="relative flex-1 sm:flex-none">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <input
-                    className="rounded-full py-2.5 pl-12 pr-4 sm:pr-6 w-full sm:w-80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans"
-                    style={{ background: `${C.bgDark}80`, border: 'none' }}
-                    placeholder="Search players, events, loadouts..."
-                    type="text"
-                    value={globalSearchTerm}
-                    onChange={(event) => setGlobalSearchTerm(event.target.value)}
-                    onFocus={() => setShowGlobalSearchResults(true)}
-                    onKeyDown={handleGlobalSearchKeyDown}
-                  />
-
-                  {showGlobalSearchResults && debouncedGlobalSearchTerm.trim().length >= 2 && (
-                    <div
-                      className="absolute left-0 right-0 top-[calc(100%+8px)] rounded-2xl p-3 z-50"
-                      style={{
-                        background: `${C.bgDark}f2`,
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        backdropFilter: "blur(12px)",
-                        WebkitBackdropFilter: "blur(12px)",
-                      }}
-                    >
-                      {hasGlobalSearchResults ? (
-                        <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
-                          {globalSearchResults?.players?.length ? (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Players</p>
-                              <div className="space-y-1">
-                                {globalSearchResults.players.map((player) => (
-                                  (() => {
-                                    const itemKey = `player-${player.id}`;
-                                    const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
-                                    const isActive = itemIndex === highlightedSearchIndex;
-
-                                    return (
-                                  <button
-                                    key={player.id}
-                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
-                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-                                    onClick={() => handleSelectGlobalResult(`/profile/${player.id}`)}
-                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
-                                  >
-                                    <p className="text-sm text-slate-100 font-semibold">{player.ign || "Unknown Player"}</p>
-                                    <p className="text-xs text-slate-400">@{player.username || "unknown"}</p>
-                                  </button>
-                                    );
-                                  })()
-                                ))}
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {globalSearchResults?.events?.length ? (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Events</p>
-                              <div className="space-y-1">
-                                {globalSearchResults.events.map((eventItem) => (
-                                  (() => {
-                                    const itemKey = `event-${eventItem.id}`;
-                                    const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
-                                    const isActive = itemIndex === highlightedSearchIndex;
-
-                                    return (
-                                  <button
-                                    key={eventItem.id}
-                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
-                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-                                    onClick={() => handleSelectGlobalResult(`/events/${eventItem.id}`)}
-                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
-                                  >
-                                    <p className="text-sm text-slate-100 font-semibold">{eventItem.name}</p>
-                                    <p className="text-xs text-slate-400">{eventItem.type} • {eventItem.status || "unknown"}</p>
-                                  </button>
-                                    );
-                                  })()
-                                ))}
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {globalSearchResults?.loadouts?.length ? (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Loadouts</p>
-                              <div className="space-y-1">
-                                {globalSearchResults.loadouts.map((loadout) => (
-                                  (() => {
-                                    const itemKey = `loadout-${loadout.id}`;
-                                    const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
-                                    const isActive = itemIndex === highlightedSearchIndex;
-
-                                    return (
-                                  <button
-                                    key={loadout.id}
-                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
-                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-                                    onClick={() => handleSelectGlobalResult("/loadouts")}
-                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
-                                  >
-                                    <p className="text-sm text-slate-100 font-semibold">{loadout.weapon_name}</p>
-                                    <p className="text-xs text-slate-400">{loadout.weapon_type} • {loadout.mode}</p>
-                                  </button>
-                                    );
-                                  })()
-                                ))}
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {globalSearchResults?.leaderboard?.length ? (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Leaderboard</p>
-                              <div className="space-y-1">
-                                {globalSearchResults.leaderboard.map((leader) => (
-                                  (() => {
-                                    const itemKey = `leader-${leader.id || leader.ign || leader.username || 'unknown'}`;
-                                    const itemIndex = globalSearchItems.findIndex((item) => item.title === (leader.ign || leader.username || "Unknown") && item.group === "leaderboard");
-                                    const isActive = itemIndex === highlightedSearchIndex;
-
-                                    return (
-                                  <button
-                                    key={`${leader.id}-${leader.ign}`}
-                                    className="w-full text-left px-3 py-2 rounded-xl transition-colors"
-                                    style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-                                    onClick={() => handleSelectGlobalResult(leader.id ? `/profile/${leader.id}` : "/statistics")}
-                                    onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
-                                  >
-                                    <p className="text-sm text-slate-100 font-semibold">{leader.ign || leader.username || "Unknown"}</p>
-                                    <p className="text-xs text-slate-400">Kills: {leader.total_kills || 0}</p>
-                                  </button>
-                                    );
-                                  })()
-                                ))}
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <p className="px-3 py-2 text-sm text-slate-400">No results found.</p>
-                      )}
-                    </div>
-                  )}
+            <>
+              <RamadanBanner />
+              <header
+                className="sticky top-0 z-20 flex flex-row items-center xs:flex-col xs:items-start justify-between gap-3 xs:gap-4 sm:gap-0 px-2 xs:px-3 sm:px-4 md:px-6 py-3 xs:py-4 w-full rounded-2xl"
+                style={{
+                  background: `${C.burgundy}80`,
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <div className="w-full sm:w-auto">
+                  <h1 className="text-slate-300 text-base sm:text-lg font-sans">
+                    {getGreeting()}, <span className="text-white font-bold">{getDisplayName()}</span>
+                  </h1>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <button
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all"
-                    style={{ background: `${C.bgDark}80` }}
-                    onClick={() => navigate('/marketplace')}
-                  >
-                    <ShoppingBag className="w-5 h-5" />
-                  </button>
-                  <button
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white relative"
-                    style={{ background: `${C.bgDark}80` }}
-                    onClick={() => navigate('/announcements')}
-                  >
-                    <Bell className="w-5 h-5" />
-                    <span
-                      className="absolute top-2 right-2.5 w-2 h-2 rounded-full"
-                      style={{ background: C.primary, border: `2px solid ${C.bgDark}` }}
+                <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
+                  <div ref={searchContainerRef} className="relative flex-1 sm:flex-none">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      className="rounded-full py-2.5 pl-12 pr-4 sm:pr-6 w-full sm:w-80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans"
+                      style={{ background: `${C.bgDark}80`, border: 'none' }}
+                      placeholder="Search players, events, loadouts..."
+                      type="text"
+                      value={globalSearchTerm}
+                      onChange={(event) => setGlobalSearchTerm(event.target.value)}
+                      onFocus={() => setShowGlobalSearchResults(true)}
+                      onKeyDown={handleGlobalSearchKeyDown}
                     />
-                  </button>
+
+                    {showGlobalSearchResults && debouncedGlobalSearchTerm.trim().length >= 2 && (
+                      <div
+                        className="absolute left-0 right-0 top-[calc(100%+8px)] rounded-2xl p-3 z-50"
+                        style={{
+                          background: `${C.bgDark}f2`,
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          backdropFilter: "blur(12px)",
+                          WebkitBackdropFilter: "blur(12px)",
+                        }}
+                      >
+                        {hasGlobalSearchResults ? (
+                          <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                            {globalSearchResults?.players?.length ? (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Players</p>
+                                <div className="space-y-1">
+                                  {globalSearchResults.players.map((player) => (
+                                    (() => {
+                                      const itemKey = `player-${player.id}`;
+                                      const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
+                                      const isActive = itemIndex === highlightedSearchIndex;
+
+                                      return (
+                                    <button
+                                      key={player.id}
+                                      className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                      style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
+                                      onClick={() => handleSelectGlobalResult(`/profile/${player.id}`)}
+                                      onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
+                                    >
+                                      <p className="text-sm text-slate-100 font-semibold">{player.ign || "Unknown Player"}</p>
+                                      <p className="text-xs text-slate-400">@{player.username || "unknown"}</p>
+                                    </button>
+                                      );
+                                    })()
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {globalSearchResults?.events?.length ? (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Events</p>
+                                <div className="space-y-1">
+                                  {globalSearchResults.events.map((eventItem) => (
+                                    (() => {
+                                      const itemKey = `event-${eventItem.id}`;
+                                      const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
+                                      const isActive = itemIndex === highlightedSearchIndex;
+
+                                      return (
+                                    <button
+                                      key={eventItem.id}
+                                      className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                      style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
+                                      onClick={() => handleSelectGlobalResult(`/events/${eventItem.id}`)}
+                                      onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
+                                    >
+                                      <p className="text-sm text-slate-100 font-semibold">{eventItem.name}</p>
+                                      <p className="text-xs text-slate-400">{eventItem.type} • {eventItem.status || "unknown"}</p>
+                                    </button>
+                                      );
+                                    })()
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {globalSearchResults?.loadouts?.length ? (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Loadouts</p>
+                                <div className="space-y-1">
+                                  {globalSearchResults.loadouts.map((loadout) => (
+                                    (() => {
+                                      const itemKey = `loadout-${loadout.id}`;
+                                      const itemIndex = globalSearchItems.findIndex((item) => item.key === itemKey);
+                                      const isActive = itemIndex === highlightedSearchIndex;
+
+                                      return (
+                                    <button
+                                      key={loadout.id}
+                                      className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                      style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
+                                      onClick={() => handleSelectGlobalResult("/loadouts")}
+                                      onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
+                                    >
+                                      <p className="text-sm text-slate-100 font-semibold">{loadout.weapon_name}</p>
+                                      <p className="text-xs text-slate-400">{loadout.weapon_type} • {loadout.mode}</p>
+                                    </button>
+                                      );
+                                    })()
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {globalSearchResults?.leaderboard?.length ? (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Leaderboard</p>
+                                <div className="space-y-1">
+                                  {globalSearchResults.leaderboard.map((leader) => (
+                                    (() => {
+                                      const itemKey = `leader-${leader.id || leader.ign || leader.username || 'unknown'}`;
+                                      const itemIndex = globalSearchItems.findIndex((item) => item.title === (leader.ign || leader.username || "Unknown") && item.group === "leaderboard");
+                                      const isActive = itemIndex === highlightedSearchIndex;
+
+                                      return (
+                                    <button
+                                      key={`${leader.id}-${leader.ign}`}
+                                      className="w-full text-left px-3 py-2 rounded-xl transition-colors"
+                                      style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
+                                      onClick={() => handleSelectGlobalResult(leader.id ? `/profile/${leader.id}` : "/statistics")}
+                                      onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
+                                    >
+                                      <p className="text-sm text-slate-100 font-semibold">{leader.ign || leader.username || "Unknown"}</p>
+                                      <p className="text-xs text-slate-400">Kills: {leader.total_kills || 0}</p>
+                                    </button>
+                                      );
+                                    })()
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p className="px-3 py-2 text-sm text-slate-400">No results found.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <button
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all"
+                      style={{ background: `${C.bgDark}80` }}
+                      onClick={() => navigate('/marketplace')}
+                    >
+                      <ShoppingBag className="w-5 h-5" />
+                    </button>
+                    <button
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white relative"
+                      style={{ background: `${C.bgDark}80` }}
+                      onClick={() => navigate('/announcements')}
+                    >
+                      <Bell className="w-5 h-5" />
+                      <span
+                        className="absolute top-2 right-2.5 w-2 h-2 rounded-full"
+                        style={{ background: C.primary, border: `2px solid ${C.bgDark}` }}
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </header>
+              </header>
+            </>
           )}
+        <RamadanDecorations />
           {children}
         </main>
 
