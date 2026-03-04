@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AccountListing {
   id: string;
@@ -36,6 +37,7 @@ export interface AccountListing {
 export const useMarketplace = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Fetch all available listings
   const { data: listings = [], isLoading: listingsLoading } = useQuery({
@@ -65,10 +67,8 @@ export const useMarketplace = () => {
 
   // Fetch user's own listings
   const { data: myListings = [], isLoading: myListingsLoading } = useQuery({
-    queryKey: ['myMarketplaceListings'],
+    queryKey: ['myMarketplaceListings', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         throw new Error('Not authenticated');
       }
@@ -85,10 +85,7 @@ export const useMarketplace = () => {
       }
       return data as AccountListing[];
     },
-    enabled: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return !!session;
-    },
+    enabled: !!user,
     retry: false,
   });
 

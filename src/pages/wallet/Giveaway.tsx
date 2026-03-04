@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Gift, ArrowRight, Coins, Loader2, CheckCircle2, Copy, Check, ArrowLeft } from 'lucide-react';
+import { Gift, ArrowRight, Coins, Loader2, CheckCircle2, Copy, Check, ArrowLeft, History, ChevronRight, ChevronDown } from 'lucide-react';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -14,14 +14,24 @@ import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 interface GiveawayData {
+  id: string;
   title: string;
   message: string;
-  codeValue: number;
-  totalCodes: number;
-  expiresInHours: number;
-  isPrivate: boolean;
+  code_value: number;
+  total_codes: number;
+  total_amount: number;
+  redeemed_count: number;
+  expires_at: string;
+  created_at: string;
+  giveaway_codes?: {
+    code: string;
+    is_redeemed: boolean;
+    redeemed_at: string | null;
+  }[];
 }
 
 type Step = 'details' | 'config' | 'review' | 'processing' | 'codes';
@@ -44,8 +54,14 @@ const Giveaway = () => {
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  // History state
+  const [giveaways, setGiveaways] = useState<GiveawayData[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [expandedGiveaway, setExpandedGiveaway] = useState<string | null>(null);
+
   useEffect(() => {
     fetchWalletBalance();
+    fetchGiveawayHistory();
   }, [user]);
 
   const fetchWalletBalance = async () => {
@@ -61,6 +77,32 @@ const Giveaway = () => {
       if (data) setWalletBalance(Number(data.balance));
     } catch (error) {
       console.error('Error fetching balance:', error);
+    }
+  };
+
+  const fetchGiveawayHistory = async () => {
+    if (!user?.id) return;
+    setIsLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('giveaways')
+        .select(`
+          *,
+          giveaway_codes (
+            code,
+            is_redeemed,
+            redeemed_at
+          )
+        `)
+        .eq('created_by', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setGiveaways(data || []);
+    } catch (error) {
+      console.error('Error fetching giveaway history:', error);
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 
@@ -125,6 +167,10 @@ const Giveaway = () => {
         setGiveawaySuccess(true);
         const codes = responseData.giveaway.giveaway_codes.map((c: any) => c.code);
         setGeneratedCodes(codes);
+        
+        // Refresh history
+        fetchGiveawayHistory();
+
         setTimeout(() => {
           setStep('codes');
         }, 1500);
@@ -156,319 +202,442 @@ const Giveaway = () => {
             <Button variant="ghost" size="icon" onClick={() => navigate('/wallet')}>
                 <ArrowLeft className="h-6 w-6" />
             </Button>
-            <h1 className="text-2xl font-bold">Create Giveaway</h1>
+            <h1 className="text-2xl font-bold">Giveaways</h1>
         </div>
 
-        <Card className="border-none shadow-none bg-transparent">
-            <CardContent className="p-0">
-          {/* Progress Bar */}
-          {step !== 'codes' && (
-            <div className="flex gap-2 mb-6">
-              <div className={`h-1.5 flex-1 rounded-full transition-all ${['details', 'config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-              <div className={`h-1.5 flex-1 rounded-full transition-all ${['config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-              <div className={`h-1.5 flex-1 rounded-full transition-all ${['review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
-              <div className={`h-1.5 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
-            </div>
-          )}
+        <Tabs defaultValue="create" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="create">Create New</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
 
-            {/* Step 1: Giveaway Details */}
-            {step === 'details' && (
-            <div className="space-y-8">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <Label htmlFor="title" className="text-lg font-semibold">Giveaway Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., Weekend Bonus"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="h-14 text-base"
-                    autoFocus
-                  />
+          <TabsContent value="create">
+            <Card className="border-none shadow-none bg-transparent">
+                <CardContent className="p-0">
+              {/* Progress Bar */}
+              {step !== 'codes' && (
+                <div className="flex gap-2 mb-6">
+                  <div className={`h-1.5 flex-1 rounded-full transition-all ${['details', 'config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+                  <div className={`h-1.5 flex-1 rounded-full transition-all ${['config', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+                  <div className={`h-1.5 flex-1 rounded-full transition-all ${['review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
+                  <div className={`h-1.5 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
                 </div>
+              )}
 
-                <div className="space-y-4">
-                  <Label htmlFor="message" className="text-lg font-semibold">Message (Optional)</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Add a message for your clan..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={4}
-                    className="text-base resize-none"
-                  />
-                </div>
-
-                <div className="text-center py-8 px-4 bg-card rounded-lg border border-border">
-                  <p className="text-base text-muted-foreground mb-3">Available Balance</p>
-                  <p className="text-5xl font-bold text-primary">₦{walletBalance.toLocaleString()}</p>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleDetailsNext}
-                disabled={!title.trim()}
-                className="w-full h-14 text-base font-bold"
-                size="lg"
-              >
-                Next
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-          )}
-
-          {/* Step 2: Configure Giveaway */}
-          {step === 'config' && (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <Label htmlFor="codeValue" className="text-base font-semibold">Value per Code</Label>
-                  <Select value={codeValue} onValueChange={setCodeValue}>
-                    <SelectTrigger id="codeValue" className="h-12 text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="100">₦100</SelectItem>
-                      <SelectItem value="200">₦200</SelectItem>
-                      <SelectItem value="500">₦500</SelectItem>
-                      <SelectItem value="1000">₦1,000</SelectItem>
-                      <SelectItem value="2000">₦2,000</SelectItem>
-                      <SelectItem value="5000">₦5,000</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="totalCodes" className="text-base font-semibold">Number of Codes</Label>
-                  <Input
-                    id="totalCodes"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={totalCodes}
-                    onChange={(e) => setTotalCodes(e.target.value)}
-                    className="h-12 text-base"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="expiresIn" className="text-base font-semibold">Expires In</Label>
-                  <Select value={expiresIn} onValueChange={setExpiresIn}>
-                    <SelectTrigger id="expiresIn" className="h-12 text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0.166667">10 minutes</SelectItem>
-                      <SelectItem value="0.25">15 minutes</SelectItem>
-                      <SelectItem value="0.5">30 minutes</SelectItem>
-                      <SelectItem value="6">6 hours</SelectItem>
-                      <SelectItem value="12">12 hours</SelectItem>
-                      <SelectItem value="24">24 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-start space-x-3 p-4 border border-border rounded-lg bg-muted/30">
-                  <input
-                    type="checkbox"
-                    id="isPrivate"
-                    checked={isPrivate}
-                    onChange={(e) => setIsPrivate(e.target.checked)}
-                    className="h-5 w-5 mt-0.5 rounded border-border cursor-pointer"
-                  />
-                  <div className="flex-1 cursor-pointer" onClick={() => setIsPrivate(!isPrivate)}>
-                    <Label htmlFor="isPrivate" className="text-sm font-semibold cursor-pointer">
-                      Private Giveaway
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Codes will be generated but won't appear in notifications
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('details')}
-                  className="h-14 flex-1 text-base font-bold"
-                  size="lg"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleConfigNext}
-                  className="h-14 flex-1 text-base font-bold"
-                  size="lg"
-                >
-                  Next
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Review */}
-          {step === 'review' && (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="border border-border p-4 rounded-lg space-y-3 bg-card">
-                  <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Giveaway Details</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-start">
-                      <span className="text-muted-foreground">Title</span>
-                      <span className="font-semibold text-right">{title}</span>
+                {/* Step 1: Giveaway Details */}
+                {step === 'details' && (
+                <div className="space-y-8">
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <Label htmlFor="title" className="text-lg font-semibold">Giveaway Title *</Label>
+                      <Input
+                        id="title"
+                        placeholder="e.g., Weekend Bonus"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="h-14 text-base"
+                        autoFocus
+                      />
                     </div>
-                    {message && (
-                      <>
-                        <div className="h-px bg-border" />
-                        <div className="flex justify-between items-start">
-                          <span className="text-muted-foreground">Message</span>
-                          <span className="font-medium text-right max-w-[60%]">{message}</span>
-                        </div>
-                      </>
-                    )}
-                    <div className="h-px bg-border" />
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Type</span>
-                      <span className="font-medium">{isPrivate ? 'Private' : 'Public'}</span>
+
+                    <div className="space-y-4">
+                      <Label htmlFor="message" className="text-lg font-semibold">Message (Optional)</Label>
+                      <Textarea
+                        id="message"
+                        placeholder="Add a message for your clan..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        rows={4}
+                        className="text-base resize-none"
+                      />
+                    </div>
+
+                    <div className="text-center py-8 px-4 bg-card rounded-lg border border-border">
+                      <p className="text-base text-muted-foreground mb-3">Available Balance</p>
+                      <p className="text-5xl font-bold text-primary">₦{walletBalance.toLocaleString()}</p>
                     </div>
                   </div>
+
+                  <Button
+                    onClick={handleDetailsNext}
+                    disabled={!title.trim()}
+                    className="w-full h-14 text-base font-bold"
+                    size="lg"
+                  >
+                    Next
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
                 </div>
+              )}
 
-                <div className="border border-border p-4 rounded-lg space-y-3 bg-card">
-                  <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Configuration</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span>Value per Code</span>
-                      <span className="font-bold">₦{Number(codeValue).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Number of Codes</span>
-                      <span className="font-bold">{totalCodes}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Expires In</span>
-                      <span className="font-bold">
-                        {Number(expiresIn) < 1 
-                          ? `${Math.round(Number(expiresIn) * 60)} minutes` 
-                          : `${expiresIn} hours`}
-                      </span>
-                    </div>
-                    <div className="h-px bg-border my-1" />
-                    <div className="flex justify-between text-lg items-center">
-                      <span className="font-semibold">Total Cost</span>
-                      <span className="font-bold text-destructive">₦{totalCost.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Alert className="p-3">
-                  <AlertDescription className="text-sm">
-                    This amount will be deducted from your wallet balance.
-                  </AlertDescription>
-                </Alert>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('config')}
-                  className="h-14 flex-1 text-base font-bold"
-                  size="lg"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleReviewNext}
-                  className="h-14 flex-1 text-base font-bold"
-                  size="lg"
-                >
-                  Verify PIN
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Processing */}
-          {step === 'processing' && (
-            <div className="space-y-8 py-12 text-center">
-              {giveawaySuccess ? (
+              {/* Step 2: Configure Giveaway */}
+              {step === 'config' && (
                 <div className="space-y-6">
-                  <div className="inline-flex p-8 bg-green-500/10 border-2 border-green-500/20 rounded-lg">
-                    <CheckCircle2 className="h-20 w-20 text-green-500" />
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <Label htmlFor="codeValue" className="text-base font-semibold">Value per Code</Label>
+                      <Select value={codeValue} onValueChange={setCodeValue}>
+                        <SelectTrigger id="codeValue" className="h-12 text-base">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="100">₦100</SelectItem>
+                          <SelectItem value="200">₦200</SelectItem>
+                          <SelectItem value="500">₦500</SelectItem>
+                          <SelectItem value="1000">₦1,000</SelectItem>
+                          <SelectItem value="2000">₦2,000</SelectItem>
+                          <SelectItem value="5000">₦5,000</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label htmlFor="totalCodes" className="text-base font-semibold">Number of Codes</Label>
+                      <Input
+                        id="totalCodes"
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={totalCodes}
+                        onChange={(e) => setTotalCodes(e.target.value)}
+                        className="h-12 text-base"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label htmlFor="expiresIn" className="text-base font-semibold">Expires In</Label>
+                      <Select value={expiresIn} onValueChange={setExpiresIn}>
+                        <SelectTrigger id="expiresIn" className="h-12 text-base">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0.166667">10 minutes</SelectItem>
+                          <SelectItem value="0.25">15 minutes</SelectItem>
+                          <SelectItem value="0.5">30 minutes</SelectItem>
+                          <SelectItem value="6">6 hours</SelectItem>
+                          <SelectItem value="12">12 hours</SelectItem>
+                          <SelectItem value="24">24 hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-4 border border-border rounded-lg bg-muted/30">
+                      <input
+                        type="checkbox"
+                        id="isPrivate"
+                        checked={isPrivate}
+                        onChange={(e) => setIsPrivate(e.target.checked)}
+                        className="h-5 w-5 mt-0.5 rounded border-border cursor-pointer"
+                      />
+                      <div className="flex-1 cursor-pointer" onClick={() => setIsPrivate(!isPrivate)}>
+                        <Label htmlFor="isPrivate" className="text-sm font-semibold cursor-pointer">
+                          Private Giveaway
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Codes will be generated but won't appear in notifications
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    <h3 className="text-3xl font-bold">Giveaway Created!</h3>
-                    <p className="text-lg text-muted-foreground px-4">
-                      {totalCodes} codes worth ₦{codeValue} each have been generated
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="inline-flex p-8 bg-primary/10 border-2 border-primary/20 rounded-lg">
-                    <Loader2 className="h-20 w-20 text-primary animate-spin" />
-                  </div>
-                  <div className="space-y-3">
-                    <h3 className="text-3xl font-bold">Creating Giveaway...</h3>
-                    <p className="text-lg text-muted-foreground px-4">
-                      Please wait while we generate your giveaway codes.
-                    </p>
+
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setStep('details')}
+                      className="h-14 flex-1 text-base font-bold"
+                      size="lg"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleConfigNext}
+                      className="h-14 flex-1 text-base font-bold"
+                      size="lg"
+                    >
+                      Next
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Step 5: View Codes */}
-          {step === 'codes' && (
-            <div className="space-y-6">
-              <div className="text-center py-6 px-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                <Gift className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                <h3 className="text-xl font-bold mb-2">🎉 Giveaway Created Successfully!</h3>
-                <p className="text-base text-muted-foreground">
-                  Share these codes with your clan members
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-lg font-semibold">Generated Codes</Label>
-                <div className="max-h-[50vh] overflow-y-auto space-y-2 border-2 border-border rounded-lg p-3 bg-card">
-                  {generatedCodes.map((code, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border hover:border-primary/50 transition-all"
-                    >
-                      <code className="font-mono font-bold text-lg">{code}</code>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyCode(code)}
-                        className="h-12 w-12"
-                      >
-                        {copiedCode === code ? (
-                          <Check className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <Copy className="h-5 w-5" />
+              {/* Step 3: Review */}
+              {step === 'review' && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="border border-border p-4 rounded-lg space-y-3 bg-card">
+                      <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Giveaway Details</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-start">
+                          <span className="text-muted-foreground">Title</span>
+                          <span className="font-semibold text-right">{title}</span>
+                        </div>
+                        {message && (
+                          <>
+                            <div className="h-px bg-border" />
+                            <div className="flex justify-between items-start">
+                              <span className="text-muted-foreground">Message</span>
+                              <span className="font-medium text-right max-w-[60%]">{message}</span>
+                            </div>
+                          </>
                         )}
-                      </Button>
+                        <div className="h-px bg-border" />
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Type</span>
+                          <span className="font-medium">{isPrivate ? 'Private' : 'Public'}</span>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              <Button
-                onClick={() => navigate('/wallet')}
-                className="w-full h-16 text-lg font-bold"
-                size="lg"
-              >
-                Done
-              </Button>
+                    <div className="border border-border p-4 rounded-lg space-y-3 bg-card">
+                      <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Configuration</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span>Value per Code</span>
+                          <span className="font-bold">₦{Number(codeValue).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Number of Codes</span>
+                          <span className="font-bold">{totalCodes}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Expires In</span>
+                          <span className="font-bold">
+                            {Number(expiresIn) < 1 
+                              ? `${Math.round(Number(expiresIn) * 60)} minutes` 
+                              : `${expiresIn} hours`}
+                          </span>
+                        </div>
+                        <div className="h-px bg-border my-1" />
+                        <div className="flex justify-between text-lg items-center">
+                          <span className="font-semibold">Total Cost</span>
+                          <span className="font-bold text-destructive">₦{totalCost.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Alert className="p-3">
+                      <AlertDescription className="text-sm">
+                        This amount will be deducted from your wallet balance.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setStep('config')}
+                      className="h-14 flex-1 text-base font-bold"
+                      size="lg"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleReviewNext}
+                      className="h-14 flex-1 text-base font-bold"
+                      size="lg"
+                    >
+                      Verify PIN
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Processing */}
+              {step === 'processing' && (
+                <div className="space-y-8 py-12 text-center">
+                  {giveawaySuccess ? (
+                    <div className="space-y-6">
+                      <div className="inline-flex p-8 bg-green-500/10 border-2 border-green-500/20 rounded-lg">
+                        <CheckCircle2 className="h-20 w-20 text-green-500" />
+                      </div>
+                      <div className="space-y-3">
+                        <h3 className="text-3xl font-bold">Giveaway Created!</h3>
+                        <p className="text-lg text-muted-foreground px-4">
+                          {totalCodes} codes worth ₦{codeValue} each have been generated
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="inline-flex p-8 bg-primary/10 border-2 border-primary/20 rounded-lg">
+                        <Loader2 className="h-20 w-20 text-primary animate-spin" />
+                      </div>
+                      <div className="space-y-3">
+                        <h3 className="text-3xl font-bold">Creating Giveaway...</h3>
+                        <p className="text-lg text-muted-foreground px-4">
+                          Please wait while we generate your giveaway codes.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 5: View Codes */}
+              {step === 'codes' && (
+                <div className="space-y-6">
+                  <div className="text-center py-6 px-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <Gift className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                    <h3 className="text-xl font-bold mb-2">🎉 Giveaway Created Successfully!</h3>
+                    <p className="text-base text-muted-foreground">
+                      Share these codes with your clan members
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-lg font-semibold">Generated Codes</Label>
+                    <div className="max-h-[50vh] overflow-y-auto space-y-2 border-2 border-border rounded-lg p-3 bg-card">
+                      {generatedCodes.map((code, index) => (
+                        <div 
+                          key={index}
+                          className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border hover:border-primary/50 transition-all"
+                        >
+                          <code className="font-mono font-bold text-lg">{code}</code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyCode(code)}
+                            className="h-12 w-12"
+                          >
+                            {copiedCode === code ? (
+                              <Check className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <Copy className="h-5 w-5" />
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setStep('details');
+                      setTitle('');
+                      setMessage('');
+                    }}
+                    className="w-full h-16 text-lg font-bold"
+                    size="lg"
+                  >
+                    Create Another
+                  </Button>
+                </div>
+              )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <div className="space-y-4">
+              {isLoadingHistory ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-muted-foreground">Loading history...</p>
+                </div>
+              ) : giveaways.length === 0 ? (
+                <div className="text-center py-12 px-4 border-2 border-dashed border-border rounded-xl">
+                  <History className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+                  <h3 className="text-lg font-medium">No giveaways yet</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your created giveaways will appear here.
+                  </p>
+                </div>
+              ) : (
+                giveaways.map((giveaway) => (
+                  <Card key={giveaway.id} className="overflow-hidden border-border/50 bg-card/50">
+                    <div 
+                      className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setExpandedGiveaway(expandedGiveaway === giveaway.id ? null : giveaway.id)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-bold text-lg">{giveaway.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(giveaway.created_at).toLocaleDateString()} at {new Date(giveaway.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <Badge variant={new Date(giveaway.expires_at) > new Date() ? "default" : "secondary"}>
+                          {new Date(giveaway.expires_at) > new Date() ? 'Active' : 'Expired'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2 mt-4">
+                        <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+                          <p className="text-[10px] uppercase text-muted-foreground font-bold">Value</p>
+                          <p className="font-bold text-primary text-sm">₦{Number(giveaway.code_value).toLocaleString()}</p>
+                        </div>
+                        <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+                          <p className="text-[10px] uppercase text-muted-foreground font-bold">Redeemed</p>
+                          <p className="font-bold text-sm">{giveaway.redeemed_count}/{giveaway.total_codes}</p>
+                        </div>
+                        <div className="text-center p-2 bg-background/50 rounded-lg border border-border/50">
+                          <p className="text-[10px] uppercase text-muted-foreground font-bold">Total</p>
+                          <p className="font-bold text-sm">₦{Number(giveaway.total_amount).toLocaleString()}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-center mt-3 text-xs text-muted-foreground gap-1">
+                        {expandedGiveaway === giveaway.id ? (
+                          <>Hide details <ChevronDown className="h-3 w-3" /></>
+                        ) : (
+                          <>Show codes <ChevronRight className="h-3 w-3" /></>
+                        )}
+                      </div>
+                    </div>
+
+                    {expandedGiveaway === giveaway.id && (
+                      <div className="p-4 bg-muted/30 border-t border-border/50 animate-in slide-in-from-top-2 duration-200">
+                        {giveaway.message && (
+                          <div className="mb-4 p-3 bg-background/50 rounded-lg text-sm italic border border-border/30">
+                            "{giveaway.message}"
+                          </div>
+                        )}
+                        
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                          {giveaway.giveaway_codes?.map((code, idx) => (
+                            <div 
+                              key={idx} 
+                              className="flex items-center justify-between p-3 bg-background rounded-lg border border-border/50 text-sm"
+                            >
+                              <div className="flex items-center gap-3">
+                                <code className="font-mono font-bold">{code.code}</code>
+                                {code.is_redeemed ? (
+                                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px] h-5">
+                                    Used
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-muted-foreground border-border text-[10px] h-5">
+                                    Available
+                                  </Badge>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyCode(code.code);
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                {copiedCode === code.code ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                ))
+              )}
             </div>
-          )}
-          </CardContent>
-        </Card>
+          </TabsContent>
+        </Tabs>
 
       {/* PIN Verification Dialog */}
       <VerifyPinDialog

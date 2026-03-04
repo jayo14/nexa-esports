@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Palette, Snowflake, Lightbulb } from 'lucide-react';
+import { Palette, Snowflake, Lightbulb, Moon, Monitor, Shield, Zap } from 'lucide-react';
 
 export const ThemeSettingsPanel: React.FC = () => {
   const { profile } = useAuth();
@@ -41,7 +41,11 @@ export const ThemeSettingsPanel: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">Default (NeXa Red)</SelectItem>
+              <SelectItem value="ramadan">Ramadan Mubarak (Golden)</SelectItem>
               <SelectItem value="christmas">Christmas (Festive)</SelectItem>
+              <SelectItem value="cyber">Cyberpunk (Neon)</SelectItem>
+              <SelectItem value="military">Military Ops (Green)</SelectItem>
+              <SelectItem value="dark-purple">Royal Purple (Elite)</SelectItem>
             </SelectContent>
           </Select>
         </div>
