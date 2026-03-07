@@ -51,7 +51,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         .from("event_participants")
         .select("group_id")
         .eq("event_id", event.id)
-        .eq("player_id", user.id)
+        .eq("player_id", user?.id)
         .maybeSingle();
 
       if (participantError || !participantData?.group_id) {
@@ -115,7 +115,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
       const playerName = profile?.ign || profile?.username || user?.email;
 
       await sendNotification({
-        user_id: adminId,
+        user?.id: adminId,
         title: "Assignment Request",
         message: `Player ${playerName} has requested to join the event: ${event.name}.`,
         type: "assignment_request",

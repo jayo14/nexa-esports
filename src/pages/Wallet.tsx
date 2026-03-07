@@ -219,11 +219,11 @@ const Wallet: React.FC = () => {
     if (!user?.id) return;
     try {
       const { data: walletData } = await supabase
-        .from('wallets').select('balance').eq('user_id', user.id).maybeSingle();
+        .from('wallets').select('balance').eq('user?.id', user?.id).maybeSingle();
       if (walletData) setWalletBalance(Number(walletData.balance) || 0);
 
       const { data: walletIdData } = await supabase
-        .from('wallets').select('id').eq('user_id', user.id).maybeSingle();
+        .from('wallets').select('id').eq('user?.id', user?.id).maybeSingle();
       if (!walletIdData) return;
 
       const from = (page - 1) * transactionsPerPage;
