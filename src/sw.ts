@@ -1,9 +1,8 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
-import { registerRoute, NavigationRoute, Route } from 'workbox-routing';
-import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
+import { registerRoute } from 'workbox-routing';
+import { NetworkFirst } from 'workbox-strategies';
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -17,6 +16,17 @@ interface NavigatorBadge {
 declare global {
   interface Navigator extends NavigatorBadge {}
   interface WorkerNavigator extends NavigatorBadge {}
+}
+
+// Custom types for events to avoid 'any'
+interface SyncEvent extends Event {
+  readonly tag: string;
+  waitUntil(f: Promise<any>): void;
+}
+
+interface PushSubscriptionChangeEvent extends Event {
+  readonly oldSubscription?: PushSubscription;
+  readonly newSubscription?: PushSubscription;
 }
 
 // Use the injected manifest from VitePWA
@@ -48,99 +58,31 @@ registerRoute(
     // as they will rarely hit the cache and can cause 'no-response' errors
     const hasDynamicQueries = url.search.includes('gte.') || 
                                url.search.includes('lte.') ||
-                               url.search.includes('gt.') ||
-                               url.search.includes('lt.');
+                               url.search.includes('now');
 
     return isSupabaseRequest && isApiPath && !hasDynamicQueries;
   },
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 60 * 60, // 1 hour
-      }),
-    ],
-    networkTimeoutSeconds: 10, // Fall back to cache if network takes > 10s
-  })
-);
-
-// Fallback for dynamic Supabase requests that we don't want to cache but still need to handle
-registerRoute(
-  ({ url }) => {
-    const isSupabaseRequest = url.hostname.endsWith('.supabase.co') || 
-                              url.hostname.endsWith('.supabase.in');
-    const isApiPath = url.pathname.includes('/rest/v1/') || 
-                      url.pathname.includes('/functions/v1/');
-    const hasDynamicQueries = url.search.includes('gte.') || 
-                               url.search.includes('lte.') ||
-                               url.search.includes('gt.') ||
-                               url.search.includes('lt.');
-
-    return isSupabaseRequest && isApiPath && hasDynamicQueries;
-  },
-  async ({ request }) => {
-    try {
-      return await fetch(request);
-    } catch (error) {
-      // Return a 503 Service Unavailable response instead of letting Workbox throw 'no-response'
-      return new Response(JSON.stringify({ error: 'Offline', message: 'Network request failed' }), {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-  }
-);
-
-// Cache images with CacheFirst strategy (check cache first, then network)
-registerRoute(
-  /^https:\/\/.*\.(png|jpg|jpeg|svg|gif|webp)$/,
-  new CacheFirst({
-    cacheName: 'images',
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-      }),
-    ],
-  })
-);
-
-// Cache fonts with CacheFirst strategy
-registerRoute(
-  /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
-  new CacheFirst({
-    cacheName: 'google-fonts',
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 30,
-        maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-      }),
-    ],
-  })
-);
-
-// Cache static assets (JS, CSS) with StaleWhileRevalidate
-// Serve from cache immediately while updating in the background
-registerRoute(
-  /\.(?:js|css)$/,
-  new StaleWhileRevalidate({
-    cacheName: 'static-assets',
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 60,
-        maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
-      }),
+      {
+        // Custom plugin to only cache successful GET responses
+        cacheWillUpdate: async ({ response }) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            return response;
+          }
+          return null;
+        },
+      },
     ],
   })
 );
 
 // ============================================
-// PUSH NOTIFICATIONS (MDN Web Push API + Badge API)
+// PUSH NOTIFICATIONS
 // ============================================
 
-// Update app badge count using Badge API
+// Function to update app badge count using Badge API
 // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Badging_API
 async function updateBadge(count: number): Promise<void> {
   try {
@@ -172,9 +114,9 @@ self.addEventListener('push', (event: PushEvent) => {
       
       // Try to parse as JSON, fall back to text
       try {
-        data = event.data.json();
+        data = event.data?.json();
       } catch {
-        const text = event.data.text();
+        const text = event.data?.text();
         data = { title: 'Nexa Esports', body: text };
       }
       
@@ -184,7 +126,7 @@ self.addEventListener('push', (event: PushEvent) => {
       
       // NotificationOptions following MDN Web Notifications API
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification
-      const options: NotificationOptions = {
+      const options: NotificationOptions & { image?: string } = {
         body: data.body || data.message || '',
         icon: data.icon || '/nexa-logo.jpg',
         badge: data.badge || '/pwa-192x192.png', // Smaller badge for notification tray
@@ -211,7 +153,7 @@ self.addEventListener('push', (event: PushEvent) => {
 
       // Add image if provided (large image in notification body)
       if (data.image) {
-        (options as any).image = data.image;
+        options.image = data.image;
       }
 
       // Show the notification
@@ -269,7 +211,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
     for (const windowClient of windowClients) {
       if (windowClient.url.startsWith(self.location.origin)) {
         // Focus the existing window and navigate to the URL
-        return windowClient.focus().then((client) => {
+        return (windowClient as WindowClient).focus().then((client) => {
           if (client && 'navigate' in client) {
             return (client as WindowClient).navigate(urlToOpen);
           }
@@ -294,16 +236,17 @@ self.addEventListener('notificationclose', (event: NotificationEvent) => {
 });
 
 // Push subscription change event listener
-// Reference: https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/pushsubscriptionchange_event
-self.addEventListener('pushsubscriptionchange', (event: any) => {
+self.addEventListener('pushsubscriptionchange', (event: Event) => {
   console.log('[Service Worker] Push subscription changed');
   
+  const pscEvent = event as PushSubscriptionChangeEvent;
+
   // Re-subscribe with the same options
   const resubscribe = async () => {
     try {
       const subscription = await self.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: event.oldSubscription?.options?.applicationServerKey
+        applicationServerKey: pscEvent.oldSubscription?.options?.applicationServerKey
       });
       
       console.log('[Service Worker] Re-subscribed successfully:', subscription.endpoint);
@@ -321,7 +264,7 @@ self.addEventListener('pushsubscriptionchange', (event: any) => {
     }
   };
   
-  event.waitUntil(resubscribe());
+  resubscribe();
 });
 
 // ============================================
@@ -329,13 +272,14 @@ self.addEventListener('pushsubscriptionchange', (event: any) => {
 // ============================================
 
 // Handle background sync for offline actions
-self.addEventListener('sync', (event: SyncEvent) => {
-  console.log('Background sync event:', event.tag);
+self.addEventListener('sync', (event: Event) => {
+  const syncEvent = event as SyncEvent;
+  console.log('Background sync event:', syncEvent.tag);
   
-  if (event.tag === 'sync-wallet-transactions') {
-    event.waitUntil(syncWalletTransactions());
-  } else if (event.tag === 'sync-attendance') {
-    event.waitUntil(syncAttendanceData());
+  if (syncEvent.tag === 'sync-wallet-transactions') {
+    syncEvent.waitUntil(syncWalletTransactions());
+  } else if (syncEvent.tag === 'sync-attendance') {
+    syncEvent.waitUntil(syncAttendanceData());
   }
 });
 
@@ -396,24 +340,23 @@ self.addEventListener('message', (event) => {
   
   // Handle cache clearing request
   if (event.data && event.data.type === 'CLEAR_CACHE') {
-    event.waitUntil(
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => caches.delete(cacheName))
-        );
-      }).then(() => {
-        event.ports[0]?.postMessage({ success: true });
-      })
-    );
+    const clearCache = async () => {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map((cacheName) => caches.delete(cacheName))
+      );
+      event.ports[0]?.postMessage({ success: true });
+    };
+    clearCache();
   }
   
   // Handle checking if app data is cached
   if (event.data && event.data.type === 'CHECK_CACHE_STATUS') {
-    event.waitUntil(
-      caches.has('api-cache').then((hasCache) => {
-        event.ports[0]?.postMessage({ cached: hasCache });
-      })
-    );
+    const checkCache = async () => {
+      const hasCache = await caches.has('api-cache');
+      event.ports[0]?.postMessage({ cached: hasCache });
+    };
+    checkCache();
   }
 });
 
@@ -426,6 +369,7 @@ self.addEventListener('online', () => {
   });
 });
 
+// Broadcast offline status to all clients
 self.addEventListener('offline', () => {
   self.clients.matchAll().then((clients) => {
     clients.forEach((client) => {
@@ -441,8 +385,8 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     event.respondWith(
       fetch(event.request).catch(() => {
         // Return cached app shell for offline navigation
-        return caches.match('/index.html') || caches.match('/');
-      })
+        return caches.match('/index.html').then(response => response || caches.match('/'));
+      }) as Promise<Response>
     );
   }
 });

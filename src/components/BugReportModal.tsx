@@ -69,7 +69,7 @@ export const BugReportModal: React.FC = () => {
       let file_url = null;
       if (values.file) {
         const fileExt = values.file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage.from('bug-reports').upload(fileName, values.file);
 
         if (uploadError) throw uploadError;
@@ -79,7 +79,7 @@ export const BugReportModal: React.FC = () => {
       }
 
       const { error: insertError } = await supabase.from('bug_reports').insert({
-        reporter_id: user.id,
+        reporter_id: user?.id,
         category: values.category,
         description: values.description,
         file_url,

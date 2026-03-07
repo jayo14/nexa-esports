@@ -260,7 +260,7 @@ const Statistics: FC = () => {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', user?.id)
           .single();
         
         if (profile) setCurrentPlayer(profile);
@@ -298,7 +298,7 @@ const Statistics: FC = () => {
   // Find current user rank for highlighting
   useEffect(() => {
     if (enhancedData && user) {
-      const rank = enhancedData.findIndex(p => p.id === user.id) + 1;
+      const rank = enhancedData.findIndex(p => p.id === user?.id) + 1;
       setCurrentUserRank(rank > 0 ? rank : null);
     } else {
       setCurrentUserRank(null);
@@ -660,7 +660,7 @@ const Statistics: FC = () => {
                         transition={{ delay: 0.4 + index * 0.02, duration: 0.5 }}
                         className={cn(
                           "group hover:bg-white/5 border-b border-primary/10 transition-colors",
-                          player.id === user.id && "bg-primary/5 shadow-inner shadow-primary/10 border-l-2 border-primary"
+                          player.id === user?.id && "bg-primary/5 shadow-inner shadow-primary/10 border-l-2 border-primary"
                         )}
                       >
                         <td className="p-3 sm:p-4 text-center font-bold text-gray-400 w-12 sm:w-16">
@@ -674,7 +674,7 @@ const Statistics: FC = () => {
                                 alt={player.ign}
                                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover border-2 border-primary/30 group-hover:border-primary/50 transition-colors"
                               />
-                              {player.id === user.id && (
+                              {player.id === user?.id && (
                                 <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-black shadow-md animate-pulse" />
                               )}
                             </div>
