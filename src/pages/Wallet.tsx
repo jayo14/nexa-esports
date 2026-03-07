@@ -399,9 +399,6 @@ const Wallet: React.FC = () => {
                       ? <Eye className="w-5 h-5 text-slate-300" />
                       : <EyeOff className="w-5 h-5 text-slate-300" />}
                   </button>
-                  <div className="p-4 rounded-2xl" style={glassButton}>
-                    <WalletIcon className="w-7 h-7" style={{ color: PRIMARY }} />
-                  </div>
                 </div>
               </div>
 
