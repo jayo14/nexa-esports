@@ -229,12 +229,11 @@ const LandingPage: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div
-              className="p-1.5 rounded-lg flex items-center justify-center"
-              style={{ background: C.primary, boxShadow: `0 0 20px ${C.primary}66` }}
+              className="p-1.5 w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden"
             >
-              <Swords className="w-6 h-6 text-white" />
+              <img src="/nexa-logo-ramadan.jpg" alt="Nexa Ramadan logo" className="w-full h-full object-cover rounded-xl" />
             </div>
-            <h2 className="text-xl font-black tracking-tight">NeXa_Esports</h2>
+            <h2 className="text-xl font-black tracking-tight">NeXa Esports</h2>
           </div>
 
           {/* Desktop Links */}
@@ -336,7 +335,7 @@ const LandingPage: React.FC = () => {
               </h1>
 
               <p className="text-lg text-slate-400 max-w-lg leading-relaxed">
-                Experience the pinnacle of CODM competitive play with NeXa_Esports. Join the ranks
+                Experience the pinnacle of CODM competitive play with Nexa Esports. Join the ranks
                 of elite warriors and conquer the global leaderboard.
               </p>
 
@@ -393,17 +392,17 @@ const LandingPage: React.FC = () => {
                     />
                     <div
                       className="relative z-10 text-center"
-                      style={{ filter: `drop-shadow(0 0 40px ${C.primary}80)` }}
                     >
-                      <Swords
-                        className="w-40 h-40 mx-auto mb-4"
-                        style={{ color: C.primary, opacity: 0.9 }}
+                      <img
+                        src="/nexa-logo-ramadan.jpg"
+                        alt="Nexa Logo"
+                        className="w-40 h-40 mx-auto mb-4 rounded-full object-cover"
                       />
                       <p
                         className="text-xs font-black uppercase tracking-[0.4em]"
                         style={{ color: `${C.primary}cc` }}
                       >
-                        NeXa_Esports
+                        NeXa Esports
                       </p>
                     </div>
                     {/* Animated pulse rings */}
@@ -550,7 +549,7 @@ const LandingPage: React.FC = () => {
                       backgroundSize: '30px 30px',
                     }}
                   >
-                    <Swords className="w-24 h-24 opacity-20" style={{ color: C.primary }} />
+                    <img src="/nexa-logo-ramadan.jpg" alt="Nexa Logo" className="w-24 h-24 opacity-20 object-cover rounded-full" style={{ filter: 'grayscale(1) brightness(1.5)' }} />
                   </div>
                 </div>
                 <div
@@ -672,7 +671,7 @@ const LandingPage: React.FC = () => {
                 </p>
                 <div className="space-y-4">
                   {[
-                    { icon: <Mail className="w-5 h-5" />, label: 'Recruitment', value: 'join@nexa_esports.com' },
+                    { icon: <Mail className="w-5 h-5" />, label: 'Recruitment', value: 'join@Nexa Esports.com' },
                     { icon: <MessageCircle className="w-5 h-5" />, label: 'Discord', value: 'discord.gg/nexa_elite' },
                   ].map(({ icon, label, value }) => (
                     <div key={label} className="flex items-center gap-4">
@@ -790,16 +789,15 @@ const LandingPage: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center gap-3 opacity-60">
             <div
-              className="p-1.5 rounded-lg flex items-center justify-center"
-              style={{ background: `${C.primary}80` }}
+              className="p-1.5 w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden"
             >
-              <Swords className="w-5 h-5 text-white" />
+              <img src="/nexa-logo-ramadan.jpg" alt="Nexa Ramadan logo" className="w-full h-full object-cover rounded-xl" />
             </div>
-            <h2 className="text-lg font-black tracking-tight">NeXa_Esports</h2>
+            <h2 className="text-lg font-black tracking-tight">NeXa Esports</h2>
           </div>
 
           <p className="text-sm text-slate-500 text-center">
-            © 2024 NeXa_Esports Clan. All Rights Reserved. Not affiliated with Activision or TiMi Studios.
+            © 2024 Nexa Esports Clan. All Rights Reserved. Not affiliated with Activision or TiMi Studios.
           </p>
 
           {/* Social icons */}

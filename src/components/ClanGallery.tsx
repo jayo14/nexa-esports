@@ -33,7 +33,7 @@ const mockGalleryItems: GalleryItem[] = [
     type: 'image',
     src: 'https://ik.imagekit.io/mshcgnjju/NeXa/winners_circle.jpg',
     title: 'Tournament Win',
-    description: 'NeXa_Esports claims championship title'
+    description: 'Nexa Esports claims championship title'
   },
   {
     id: 4,
@@ -60,7 +60,7 @@ export const ClanGallery: React.FC = () => {
     if (!isAutoPlaying) return;
 
     const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
+      setCurrentIndex((prevIndex) =>
         prevIndex === mockGalleryItems.length - 1 ? 0 : prevIndex + 1
       );
     }, 4000);
@@ -101,7 +101,7 @@ export const ClanGallery: React.FC = () => {
         <div className="relative group">
           {/* Main Gallery Display */}
           <div className="relative w-full h-96 md:h-[500px] overflow-hidden rounded-xl border border-border/30 nexa-glow">
-            <div 
+            <div
               className="flex transition-transform duration-500 ease-out h-full"
               style={{ transform: `translateX(-${currentIndex * 100}%)` }}
             >
@@ -112,7 +112,7 @@ export const ClanGallery: React.FC = () => {
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
-                  
+
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
                     <div className="absolute bottom-6 left-6 right-6">
@@ -175,11 +175,10 @@ export const ClanGallery: React.FC = () => {
             {mockGalleryItems.map((_, index) => (
               <button
                 key={index}
-                className={`w-5 h-2 rounded-sm transition-all duration-300 ${
-                  index === currentIndex 
-                    ? 'bg-primary scale-125' 
+                className={`w-5 h-2 rounded-sm transition-all duration-300 ${index === currentIndex
+                    ? 'bg-primary scale-125'
                     : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                }`}
+                  }`}
                 onClick={() => goToSlide(index)}
               />
             ))}

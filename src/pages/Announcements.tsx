@@ -126,7 +126,7 @@ export const Announcements: React.FC = () => {
             Clan Announcements
           </h1>
           <p className="text-gray-400">
-            Stay updated with the latest NeXa_Esports news
+            Stay updated with the latest Nexa Esports news
           </p>
         </div>
 
@@ -200,16 +200,15 @@ export const Announcements: React.FC = () => {
             const CategoryIcon = getCategoryIcon(announcement.title);
             const daysSinceCreated = Math.floor(
               (Date.now() - new Date(announcement.created_at).getTime()) /
-                (1000 * 60 * 60 * 24)
+              (1000 * 60 * 60 * 24)
             );
             const isPinned = daysSinceCreated <= 1; // Pin new announcements
 
             return (
               <Card
                 key={announcement.id}
-                className={`bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ${
-                  isPinned ? "border-[#FF1F44]/30 bg-[#FF1F44]/5" : ""
-                }`}
+                className={`bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ${isPinned ? "border-[#FF1F44]/30 bg-[#FF1F44]/5" : ""
+                  }`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">

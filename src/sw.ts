@@ -14,8 +14,8 @@ interface NavigatorBadge {
 }
 
 declare global {
-  interface Navigator extends NavigatorBadge {}
-  interface WorkerNavigator extends NavigatorBadge {}
+  interface Navigator extends NavigatorBadge { }
+  interface WorkerNavigator extends NavigatorBadge { }
 }
 
 // Custom types for events to avoid 'any'
@@ -49,16 +49,16 @@ clientsClaim();
 registerRoute(
   ({ url }) => {
     // Check if this is a Supabase API request
-    const isSupabaseRequest = url.hostname.endsWith('.supabase.co') || 
-                              url.hostname.endsWith('.supabase.in');
-    const isApiPath = url.pathname.includes('/rest/v1/') || 
-                      url.pathname.includes('/functions/v1/');
-    
+    const isSupabaseRequest = url.hostname.endsWith('.supabase.co') ||
+      url.hostname.endsWith('.supabase.in');
+    const isApiPath = url.pathname.includes('/rest/v1/') ||
+      url.pathname.includes('/functions/v1/');
+
     // Don't cache requests with highly dynamic query parameters (like gte.timestamp)
     // as they will rarely hit the cache and can cause 'no-response' errors
-    const hasDynamicQueries = url.search.includes('gte.') || 
-                               url.search.includes('lte.') ||
-                               url.search.includes('now');
+    const hasDynamicQueries = url.search.includes('gte.') ||
+      url.search.includes('lte.') ||
+      url.search.includes('now');
 
     return isSupabaseRequest && isApiPath && !hasDynamicQueries;
   },
@@ -102,7 +102,7 @@ async function updateBadge(count: number): Promise<void> {
 // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Push_API
 self.addEventListener('push', (event: PushEvent) => {
   console.log('[Service Worker] Push event received');
-  
+
   if (!event.data) {
     console.log('[Service Worker] Push event received but no data');
     return;
@@ -111,7 +111,7 @@ self.addEventListener('push', (event: PushEvent) => {
   const showNotification = async () => {
     try {
       let data;
-      
+
       // Try to parse as JSON, fall back to text
       try {
         data = event.data?.json();
@@ -119,16 +119,16 @@ self.addEventListener('push', (event: PushEvent) => {
         const text = event.data?.text();
         data = { title: 'Nexa Esports', body: text };
       }
-      
+
       console.log('[Service Worker] Push notification data:', data);
 
       const title = data.title || 'Nexa Esports';
-      
+
       // NotificationOptions following MDN Web Notifications API
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification
       const options: NotificationOptions & { image?: string } = {
         body: data.body || data.message || '',
-        icon: data.icon || '/nexa-logo.jpg',
+        icon: data.icon || '/nexa-logo-ramadan.jpg',
         badge: data.badge || '/pwa-192x192.png', // Smaller badge for notification tray
         tag: data.tag || `nexa-notification-${Date.now()}`,
         data: {
@@ -158,18 +158,18 @@ self.addEventListener('push', (event: PushEvent) => {
 
       // Show the notification
       await self.registration.showNotification(title, options);
-      
+
       // Update app badge using Badge API
       await updateBadge(1);
-      
+
       console.log('[Service Worker] Notification shown successfully');
     } catch (error) {
       console.error('[Service Worker] Error processing push notification:', error);
-      
+
       // Show a fallback notification if parsing fails
       await self.registration.showNotification('Nexa Esports', {
         body: 'You have a new notification',
-        icon: '/nexa-logo.jpg',
+        icon: '/nexa-logo-ramadan.jpg',
         badge: '/pwa-192x192.png',
         tag: 'nexa-fallback',
       });
@@ -183,13 +183,13 @@ self.addEventListener('push', (event: PushEvent) => {
 // Reference: https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/notificationclick_event
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   console.log('[Service Worker] Notification clicked:', event.notification.tag);
-  
+
   const notification = event.notification;
   const action = event.action;
-  
+
   // Close the notification
   notification.close();
-  
+
   // Clear the badge when notification is clicked
   event.waitUntil(updateBadge(0));
 
@@ -230,7 +230,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
 // Reference: https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/notificationclose_event
 self.addEventListener('notificationclose', (event: NotificationEvent) => {
   console.log('[Service Worker] Notification closed:', event.notification.tag);
-  
+
   // Clear the badge when notification is dismissed
   event.waitUntil(updateBadge(0));
 });
@@ -238,7 +238,7 @@ self.addEventListener('notificationclose', (event: NotificationEvent) => {
 // Push subscription change event listener
 self.addEventListener('pushsubscriptionchange', (event: Event) => {
   console.log('[Service Worker] Push subscription changed');
-  
+
   const pscEvent = event as PushSubscriptionChangeEvent;
 
   // Re-subscribe with the same options
@@ -248,9 +248,9 @@ self.addEventListener('pushsubscriptionchange', (event: Event) => {
         userVisibleOnly: true,
         applicationServerKey: pscEvent.oldSubscription?.options?.applicationServerKey
       });
-      
+
       console.log('[Service Worker] Re-subscribed successfully:', subscription.endpoint);
-      
+
       // Notify the main app about the new subscription
       const clients = await self.clients.matchAll({ type: 'window' });
       clients.forEach(client => {
@@ -263,7 +263,7 @@ self.addEventListener('pushsubscriptionchange', (event: Event) => {
       console.error('[Service Worker] Failed to re-subscribe:', error);
     }
   };
-  
+
   resubscribe();
 });
 
@@ -275,7 +275,7 @@ self.addEventListener('pushsubscriptionchange', (event: Event) => {
 self.addEventListener('sync', (event: Event) => {
   const syncEvent = event as SyncEvent;
   console.log('Background sync event:', syncEvent.tag);
-  
+
   if (syncEvent.tag === 'sync-wallet-transactions') {
     syncEvent.waitUntil(syncWalletTransactions());
   } else if (syncEvent.tag === 'sync-attendance') {
@@ -289,7 +289,7 @@ async function syncWalletTransactions() {
     // Get pending transactions from IndexedDB or cache
     const cache = await caches.open('pending-transactions');
     const requests = await cache.keys();
-    
+
     for (const request of requests) {
       try {
         const response = await fetch(request.clone());
@@ -311,7 +311,7 @@ async function syncAttendanceData() {
   try {
     const cache = await caches.open('pending-attendance');
     const requests = await cache.keys();
-    
+
     for (const request of requests) {
       try {
         const response = await fetch(request.clone());
@@ -337,7 +337,7 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
+
   // Handle cache clearing request
   if (event.data && event.data.type === 'CLEAR_CACHE') {
     const clearCache = async () => {
@@ -349,7 +349,7 @@ self.addEventListener('message', (event) => {
     };
     clearCache();
   }
-  
+
   // Handle checking if app data is cached
   if (event.data && event.data.type === 'CHECK_CACHE_STATUS') {
     const checkCache = async () => {

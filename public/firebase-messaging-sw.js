@@ -32,7 +32,7 @@ if (isConfigured) {
       const notificationTitle = payload.notification?.title || payload.data?.title || 'NeXa Esports';
       const notificationOptions = {
         body: payload.notification?.body || payload.data?.body || 'You have a new notification',
-        icon: payload.notification?.icon || payload.data?.icon || '/nexa-logo.jpg',
+        icon: payload.notification?.icon || payload.data?.icon || '/nexa-logo-ramadan.jpg',
         badge: '/pwa-192x192.png',
         tag: payload.data?.tag || 'nexa-notification',
         data: payload.data || {},
@@ -61,7 +61,7 @@ if (isConfigured) {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   console.log('[FCM SW] Notification clicked:', event);
-  
+
   event.notification.close();
 
   if (event.action === 'dismiss') {
@@ -70,7 +70,7 @@ self.addEventListener('notificationclick', (event) => {
 
   // Open the app or navigate to specific URL
   const urlToOpen = event.notification.data?.url || '/dashboard';
-  
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // Check if there's already a window/tab open
@@ -83,7 +83,7 @@ self.addEventListener('notificationclick', (event) => {
           return client.focus();
         }
       }
-      
+
       // Open new window if no matching client found
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);

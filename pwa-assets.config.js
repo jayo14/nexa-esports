@@ -14,5 +14,5 @@ export default defineConfig({
       sizes: [180],
     },
   },
-  images: ['public/nexa-logo.jpg'],
+  images: ['public/nexa-logo-ramadan.jpg'],
 });

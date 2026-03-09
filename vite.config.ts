@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
       },
       manifest: {
         name: "Nexa Esports",
-        short_name: "Nexa_Esports",
+        short_name: "Nexa Esports",
         description:
           "Nexa is a competitive clan-based esports platform that empowers gamers to join, manage, and dominate in tournaments. Track progress, build squads, and rise through the ranks in an immersive, mobile-ready experience.",
         start_url: "/dashboard",
@@ -490,7 +490,7 @@ export default defineConfig(({ mode }) => ({
         ],
         screenshots: [
           {
-            src: "/nexa-logo.jpg",
+            src: "/nexa-logo-ramadan.jpg",
             sizes: "640x1136",
             type: "image/png",
             label: "Clan dashboard",
@@ -506,7 +506,7 @@ export default defineConfig(({ mode }) => ({
       includeAssets: [
         "favicon.ico",
         "robots.txt",
-        "nexa-logo.jpg",
+        "nexa-logo-ramadan.jpg",
       ],
     }),
   ].filter(Boolean),

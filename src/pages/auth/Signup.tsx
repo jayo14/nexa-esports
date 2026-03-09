@@ -83,7 +83,7 @@ export const Signup: React.FC = () => {
         });
 
       if (notificationError) throw notificationError;
-      
+
       toast({
         title: "Code Requested",
         description: "An access code request has been sent to the admin for approval.",
@@ -113,9 +113,9 @@ export const Signup: React.FC = () => {
       }
 
       const { data, error } = await supabase.rpc('validate_access_code', {
-          code_input: code,
-          email_input: formData.email
-        });
+        code_input: code,
+        email_input: formData.email
+      });
 
       if (error) {
         console.error('Error validating access code:', error);
@@ -138,7 +138,7 @@ export const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (/\s/.test(formData.username)) {
       toast({
@@ -227,7 +227,7 @@ export const Signup: React.FC = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 rounded-xl overflow-hidden shadow-lg nexa-glow border border-white/20">
-              <img src="/nexa-logo.jpg" alt="NeXa Logo" className="w-full h-full object-cover" />
+              <img src="/nexa-logo-ramadan.jpg" alt="NeXa Logo" className="w-full h-full object-cover" />
             </div>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2 font-orbitron">
@@ -235,7 +235,7 @@ export const Signup: React.FC = () => {
               Recruitment
             </span>
           </h1>
-          <p className="text-muted-foreground font-rajdhani">Join the elite NeXa_Esports ranks</p>
+          <p className="text-muted-foreground font-rajdhani">Join the elite Nexa Esports ranks</p>
         </div>
 
         {/* Form */}

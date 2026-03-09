@@ -84,7 +84,7 @@ async function getFcmAccessToken(): Promise<string | null> {
 
     const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
       .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    
+
     const jwt = `${message}.${signatureB64}`;
 
     // Exchange JWT for access token
@@ -110,14 +110,14 @@ async function getFcmAccessToken(): Promise<string | null> {
  */
 async function sendFcmNotification(token: string, notification: any): Promise<boolean> {
   const accessToken = await getFcmAccessToken();
-  
+
   if (!accessToken) {
     console.error('[FCM] No access token available');
     return false;
   }
 
   const fcmUrl = `https://fcm.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/messages:send`;
-  
+
   const message = {
     message: {
       token,
@@ -143,7 +143,7 @@ async function sendFcmNotification(token: string, notification: any): Promise<bo
       },
       webpush: {
         notification: {
-          icon: notification.icon || '/nexa-logo.jpg',
+          icon: notification.icon || '/nexa-logo-ramadan.jpg',
           badge: '/pwa-192x192.png',
         },
       },
@@ -227,15 +227,15 @@ Deno.serve(async (req) => {
         // CASE 1: FCM Token (Native Push via Firebase)
         if (sub.token && sub.token !== 'native' && sub.token.length > 50) {
           console.log(`[FCM] Sending push to user ${sub.user_id}`);
-          
+
           const success = await sendFcmNotification(sub.token, notification);
-          
+
           if (!success) {
             // Token might be invalid, mark for deletion
             subscriptionsToDelete.push(sub.user_id);
             return { success: false, userId: sub.user_id, error: 'FCM failed', type: 'fcm' };
           }
-          
+
           return { success: true, userId: sub.user_id, type: 'fcm' };
         }
 
@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
             const payload = JSON.stringify({
               title: notification.title,
               body: notification.message || notification.body || '',
-              icon: notification.icon || '/nexa-logo.jpg',
+              icon: notification.icon || '/nexa-logo-ramadan.jpg',
               badge: '/pwa-192x192.png',
               data: {
                 ...notification.data,

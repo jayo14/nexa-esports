@@ -129,7 +129,7 @@ export const Blog: React.FC = () => {
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-16 h-16 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">
-              <img src="/nexa-logo.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
+              <img src="/nexa-logo-ramadan.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
             </div>
           </Link>
           <div className="hidden md:flex items-center space-x-6">
@@ -189,7 +189,7 @@ export const Blog: React.FC = () => {
           </h1>
 
           <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto font-rajdhani">
-            Level up your game with expert strategies, stay informed on esports news, 
+            Level up your game with expert strategies, stay informed on esports news,
             and learn safe account trading practices from the Nexaesports community.
           </p>
 
@@ -239,11 +239,10 @@ export const Blog: React.FC = () => {
                 key={category}
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory(category)}
-                className={`font-rajdhani font-bold ${
-                  selectedCategory === category
+                className={`font-rajdhani font-bold ${selectedCategory === category
                     ? 'nexa-button'
                     : 'border-2 border-border/50 hover:border-primary/50'
-                }`}
+                  }`}
               >
                 {category}
               </Button>

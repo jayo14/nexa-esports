@@ -261,7 +261,7 @@ export const BlogPost: React.FC = () => {
   useEffect(() => {
     if (slug && blogPosts[slug]) {
       setPost(blogPosts[slug]);
-      
+
       // Generate table of contents from headings
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = blogPosts[slug].content;
@@ -280,7 +280,7 @@ export const BlogPost: React.FC = () => {
   const handleShare = (platform: string) => {
     const url = window.location.href;
     const title = post?.title || '';
-    
+
     let shareUrl = '';
     switch (platform) {
       case 'twitter':
@@ -300,7 +300,7 @@ export const BlogPost: React.FC = () => {
         });
         return;
     }
-    
+
     if (shareUrl) {
       window.open(shareUrl, '_blank', 'width=600,height=400');
     }
@@ -345,7 +345,7 @@ export const BlogPost: React.FC = () => {
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-16 h-16 flex items-center justify-center nexa-glow rounded-xl ring-2 ring-primary/30 hover:ring-primary/50 transition-all duration-300 hover:scale-105">
-              <img src="/nexa-logo.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
+              <img src="/nexa-logo-ramadan.jpg" alt="NeXa Esports Logo" className="object-cover w-full h-full rounded-xl" />
             </div>
           </Link>
           <div className="hidden md:flex items-center space-x-6">

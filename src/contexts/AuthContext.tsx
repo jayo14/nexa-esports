@@ -97,14 +97,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.log("Ban expired, unbanning user...");
           await supabase
             .from("profiles")
-            .update({ 
-              is_banned: false, 
-              ban_reason: null, 
-              banned_at: null, 
-              ban_expires_at: null 
+            .update({
+              is_banned: false,
+              ban_reason: null,
+              banned_at: null,
+              ban_expires_at: null
             } as any)
             .eq("id", userId);
-            
+
           data.is_banned = false;
         } else {
           // Active ban
@@ -113,11 +113,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(null);
           setSession(null);
           setProfile(null);
-          
+
           let description = `Reason: ${data.ban_reason || 'Violation of rules'}.`;
           if (banExpiresAt) {
             const diffTime = Math.abs(banExpiresAt.getTime() - now.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             description += ` Ban expires in ${diffDays} day(s).`;
           } else {
             description += " This ban is permanent.";
@@ -156,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const initAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error("Session fetch error:", error);
           return;
@@ -192,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (session?.user) {
           fetchProfile(session.user.id);
-          
+
           // Handle push notifications in background
           if (event === 'SIGNED_IN') {
             setTimeout(() => {
@@ -202,7 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         } else {
           setProfile(null);
         }
-        
+
         setLoading(false);
       }
     );
@@ -243,13 +243,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const registration = await navigator.serviceWorker.ready;
       console.log("[Push] Service worker ready for push notifications");
-      
+
       // Show immediate local notification as greeting
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/showNotification
       try {
         await registration.showNotification("Welcome Soldier! 🎮", {
           body: "Onward to the frontline! Push notifications are working.",
-          icon: "/nexa-logo.jpg",
+          icon: "/nexa-logo-ramadan.jpg",
           badge: "/pwa-192x192.png",
           tag: "login-greeting",
           vibrate: [100, 50, 100],
@@ -268,11 +268,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/PushManager
       if ("PushManager" in window) {
         let subscription = await registration.pushManager.getSubscription();
-        
+
         // If no subscription exists, create one using VAPID key
         if (!subscription) {
           const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-          
+
           if (vapidKey) {
             console.log("[Push] No existing subscription, creating new one with VAPID");
             try {
@@ -288,7 +288,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             console.warn("[Push] VAPID key not configured, cannot create subscription");
           }
         }
-        
+
         // Save subscription to database if we have one
         if (subscription) {
           const p256dh = subscription.getKey?.("p256dh") ?? null;
@@ -305,7 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             const { error } = await supabase
               .from("push_subscriptions")
               .upsert(subscriptionData, { onConflict: "user_id" });
-            
+
             if (error) {
               console.error("[Push] Failed to save subscription to database:", error);
             } else {

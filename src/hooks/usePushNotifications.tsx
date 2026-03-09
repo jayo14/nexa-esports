@@ -24,7 +24,7 @@ interface NavigatorBadge {
 }
 
 declare global {
-  interface Navigator extends NavigatorBadge {}
+  interface Navigator extends NavigatorBadge { }
 }
 
 export const usePushNotifications = () => {
@@ -38,18 +38,18 @@ export const usePushNotifications = () => {
   // Check browser support for required APIs
   // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Push_API
   const checkSupport = useCallback(() => {
-    const supported = 
+    const supported =
       typeof window !== 'undefined' &&
-      'serviceWorker' in navigator && 
+      'serviceWorker' in navigator &&
       'PushManager' in window &&
       'Notification' in window;
-    
+
     setIsSupported(supported);
-    
+
     if (supported) {
       setPermissionState(Notification.permission as NotificationPermissionState);
     }
-    
+
     return supported;
   }, []);
 
@@ -80,10 +80,10 @@ export const usePushNotifications = () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       const existingSubscription = await registration.pushManager.getSubscription();
-      
+
       if (existingSubscription) {
         setIsSubscribed(true);
-        
+
         // Convert to our format using getKey method
         // Reference: https://developer.mozilla.org/en-US/docs/Web/API/PushSubscription/getKey
         const p256dh = existingSubscription.getKey('p256dh');
@@ -135,12 +135,12 @@ export const usePushNotifications = () => {
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Notification/requestPermission
       const permission = await Notification.requestPermission();
       setPermissionState(permission as NotificationPermissionState);
-      
+
       if (permission !== 'granted') {
-        const message = permission === 'denied' 
+        const message = permission === 'denied'
           ? "Notifications are blocked. Please enable them in your browser settings."
           : "Please allow notifications to receive updates about events and announcements.";
-        
+
         toast({
           title: "Permission Required",
           description: message,
@@ -151,7 +151,7 @@ export const usePushNotifications = () => {
 
       // Get service worker registration
       const registration = await navigator.serviceWorker.ready;
-      
+
       // Check for existing subscription and unsubscribe if needed
       const existingSubscription = await registration.pushManager.getSubscription();
       if (existingSubscription) {
@@ -169,25 +169,25 @@ export const usePushNotifications = () => {
 
           const { error } = await supabase
             .from('push_subscriptions')
-            .upsert(subscriptionData, { 
+            .upsert(subscriptionData, {
               onConflict: 'user_id',
-              ignoreDuplicates: false 
+              ignoreDuplicates: false
             });
 
           if (error) throw error;
 
           setSubscription(subscriptionData);
           setIsSubscribed(true);
-          
+
           toast({
             title: "Success",
             description: "Push notifications enabled successfully"
           });
-          
+
           return true;
         }
       }
-      
+
       // Subscribe to push notifications using Push API
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/PushManager/subscribe
       const pushSubscription = await registration.pushManager.subscribe({
@@ -213,25 +213,25 @@ export const usePushNotifications = () => {
       // Save to database
       const { error } = await supabase
         .from('push_subscriptions')
-        .upsert(subscriptionData, { 
+        .upsert(subscriptionData, {
           onConflict: 'user_id',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false
         });
 
       if (error) throw error;
 
       setSubscription(subscriptionData);
       setIsSubscribed(true);
-      
+
       toast({
         title: "Success",
         description: "Push notifications enabled successfully"
       });
-      
+
       return true;
     } catch (error) {
       console.error('Error subscribing to push notifications:', error);
-      
+
       // Provide more specific error messages
       let errorMessage = "Failed to enable push notifications. Please try again.";
       if (error instanceof Error) {
@@ -241,7 +241,7 @@ export const usePushNotifications = () => {
           errorMessage = "Invalid push notification configuration.";
         }
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -270,7 +270,7 @@ export const usePushNotifications = () => {
       // Unsubscribe from push manager
       const registration = await navigator.serviceWorker.ready;
       const pushSubscription = await registration.pushManager.getSubscription();
-      
+
       if (pushSubscription) {
         await pushSubscription.unsubscribe();
       }
@@ -283,12 +283,12 @@ export const usePushNotifications = () => {
 
       setSubscription(null);
       setIsSubscribed(false);
-      
+
       toast({
-        title: "Success", 
+        title: "Success",
         description: "Push notifications disabled"
       });
-      
+
       return true;
     } catch (error) {
       console.error('Error unsubscribing from push notifications:', error);
@@ -318,7 +318,7 @@ export const usePushNotifications = () => {
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification('Test Notification', {
         body: 'This is a test notification from Nexa Esports',
-        icon: '/nexa-logo.jpg',
+        icon: '/nexa-logo-ramadan.jpg',
         badge: '/pwa-192x192.png',
         tag: 'test-notification',
         vibrate: [100, 50, 100],

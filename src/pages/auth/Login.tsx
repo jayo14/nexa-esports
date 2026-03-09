@@ -13,7 +13,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,18 +30,18 @@ export const Login: React.FC = () => {
       if (success) {
         toast({
           title: "Welcome back, warrior!",
-          description: "Successfully logged into NeXa_Esports",
+          description: "Successfully logged into Nexa Esports",
         });
         navigate(from, { replace: true });
       }
     } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       console.error('Login error:', error);
-      
+
       let errorMessage = error.message || "Invalid credentials or an error occurred. Please check your email/password and try again.";
       let errorTitle = "Login Error";
 
-      if (errorMessage.toLowerCase().includes("email not confirmed") || 
-          errorMessage.toLowerCase().includes("verify your email")) {
+      if (errorMessage.toLowerCase().includes("email not confirmed") ||
+        errorMessage.toLowerCase().includes("verify your email")) {
         errorTitle = "Verification Required";
         errorMessage = "Your email address has not been verified yet. Please check your inbox for the confirmation link.";
       }
@@ -73,7 +73,7 @@ export const Login: React.FC = () => {
         <div className="text-center mb-10">
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg nexa-glow border-2 border-white/20">
-              <img src="/nexa-logo.jpg" alt="NeXa Logo" className="w-full h-full object-cover" />
+              <img src="/nexa-logo-ramadan.jpg" alt="NeXa Logo" className="w-full h-full object-cover" />
             </div>
           </div>
           <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold mb-2 font-orbitron tracking-tight uppercase">

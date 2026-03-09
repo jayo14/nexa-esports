@@ -70,7 +70,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
     link.download = `receipt-${transaction.reference}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    
+
     toast({
       title: "Downloaded",
       description: "Receipt has been downloaded successfully",
@@ -89,9 +89,9 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
 
       canvas.toBlob(async (blob) => {
         if (!blob) return;
-        
+
         const file = new File([blob], `receipt-${transaction.reference}.png`, { type: 'image/png' });
-        
+
         if (navigator.share && navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({
@@ -169,9 +169,9 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
           >
             {/* Watermark */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-              <div 
+              <div
                 className="text-[56px] sm:text-[80px] md:text-[110px] font-black opacity-[0.06] transform -rotate-12 whitespace-nowrap select-none"
-                style={{ 
+                style={{
                   color: '#ec131e',
                   letterSpacing: '0.09em'
                 }}
@@ -186,9 +186,9 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
               <div className="text-center pb-8 mb-8 border-b border-white/10">
                 <div className="flex justify-center mb-4">
                   <div className="h-14 w-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(236,19,19,0.15)', border: '1px solid rgba(236,19,19,0.4)' }}>
-                    <img 
-                      src="/nexa-logo.jpg" 
-                      alt="NeXa Esports" 
+                    <img
+                      src="/nexa-logo-ramadan.jpg"
+                      alt="NeXa Esports"
                       className="h-10 w-10 rounded-full object-cover"
                     />
                   </div>

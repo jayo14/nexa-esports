@@ -1,6 +1,6 @@
 # NeXa Esports 🎮
 
-**Nexa_Esports** is a clan-driven esports platform built for gamers, teams, and competitive communities. This MVP empowers users to create or join clans, engage in clan-based activities, and compete in scrims or ranked tournaments — all within a sleek, mobile-optimized dashboard powered by **TailwindCSS** and **ShadCN UI**.
+**Nexa Esports** is a clan-driven esports platform built for gamers, teams, and competitive communities. This MVP empowers users to create or join clans, engage in clan-based activities, and compete in scrims or ranked tournaments — all within a sleek, mobile-optimized dashboard powered by **TailwindCSS** and **ShadCN UI**.
 
 > "Give gamers an identity, a team, a home — then build the war room around it."
 
@@ -46,7 +46,7 @@
 > *(Replace with real screenshots later)*
 
 ![Dashboard Preview](public/thumbnail.png)
-![Clan Base UI](public/nexa-logo.jpg)
+![Clan Base UI](public/nexa-logo-ramadan.jpg)
 
 ---
 

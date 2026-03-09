@@ -18,19 +18,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 // Device and brand data
 const deviceData = {
   iPhone: [
-  "iPhone X", "iPhone XR", "iPhone XS", "iPhone XS Max", "iPhone 11", "iPhone 11 Pro", "iPhone 11 Pro Max",
-  "iPhone SE (2nd generation)", "iPhone 12 mini", "iPhone 12", "iPhone 12 Pro", "iPhone 12 Pro Max",
-  "iPhone 13 mini", "iPhone 13", "iPhone 13 Pro", "iPhone 13 Pro Max",
-  "iPhone SE (3rd generation)", "iPhone 14", "iPhone 14 Plus", "iPhone 14 Pro", "iPhone 14 Pro Max",
-  "iPhone 15", "iPhone 15 Plus", "iPhone 15 Pro", "iPhone 15 Pro Max",
-  "iPhone 16", "iPhone 16 Plus", "iPhone 16 Pro", "iPhone 16 Pro Max",
-  "iPhone 17", "iPhone 17 Plus", "iPhone 17 Pro", "iPhone 17 Pro Max"],
+    "iPhone X", "iPhone XR", "iPhone XS", "iPhone XS Max", "iPhone 11", "iPhone 11 Pro", "iPhone 11 Pro Max",
+    "iPhone SE (2nd generation)", "iPhone 12 mini", "iPhone 12", "iPhone 12 Pro", "iPhone 12 Pro Max",
+    "iPhone 13 mini", "iPhone 13", "iPhone 13 Pro", "iPhone 13 Pro Max",
+    "iPhone SE (3rd generation)", "iPhone 14", "iPhone 14 Plus", "iPhone 14 Pro", "iPhone 14 Pro Max",
+    "iPhone 15", "iPhone 15 Plus", "iPhone 15 Pro", "iPhone 15 Pro Max",
+    "iPhone 16", "iPhone 16 Plus", "iPhone 16 Pro", "iPhone 16 Pro Max",
+    "iPhone 17", "iPhone 17 Plus", "iPhone 17 Pro", "iPhone 17 Pro Max"],
   Android: ['Samsung', 'Xiaomi', 'Infinix', 'Redmi', 'Itel', 'Tecno', 'Nokia', 'OnePlus', 'Huawei', 'Oppo', 'Vivo', 'Realme', 'Honor', 'Nothing'],
   iPad: [
-  "iPad (5th generation)", "iPad (6th generation)", "iPad (7th generation)", "iPad (8th generation)", "iPad (9th generation)", "iPad (10th generation)", "iPad (11th generation)",
-  "iPad mini (5th generation)", "iPad mini (6th generation)", "iPad mini (7th generation)",
-  "iPad Air (3rd generation)", "iPad Air (4th generation)", "iPad Air (5th generation)", "iPad Air (6th generation)",
-  "iPad Pro 10.5-inch", "iPad Pro 12.9-inch (2nd generation)", "iPad Pro 11-inch (1st generation)", "iPad Pro 12.9-inch (3rd generation)", "iPad Pro 11-inch (2nd generation)", "iPad Pro 12.9-inch (4th generation)", "iPad Pro 11-inch (3rd generation)", "iPad Pro 12.9-inch (5th generation)", "iPad Pro 11-inch (4th generation)", "iPad Pro 12.9-inch (6th generation)", "iPad Pro 11-inch (M4, 5th generation)", "iPad Pro 13-inch (M4, 7th generation)" ]
+    "iPad (5th generation)", "iPad (6th generation)", "iPad (7th generation)", "iPad (8th generation)", "iPad (9th generation)", "iPad (10th generation)", "iPad (11th generation)",
+    "iPad mini (5th generation)", "iPad mini (6th generation)", "iPad mini (7th generation)",
+    "iPad Air (3rd generation)", "iPad Air (4th generation)", "iPad Air (5th generation)", "iPad Air (6th generation)",
+    "iPad Pro 10.5-inch", "iPad Pro 12.9-inch (2nd generation)", "iPad Pro 11-inch (1st generation)", "iPad Pro 12.9-inch (3rd generation)", "iPad Pro 11-inch (2nd generation)", "iPad Pro 12.9-inch (4th generation)", "iPad Pro 11-inch (3rd generation)", "iPad Pro 12.9-inch (5th generation)", "iPad Pro 11-inch (4th generation)", "iPad Pro 12.9-inch (6th generation)", "iPad Pro 11-inch (M4, 5th generation)", "iPad Pro 13-inch (M4, 7th generation)"]
 };
 
 const classOptions = {
@@ -39,7 +39,7 @@ const classOptions = {
 };
 
 const bankOptions = [
-  'Opay', 'Palmpay', 'Moniepoint', 'Kuda', 'Access Bank', 'GTBank', 
+  'Opay', 'Palmpay', 'Moniepoint', 'Kuda', 'Access Bank', 'GTBank',
   'First Bank', 'UBA', 'Zenith Bank', 'Fidelity Bank'
 ];
 
@@ -152,7 +152,7 @@ export const Onboarding: React.FC = () => {
   const onSubmit = async (values: OnboardingValues) => {
     try {
       const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-      
+
       if (userError || !authUser) {
         toast({
           title: "Authentication Required",
@@ -184,10 +184,10 @@ export const Onboarding: React.FC = () => {
       };
 
       const success = await updateProfile(profileUpdates);
-      
+
       if (success) {
         toast({
-          title: "Welcome to NeXa_Esports!",
+          title: "Welcome to Nexa Esports!",
           description: "Your profile has been set up successfully.",
         });
         navigate(profile?.role === 'admin' ? '/admin' : '/dashboard');
@@ -221,7 +221,7 @@ export const Onboarding: React.FC = () => {
             <Shield className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-orbitron text-foreground">
-            Welcome to NeXa_Esports
+            Welcome to Nexa Esports
           </CardTitle>
           <p className="text-muted-foreground font-rajdhani">
             Let's set up your tactical profile
@@ -235,17 +235,15 @@ export const Onboarding: React.FC = () => {
               return (
                 <div key={step} className="flex items-center">
                   <div className={`flex flex-col items-center ${step <= currentStep ? 'text-primary' : 'text-muted-foreground'}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${
-                      step <= currentStep ? 'border-primary bg-primary/20' : 'border-muted-foreground/30'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 mb-2 ${step <= currentStep ? 'border-primary bg-primary/20' : 'border-muted-foreground/30'
+                      }`}>
                       <StepIcon className="w-5 h-5" />
                     </div>
                     <span className="text-xs font-rajdhani">{stepTitles[step - 1]}</span>
                   </div>
                   {step < 3 && (
-                    <div className={`w-12 h-0.5 mx-4 mt-[-20px] ${
-                      step < currentStep ? 'bg-primary' : 'bg-muted-foreground/30'
-                    }`} />
+                    <div className={`w-12 h-0.5 mx-4 mt-[-20px] ${step < currentStep ? 'bg-primary' : 'bg-muted-foreground/30'
+                      }`} />
                   )}
                 </div>
               );

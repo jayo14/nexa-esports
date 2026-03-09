@@ -32,20 +32,20 @@ serve(async (req) => {
 
     const emailContent = {
       sender: {
-        name: "NeXa_Esports Contact Form",
+        name: "Nexa Esports Contact Form",
         email: senderEmail,
       },
       to: [
         {
           email: recipientEmail,
-          name: "NeXa_Esports Team",
+          name: "Nexa Esports Team",
         },
       ],
       subject: `Contact Form Submission from ${name}`,
       htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #FF1F44, #CC1936); padding: 20px; text-align: center;">
-            <h1 style="color: white; margin: 0;">NeXa_Esports Contact Form</h1>
+            <h1 style="color: white; margin: 0;">Nexa Esports Contact Form</h1>
           </div>
           <div style="padding: 20px; background: #f8f9fa;">
             <h2 style="color: #333;">New Contact Form Submission</h2>
@@ -58,7 +58,7 @@ serve(async (req) => {
               </div>
             </div>
             <p style="color: #666; font-size: 12px; margin-top: 20px;">
-              This email was sent from the NeXa_Esports contact form.
+              This email was sent from the Nexa Esports contact form.
             </p>
           </div>
         </div>
