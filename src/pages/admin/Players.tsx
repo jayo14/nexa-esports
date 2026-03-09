@@ -677,7 +677,10 @@ export const AdminPlayers: React.FC = () => {
           const s = searchTerm.toLowerCase();
           const ok1 = p.username?.toLowerCase().includes(s) || p.ign?.toLowerCase().includes(s) || p.email?.toLowerCase().includes(s);
           const ok2 = filterRole   === 'all'    || p.role  === filterRole;
-          const ok3 = filterStatus === 'all'    || (filterStatus === 'active' && !p.is_banned) || (filterStatus === 'banned' && p.is_banned);
+          const ok3 = filterStatus === 'all'    || 
+                      (filterStatus === 'active' && !p.is_banned && p.status !== 'beta') || 
+                      (filterStatus === 'beta' && p.status === 'beta' && !p.is_banned) ||
+                      (filterStatus === 'banned' && p.is_banned);
           const ok4 = filterGrade  === 'all'    || p.grade === filterGrade;
           return ok1 && ok2 && ok3 && ok4;
         })
@@ -863,7 +866,7 @@ export const AdminPlayers: React.FC = () => {
           <div className="flex flex-wrap gap-3 mb-4">
             <FilterPill label="ALL UNITS" active={filterStatus === 'all'}    onClick={() => setFilterStatus('all')} />
             <FilterPill label="ACTIVE"    active={filterStatus === 'active'} onClick={() => setFilterStatus('active')} />
-            <FilterPill label="RESERVES"  active={false}                     onClick={() => {}} />
+            <FilterPill label="BETA"      active={filterStatus === 'beta'}   onClick={() => setFilterStatus('beta')} />
             <FilterPill label="BANNED"    active={filterStatus === 'banned'} onClick={() => setFilterStatus('banned')} />
           </div>
 
