@@ -238,7 +238,7 @@ const LandingPage: React.FC = () => {
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-8">
-            {['Warriors', 'Tactics', 'Gallery', 'Rankings'].map((link) => (
+            {['Tactics', 'Gallery', 'Marketplace', 'Blog'].map((link) => (
               <a
                 key={link}
                 href={`#${link.toLowerCase()}`}
@@ -279,7 +279,7 @@ const LandingPage: React.FC = () => {
             className="md:hidden max-w-7xl mx-auto mt-2 rounded-2xl p-6"
             style={glassCard}
           >
-            {['Warriors', 'Tactics', 'Gallery', 'Rankings'].map((link) => (
+            {['Warriors', 'Tactics', 'Gallery'].map((link) => (
               <a
                 key={link}
                 href={`#${link.toLowerCase()}`}
