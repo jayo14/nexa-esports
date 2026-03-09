@@ -8,13 +8,13 @@ import {
 
 /* ─────────────── Design Tokens ─────────────── */
 const C = {
-  primary:  '#da0b1d',
-  bgDark:   '#221011',
-  bgLight:  '#f8f5f6',
+  primary: '#da0b1d',
+  bgDark: '#221011',
+  bgLight: '#f8f5f6',
 };
 
 const glassCard: React.CSSProperties = {
-  background:  'rgba(218,11,29,0.05)',
+  background: 'rgba(218,11,29,0.05)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
   border: '1px solid rgba(218,11,29,0.2)',
@@ -32,10 +32,9 @@ const ContactInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (pro
       fontSize: '14px',
       color: '#f1f5f9',
       outline: 'none',
-      fontFamily: "'Space Grotesk', sans-serif",
     }}
     onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = C.primary; }}
-    onBlur={(e)  => { (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.1)'; }}
+    onBlur={(e) => { (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.1)'; }}
     {...props}
   />
 );
@@ -194,10 +193,10 @@ const GalleryItem: React.FC<{
    MAIN LANDING PAGE
 ═══════════════════════════════════════════════ */
 const LandingPage: React.FC = () => {
-  const [menuOpen,     setMenuOpen]     = useState(false);
-  const [scrolled,     setScrolled]     = useState(false);
-  const [formData,     setFormData]     = useState({ uid: '', rank: '', discord: '', why: '' });
-  const [submitted,    setSubmitted]    = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [formData, setFormData] = useState({ uid: '', rank: '', discord: '', why: '' });
+  const [submitted, setSubmitted] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -216,7 +215,7 @@ const LandingPage: React.FC = () => {
   return (
     <div
       className="relative min-h-screen w-full flex flex-col overflow-x-hidden"
-      style={{ background: C.bgDark, fontFamily: "'Space Grotesk', sans-serif", color: '#f1f5f9' }}
+      style={{ background: C.bgDark, color: '#f1f5f9' }}
     >
       {/* ══════════ NAVBAR ══════════ */}
       <header
@@ -413,7 +412,7 @@ const LandingPage: React.FC = () => {
                         key={i}
                         className="absolute rounded-full border animate-ping"
                         style={{
-                          width:  `${i * 120}px`,
+                          width: `${i * 120}px`,
                           height: `${i * 120}px`,
                           borderColor: `${C.primary}${['33', '22', '11'][i - 1]}`,
                           animationDuration: `${2 + i}s`,
@@ -566,7 +565,7 @@ const LandingPage: React.FC = () => {
               </div>
 
               {[
-                { tag: 'Training Day',  title: 'Strategy Briefing',  col: '#1a4030' },
+                { tag: 'Training Day', title: 'Strategy Briefing', col: '#1a4030' },
                 { tag: 'Tournament Win', title: 'Regional Cup #1', col: '#1a1530' },
               ].map(({ tag, title, col }) => (
                 <div
@@ -747,10 +746,9 @@ const LandingPage: React.FC = () => {
                       color: '#f1f5f9',
                       outline: 'none',
                       resize: 'vertical',
-                      fontFamily: "'Space Grotesk', sans-serif",
                     }}
                     onFocus={(e) => ((e.target as HTMLTextAreaElement).style.borderColor = C.primary)}
-                    onBlur={(e)  => ((e.target as HTMLTextAreaElement).style.borderColor = 'rgba(255,255,255,0.1)')}
+                    onBlur={(e) => ((e.target as HTMLTextAreaElement).style.borderColor = 'rgba(255,255,255,0.1)')}
                   />
                 </div>
 
@@ -809,7 +807,7 @@ const LandingPage: React.FC = () => {
             {[
               { icon: <Globe className="w-5 h-5" />, href: '#' },
               { icon: <AtSign className="w-5 h-5" />, href: '#' },
-              { icon: <Video  className="w-5 h-5" />, href: '#' },
+              { icon: <Video className="w-5 h-5" />, href: '#' },
             ].map(({ icon, href }, i) => (
               <a
                 key={i}
