@@ -8,7 +8,7 @@ import { logPlayerBan, logPlayerUnban, logRoleChange } from '@/lib/activityLogge
 import {
   Search, Edit, Trash2, ShieldCheck, ShieldOff, UserCog, Crown, User,
   MoreVertical, X, Check, ArrowDown, ArrowUp, Users, Target, TrendingUp,
-  Mail, Smartphone, Trophy, CalendarIcon, Share2, Shield,
+  Mail, Smartphone, Trophy, CalendarIcon, Share2, Shield, UserPlus, CheckCircle2, Send,
 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -663,6 +663,8 @@ export const AdminPlayers: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFullName, setInviteFullName] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [inviteEmailError, setInviteEmailError] = useState('');
 
   const leaderboardRankMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -752,14 +754,17 @@ export const AdminPlayers: React.FC = () => {
     const normalizedEmail = inviteEmail.trim().toLowerCase();
     const normalizedFullName = inviteFullName.trim();
 
-    if (!normalizedEmail || !normalizedFullName) {
-      toast({
-        title: 'Missing information',
-        description: 'Enter full name and email address to send invite.',
-        variant: 'destructive',
-      });
+    // Validate
+    if (!normalizedFullName) {
+      toast({ title: 'Missing name', description: 'Please enter the recruit\'s full name.', variant: 'destructive' });
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+      setInviteEmailError('Please enter a valid email address.');
+      return;
+    }
+    setInviteEmailError('');
 
     setSendingInvite(true);
     try {
@@ -774,14 +779,7 @@ export const AdminPlayers: React.FC = () => {
       if (error) throw new Error(error.message || 'Failed to send invite.');
       if (data?.error) throw new Error(data.error);
 
-      toast({
-        title: 'Invite sent',
-        description: `Invite email sent to ${normalizedEmail}.`,
-      });
-
-      setInviteDialogOpen(false);
-      setInviteEmail('');
-      setInviteFullName('');
+      setInviteSuccess(true);
     } catch (error: any) {
       toast({
         title: 'Invite failed',
@@ -790,6 +788,16 @@ export const AdminPlayers: React.FC = () => {
       });
     } finally {
       setSendingInvite(false);
+    }
+  };
+
+  const handleCloseInviteDialog = (open: boolean) => {
+    setInviteDialogOpen(open);
+    if (!open) {
+      setInviteEmail('');
+      setInviteFullName('');
+      setInviteEmailError('');
+      setInviteSuccess(false);
     }
   };
 
@@ -960,60 +968,155 @@ export const AdminPlayers: React.FC = () => {
         onEdit={(p) => { setEditingPlayer(p); setSelectedPlayer(null); }}
       />
 
-      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+      <Dialog open={inviteDialogOpen} onOpenChange={handleCloseInviteDialog}>
         <DialogContent
-          className="max-w-md"
-          style={{ background: `${C.bgDark}f2`, border: `1px solid ${C.primary}33` }}
+          className="max-w-[480px] p-0 overflow-hidden"
+          style={{ background: C.bgDark, border: `1px solid ${C.primary}44`, borderRadius: '24px' }}
         >
-          <DialogHeader>
-            <DialogTitle className="text-white text-xl font-black uppercase tracking-wider">
-              Invite New Member
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Full Name</label>
-              <input
-                value={inviteFullName}
-                onChange={(e) => setInviteFullName(e.target.value)}
-                placeholder="John Doe"
-                className="w-full rounded-xl px-4 py-3 text-sm text-slate-100"
-                style={{ background: `${C.bgDark}cc`, border: `1px solid ${C.primary}1f`, outline: 'none' }}
-              />
-            </div>
-
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Email Address</label>
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="player@email.com"
-                className="w-full rounded-xl px-4 py-3 text-sm text-slate-100"
-                style={{ background: `${C.bgDark}cc`, border: `1px solid ${C.primary}1f`, outline: 'none' }}
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-100"
-                onClick={() => setInviteDialogOpen(false)}
+          {/* Modal header strip */}
+          <div
+            className="px-8 pt-8 pb-6"
+            style={{ borderBottom: `1px solid ${C.primary}22` }}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: `${C.primary}22`, border: `1px solid ${C.primary}44` }}
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={sendingInvite}
-                className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-white"
-                style={{ background: C.primary, opacity: sendingInvite ? 0.7 : 1 }}
-                onClick={handleSendInvite}
-              >
-                {sendingInvite ? 'Sending…' : 'Send Invite'}
-              </button>
+                <UserPlus className="w-5 h-5" style={{ color: C.primary }} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black uppercase tracking-wider text-white">Recruit New Operative</h2>
+                <p className="text-xs text-slate-500 mt-0.5">An invite email will be sent with a password setup link</p>
+              </div>
             </div>
           </div>
+
+          {inviteSuccess ? (
+            /* ── Success State ── */
+            <div className="px-8 py-10 flex flex-col items-center text-center gap-4">
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(34,197,94,0.12)', border: '2px solid rgba(34,197,94,0.4)' }}
+              >
+                <CheckCircle2 className="w-10 h-10 text-green-400" />
+              </div>
+              <div>
+                <p className="text-xl font-black text-white mb-1">Invite Dispatched!</p>
+                <p className="text-sm text-slate-400">
+                  An invite email has been sent to{' '}
+                  <span className="font-bold" style={{ color: C.primary }}>{inviteEmail}</span>
+                  {' '}with a link to set their password and access the platform.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCloseInviteDialog(false)}
+                className="mt-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-sm text-white transition-all"
+                style={{ background: C.primary, boxShadow: `0 4px 16px ${C.primary}4d` }}
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            /* ── Form State ── */
+            <div className="px-8 py-6 space-y-5">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                  Full Name <span style={{ color: C.primary }}>*</span>
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input
+                    type="text"
+                    value={inviteFullName}
+                    onChange={(e) => setInviteFullName(e.target.value)}
+                    placeholder="e.g. Ghost Sniper"
+                    className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.primary}22`, outline: 'none' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = `${C.primary}22`; }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                  Email Address <span style={{ color: C.primary }}>*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => { setInviteEmail(e.target.value); setInviteEmailError(''); }}
+                    placeholder="operative@email.com"
+                    className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${inviteEmailError ? C.primary : `${C.primary}22`}`, outline: 'none' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = inviteEmailError ? C.primary : `${C.primary}22`; }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
+                  />
+                </div>
+                {inviteEmailError && (
+                  <p className="text-xs font-bold" style={{ color: C.primary }}>{inviteEmailError}</p>
+                )}
+              </div>
+
+              {/* Info note */}
+              <div
+                className="flex items-start gap-3 rounded-xl p-4 text-xs text-slate-400"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <Send className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: C.primary }} />
+                <span>
+                  The recruit will receive an email from <span className="text-slate-200 font-bold">NeXa Esports</span> with their name
+                  and a secure link to set their password and access the platform.
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 transition-colors hover:text-slate-200"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  onClick={() => handleCloseInviteDialog(false)}
+                  disabled={sendingInvite}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-white transition-all"
+                  style={{
+                    background: (sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()) ? 'rgba(236,19,30,0.4)' : C.primary,
+                    boxShadow: sendingInvite ? 'none' : `0 4px 16px ${C.primary}4d`,
+                    cursor: (sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()) ? 'not-allowed' : 'pointer',
+                  }}
+                  onMouseEnter={(e) => { if (!sendingInvite) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
+                  onClick={handleSendInvite}
+                >
+                  {sendingInvite ? (
+                    <>
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      Send Invite
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
