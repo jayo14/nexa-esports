@@ -1,10 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 interface ContactFormData {
   name: string;
@@ -13,36 +13,33 @@ interface ContactFormData {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { name, email, message }: ContactFormData = await req.json()
+    const { name, email, message }: ContactFormData = await req.json();
 
-    // Validate input
     if (!name || !email || !message) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Prepare email content
+    const recipientEmail = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesports@gmail.com";
+    const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || recipientEmail;
+
     const emailContent = {
       sender: {
         name: "NeXa_Esports Contact Form",
-        email: "noreply@nexaesports.com" // Use your verified sender email
+        email: senderEmail,
       },
       to: [
         {
-          email: "nexaesports@gmail.com", // Your Brevo email address
-          name: "NeXa_Esports Team"
-        }
+          email: recipientEmail,
+          name: "NeXa_Esports Team",
+        },
       ],
       subject: `Contact Form Submission from ${name}`,
       htmlContent: `
@@ -57,7 +54,7 @@ serve(async (req) => {
               <p><strong>Email:</strong> ${email}</p>
               <p><strong>Message:</strong></p>
               <div style="background: #f1f3f4; padding: 10px; border-radius: 4px; margin-top: 10px;">
-                ${message.replace(/\n/g, '<br>')}
+                ${message.replace(/\n/g, "<br>")}
               </div>
             </div>
             <p style="color: #666; font-size: 12px; margin-top: 20px;">
@@ -67,55 +64,38 @@ serve(async (req) => {
         </div>
       `,
       replyTo: {
-        email: email,
-        name: name
-      }
-    }
-
-    // Send email using Brevo API
-    const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': Deno.env.get('BREVO_API_KEY') || '', // Set this in your Supabase environment variables
+        email,
+        name,
       },
-      body: JSON.stringify(emailContent)
-    })
+    };
+
+    const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "api-key": Deno.env.get("BREVO_API_KEY") || "",
+      },
+      body: JSON.stringify(emailContent),
+    });
 
     if (!brevoResponse.ok) {
-      const errorData = await brevoResponse.text()
-      console.error('Brevo API error:', errorData)
-      throw new Error(`Brevo API error: ${brevoResponse.status}`)
+      const errorData = await brevoResponse.text();
+      console.error("Brevo API error:", errorData);
+      throw new Error(`Brevo API error: ${brevoResponse.status}`);
     }
 
-    const result = await brevoResponse.json()
-    console.log('Email sent successfully:', result)
+    const result = await brevoResponse.json();
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Email sent successfully',
-        messageId: result.messageId 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
-
+    return new Response(JSON.stringify({ success: true, messageId: result.messageId }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error('Error sending email:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to send email',
-        details: errorMessage 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+    return new Response(JSON.stringify({ error: "Failed to send email", details: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-})
+});
