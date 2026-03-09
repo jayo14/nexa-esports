@@ -456,7 +456,7 @@ const LandingPage: React.FC = () => {
           {/* CTA + Mobile toggle */}
           <div className="flex items-center gap-3">
             <a
-              href="/auth/login"
+              href="/auth/signup"
               className="hidden md:block px-6 py-2.5 rounded-xl font-black text-sm text-white transition-all"
               style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primary}4d` }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.filter = 'brightness(1.1)')}
@@ -498,7 +498,7 @@ const LandingPage: React.FC = () => {
               </a>
             ))}
             <a
-              href="#contact"
+              href="/auth/signup"
               className="block mt-4 text-center py-3 rounded-xl font-black text-sm text-white"
               style={{ background: C.primary }}
               onClick={() => setMenuOpen(false)}
@@ -590,13 +590,13 @@ const LandingPage: React.FC = () => {
                     Join the Elite
                   </a>
                   <a
-                    href="#warriors"
+                    href="/marketplace-info"
                     className="px-8 py-4 rounded-2xl font-black text-lg text-white transition-colors"
                     style={{ ...glassCard, border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.08)')}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(218,11,29,0.05)')}
                   >
-                    Explore Clan
+                    Marketplace
                   </a>
                 </div>
               </div>
@@ -822,112 +822,112 @@ const LandingPage: React.FC = () => {
                   const isCopied = copiedLayoutId === layoutId;
 
                   return (
-                  <div
-                    key={idx}
-                    className="flex-shrink-0 px-3"
-                    style={{ width: `${100 / itemsToShow}%` }}
-                  >
                     <div
-                      className="group relative h-[480px] rounded-[28px] overflow-hidden border border-white/5 transition-all duration-500 hover:border-white/20 hover:-translate-y-1.5"
-                      style={{
-                        background: 'linear-gradient(145deg, #150607, #070103)',
-                        boxShadow:
-                          '20px 20px 40px rgba(0,0,0,0.75), -16px -16px 32px rgba(255,255,255,0.03)',
-                      }}
+                      key={idx}
+                      className="flex-shrink-0 px-3"
+                      style={{ width: `${100 / itemsToShow}%` }}
                     >
-                      {/* Accent Glow */}
                       <div
-                        className="absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
-                        style={{ background: accent }}
-                      />
+                        className="group relative h-[480px] rounded-[28px] overflow-hidden border border-white/5 transition-all duration-500 hover:border-white/20 hover:-translate-y-1.5"
+                        style={{
+                          background: 'linear-gradient(145deg, #150607, #070103)',
+                          boxShadow:
+                            '20px 20px 40px rgba(0,0,0,0.75), -16px -16px 32px rgba(255,255,255,0.03)',
+                        }}
+                      >
+                        {/* Accent Glow */}
+                        <div
+                          className="absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
+                          style={{ background: accent }}
+                        />
 
-                      {/* Content */}
-                      <div className="relative p-8 h-full flex flex-col">
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-8">
-                          <div>
-                            <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase block mb-1">
-                              {weaponType.toUpperCase()}
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">
-                              {mode === 'BR'
-                                ? 'Battle Royale'
-                                : mode === 'MP'
-                                ? 'Multiplayer'
-                                : mode || 'Mode'}
-                            </span>
-                          </div>
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs"
-                            style={{ background: `${accent}22`, color: accent, border: `1px solid ${accent}33` }}
-                          >
-                            {categoryShort}
-                          </div>
-                        </div>
-
-                        {/* Weapon Title */}
-                        <div className="mb-6">
-                          <h3
-                            className="text-4xl font-black text-white uppercase italic group-hover:text-primary transition-colors duration-300"
-                            style={{ color: accent }}
-                          >
-                            {name}
-                          </h3>
-                          <p className="text-slate-500 font-bold tracking-wide mt-1">"{subtitle}"</p>
-                        </div>
-
-                        {/* Image */}
-                        <div className="relative h-44 my-4 flex items-center justify-center">
-                          {imageUrl ? (
-                            <img
-                              src={imageUrl}
-                              alt={name}
-                              className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transition-transform duration-700 group-hover:scale-110"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs font-bold uppercase tracking-widest">
-                              Loadout preview
+                        {/* Content */}
+                        <div className="relative p-8 h-full flex flex-col">
+                          {/* Header */}
+                          <div className="flex items-start justify-between mb-8">
+                            <div>
+                              <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase block mb-1">
+                                {weaponType.toUpperCase()}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                {mode === 'BR'
+                                  ? 'Battle Royale'
+                                  : mode === 'MP'
+                                    ? 'Multiplayer'
+                                    : mode || 'Mode'}
+                              </span>
                             </div>
-                          )}
-                        </div>
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs"
+                              style={{ background: `${accent}22`, color: accent, border: `1px solid ${accent}33` }}
+                            >
+                              {categoryShort}
+                            </div>
+                          </div>
 
-                        {/* Community meta + actions */}
-                        <div className="mt-auto mb-4 space-y-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="space-y-1">
-                              <p className="text-xs text-slate-400 font-medium">
-                                Created by{' '}
-                                <span className="text-slate-200 font-semibold">
-                                  {subtitle}
-                                </span>
-                              </p>
-                              {isCommunity && (
-                                <p className="text-[11px] text-slate-500">
-                                  Views{' '}
+                          {/* Weapon Title */}
+                          <div className="mb-6">
+                            <h3
+                              className="text-4xl font-black text-white uppercase italic group-hover:text-primary transition-colors duration-300"
+                              style={{ color: accent }}
+                            >
+                              {name}
+                            </h3>
+                            <p className="text-slate-500 font-bold tracking-wide mt-1">"{subtitle}"</p>
+                          </div>
+
+                          {/* Image */}
+                          <div className="relative h-44 my-4 flex items-center justify-center">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={name}
+                                className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transition-transform duration-700 group-hover:scale-110"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs font-bold uppercase tracking-widest">
+                                Loadout preview
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Community meta + actions */}
+                          <div className="mt-auto mb-4 space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="space-y-1">
+                                <p className="text-xs text-slate-400 font-medium">
+                                  Created by{' '}
                                   <span className="text-slate-200 font-semibold">
-                                    {views}
+                                    {subtitle}
                                   </span>
                                 </p>
-                              )}
+                                {isCommunity && (
+                                  <p className="text-[11px] text-slate-500">
+                                    Views{' '}
+                                    <span className="text-slate-200 font-semibold">
+                                      {views}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleCopyLink}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide border border-white/10 bg-white/5 hover:bg-white/10 text-slate-100 transition-colors"
+                              >
+                                {isCopied ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5 text-slate-300" />
+                                )}
+                                <span>{isCopied ? 'Copied' : 'Copy link'}</span>
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={handleCopyLink}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide border border-white/10 bg-white/5 hover:bg-white/10 text-slate-100 transition-colors"
-                            >
-                              {isCopied ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5 text-slate-300" />
-                              )}
-                              <span>{isCopied ? 'Copied' : 'Copy link'}</span>
-                            </button>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
+                  );
                 })}
               </div>
             </div>
