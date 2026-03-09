@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Sword, Rocket, Users, TrendingUp, Award, Target,
   Gift, Trophy, Mail, MessageCircle, ArrowRight,
   Globe, AtSign, Video, CheckCircle, Swords,
-  ChevronDown, Menu, X, Pause, Play, Loader2,
+  ChevronDown, ChevronLeft, ChevronRight, Menu, X, Pause, Play, Loader2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -190,6 +190,100 @@ const GalleryItem: React.FC<{
   );
 };
 
+/* ─────────────── Loadout Data ─────────────── */
+const LOADOUTS = [
+  {
+    name: 'M13', subtitle: 'The Phantom', category: 'ASSAULT RIFLE', categoryShort: 'AR',
+    role: 'Battle Royale · Long Range',
+    desc: 'Zero-recoil accuracy machine. Dominates mid-to-long range engagements across every zone.',
+    accent: '#ec131e', bg: 'linear-gradient(135deg,#3a0a0f 0%,#1a0505 100%)',
+    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/a/ac/M13_menu.png/revision/latest/scale-to-width-down/512',
+    attachments: [
+      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
+      { slot: 'Barrel',      name: 'Tempus Marksman' },
+      { slot: 'Underbarrel', name: 'Commando Foregrip' },
+      { slot: 'Ammunition',  name: '60 Rnd Extended Mag' },
+      { slot: 'Rear Grip',   name: 'Stippled Grip Tape' },
+    ],
+    stats: { damage: 62, range: 90, fireRate: 78, accuracy: 88 },
+  },
+  {
+    name: 'CBR4', subtitle: 'Velocity', category: 'SUBMACHINE GUN', categoryShort: 'SMG',
+    role: 'Multiplayer · Close Range',
+    desc: 'Bar none the fastest TTK in CQC. Built for hyper-aggressive plays and room-clearing.',
+    accent: '#38bdf8', bg: 'linear-gradient(135deg,#0a1e2f 0%,#040d1b 100%)',
+    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/4/4f/CBR4_menu.png/revision/latest/scale-to-width-down/512',
+    attachments: [
+      { slot: 'Muzzle',     name: 'Tactical Suppressor' },
+      { slot: 'Barrel',     name: 'MIP Extended Light Barrel' },
+      { slot: 'Stock',      name: 'No Stock' },
+      { slot: 'Ammunition', name: '50 Rnd Extended Mag' },
+      { slot: 'Rear Grip',  name: 'Granulated Grip Tape' },
+    ],
+    stats: { damage: 85, range: 40, fireRate: 95, accuracy: 70 },
+  },
+  {
+    name: 'DL Q33', subtitle: 'Ghost Shot', category: 'SNIPER RIFLE', categoryShort: 'SNP',
+    role: 'Battle Royale · One-Shot King',
+    desc: 'One shot. One kill. The undisputed long-range executioner of CODM ranked lobbies.',
+    accent: '#22c55e', bg: 'linear-gradient(135deg,#0a2a1a 0%,#041009 100%)',
+    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/0/0e/DL_Q33_menu.png/revision/latest/scale-to-width-down/512',
+    attachments: [
+      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
+      { slot: 'Barrel',      name: '22" OU OSR MW' },
+      { slot: 'Underbarrel', name: 'Merc Foregrip' },
+      { slot: 'Ammunition',  name: 'FMJ' },
+      { slot: 'Rear Grip',   name: 'Granulated Grip Tape' },
+    ],
+    stats: { damage: 100, range: 98, fireRate: 28, accuracy: 92 },
+  },
+  {
+    name: 'AK-47', subtitle: 'Warfare', category: 'ASSAULT RIFLE', categoryShort: 'AR',
+    role: 'Multiplayer · Aggressive',
+    desc: 'Raw power in every single round. High damage shreds through armor and obstacles alike.',
+    accent: '#f59e0b', bg: 'linear-gradient(135deg,#2a1a03 0%,#110a00 100%)',
+    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/9/90/AK-47_menu.png/revision/latest/scale-to-width-down/512',
+    attachments: [
+      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
+      { slot: 'Barrel',      name: 'Heavy Duty Extended' },
+      { slot: 'Underbarrel', name: 'Tactical Foregrip' },
+      { slot: 'Ammunition',  name: '45 Rnd Extended Mag' },
+      { slot: 'Rear Grip',   name: 'Stippled Grip Tape' },
+    ],
+    stats: { damage: 92, range: 68, fireRate: 65, accuracy: 74 },
+  },
+  {
+    name: 'LAPA', subtitle: 'Phantom Force', category: 'SUBMACHINE GUN', categoryShort: 'SMG',
+    role: 'Hybrid · Flanker',
+    desc: 'Low recoil, maximum mobility. The LAPA is the silent flanker — swift and absolutely lethal.',
+    accent: '#a855f7', bg: 'linear-gradient(135deg,#1a0a2f 0%,#0a041b 100%)',
+    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/9/96/LAPA_menu.png/revision/latest/scale-to-width-down/512',
+    attachments: [
+      { slot: 'Muzzle',     name: 'RTC Deadfall Suppressor' },
+      { slot: 'Barrel',     name: 'YKM Light Barrel Quick' },
+      { slot: 'Stock',      name: 'No Stock' },
+      { slot: 'Ammunition', name: '50 Rnd Extended Mag' },
+      { slot: 'Rear Grip',  name: 'Index Finger Tape Grip' },
+    ],
+    stats: { damage: 76, range: 58, fireRate: 88, accuracy: 82 },
+  },
+  {
+    name: 'Kilo 141', subtitle: 'The All-Rounder', category: 'ASSAULT RIFLE', categoryShort: 'AR',
+    role: 'Battle Royale · Versatile',
+    desc: 'A forgiving recoil pattern that rewards aim at every range — the meta pick for hybrid players.',
+    accent: '#ec131e', bg: 'linear-gradient(135deg,#2a0a0f 0%,#140408 100%)',
+    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/6/6f/Kilo_141_menu.png/revision/latest/scale-to-width-down/512',
+    attachments: [
+      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
+      { slot: 'Barrel',      name: 'Singuard Arms 19.8"' },
+      { slot: 'Underbarrel', name: 'Commando Foregrip' },
+      { slot: 'Ammunition',  name: '60 Rnd Extended Mag' },
+      { slot: 'Stock',       name: 'FTAC Stalker-Scout' },
+    ],
+    stats: { damage: 70, range: 82, fireRate: 72, accuracy: 88 },
+  },
+];
+
 /* ═══════════════════════════════════════════════
    MAIN LANDING PAGE
 ═══════════════════════════════════════════════ */
@@ -200,8 +294,30 @@ const LandingPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [activeLoadout, setActiveLoadout] = useState(0);
+  const [isSliding, setIsSliding] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const sliderTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const goToLoadout = useCallback((idx: number) => {
+    setIsSliding(true);
+    setTimeout(() => {
+      setActiveLoadout(((idx % LOADOUTS.length) + LOADOUTS.length) % LOADOUTS.length);
+      setIsSliding(false);
+    }, 220);
+  }, []);
+
+  const resetSliderTimer = useCallback(() => {
+    if (sliderTimerRef.current) clearInterval(sliderTimerRef.current);
+    sliderTimerRef.current = setInterval(() => {
+      setIsSliding(true);
+      setTimeout(() => {
+        setActiveLoadout((prev) => (prev + 1) % LOADOUTS.length);
+        setIsSliding(false);
+      }, 220);
+    }, 5500);
+  }, []);
 
   const toggleVideo = () => {
     const video = videoRef.current;
@@ -215,11 +331,18 @@ const LandingPage: React.FC = () => {
     }
   };
 
+  // Auto-advance loadout slider
+  useEffect(() => {
+    resetSliderTimer();
+    return () => { if (sliderTimerRef.current) clearInterval(sliderTimerRef.current); };
+  }, [resetSliderTimer]);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
