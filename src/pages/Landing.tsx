@@ -456,13 +456,13 @@ const LandingPage: React.FC = () => {
           {/* CTA + Mobile toggle */}
           <div className="flex items-center gap-3">
             <a
-              href="/auth/signup"
+              href="/auth/login"
               className="hidden md:block px-6 py-2.5 rounded-xl font-black text-sm text-white transition-all"
               style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primary}4d` }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.filter = 'brightness(1.1)')}
               onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.filter = 'brightness(1)')}
             >
-              Join the Elite
+              Login
             </a>
             <button
               className="md:hidden p-2 rounded-xl"
@@ -498,12 +498,12 @@ const LandingPage: React.FC = () => {
               </a>
             ))}
             <a
-              href="/auth/signup"
+              href="/auth/login"
               className="block mt-4 text-center py-3 rounded-xl font-black text-sm text-white"
               style={{ background: C.primary }}
               onClick={() => setMenuOpen(false)}
             >
-              Join the Elite
+              Login
             </a>
           </div>
         )}
@@ -580,7 +580,7 @@ const LandingPage: React.FC = () => {
 
                 <div className="flex flex-wrap gap-4 pt-4">
                   <a
-                    href="#contact"
+                    href="/auth/signup"
                     className="flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-lg text-white transition-all"
                     style={{ background: C.primary, boxShadow: `0 8px 24px ${C.primary}4d` }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.05)')}
