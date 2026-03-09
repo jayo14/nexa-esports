@@ -3,7 +3,7 @@ import {
   Sword, Rocket, Users, TrendingUp, Award, Target,
   Gift, Trophy, Mail, MessageCircle, ArrowRight,
   Globe, AtSign, Video, CheckCircle, Swords,
-  ChevronDown, Menu, X,
+  ChevronDown, Menu, X, Pause, Play,
 } from 'lucide-react';
 
 /* ─────────────── Design Tokens ─────────────── */
@@ -197,7 +197,21 @@ const LandingPage: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [formData, setFormData] = useState({ uid: '', rank: '', discord: '', why: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const heroRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleVideo = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play();
+      setIsPlaying(true);
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -317,134 +331,120 @@ const LandingPage: React.FC = () => {
       <main className="flex-1 flex flex-col">
         <section
           ref={heroRef}
-          className="relative pt-32 pb-20 px-6"
-          style={{
-            background: `radial-gradient(circle at center, rgba(218,11,29,0.15) 0%, ${C.bgDark} 100%)`,
-          }}
+          className="relative w-full overflow-hidden"
+          style={{ minHeight: '100vh' }}
         >
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Text */}
-            <div className="space-y-8">
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest"
-                style={{
-                  background: `${C.primary}1a`,
-                  border: `1px solid ${C.primary}33`,
-                  color: C.primary,
-                }}
-              >
-                <CheckCircle className="w-4 h-4" />
-                Season 10 Champions
-              </div>
+          {/* ── Full-cover background video ── */}
+          <video
+            ref={videoRef}
+            src="/video/codm-cinematic-trailer.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ zIndex: 0 }}
+          />
 
-              <h1
-                className="font-black leading-[0.9] tracking-tighter uppercase"
-                style={{ fontSize: 'clamp(3.5rem, 8vw, 7rem)' }}
-              >
-                Dominate
-                <br />
-                <span style={{ color: C.primary }}>The Game</span>
-              </h1>
+          {/* ── Dark gradient overlays for readability ── */}
+          <div
+            className="absolute inset-0"
+            style={{
+              zIndex: 1,
+              background: 'linear-gradient(to right, rgba(14,5,5,0.88) 0%, rgba(14,5,5,0.55) 55%, rgba(14,5,5,0.25) 100%)',
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              zIndex: 1,
+              background: 'linear-gradient(to top, rgba(34,16,17,0.9) 0%, transparent 40%)',
+            }}
+          />
 
-              <p className="text-lg text-slate-400 max-w-lg leading-relaxed">
-                Experience the pinnacle of CODM competitive play with Nexa Esports. Join the ranks
-                of elite warriors and conquer the global leaderboard.
-              </p>
-
-              <div className="flex flex-wrap gap-4 pt-4">
-                <a
-                  href="#contact"
-                  className="flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-lg text-white transition-all"
-                  style={{ background: C.primary, boxShadow: `0 8px 24px ${C.primary}4d` }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.05)')}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1)')}
-                >
-                  <Rocket className="w-5 h-5" />
-                  Join the Elite
-                </a>
-                <a
-                  href="#warriors"
-                  className="px-8 py-4 rounded-2xl font-black text-lg text-white transition-colors"
-                  style={{ ...glassCard, border: '1px solid rgba(255,255,255,0.1)' }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.05)')}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(218,11,29,0.05)')}
-                >
-                  Explore Clan
-                </a>
-              </div>
-            </div>
-
-            {/* Right: Hero image */}
-            <div className="relative group">
-              <div
-                className="absolute -inset-4 rounded-full blur-3xl transition-opacity duration-300"
-                style={{ background: `${C.primary}33`, opacity: 0.5 }}
-              />
-              <div
-                className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
-                style={{ aspectRatio: '1/1' }}
-              >
+          {/* ── Hero content ── */}
+          <div
+            className="relative flex flex-col justify-center min-h-screen px-6 pt-32 pb-28"
+            style={{ zIndex: 2 }}
+          >
+            <div className="max-w-7xl mx-auto w-full">
+              <div className="max-w-2xl space-y-8">
                 <div
-                  className="w-full h-full flex items-center justify-center"
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest"
                   style={{
-                    background: `linear-gradient(135deg, ${C.primary}33 0%, ${C.bgDark} 60%, #3a0a0f 100%)`,
+                    background: `${C.primary}1a`,
+                    border: `1px solid ${C.primary}33`,
+                    color: C.primary,
+                    backdropFilter: 'blur(8px)',
                   }}
                 >
-                  {/* Decorative tactical grid */}
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        backgroundImage: `
-                          linear-gradient(rgba(218,11,29,0.08) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(218,11,29,0.08) 1px, transparent 1px)
-                        `,
-                        backgroundSize: '40px 40px',
-                      }}
-                    />
-                    <div
-                      className="relative z-10 text-center"
-                    >
-                      <img
-                        src="/nexa-logo-ramadan.jpg"
-                        alt="Nexa Logo"
-                        className="w-40 h-40 mx-auto mb-4 rounded-full object-cover"
-                      />
-                      <p
-                        className="text-xs font-black uppercase tracking-[0.4em]"
-                        style={{ color: `${C.primary}cc` }}
-                      >
-                        NeXa Esports
-                      </p>
-                    </div>
-                    {/* Animated pulse rings */}
-                    {[1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className="absolute rounded-full border animate-ping"
-                        style={{
-                          width: `${i * 120}px`,
-                          height: `${i * 120}px`,
-                          borderColor: `${C.primary}${['33', '22', '11'][i - 1]}`,
-                          animationDuration: `${2 + i}s`,
-                          animationDelay: `${i * 0.4}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <CheckCircle className="w-4 h-4" />
+                  Season 10 Champions
                 </div>
-                <div
-                  className="absolute inset-0"
-                  style={{ background: `linear-gradient(to top, ${C.bgDark} 0%, transparent 50%)` }}
-                />
+
+                <h1
+                  className="font-black leading-[0.9] tracking-tighter uppercase"
+                  style={{ fontSize: 'clamp(3.5rem, 8vw, 7rem)', textShadow: '0 4px 32px rgba(0,0,0,0.6)' }}
+                >
+                  Dominate
+                  <br />
+                  <span style={{ color: C.primary }}>The Game</span>
+                </h1>
+
+                <p className="text-lg text-slate-300 max-w-lg leading-relaxed" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
+                  Experience the pinnacle of CODM competitive play with Nexa Esports. Join the ranks
+                  of elite warriors and conquer the global leaderboard.
+                </p>
+
+                <div className="flex flex-wrap gap-4 pt-4">
+                  <a
+                    href="#contact"
+                    className="flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-lg text-white transition-all"
+                    style={{ background: C.primary, boxShadow: `0 8px 24px ${C.primary}4d` }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.05)')}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1)')}
+                  >
+                    <Rocket className="w-5 h-5" />
+                    Join the Elite
+                  </a>
+                  <a
+                    href="#warriors"
+                    className="px-8 py-4 rounded-2xl font-black text-lg text-white transition-colors"
+                    style={{ ...glassCard, border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.08)')}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(218,11,29,0.05)')}
+                  >
+                    Explore Clan
+                  </a>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Scroll cue */}
-          <div className="flex justify-center mt-16">
+          {/* ── Pause / Play button — bottom-right ── */}
+          <button
+            onClick={toggleVideo}
+            aria-label={isPlaying ? 'Pause video' : 'Play video'}
+            className="absolute bottom-8 right-8 flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200 group"
+            style={{
+              zIndex: 10,
+              background: 'rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${C.primary}cc`; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)'; }}
+          >
+            {isPlaying
+              ? <Pause className="w-5 h-5 text-white" />
+              : <Play className="w-5 h-5 text-white" />}
+          </button>
+
+          {/* ── Scroll cue ── */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
             <ChevronDown
-              className="w-6 h-6 text-slate-600 animate-bounce"
+              className="w-6 h-6 text-white/40 animate-bounce"
               style={{ animationDuration: '2s' }}
             />
           </div>
