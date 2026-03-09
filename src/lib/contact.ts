@@ -1,4 +1,3 @@
-// src/lib/contact.ts
 import { createClient } from "@supabase/supabase-js";
 
 export interface ContactFormData {
@@ -12,7 +11,7 @@ export const sendContactEmail = async (formData: ContactFormData): Promise<boole
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Supabase URL or Anon Key is not set. Please set it in your environment variables.");
+    console.error("Supabase URL or Anon Key is not set.");
     return false;
   }
 
@@ -20,13 +19,10 @@ export const sendContactEmail = async (formData: ContactFormData): Promise<boole
 
   try {
     const { error } = await supabase.functions.invoke("send-contact-email", {
-      body: JSON.stringify(formData),
+      body: formData,
     });
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return true;
   } catch (error) {
     console.error("Contact form submission error:", error);
