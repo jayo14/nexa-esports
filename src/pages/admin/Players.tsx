@@ -662,6 +662,7 @@ export const AdminPlayers: React.FC = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFullName, setInviteFullName] = useState('');
+  const [inviteRole, setInviteRole] = useState('player');
   const [sendingInvite, setSendingInvite] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [inviteEmailError, setInviteEmailError] = useState('');
@@ -772,23 +773,49 @@ export const AdminPlayers: React.FC = () => {
         body: {
           email: normalizedEmail,
           fullName: normalizedFullName,
+          role: inviteRole,
           redirectTo: `${window.location.origin}/auth/reset-password`,
         },
       });
 
-      if (error) throw new Error(error.message || 'Failed to send invite.');
+      if (error) {
+        console.error('Invite error:', error);
+        let message = 'Could not send invite email.';
+
+        // Try to get detailed error from response body
+        if (error.context && typeof error.context.json === 'function') {
+          try {
+            const body = await error.context.json();
+            if (body && body.error) message = body.error;
+          } catch (e) {
+            // Fallback to error message if JSON parsing fails
+            message = error.message || message;
+          }
+        } else {
+          message = error.message || message;
+        }
+
+        throw new Error(message);
+      }
+
       if (data?.error) throw new Error(data.error);
 
       setInviteSuccess(true);
-    } catch (error: any) {
+      toast({
+        title: 'Invite Sent',
+        description: `An invite has been sent to ${normalizedEmail}`,
+      });
+      } catch (error: any) {
+      console.error('handleSendInvite failed:', error);
       toast({
         title: 'Invite failed',
         description: error.message || 'Could not send invite email.',
         variant: 'destructive',
       });
-    } finally {
+      } finally {
       setSendingInvite(false);
-    }
+      }
+
   };
 
   const handleCloseInviteDialog = (open: boolean) => {
@@ -1064,6 +1091,29 @@ export const AdminPlayers: React.FC = () => {
                 {inviteEmailError && (
                   <p className="text-xs font-bold" style={{ color: C.primary }}>{inviteEmailError}</p>
                 )}
+              </div>
+
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                  Assign Role <span style={{ color: C.primary }}>*</span>
+                </label>
+                <div className="relative">
+                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 appearance-none transition-all cursor-pointer"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.primary}22`, outline: 'none' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = `${C.primary}22`; }}
+                  >
+                    <option value="player" style={{ background: C.bgDark }}>Player</option>
+                    <option value="moderator" style={{ background: C.bgDark }}>Moderator</option>
+                    <option value="admin" style={{ background: C.bgDark }}>Admin</option>
+                  </select>
+                  <ArrowDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                </div>
               </div>
 
               {/* Info note */}

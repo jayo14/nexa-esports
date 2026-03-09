@@ -40,15 +40,16 @@ Deno.serve(async (req) => {
     // Check inviter permissions
     const { data: inviterProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id, role')
+      .select('id, role, username')
       .eq('id', authData.user.id)
       .single()
 
     if (profileError || !inviterProfile || !['admin', 'clan_master'].includes(inviterProfile.role)) {
-      throw new Error('Insufficient permissions')
+      console.error('Permission check failed:', { profileError, inviterProfile })
+      throw new Error('Insufficient permissions: Only admins and clan masters can invite members')
     }
 
-    const { email, fullName, redirectTo } = await req.json()
+    const { email, fullName, redirectTo, role = 'player' } = await req.json()
 
     if (!email || !fullName) {
       throw new Error('Email and full name are required')
@@ -64,6 +65,8 @@ Deno.serve(async (req) => {
     const usernameBase = buildUsernameFromFullName(normalizedFullName)
     const ignBase = normalizedFullName
 
+    console.log(`Sending invite to ${normalizedEmail} (Invited by: ${inviterProfile.username})`)
+
     // Invite user via Supabase Auth
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       normalizedEmail,
@@ -72,13 +75,20 @@ Deno.serve(async (req) => {
           full_name: normalizedFullName,
           username: usernameBase,
           ign: ignBase,
-          role: 'player'
+          role: role
         },
         redirectTo: redirectTo || `${new URL(req.url).origin}/auth/reset-password`,
       }
     )
 
-    if (inviteError) throw inviteError
+    if (inviteError) {
+      console.error('Supabase Auth invite error:', inviteError)
+      if (inviteError.message.includes('already been registered')) {
+        throw new Error(`The email ${normalizedEmail} is already registered.`)
+      }
+      throw new Error(`Failed to send invite email: ${inviteError.message}`)
+    }
+    
     const invitedUserId = inviteData.user?.id
 
     if (!invitedUserId) {
@@ -95,14 +105,23 @@ Deno.serve(async (req) => {
           id: invitedUserId,
           username: usernameWithSuffix,
           ign: ignBase,
-          role: 'player',
+          role: role,
           status: 'active',
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'id' }
       )
 
-    if (profileUpsertError) throw profileUpsertError
+    if (profileUpsertError) {
+      console.error('Profile creation error:', profileUpsertError)
+      let detailedError = profileUpsertError.message
+      if (profileUpsertError.code === '23505') {
+        detailedError = 'Username or email conflict in profile'
+      }
+      throw new Error(`Database error adding new user: ${detailedError}`)
+    }
+
+    console.log(`Successfully invited user ${invitedUserId} with username ${usernameWithSuffix}`)
 
     return new Response(
       JSON.stringify({ success: true, userId: invitedUserId }),
@@ -111,9 +130,15 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('invite-member function error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
+    
+    let status = 400
+    if (message.includes('Insufficient permissions')) status = 403
+    if (message.includes('Unauthorized')) status = 401
+    if (message.includes('Database error')) status = 500
+    
     return new Response(
       JSON.stringify({ error: message }),
-      { status: 400, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } }
+      { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } }
     )
   }
 })
