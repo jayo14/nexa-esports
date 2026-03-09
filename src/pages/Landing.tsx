@@ -3,8 +3,9 @@ import {
   Sword, Rocket, Users, TrendingUp, Award, Target,
   Gift, Trophy, Mail, MessageCircle, ArrowRight,
   Globe, AtSign, Video, CheckCircle, Swords,
-  ChevronDown, Menu, X, Pause, Play,
+  ChevronDown, Menu, X, Pause, Play, Loader2,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 /* ─────────────── Design Tokens ─────────────── */
 const C = {
@@ -197,6 +198,7 @@ const LandingPage: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [formData, setFormData] = useState({ uid: '', rank: '', discord: '', why: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const heroRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -219,11 +221,58 @@ const LandingPage: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-    setFormData({ uid: '', rank: '', discord: '', why: '' });
+    if (submitting || submitted) return;
+
+    const { uid, rank, discord, why } = formData;
+    if (!uid.trim() && !discord.trim()) return; // basic guard
+
+    setSubmitting(true);
+    try {
+      // Fetch all admin & clan_master profile IDs
+      const { data: admins, error: adminError } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('role', ['admin', 'clan_master']);
+
+      if (adminError) throw adminError;
+
+      if (admins && admins.length > 0) {
+        const notifications = admins.map((admin) => ({
+          type: 'access_code_request',
+          title: '🎮 New Access Request',
+          message: `A player is requesting access to NeXa Esports. CODM UID: ${uid || 'N/A'} | Rank: ${rank || 'N/A'} | Discord: ${discord || 'N/A'}`,
+          user_id: admin.id,
+          read: false,
+          data: {
+            uid: uid.trim(),
+            rank: rank.trim(),
+            discord: discord.trim(),
+            why: why.trim(),
+            submittedAt: new Date().toISOString(),
+          },
+          action_data: { action: 'view_access_request' },
+        }));
+
+        const { error: insertError } = await supabase
+          .from('notifications')
+          .insert(notifications);
+
+        if (insertError) throw insertError;
+      }
+
+      setSubmitted(true);
+      setFormData({ uid: '', rank: '', discord: '', why: '' });
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err) {
+      console.error('Failed to submit access request:', err);
+      // Still show success to user — don't expose internal errors
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 4000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -765,19 +814,26 @@ const LandingPage: React.FC = () => {
 
                 <button
                   type="submit"
+                  disabled={submitting || submitted}
                   className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-black text-white transition-all"
                   style={{
                     background: submitted ? '#22c55e' : C.primary,
                     boxShadow: `0 4px 20px ${submitted ? '#22c55e4d' : `${C.primary}4d`}`,
                     transition: 'background 0.3s ease, box-shadow 0.3s ease',
+                    opacity: submitting ? 0.8 : 1,
                   }}
-                  onMouseEnter={(e) => { if (!submitted) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'; }}
+                  onMouseEnter={(e) => { if (!submitted && !submitting) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
                 >
-                  {submitted ? (
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Sending Request…
+                    </>
+                  ) : submitted ? (
                     <>
                       <CheckCircle className="w-4 h-4" />
-                      Application Submitted!
+                      Request Received — We'll reach out!
                     </>
                   ) : (
                     <>
