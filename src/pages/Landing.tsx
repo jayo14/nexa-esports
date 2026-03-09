@@ -247,7 +247,7 @@ type CommunityLoadout = {
 const LandingPage: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [formData, setFormData] = useState({ uid: '', rank: '', discord: '', why: '' });
+  const [formData, setFormData] = useState({ uid: '', rank: '', discord: '', whatsapp: '', why: '' });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -356,8 +356,8 @@ const LandingPage: React.FC = () => {
     e.preventDefault();
     if (submitting || submitted) return;
 
-    const { uid, rank, discord, why } = formData;
-    if (!uid.trim() && !discord.trim()) return; // basic guard
+    const { uid, rank, discord, whatsapp, why } = formData;
+    if (!uid.trim() && !discord.trim() && !whatsapp.trim()) return; // basic guard
 
     setSubmitting(true);
     try {
@@ -373,13 +373,14 @@ const LandingPage: React.FC = () => {
         const notifications = admins.map((admin) => ({
           type: 'access_code_request',
           title: '🎮 New Access Request',
-          message: `A player is requesting access to NeXa Esports. CODM UID: ${uid || 'N/A'} | Rank: ${rank || 'N/A'} | Discord: ${discord || 'N/A'}`,
+          message: `A player is requesting access to NeXa Esports. CODM UID: ${uid || 'N/A'} | Rank: ${rank || 'N/A'} | Discord: ${discord || 'N/A'} | WhatsApp: ${whatsapp || 'N/A'}`,
           user_id: admin.id,
           read: false,
           data: {
             uid: uid.trim(),
             rank: rank.trim(),
             discord: discord.trim(),
+            whatsapp: whatsapp.trim(),
             why: why.trim(),
             submittedAt: new Date().toISOString(),
           },
@@ -394,7 +395,7 @@ const LandingPage: React.FC = () => {
       }
 
       setSubmitted(true);
-      setFormData({ uid: '', rank: '', discord: '', why: '' });
+      setFormData({ uid: '', rank: '', discord: '', whatsapp: '', why: '' });
       setTimeout(() => setSubmitted(false), 5000);
     } catch (err) {
       console.error('Failed to submit access request:', err);
@@ -955,16 +956,11 @@ const LandingPage: React.FC = () => {
 
             {/* Gallery grid */}
             <div
-              className="grid gap-6"
-              style={{
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gridTemplateRows: 'repeat(2, 290px)',
-              }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
             >
-              {/* Large left cell spans 2 rows */}
+              {/* Large left cell spans 2 rows on desktop */}
               <div
-                className="relative group overflow-hidden rounded-2xl border border-white/10"
-                style={{ gridRow: '1 / 3' }}
+                className="relative group overflow-hidden rounded-2xl border border-white/10 md:row-span-2 min-h-[400px] md:min-h-0"
               >
                 <div
                   className="w-full h-full transition-transform duration-500 group-hover:scale-110"
@@ -999,7 +995,7 @@ const LandingPage: React.FC = () => {
               ].map(({ tag, title, col }) => (
                 <div
                   key={title}
-                  className="relative group overflow-hidden rounded-2xl border border-white/10"
+                  className="relative group overflow-hidden rounded-2xl border border-white/10 min-h-[290px]"
                 >
                   <div
                     className="w-full h-full transition-transform duration-500 group-hover:scale-110"
@@ -1025,10 +1021,9 @@ const LandingPage: React.FC = () => {
                 </div>
               ))}
 
-              {/* Wide bottom cell spans 2 cols */}
+              {/* Wide bottom cell spans 2 cols on desktop */}
               <div
-                className="relative group overflow-hidden rounded-2xl border border-white/10"
-                style={{ gridColumn: '2 / 4' }}
+                className="relative group overflow-hidden rounded-2xl border border-white/10 md:col-span-2 min-h-[290px]"
               >
                 <div
                   className="w-full h-full transition-transform duration-500 group-hover:scale-110"
@@ -1157,15 +1152,27 @@ const LandingPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1 block">
-                    Discord Tag
-                  </label>
-                  <ContactInput
-                    placeholder="User#0000"
-                    value={formData.discord}
-                    onChange={(e) => setFormData({ ...formData, discord: e.target.value })}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1 block">
+                      Discord Tag
+                    </label>
+                    <ContactInput
+                      placeholder="User#0000"
+                      value={formData.discord}
+                      onChange={(e) => setFormData({ ...formData, discord: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1 block">
+                      WhatsApp Number
+                    </label>
+                    <ContactInput
+                      placeholder="+1 234…"
+                      value={formData.whatsapp}
+                      onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
