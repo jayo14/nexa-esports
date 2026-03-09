@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       throw new Error("Unable to resolve user email");
     }
 
-    const clanEmail = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesports@gmail.com";
+    const clanEmail = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesportmail@gmail.com";
     const recipientEmail = userResult.user.email;
 
     const isApproved = status === "approved";

@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    const recipientEmail = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesports@gmail.com";
+    const recipientEmail = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesportmail@gmail.com";
     const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || recipientEmail;
 
     const emailContent = {

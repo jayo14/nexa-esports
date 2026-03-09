@@ -4,6 +4,7 @@ import {
   Gift, Trophy, Mail, MessageCircle, ArrowRight,
   Globe, AtSign, Video, CheckCircle, Swords,
   ChevronDown, ChevronLeft, ChevronRight, Menu, X, Pause, Play, Loader2,
+  Copy, Check,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -190,99 +191,55 @@ const GalleryItem: React.FC<{
   );
 };
 
-/* ─────────────── Loadout Data ─────────────── */
-const LOADOUTS = [
+/* ─────────────── Loadout Data (fallback) ─────────────── */
+const FALLBACK_LOADOUTS = [
   {
-    name: 'M13', subtitle: 'The Phantom', category: 'ASSAULT RIFLE', categoryShort: 'AR',
-    role: 'Battle Royale · Long Range',
-    desc: 'Zero-recoil accuracy machine. Dominates mid-to-long range engagements across every zone.',
-    accent: '#ec131e', bg: 'linear-gradient(135deg,#3a0a0f 0%,#1a0505 100%)',
-    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/a/ac/M13_menu.png/revision/latest/scale-to-width-down/512',
-    attachments: [
-      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
-      { slot: 'Barrel', name: 'Tempus Marksman' },
-      { slot: 'Underbarrel', name: 'Commando Foregrip' },
-      { slot: 'Ammunition', name: '60 Rnd Extended Mag' },
-      { slot: 'Rear Grip', name: 'Stippled Grip Tape' },
-    ],
-    stats: { damage: 62, range: 90, fireRate: 78, accuracy: 88 },
+    name: 'M13',
+    subtitle: 'The Phantom',
+    weapon_type: 'Assault',
+    mode: 'BR',
+    description:
+      'Zero-recoil accuracy machine. Dominates mid-to-long range engagements across every zone.',
+    accent: '#ec131e',
+    image_url:
+      'https://static.wikia.nocookie.net/codmobile/images/a/ac/M13_menu.png/revision/latest/scale-to-width-down/512',
   },
   {
-    name: 'CBR4', subtitle: 'Velocity', category: 'SUBMACHINE GUN', categoryShort: 'SMG',
-    role: 'Multiplayer · Close Range',
-    desc: 'Bar none the fastest TTK in CQC. Built for hyper-aggressive plays and room-clearing.',
-    accent: '#38bdf8', bg: 'linear-gradient(135deg,#0a1e2f 0%,#040d1b 100%)',
-    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/4/4f/CBR4_menu.png/revision/latest/scale-to-width-down/512',
-    attachments: [
-      { slot: 'Muzzle', name: 'Tactical Suppressor' },
-      { slot: 'Barrel', name: 'MIP Extended Light Barrel' },
-      { slot: 'Stock', name: 'No Stock' },
-      { slot: 'Ammunition', name: '50 Rnd Extended Mag' },
-      { slot: 'Rear Grip', name: 'Granulated Grip Tape' },
-    ],
-    stats: { damage: 85, range: 40, fireRate: 95, accuracy: 70 },
+    name: 'CBR4',
+    subtitle: 'Velocity',
+    weapon_type: 'SMG',
+    mode: 'MP',
+    description:
+      'Bar none the fastest TTK in CQC. Built for hyper-aggressive plays and room-clearing.',
+    accent: '#38bdf8',
+    image_url:
+      'https://static.wikia.nocookie.net/codmobile/images/4/4f/CBR4_menu.png/revision/latest/scale-to-width-down/512',
   },
   {
-    name: 'DL Q33', subtitle: 'Ghost Shot', category: 'SNIPER RIFLE', categoryShort: 'SNP',
-    role: 'Battle Royale · One-Shot King',
-    desc: 'One shot. One kill. The undisputed long-range executioner of CODM ranked lobbies.',
-    accent: '#22c55e', bg: 'linear-gradient(135deg,#0a2a1a 0%,#041009 100%)',
-    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/0/0e/DL_Q33_menu.png/revision/latest/scale-to-width-down/512',
-    attachments: [
-      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
-      { slot: 'Barrel', name: '22" OU OSR MW' },
-      { slot: 'Underbarrel', name: 'Merc Foregrip' },
-      { slot: 'Ammunition', name: 'FMJ' },
-      { slot: 'Rear Grip', name: 'Granulated Grip Tape' },
-    ],
-    stats: { damage: 100, range: 98, fireRate: 28, accuracy: 92 },
-  },
-  {
-    name: 'AK-47', subtitle: 'Warfare', category: 'ASSAULT RIFLE', categoryShort: 'AR',
-    role: 'Multiplayer · Aggressive',
-    desc: 'Raw power in every single round. High damage shreds through armor and obstacles alike.',
-    accent: '#f59e0b', bg: 'linear-gradient(135deg,#2a1a03 0%,#110a00 100%)',
-    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/9/90/AK-47_menu.png/revision/latest/scale-to-width-down/512',
-    attachments: [
-      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
-      { slot: 'Barrel', name: 'Heavy Duty Extended' },
-      { slot: 'Underbarrel', name: 'Tactical Foregrip' },
-      { slot: 'Ammunition', name: '45 Rnd Extended Mag' },
-      { slot: 'Rear Grip', name: 'Stippled Grip Tape' },
-    ],
-    stats: { damage: 92, range: 68, fireRate: 65, accuracy: 74 },
-  },
-  {
-    name: 'LAPA', subtitle: 'Phantom Force', category: 'SUBMACHINE GUN', categoryShort: 'SMG',
-    role: 'Hybrid · Flanker',
-    desc: 'Low recoil, maximum mobility. The LAPA is the silent flanker — swift and absolutely lethal.',
-    accent: '#a855f7', bg: 'linear-gradient(135deg,#1a0a2f 0%,#0a041b 100%)',
-    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/9/96/LAPA_menu.png/revision/latest/scale-to-width-down/512',
-    attachments: [
-      { slot: 'Muzzle', name: 'RTC Deadfall Suppressor' },
-      { slot: 'Barrel', name: 'YKM Light Barrel Quick' },
-      { slot: 'Stock', name: 'No Stock' },
-      { slot: 'Ammunition', name: '50 Rnd Extended Mag' },
-      { slot: 'Rear Grip', name: 'Index Finger Tape Grip' },
-    ],
-    stats: { damage: 76, range: 58, fireRate: 88, accuracy: 82 },
-  },
-  {
-    name: 'Kilo 141', subtitle: 'The All-Rounder', category: 'ASSAULT RIFLE', categoryShort: 'AR',
-    role: 'Battle Royale · Versatile',
-    desc: 'A forgiving recoil pattern that rewards aim at every range — the meta pick for hybrid players.',
-    accent: '#ec131e', bg: 'linear-gradient(135deg,#2a0a0f 0%,#140408 100%)',
-    imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/6/6f/Kilo_141_menu.png/revision/latest/scale-to-width-down/512',
-    attachments: [
-      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
-      { slot: 'Barrel', name: 'Singuard Arms 19.8"' },
-      { slot: 'Underbarrel', name: 'Commando Foregrip' },
-      { slot: 'Ammunition', name: '60 Rnd Extended Mag' },
-      { slot: 'Stock', name: 'FTAC Stalker-Scout' },
-    ],
-    stats: { damage: 70, range: 82, fireRate: 72, accuracy: 88 },
+    name: 'DL Q33',
+    subtitle: 'Ghost Shot',
+    weapon_type: 'Sniper',
+    mode: 'BR',
+    description:
+      'One shot. One kill. The undisputed long-range executioner of CODM ranked lobbies.',
+    accent: '#22c55e',
+    image_url:
+      'https://static.wikia.nocookie.net/codmobile/images/0/0e/DL_Q33_menu.png/revision/latest/scale-to-width-down/512',
   },
 ];
+
+type CommunityLoadout = {
+  id: string;
+  weapon_name: string;
+  weapon_type: string;
+  mode: string;
+  image_url: string | null;
+  view_count: number | null;
+  profiles: {
+    ign: string | null;
+    username: string | null;
+  } | null;
+};
 
 /* ═══════════════════════════════════════════════
    MAIN LANDING PAGE
@@ -301,6 +258,44 @@ const LandingPage: React.FC = () => {
   const sliderTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [itemsToShow, setItemsToShow] = useState(3);
+  const [communityLoadouts, setCommunityLoadouts] = useState<CommunityLoadout[]>([]);
+  const [copiedLayoutId, setCopiedLayoutId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCommunityLoadouts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('weapon_layouts')
+          .select(`
+            id,
+            weapon_name,
+            weapon_type,
+            mode,
+            image_url,
+            view_count,
+            profiles (
+              ign,
+              username
+            )
+          `)
+          .order('view_count', { ascending: false })
+          .limit(10);
+
+        if (error) {
+          console.error('Error fetching community loadouts for landing slider:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setCommunityLoadouts(data as CommunityLoadout[]);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching community loadouts:', err);
+      }
+    };
+
+    fetchCommunityLoadouts();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -313,7 +308,11 @@ const LandingPage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const maxIndex = Math.max(0, LOADOUTS.length - itemsToShow);
+  const sourceLoadouts = communityLoadouts.length > 0 ? communityLoadouts : null;
+  const maxIndex = Math.max(
+    0,
+    (sourceLoadouts ? sourceLoadouts.length : FALLBACK_LOADOUTS.length) - itemsToShow
+  );
 
   const goToLoadout = useCallback((idx: number) => {
     const nextIdx = Math.max(0, Math.min(idx, maxIndex));
@@ -757,20 +756,89 @@ const LandingPage: React.FC = () => {
                 className="flex transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
                 style={{ transform: `translateX(-${activeLoadout * (100 / itemsToShow)}%)` }}
               >
-                {LOADOUTS.map((gun, idx) => (
+                {(sourceLoadouts || FALLBACK_LOADOUTS).map((rawItem, idx) => {
+                  const item: any = rawItem;
+                  const isCommunity = !!sourceLoadouts;
+                  const name = isCommunity ? item.weapon_name : item.name;
+                  const subtitle = isCommunity
+                    ? (item.profiles?.ign || item.profiles?.username || 'Community Loadout')
+                    : item.subtitle;
+                  const weaponType = item.weapon_type || 'Assault';
+                  const mode = item.mode;
+                  const accent =
+                    !isCommunity && 'accent' in item
+                      ? (item as any).accent
+                      : weaponType === 'SMG'
+                        ? '#38bdf8'
+                        : weaponType === 'Sniper'
+                          ? '#22c55e'
+                          : '#ec131e';
+                  const imageUrl = isCommunity ? item.image_url : (item as any).image_url;
+                  const views = isCommunity ? item.view_count || 0 : 0;
+                  const layoutId: string =
+                    (isCommunity && item.id) || `${name}-${weaponType}-${mode}-${idx}`;
+
+                  const categoryShortMap: Record<string, string> = {
+                    Assault: 'AR',
+                    'Assault Rifle': 'AR',
+                    SMG: 'SMG',
+                    Sniper: 'SNP',
+                    LMG: 'LMG',
+                    Shotgun: 'SG',
+                    Pistol: 'PST',
+                    Marksman: 'MRK',
+                  };
+                  const categoryShort = categoryShortMap[weaponType] || 'AR';
+
+                  const handleCopyLink = async () => {
+                    try {
+                      const baseUrl = window.location.origin;
+                      const link = isCommunity
+                        ? `${baseUrl}/weapon-layouts?layoutId=${layoutId}`
+                        : `${baseUrl}/weapon-layouts`;
+
+                      if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(link);
+                      } else {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = link;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                      }
+
+                      setCopiedLayoutId(layoutId);
+                      setTimeout(() => {
+                        setCopiedLayoutId((current) =>
+                          current === layoutId ? null : current
+                        );
+                      }, 2000);
+                    } catch (err) {
+                      console.error('Failed to copy loadout link:', err);
+                    }
+                  };
+
+                  const isCopied = copiedLayoutId === layoutId;
+
+                  return (
                   <div
                     key={idx}
                     className="flex-shrink-0 px-3"
                     style={{ width: `${100 / itemsToShow}%` }}
                   >
                     <div
-                      className="group relative h-[620px] rounded-3xl overflow-hidden border border-white/5 transition-all duration-500 hover:border-white/20 hover:translate-y-[-8px]"
-                      style={{ background: 'linear-gradient(180deg, #120606 0%, #080202 100%)' }}
+                      className="group relative h-[480px] rounded-[28px] overflow-hidden border border-white/5 transition-all duration-500 hover:border-white/20 hover:-translate-y-1.5"
+                      style={{
+                        background: 'linear-gradient(145deg, #150607, #070103)',
+                        boxShadow:
+                          '20px 20px 40px rgba(0,0,0,0.75), -16px -16px 32px rgba(255,255,255,0.03)',
+                      }}
                     >
                       {/* Accent Glow */}
                       <div
                         className="absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
-                        style={{ background: gun.accent }}
+                        style={{ background: accent }}
                       />
 
                       {/* Content */}
@@ -779,69 +847,88 @@ const LandingPage: React.FC = () => {
                         <div className="flex items-start justify-between mb-8">
                           <div>
                             <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase block mb-1">
-                              {gun.category}
+                              {weaponType.toUpperCase()}
                             </span>
                             <span className="text-[10px] font-bold text-slate-400 uppercase">
-                              {gun.role}
+                              {mode === 'BR'
+                                ? 'Battle Royale'
+                                : mode === 'MP'
+                                ? 'Multiplayer'
+                                : mode || 'Mode'}
                             </span>
                           </div>
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs" style={{ background: `${gun.accent}22`, color: gun.accent, border: `1px solid ${gun.accent}33` }}>
-                            {gun.categoryShort}
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs"
+                            style={{ background: `${accent}22`, color: accent, border: `1px solid ${accent}33` }}
+                          >
+                            {categoryShort}
                           </div>
                         </div>
 
                         {/* Weapon Title */}
                         <div className="mb-6">
-                          <h3 className="text-4xl font-black text-white uppercase italic group-hover:text-primary transition-colors duration-300" style={{ color: gun.accent }}>
-                            {gun.name}
+                          <h3
+                            className="text-4xl font-black text-white uppercase italic group-hover:text-primary transition-colors duration-300"
+                            style={{ color: accent }}
+                          >
+                            {name}
                           </h3>
-                          <p className="text-slate-500 font-bold tracking-wide mt-1">"{gun.subtitle}"</p>
+                          <p className="text-slate-500 font-bold tracking-wide mt-1">"{subtitle}"</p>
                         </div>
 
                         {/* Image */}
                         <div className="relative h-44 my-4 flex items-center justify-center">
-                          <img
-                            src={gun.imgUrl}
-                            alt={gun.name}
-                            className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transition-transform duration-700 group-hover:scale-110"
-                          />
-                        </div>
-
-                        {/* Stats Summary */}
-                        <div className="grid grid-cols-2 gap-4 mt-auto mb-8">
-                          {Object.entries(gun.stats).map(([label, val]) => (
-                            <div key={label}>
-                              <div className="flex justify-between items-center mb-1.5">
-                                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">{label}</span>
-                                <span className="text-[10px] font-black text-slate-300">{val}</span>
-                              </div>
-                              <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all duration-1000 delay-300 transform origin-left scale-x-0 group-hover:scale-x-100"
-                                  style={{ width: `${val}%`, background: gun.accent }}
-                                />
-                              </div>
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={name}
+                              className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transition-transform duration-700 group-hover:scale-110"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs font-bold uppercase tracking-widest">
+                              Loadout preview
                             </div>
-                          ))}
-                        </div>
-
-                        {/* Attachments (Hidden by default, shown on hover?) -> Let's keep a compact list */}
-                        <div className="space-y-1.5 pt-6 border-t border-white/5">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">Pro Configuration</p>
-                          {gun.attachments.slice(0, 3).map((att) => (
-                            <div key={att.slot} className="flex justify-between items-center text-[11px]">
-                              <span className="text-slate-500 font-bold uppercase">{att.slot}</span>
-                              <span className="text-slate-300 font-medium truncate ml-2 max-w-[140px]">{att.name}</span>
-                            </div>
-                          ))}
-                          {gun.attachments.length > 3 && (
-                            <p className="text-[10px] text-slate-600 font-bold mt-1">+ {gun.attachments.length - 3} more attachments</p>
                           )}
+                        </div>
+
+                        {/* Community meta + actions */}
+                        <div className="mt-auto mb-4 space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-1">
+                              <p className="text-xs text-slate-400 font-medium">
+                                Created by{' '}
+                                <span className="text-slate-200 font-semibold">
+                                  {subtitle}
+                                </span>
+                              </p>
+                              {isCommunity && (
+                                <p className="text-[11px] text-slate-500">
+                                  Views{' '}
+                                  <span className="text-slate-200 font-semibold">
+                                    {views}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleCopyLink}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide border border-white/10 bg-white/5 hover:bg-white/10 text-slate-100 transition-colors"
+                            >
+                              {isCopied ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 text-slate-300" />
+                              )}
+                              <span>{isCopied ? 'Copied' : 'Copy link'}</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+                })}
               </div>
             </div>
           </div>
@@ -1013,23 +1100,35 @@ const LandingPage: React.FC = () => {
                   will review your stats and contact you for a trial.
                 </p>
                 <div className="space-y-4">
-                  {[
-                    { icon: <Mail className="w-5 h-5" />, label: 'Recruitment', value: 'join@Nexa Esports.com' },
-                    { icon: <MessageCircle className="w-5 h-5" />, label: 'Discord', value: 'discord.gg/nexa_elite' },
-                  ].map(({ icon, label, value }) => (
-                    <div key={label} className="flex items-center gap-4">
-                      <div
-                        className="p-3 rounded-xl"
-                        style={{ background: `${C.primary}1a`, color: C.primary }}
-                      >
-                        {icon}
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</p>
-                        <p className="text-sm text-slate-200">{value}</p>
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="p-3 rounded-xl"
+                      style={{ background: `${C.primary}1a`, color: C.primary }}
+                    >
+                      <Mail className="w-5 h-5" />
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recruitment</p>
+                      <a
+                        href="mailto:nexaesportmail@gmail.com"
+                        className="text-sm text-slate-200 hover:underline"
+                      >
+                        nexaesportmail@gmail.com
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="p-3 rounded-xl"
+                      style={{ background: `${C.primary}1a`, color: C.primary }}
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Discord</p>
+                      <p className="text-sm text-slate-200">discord.gg/nexa_elite</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1146,9 +1245,17 @@ const LandingPage: React.FC = () => {
             <h2 className="text-lg font-black tracking-tight">NeXa Esports</h2>
           </div>
 
-          <p className="text-sm text-slate-500 text-center">
-            © 2024 Nexa Esports Clan. All Rights Reserved. Not affiliated with Activision or TiMi Studios.
-          </p>
+          <div className="flex flex-col items-center md:items-start gap-1 text-center md:text-left">
+            <p className="text-sm text-slate-500">
+              © 2024 Nexa Esports Clan. All Rights Reserved. Not affiliated with Activision or TiMi Studios.
+            </p>
+            <a
+              href="mailto:nexaesportmail@gmail.com"
+              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              Contact: nexaesportmail@gmail.com
+            </a>
+          </div>
 
           {/* Social icons */}
           <div className="flex gap-6">

@@ -36,7 +36,7 @@ export const ContactForm: React.FC<{ className?: string }> = ({ className }) => 
     } catch (error) {
       toast({
         title: "❌ Failed to Send",
-        description: "Please try again later or email us directly at nexaesports@gmail.com",
+        description: "Please try again later or email us directly at nexaesportmail@gmail.com",
         variant: "destructive",
       });
     } finally {
