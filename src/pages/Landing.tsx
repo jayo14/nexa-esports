@@ -238,16 +238,22 @@ const LandingPage: React.FC = () => {
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-8">
-            {['Tactics', 'Gallery', 'Marketplace', 'Blog'].map((link) => (
+            {[
+              { name: 'Warriors', href: '#warriors' },
+              { name: 'Tactics', href: '#tactics' },
+              { name: 'Gallery', href: '#gallery' },
+              { name: 'Marketplace', href: '/marketplace-info' },
+              { name: 'Blog', href: '/blog' },
+            ].map((link) => (
               <a
-                key={link}
-                href={`#${link.toLowerCase()}`}
+                key={link.name}
+                href={link.href}
                 className="text-sm font-medium transition-colors"
                 style={{ color: '#94a3b8' }}
                 onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = C.primary)}
                 onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = '#94a3b8')}
               >
-                {link}
+                {link.name}
               </a>
             ))}
           </div>
@@ -279,14 +285,20 @@ const LandingPage: React.FC = () => {
             className="md:hidden max-w-7xl mx-auto mt-2 rounded-2xl p-6"
             style={glassCard}
           >
-            {['Warriors', 'Tactics', 'Gallery'].map((link) => (
+            {[
+              { name: 'Warriors', href: '#warriors' },
+              { name: 'Tactics', href: '#tactics' },
+              { name: 'Gallery', href: '#gallery' },
+              { name: 'Marketplace', href: '/marketplace-info' },
+              { name: 'Blog', href: '/blog' },
+            ].map((link) => (
               <a
-                key={link}
-                href={`#${link.toLowerCase()}`}
+                key={link.name}
+                href={link.href}
                 className="block py-3 text-sm font-medium text-slate-400 hover:text-white transition-colors"
                 onClick={() => setMenuOpen(false)}
               >
-                {link}
+                {link.name}
               </a>
             ))}
             <a
