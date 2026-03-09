@@ -199,11 +199,11 @@ const LOADOUTS = [
     accent: '#ec131e', bg: 'linear-gradient(135deg,#3a0a0f 0%,#1a0505 100%)',
     imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/a/ac/M13_menu.png/revision/latest/scale-to-width-down/512',
     attachments: [
-      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
-      { slot: 'Barrel',      name: 'Tempus Marksman' },
+      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
+      { slot: 'Barrel', name: 'Tempus Marksman' },
       { slot: 'Underbarrel', name: 'Commando Foregrip' },
-      { slot: 'Ammunition',  name: '60 Rnd Extended Mag' },
-      { slot: 'Rear Grip',   name: 'Stippled Grip Tape' },
+      { slot: 'Ammunition', name: '60 Rnd Extended Mag' },
+      { slot: 'Rear Grip', name: 'Stippled Grip Tape' },
     ],
     stats: { damage: 62, range: 90, fireRate: 78, accuracy: 88 },
   },
@@ -214,11 +214,11 @@ const LOADOUTS = [
     accent: '#38bdf8', bg: 'linear-gradient(135deg,#0a1e2f 0%,#040d1b 100%)',
     imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/4/4f/CBR4_menu.png/revision/latest/scale-to-width-down/512',
     attachments: [
-      { slot: 'Muzzle',     name: 'Tactical Suppressor' },
-      { slot: 'Barrel',     name: 'MIP Extended Light Barrel' },
-      { slot: 'Stock',      name: 'No Stock' },
+      { slot: 'Muzzle', name: 'Tactical Suppressor' },
+      { slot: 'Barrel', name: 'MIP Extended Light Barrel' },
+      { slot: 'Stock', name: 'No Stock' },
       { slot: 'Ammunition', name: '50 Rnd Extended Mag' },
-      { slot: 'Rear Grip',  name: 'Granulated Grip Tape' },
+      { slot: 'Rear Grip', name: 'Granulated Grip Tape' },
     ],
     stats: { damage: 85, range: 40, fireRate: 95, accuracy: 70 },
   },
@@ -229,11 +229,11 @@ const LOADOUTS = [
     accent: '#22c55e', bg: 'linear-gradient(135deg,#0a2a1a 0%,#041009 100%)',
     imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/0/0e/DL_Q33_menu.png/revision/latest/scale-to-width-down/512',
     attachments: [
-      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
-      { slot: 'Barrel',      name: '22" OU OSR MW' },
+      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
+      { slot: 'Barrel', name: '22" OU OSR MW' },
       { slot: 'Underbarrel', name: 'Merc Foregrip' },
-      { slot: 'Ammunition',  name: 'FMJ' },
-      { slot: 'Rear Grip',   name: 'Granulated Grip Tape' },
+      { slot: 'Ammunition', name: 'FMJ' },
+      { slot: 'Rear Grip', name: 'Granulated Grip Tape' },
     ],
     stats: { damage: 100, range: 98, fireRate: 28, accuracy: 92 },
   },
@@ -244,11 +244,11 @@ const LOADOUTS = [
     accent: '#f59e0b', bg: 'linear-gradient(135deg,#2a1a03 0%,#110a00 100%)',
     imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/9/90/AK-47_menu.png/revision/latest/scale-to-width-down/512',
     attachments: [
-      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
-      { slot: 'Barrel',      name: 'Heavy Duty Extended' },
+      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
+      { slot: 'Barrel', name: 'Heavy Duty Extended' },
       { slot: 'Underbarrel', name: 'Tactical Foregrip' },
-      { slot: 'Ammunition',  name: '45 Rnd Extended Mag' },
-      { slot: 'Rear Grip',   name: 'Stippled Grip Tape' },
+      { slot: 'Ammunition', name: '45 Rnd Extended Mag' },
+      { slot: 'Rear Grip', name: 'Stippled Grip Tape' },
     ],
     stats: { damage: 92, range: 68, fireRate: 65, accuracy: 74 },
   },
@@ -259,11 +259,11 @@ const LOADOUTS = [
     accent: '#a855f7', bg: 'linear-gradient(135deg,#1a0a2f 0%,#0a041b 100%)',
     imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/9/96/LAPA_menu.png/revision/latest/scale-to-width-down/512',
     attachments: [
-      { slot: 'Muzzle',     name: 'RTC Deadfall Suppressor' },
-      { slot: 'Barrel',     name: 'YKM Light Barrel Quick' },
-      { slot: 'Stock',      name: 'No Stock' },
+      { slot: 'Muzzle', name: 'RTC Deadfall Suppressor' },
+      { slot: 'Barrel', name: 'YKM Light Barrel Quick' },
+      { slot: 'Stock', name: 'No Stock' },
       { slot: 'Ammunition', name: '50 Rnd Extended Mag' },
-      { slot: 'Rear Grip',  name: 'Index Finger Tape Grip' },
+      { slot: 'Rear Grip', name: 'Index Finger Tape Grip' },
     ],
     stats: { damage: 76, range: 58, fireRate: 88, accuracy: 82 },
   },
@@ -274,11 +274,11 @@ const LOADOUTS = [
     accent: '#ec131e', bg: 'linear-gradient(135deg,#2a0a0f 0%,#140408 100%)',
     imgUrl: 'https://static.wikia.nocookie.net/codmobile/images/6/6f/Kilo_141_menu.png/revision/latest/scale-to-width-down/512',
     attachments: [
-      { slot: 'Muzzle',      name: 'Monolithic Suppressor' },
-      { slot: 'Barrel',      name: 'Singuard Arms 19.8"' },
+      { slot: 'Muzzle', name: 'Monolithic Suppressor' },
+      { slot: 'Barrel', name: 'Singuard Arms 19.8"' },
       { slot: 'Underbarrel', name: 'Commando Foregrip' },
-      { slot: 'Ammunition',  name: '60 Rnd Extended Mag' },
-      { slot: 'Stock',       name: 'FTAC Stalker-Scout' },
+      { slot: 'Ammunition', name: '60 Rnd Extended Mag' },
+      { slot: 'Stock', name: 'FTAC Stalker-Scout' },
     ],
     stats: { damage: 70, range: 82, fireRate: 72, accuracy: 88 },
   },
@@ -300,24 +300,33 @@ const LandingPage: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sliderTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const goToLoadout = useCallback((idx: number) => {
-    setIsSliding(true);
-    setTimeout(() => {
-      setActiveLoadout(((idx % LOADOUTS.length) + LOADOUTS.length) % LOADOUTS.length);
-      setIsSliding(false);
-    }, 220);
+  const [itemsToShow, setItemsToShow] = useState(3);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) setItemsToShow(1);
+      else if (window.innerWidth < 1024) setItemsToShow(2);
+      else setItemsToShow(3);
+    };
+    handleResize(); // initial
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const maxIndex = Math.max(0, LOADOUTS.length - itemsToShow);
+
+  const goToLoadout = useCallback((idx: number) => {
+    const nextIdx = Math.max(0, Math.min(idx, maxIndex));
+    setActiveLoadout(nextIdx);
+  }, [maxIndex]);
+
 
   const resetSliderTimer = useCallback(() => {
     if (sliderTimerRef.current) clearInterval(sliderTimerRef.current);
     sliderTimerRef.current = setInterval(() => {
-      setIsSliding(true);
-      setTimeout(() => {
-        setActiveLoadout((prev) => (prev + 1) % LOADOUTS.length);
-        setIsSliding(false);
-      }, 220);
-    }, 5500);
-  }, []);
+      setActiveLoadout((prev) => (prev >= maxIndex ? 0 : prev + 1));
+    }, 6000);
+  }, [maxIndex]);
 
   const toggleVideo = () => {
     const video = videoRef.current;
@@ -427,6 +436,7 @@ const LandingPage: React.FC = () => {
             {[
               { name: 'Warriors', href: '#warriors' },
               { name: 'Tactics', href: '#tactics' },
+              { name: 'Loadouts', href: '#loadouts' },
               { name: 'Gallery', href: '#gallery' },
               { name: 'Marketplace', href: '/marketplace-info' },
               { name: 'Blog', href: '/blog' },
@@ -474,6 +484,7 @@ const LandingPage: React.FC = () => {
             {[
               { name: 'Warriors', href: '#warriors' },
               { name: 'Tactics', href: '#tactics' },
+              { name: 'Loadouts', href: '#loadouts' },
               { name: 'Gallery', href: '#gallery' },
               { name: 'Marketplace', href: '/marketplace-info' },
               { name: 'Blog', href: '/blog' },
@@ -685,6 +696,154 @@ const LandingPage: React.FC = () => {
               title="Prime Assets"
               desc="Unlock professional sponsorship deals, high-tier tactical gear, and custom clan armaments."
             />
+          </div>
+        </section>
+
+        {/* ══════════ LOADOUTS SLIDER ══════════ */}
+        <section id="loadouts" className="py-24 relative overflow-hidden" style={{ background: '#080202' }}>
+          <div className="max-w-[1400px] mx-auto px-6 relative" style={{ zIndex: 1 }}>
+            {/* Section header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 px-4">
+              <div className="mb-6 md:mb-0">
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4"
+                  style={{ background: `${C.primary}18`, border: `1px solid ${C.primary}33`, color: C.primary }}
+                >
+                  <Sword className="w-3 h-3" /> NeXa Arsenal
+                </div>
+                <h2 className="text-5xl font-black uppercase tracking-tight text-white leading-tight">
+                  Elite <span style={{ color: C.primary }}>Loadouts</span>
+                </h2>
+                <p className="text-slate-500 mt-4 text-base max-w-xl">
+                  Dominating weapon builds optimized by clan masters for maximum combat efficiency in high-performance lobbies.
+                </p>
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => { goToLoadout(activeLoadout - 1); resetSliderTimer(); }}
+                  disabled={activeLoadout === 0}
+                  className="w-12 h-12 rounded-full flex items-center justify-center transition-all bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed group"
+                >
+                  <ChevronLeft className="w-5 h-5 text-white group-hover:-translate-x-0.5 transition-transform" />
+                </button>
+                <div className="flex gap-1.5 px-4">
+                  {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-1 rounded-full transition-all duration-300"
+                      style={{
+                        width: i === activeLoadout ? '32px' : '8px',
+                        background: i === activeLoadout ? C.primary : 'rgba(255,255,255,0.1)'
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => { goToLoadout(activeLoadout + 1); resetSliderTimer(); }}
+                  disabled={activeLoadout >= maxIndex}
+                  className="w-12 h-12 rounded-full flex items-center justify-center transition-all"
+                  style={{ background: C.primary, boxShadow: `0 4px 20px ${C.primary}4d` }}
+                >
+                  <ChevronRight className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+            </div>
+
+            {/* Slider Container */}
+            <div className="overflow-hidden px-4">
+              <div
+                className="flex transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                style={{ transform: `translateX(-${activeLoadout * (100 / itemsToShow)}%)` }}
+              >
+                {LOADOUTS.map((gun, idx) => (
+                  <div
+                    key={idx}
+                    className="flex-shrink-0 px-3"
+                    style={{ width: `${100 / itemsToShow}%` }}
+                  >
+                    <div
+                      className="group relative h-[620px] rounded-3xl overflow-hidden border border-white/5 transition-all duration-500 hover:border-white/20 hover:translate-y-[-8px]"
+                      style={{ background: 'linear-gradient(180deg, #120606 0%, #080202 100%)' }}
+                    >
+                      {/* Accent Glow */}
+                      <div
+                        className="absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity duration-700"
+                        style={{ background: gun.accent }}
+                      />
+
+                      {/* Content */}
+                      <div className="relative p-8 h-full flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-8">
+                          <div>
+                            <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase block mb-1">
+                              {gun.category}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">
+                              {gun.role}
+                            </span>
+                          </div>
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs" style={{ background: `${gun.accent}22`, color: gun.accent, border: `1px solid ${gun.accent}33` }}>
+                            {gun.categoryShort}
+                          </div>
+                        </div>
+
+                        {/* Weapon Title */}
+                        <div className="mb-6">
+                          <h3 className="text-4xl font-black text-white uppercase italic group-hover:text-primary transition-colors duration-300" style={{ color: gun.accent }}>
+                            {gun.name}
+                          </h3>
+                          <p className="text-slate-500 font-bold tracking-wide mt-1">"{gun.subtitle}"</p>
+                        </div>
+
+                        {/* Image */}
+                        <div className="relative h-44 my-4 flex items-center justify-center">
+                          <img
+                            src={gun.imgUrl}
+                            alt={gun.name}
+                            className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transition-transform duration-700 group-hover:scale-110"
+                          />
+                        </div>
+
+                        {/* Stats Summary */}
+                        <div className="grid grid-cols-2 gap-4 mt-auto mb-8">
+                          {Object.entries(gun.stats).map(([label, val]) => (
+                            <div key={label}>
+                              <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">{label}</span>
+                                <span className="text-[10px] font-black text-slate-300">{val}</span>
+                              </div>
+                              <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-1000 delay-300 transform origin-left scale-x-0 group-hover:scale-x-100"
+                                  style={{ width: `${val}%`, background: gun.accent }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Attachments (Hidden by default, shown on hover?) -> Let's keep a compact list */}
+                        <div className="space-y-1.5 pt-6 border-t border-white/5">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">Pro Configuration</p>
+                          {gun.attachments.slice(0, 3).map((att) => (
+                            <div key={att.slot} className="flex justify-between items-center text-[11px]">
+                              <span className="text-slate-500 font-bold uppercase">{att.slot}</span>
+                              <span className="text-slate-300 font-medium truncate ml-2 max-w-[140px]">{att.name}</span>
+                            </div>
+                          ))}
+                          {gun.attachments.length > 3 && (
+                            <p className="text-[10px] text-slate-600 font-bold mt-1">+ {gun.attachments.length - 3} more attachments</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
