@@ -255,7 +255,7 @@ const LandingPage: React.FC = () => {
           {/* CTA + Mobile toggle */}
           <div className="flex items-center gap-3">
             <a
-              href="#contact"
+              href="/auth/login"
               className="hidden md:block px-6 py-2.5 rounded-xl font-black text-sm text-white transition-all"
               style={{ background: C.primary, boxShadow: `0 4px 14px ${C.primary}4d` }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.filter = 'brightness(1.1)')}
