@@ -1169,7 +1169,7 @@ export const AdminPlayers: React.FC = () => {
                 </div>
               </div>
             )}
-          </ScrollArea>}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
