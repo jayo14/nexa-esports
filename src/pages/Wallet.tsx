@@ -40,10 +40,10 @@ const glassButton: React.CSSProperties = {
 
 /* ─── Transaction type helpers ─── */
 const renderTransactionIcon = (type: string) => {
-  const iconClass = 'w-5 h-5';
+  const iconClass = 'w-4 h-4';
   if (['Deposit', 'Transfer In', 'Giveaway Redeemed'].includes(type)) {
     return (
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
         <ArrowDown className={`${iconClass} text-emerald-500`} />
       </div>
@@ -51,7 +51,7 @@ const renderTransactionIcon = (type: string) => {
   }
   if (['Withdrawal', 'Transfer Out', 'Giveaway Created', 'Monthly Tax'].includes(type)) {
     return (
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: `${PRIMARY}1a`, border: `1px solid ${PRIMARY}33` }}>
         <ArrowUp className={`${iconClass}`} style={{ color: PRIMARY }} />
       </div>
@@ -59,7 +59,7 @@ const renderTransactionIcon = (type: string) => {
   }
   if (type === 'Airtime Purchase') {
     return (
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: `${PRIMARY}1a`, border: `1px solid ${PRIMARY}33` }}>
         <Smartphone className={`${iconClass}`} style={{ color: PRIMARY }} />
       </div>
@@ -67,14 +67,14 @@ const renderTransactionIcon = (type: string) => {
   }
   if (type === 'Giveaway Refund') {
     return (
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
         <Gift className={`${iconClass} text-blue-400`} />
       </div>
     );
   }
   return (
-    <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
       <Coins className={`${iconClass} text-slate-500`} />
     </div>
@@ -84,7 +84,7 @@ const renderTransactionIcon = (type: string) => {
 const getStatusBadge = (status: string) => {
   if (status === 'completed' || status === 'success') {
     return (
-      <span className="px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-widest"
+      <span className="px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-widest"
         style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
         Success
       </span>
@@ -92,7 +92,7 @@ const getStatusBadge = (status: string) => {
   }
   if (status === 'pending') {
     return (
-      <span className="px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-widest"
+      <span className="px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-widest"
         style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>
         Pending
       </span>
@@ -100,7 +100,7 @@ const getStatusBadge = (status: string) => {
   }
   if (status === 'failed') {
     return (
-      <span className="px-3 py-1 text-[10px] font-black rounded-lg uppercase tracking-widest"
+      <span className="px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-widest"
         style={{ background: `${PRIMARY}1a`, color: PRIMARY }}>
         Failed
       </span>
@@ -115,21 +115,21 @@ const TransactionItem: React.FC<{ transaction: any; onViewReceipt: (t: any) => v
 }) => (
   <div
     onClick={() => onViewReceipt(transaction)}
-    className="flex items-center justify-between p-6 rounded-2xl cursor-pointer transition-all group"
+    className="flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all group"
     style={{ ...glassMorphism }}
     onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)')}
     onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)')}
   >
-    <div className="flex items-center gap-6 flex-1">
+    <div className="flex items-center gap-4 flex-1">
       {renderTransactionIcon(transaction.type)}
-      <div className="flex-1">
-        <p className="font-bold text-sm text-slate-100">{transaction.description}</p>
-        <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-bold">{transaction.date}</p>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm text-slate-100 truncate">{transaction.description}</p>
+        <p className="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wider font-bold">{transaction.date}</p>
       </div>
     </div>
-    <div className="flex flex-col items-end gap-2">
-      <p className={`text-xl font-black tracking-tight ${transaction.amount > 0 ? 'text-emerald-500' : 'text-white'}`}>
-        {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toFixed(0)}
+    <div className="flex flex-col items-end gap-1">
+      <p className={`text-base font-black tracking-tight ${transaction.amount > 0 ? 'text-emerald-500' : 'text-white'}`}>
+        {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}
       </p>
       {getStatusBadge(transaction.status)}
     </div>
@@ -147,22 +147,10 @@ const ActionBtn: React.FC<{
   <button
     onClick={onClick}
     disabled={disabled}
-    className="flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-    style={accent ? { background: PRIMARY, color: '#fff', boxShadow: `0 8px 30px ${PRIMARY}4d` } : glassButton}
-    onMouseEnter={(e) => {
-      if (!disabled && !accent) {
-        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)';
-        (e.currentTarget as HTMLButtonElement).style.borderColor = `${PRIMARY}66`;
-      }
-    }}
-    onMouseLeave={(e) => {
-      if (!disabled && !accent) {
-        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)';
-        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
-      }
-    }}
+    className="flex flex-col items-center justify-center gap-2 p-3 min-w-[70px] sm:min-w-[80px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+    style={accent ? { background: PRIMARY, color: '#fff', boxShadow: `0 4px 20px ${PRIMARY}33` } : glassButton}
   >
-    <span style={accent ? {} : { color: PRIMARY }}>{icon}</span>
+    <span className="w-5 h-5 flex items-center justify-center" style={accent ? {} : { color: PRIMARY }}>{icon}</span>
     <span>{label}</span>
   </button>
 );
@@ -353,71 +341,67 @@ const Wallet: React.FC = () => {
         className="flex-1 flex flex-col overflow-y-auto"
         style={{ scrollbarWidth: 'none' }}
       >
-               <div className="px-4 sm:px-6 lg:px-10 pt-4 sm:pt-0 pb-12 space-y-10">
+        <div className="px-3 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-12 space-y-6 sm:space-y-10">
           {/* ── Balance Hero ── */}
           <section className="relative">
-            <div className="absolute inset-0 rounded-[32px]"
+            <div className="absolute inset-0 rounded-2xl sm:rounded-[32px]"
               style={{ background: `${PRIMARY}1a`, filter: 'blur(100px)' }} />
 
             <div
-              className="relative rounded-[32px] p-10 overflow-hidden flex flex-col justify-between min-h-[280px]"
+              className="relative rounded-2xl sm:rounded-[32px] p-6 sm:p-10 overflow-hidden flex flex-col justify-between min-h-[180px] sm:min-h-[280px]"
               style={{ ...glassMorphism, boxShadow: `0 0 60px -15px ${PRIMARY}4d` }}
             >
               {/* Glow blobs */}
-              <div className="absolute -right-20 -top-20 w-96 h-96 rounded-full"
+              <div className="absolute -right-20 -top-20 w-64 h-64 sm:w-96 sm:h-96 rounded-full"
                 style={{ background: `${PRIMARY}33`, filter: 'blur(120px)' }} />
-              <div className="absolute right-40 top-1/2 -translate-y-1/2 w-40 h-40 rounded-full"
-                style={{ background: `${PRIMARY}4d`, filter: 'blur(60px)' }} />
 
               <div className="flex justify-between items-start relative z-10">
                 <div>
-                  <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-xs mb-2">
+                  <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] mb-1 sm:mb-2">
                     Total Balance
                   </p>
-                  <div className="flex items-baseline gap-4">
-                    <h3 className="text-7xl font-black tracking-tighter text-white">
+                  <div className="flex items-baseline gap-3 sm:gap-4">
+                    <h3 className="text-4xl sm:text-7xl font-black tracking-tighter text-white">
                       {balanceVisible
                         ? `₦${Math.floor(animatedBalance).toLocaleString()}`
                         : '₦••••••'}
                     </h3>
                     {balanceVisible && (
-                      <div className="px-3 py-1 rounded-full flex items-center gap-1.5"
+                      <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full flex items-center gap-1 sm:gap-1.5"
                         style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                        <TrendingUp className="w-4 h-4 text-emerald-500" />
-                        <span className="text-emerald-500 text-xs font-bold">Active</span>
+                        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" />
+                        <span className="text-emerald-500 text-[10px] sm:text-xs font-bold">Active</span>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setBalanceVisible(!balanceVisible)}
-                    className="p-3 rounded-2xl transition-all"
-                    style={glassButton}
-                  >
-                    {balanceVisible
-                      ? <Eye className="w-5 h-5 text-slate-300" />
-                      : <EyeOff className="w-5 h-5 text-slate-300" />}
-                  </button>
-                </div>
+                <button
+                  onClick={() => setBalanceVisible(!balanceVisible)}
+                  className="p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all"
+                  style={glassButton}
+                >
+                  {balanceVisible
+                    ? <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />
+                    : <EyeOff className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />}
+                </button>
               </div>
 
               {/* Stats row */}
-              <div className="flex items-center gap-12 relative z-10 mt-auto">
+              <div className="flex items-center gap-6 sm:gap-12 relative z-10 mt-6 sm:mt-auto">
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">
+                  <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-0.5">
                     Available
                   </p>
-                  <p className="text-xl font-bold text-white">
+                  <p className="text-base sm:text-xl font-bold text-white">
                     ₦{walletBalance.toLocaleString()}
                   </p>
                 </div>
-                <div className="h-10 w-px bg-white/10" />
+                <div className="h-8 sm:h-10 w-px bg-white/10" />
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">
+                  <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-0.5">
                     Currency
                   </p>
-                  <p className="text-xl font-bold" style={{ color: PRIMARY }}>NGN</p>
+                  <p className="text-base sm:text-xl font-bold" style={{ color: PRIMARY }}>NGN</p>
                 </div>
               </div>
             </div>
@@ -426,17 +410,17 @@ const Wallet: React.FC = () => {
           {/* PIN setup alert */}
           {hasPinSet === false && (
             <div
-              className="p-4 rounded-2xl flex items-center gap-4"
+              className="p-3 sm:p-4 rounded-xl sm:rounded-2xl flex items-center gap-3 sm:gap-4"
               style={{ background: `${PRIMARY}0d`, border: `1px solid ${PRIMARY}33` }}
             >
-              <Shield className="w-6 h-6 flex-shrink-0" style={{ color: PRIMARY }} />
-              <div className="flex-1">
-                <p className="text-sm font-bold text-slate-100">Secure your wallet</p>
-                <p className="text-xs text-slate-400 mt-0.5">Set up a 4-digit PIN to protect your transactions.</p>
+              <Shield className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" style={{ color: PRIMARY }} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-slate-100 truncate">Secure wallet</p>
+                <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1">Set a 4-digit PIN.</p>
               </div>
               <button
                 onClick={() => setShowPinSetup(true)}
-                className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-white"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] font-black uppercase tracking-widest text-white shrink-0"
                 style={{ background: PRIMARY }}
               >
                 Set PIN
@@ -445,9 +429,9 @@ const Wallet: React.FC = () => {
           )}
 
           {/* ── Action Bar ── */}
-          <section className="flex flex-wrap items-center gap-4">
+          <section className="grid grid-cols-4 sm:flex sm:flex-wrap items-center gap-2 sm:gap-4">
             <ActionBtn
-              icon={<Upload className="w-5 h-5" />}
+              icon={<Upload className="w-full h-full" />}
               label="Fund"
               accent
               onClick={async () => {
@@ -457,7 +441,7 @@ const Wallet: React.FC = () => {
               disabled={!walletSettings.deposits_enabled}
             />
             <ActionBtn
-              icon={<Download className="w-5 h-5" />}
+              icon={<Download className="w-full h-full" />}
               label="Withdraw"
               onClick={async () => {
                 if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
@@ -466,7 +450,7 @@ const Wallet: React.FC = () => {
               disabled={!walletSettings.withdrawals_enabled}
             />
             <ActionBtn
-              icon={<Send className="w-5 h-5" />}
+              icon={<Send className="w-full h-full" />}
               label="Transfer"
               onClick={async () => {
                 if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
@@ -474,7 +458,7 @@ const Wallet: React.FC = () => {
               }}
             />
             <ActionBtn
-              icon={<Gift className="w-5 h-5" />}
+              icon={<Gift className="w-full h-full" />}
               label="Redeem"
               onClick={async () => {
                 if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
@@ -482,51 +466,48 @@ const Wallet: React.FC = () => {
               }}
             />
             <button
-              className="flex items-center justify-center w-14 h-14 rounded-2xl transition-all"
+              className="hidden sm:flex items-center justify-center w-14 h-14 rounded-2xl transition-all"
               style={glassButton}
               onClick={() => navigate('/wallet/more-transactions')}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = `${PRIMARY}66`;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
-              }}
             >
               <MoreHorizontal className="w-5 h-5 text-slate-300" />
             </button>
           </section>
 
           {/* ── Transactions ── */}
-          <section className="space-y-6">
+          <section className="space-y-4 sm:space-y-6">
             {/* Tabs + heading */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-center gap-6">
-                {/* Tab nav */}
-                <nav
-                  className="flex p-1.5 rounded-2xl overflow-x-auto hide-scrollbar max-w-full"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
-                >
-                  {TABS.map((tab) => {
-                    const Icon = tab.icon;
-                    return (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key)}
-                      className="shrink-0 inline-flex items-center justify-center gap-2 px-3 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-[0.14em] sm:tracking-widest transition-all"
-                      style={
-                        activeTab === tab.key
-                          ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
-                          : { color: '#64748b' }
-                      }
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="hidden min-[430px]:inline">{tab.label}</span>
-                    </button>
-                  )})}
-                </nav>
-              </div>
+            <div className="flex items-center justify-between">
+              <nav
+                className="flex p-1 rounded-xl sm:rounded-2xl overflow-x-auto hide-scrollbar max-w-full"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)' }}
+              >
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all"
+                    style={
+                      activeTab === tab.key
+                        ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
+                        : { color: '#64748b' }
+                    }
+                  >
+                    <Icon className="w-3 h-3 sm:w-4 h-4" />
+                    <span className={activeTab === tab.key ? 'inline' : 'hidden min-[430px]:inline'}>{tab.label}</span>
+                  </button>
+                )})}
+              </nav>
+              
+              <button 
+                className="sm:hidden p-2 rounded-lg"
+                style={glassButton}
+                onClick={() => navigate('/wallet/more-transactions')}
+              >
+                <MoreHorizontal className="w-4 h-4 text-slate-300" />
+              </button>
             </div>
 
             {/* Transaction list */}
