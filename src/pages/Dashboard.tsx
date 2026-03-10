@@ -21,6 +21,7 @@ import {
   CalendarCheck,
   Users
 } from "lucide-react";
+import { CompleteProfileAlert } from "@/components/CompleteProfileAlert";
 
 export const Dashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -66,6 +67,8 @@ export const Dashboard: React.FC = () => {
 
   return (
     <>
+      <CompleteProfileAlert />
+      
       {/* Main Content Grid - Responsive */}
       <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-12 gap-2 xs:gap-4 md:gap-6 px-2 xs:px-3 sm:px-4 md:px-6">
         {/* Hero Section */}
