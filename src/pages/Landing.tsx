@@ -4,7 +4,7 @@ import {
   Gift, Trophy, Mail, MessageCircle, ArrowRight,
   Globe, AtSign, Video, CheckCircle, Swords,
   ChevronDown, ChevronLeft, ChevronRight, Menu, X, Pause, Play, Loader2,
-  Copy, Check,
+  Copy, Check, ShoppingBag,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -592,11 +592,12 @@ const LandingPage: React.FC = () => {
                   </a>
                   <a
                     href="/marketplace-info"
-                    className="px-8 py-4 rounded-2xl font-black text-lg text-white transition-colors"
+                    className="flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-lg text-white transition-colors"
                     style={{ ...glassCard, border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.08)')}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = 'rgba(218,11,29,0.05)')}
                   >
+                    <ShoppingBag className="w-5 h-5" />
                     Marketplace
                   </a>
                 </div>

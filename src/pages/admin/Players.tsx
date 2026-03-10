@@ -18,6 +18,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import PlayerProfileModal from '@/components/PlayerProfileModal';
 
 type Player = Database['public']['Tables']['profiles']['Row'] & { email?: string | null };
@@ -1019,154 +1020,156 @@ export const AdminPlayers: React.FC = () => {
             </div>
           </div>
 
-          {inviteSuccess ? (
-            /* ── Success State ── */
-            <div className="px-8 py-10 flex flex-col items-center text-center gap-4">
-              <div
-                className="w-20 h-20 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(34,197,94,0.12)', border: '2px solid rgba(34,197,94,0.4)' }}
-              >
-                <CheckCircle2 className="w-10 h-10 text-green-400" />
-              </div>
-              <div>
-                <p className="text-xl font-black text-white mb-1">Invite Dispatched!</p>
-                <p className="text-sm text-slate-400">
-                  An invite email has been sent to{' '}
-                  <span className="font-bold" style={{ color: C.primary }}>{inviteEmail}</span>
-                  {' '}with a link to set their password and access the platform.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCloseInviteDialog(false)}
-                className="mt-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-sm text-white transition-all"
-                style={{ background: C.primary, boxShadow: `0 4px 16px ${C.primary}4d` }}
-              >
-                Done
-              </button>
-            </div>
-          ) : (
-            /* ── Form State ── */
-            <div className="px-8 py-6 space-y-5">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                  Full Name <span style={{ color: C.primary }}>*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="text"
-                    value={inviteFullName}
-                    onChange={(e) => setInviteFullName(e.target.value)}
-                    placeholder="e.g. Ghost Sniper"
-                    className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.primary}22`, outline: 'none' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = `${C.primary}22`; }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
-                  />
+          <ScrollArea className="max-h-[80vh]">
+            {inviteSuccess ? (
+              /* ── Success State ── */
+              <div className="px-8 py-10 flex flex-col items-center text-center gap-4">
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(34,197,94,0.12)', border: '2px solid rgba(34,197,94,0.4)' }}
+                >
+                  <CheckCircle2 className="w-10 h-10 text-green-400" />
                 </div>
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                  Email Address <span style={{ color: C.primary }}>*</span>
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => { setInviteEmail(e.target.value); setInviteEmailError(''); }}
-                    placeholder="operative@email.com"
-                    className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${inviteEmailError ? C.primary : `${C.primary}22`}`, outline: 'none' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = inviteEmailError ? C.primary : `${C.primary}22`; }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
-                  />
+                <div>
+                  <p className="text-xl font-black text-white mb-1">Invite Dispatched!</p>
+                  <p className="text-sm text-slate-400">
+                    An invite email has been sent to{' '}
+                    <span className="font-bold" style={{ color: C.primary }}>{inviteEmail}</span>
+                    {' '}with a link to set their password and access the platform.
+                  </p>
                 </div>
-                {inviteEmailError && (
-                  <p className="text-xs font-bold" style={{ color: C.primary }}>{inviteEmailError}</p>
-                )}
-              </div>
-
-              {/* Role Selection */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                  Assign Role <span style={{ color: C.primary }}>*</span>
-                </label>
-                <div className="relative">
-                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value)}
-                    className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 appearance-none transition-all cursor-pointer"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.primary}22`, outline: 'none' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = `${C.primary}22`; }}
-                  >
-                    <option value="player" style={{ background: C.bgDark }}>Player</option>
-                    <option value="moderator" style={{ background: C.bgDark }}>Moderator</option>
-                    <option value="admin" style={{ background: C.bgDark }}>Admin</option>
-                  </select>
-                  <ArrowDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Info note */}
-              <div
-                className="flex items-start gap-3 rounded-xl p-4 text-xs text-slate-400"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-              >
-                <Send className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: C.primary }} />
-                <span>
-                  The recruit will receive an email from <span className="text-slate-200 font-bold">NeXa Esports</span> with their name
-                  and a secure link to set their password and access the platform.
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
-                  className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 transition-colors hover:text-slate-200"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
                   onClick={() => handleCloseInviteDialog(false)}
-                  disabled={sendingInvite}
+                  className="mt-2 px-8 py-3 rounded-xl font-black uppercase tracking-widest text-sm text-white transition-all"
+                  style={{ background: C.primary, boxShadow: `0 4px 16px ${C.primary}4d` }}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-white transition-all"
-                  style={{
-                    background: (sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()) ? 'rgba(236,19,30,0.4)' : C.primary,
-                    boxShadow: sendingInvite ? 'none' : `0 4px 16px ${C.primary}4d`,
-                    cursor: (sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()) ? 'not-allowed' : 'pointer',
-                  }}
-                  onMouseEnter={(e) => { if (!sendingInvite) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
-                  onClick={handleSendInvite}
-                >
-                  {sendingInvite ? (
-                    <>
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                      Sending…
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      Send Invite
-                    </>
-                  )}
+                  Done
                 </button>
               </div>
-            </div>
-          )}
+            ) : (
+              /* ── Form State ── */
+              <div className="px-8 py-6 space-y-5">
+                {/* Full Name */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                    Full Name <span style={{ color: C.primary }}>*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      value={inviteFullName}
+                      onChange={(e) => setInviteFullName(e.target.value)}
+                      placeholder="e.g. Ghost Sniper"
+                      className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-all"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.primary}22`, outline: 'none' }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = `${C.primary}22`; }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                    Email Address <span style={{ color: C.primary }}>*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => { setInviteEmail(e.target.value); setInviteEmailError(''); }}
+                      placeholder="operative@email.com"
+                      className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 transition-all"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${inviteEmailError ? C.primary : `${C.primary}22`}`, outline: 'none' }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = inviteEmailError ? C.primary : `${C.primary}22`; }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSendInvite(); }}
+                    />
+                  </div>
+                  {inviteEmailError && (
+                    <p className="text-xs font-bold" style={{ color: C.primary }}>{inviteEmailError}</p>
+                  )}
+                </div>
+
+                {/* Role Selection */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                    Assign Role <span style={{ color: C.primary }}>*</span>
+                  </label>
+                  <div className="relative">
+                    <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <select
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value)}
+                      className="w-full rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 appearance-none transition-all cursor-pointer"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.primary}22`, outline: 'none' }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = `${C.primary}88`; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = `${C.primary}22`; }}
+                    >
+                      <option value="player" style={{ background: C.bgDark }}>Player</option>
+                      <option value="moderator" style={{ background: C.bgDark }}>Moderator</option>
+                      <option value="admin" style={{ background: C.bgDark }}>Admin</option>
+                    </select>
+                    <ArrowDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Info note */}
+                <div
+                  className="flex items-start gap-3 rounded-xl p-4 text-xs text-slate-400"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  <Send className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: C.primary }} />
+                  <span>
+                    The recruit will receive an email from <span className="text-slate-200 font-bold">NeXa Esports</span> with their name
+                    and a secure link to set their password and access the platform.
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-1">
+                  <button
+                    type="button"
+                    className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 transition-colors hover:text-slate-200"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    onClick={() => handleCloseInviteDialog(false)}
+                    disabled={sendingInvite}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-white transition-all"
+                    style={{
+                      background: (sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()) ? 'rgba(236,19,30,0.4)' : C.primary,
+                      boxShadow: sendingInvite ? 'none' : `0 4px 16px ${C.primary}4d`,
+                      cursor: (sendingInvite || !inviteFullName.trim() || !inviteEmail.trim()) ? 'not-allowed' : 'pointer',
+                    }}
+                    onMouseEnter={(e) => { if (!sendingInvite) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)'; }}
+                    onClick={handleSendInvite}
+                  >
+                    {sendingInvite ? (
+                      <>
+                        <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                        Sending…
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        Send Invite
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </ScrollArea>}
         </DialogContent>
       </Dialog>
     </div>

@@ -10,10 +10,10 @@ const buildUsernameFromFullName = (fullName: string) =>
     .slice(0, 24)
 
 Deno.serve(async (req) => {
-  const origin = req.headers.get('Origin') || ''
+  const reqOrigin = req.headers.get('Origin') || ''
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders(origin) })
+    return new Response(null, { headers: corsHeaders(reqOrigin) })
   }
 
   try {
@@ -57,11 +57,11 @@ Deno.serve(async (req) => {
 
     const normalizedEmail = String(email).trim().toLowerCase()
     const normalizedFullName = String(fullName).trim()
+    
+    // Determine the actual origin for redirects - priority: header > req.url
+    const appOrigin = req.headers.get('origin') || new URL(req.url).origin
 
-    if (!normalizedEmail.includes('@')) {
-      throw new Error('Invalid email address')
-    }
-
+    // Generate base username and IGN
     const usernameBase = buildUsernameFromFullName(normalizedFullName)
     const ignBase = normalizedFullName
 
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
           ign: ignBase,
           role: role
         },
-        redirectTo: redirectTo || `${new URL(req.url).origin}/auth/reset-password`,
+        redirectTo: redirectTo || `${appOrigin}/auth/reset-password`,
       }
     )
 
@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
       }
       // Check for common internal errors
       if (inviteError.message.includes('Database error saving new user')) {
-        throw new Error('Internal system error during user registration. Please try again in a moment.')
+        console.error('Database error details:', inviteError)
+        throw new Error(`Internal system error during user registration: ${inviteError.message}. This usually means a database trigger or constraint failed.`)
       }
       throw new Error(`Failed to send invite email: ${inviteError.message}`)
     }
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, userId: invitedUserId }),
-      { headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders(reqOrigin), 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('invite-member function error:', error)
@@ -145,8 +146,7 @@ Deno.serve(async (req) => {
     
     return new Response(
       JSON.stringify({ error: message }),
-      { status, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } }
+      { status, headers: { ...corsHeaders(reqOrigin), 'Content-Type': 'application/json' } }
     )
   }
 })
-

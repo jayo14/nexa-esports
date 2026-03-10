@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
           <SideNavIcon icon={<Package className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
           <SideNavIcon icon={<Tv className="w-5 h-5" />} onClick={() => navigate('/announcements')} active={isActive('/announcements')} />
           <SideNavIcon icon={<BarChart2 className="w-5 h-5" />} onClick={() => navigate('/statistics')} active={isActive('/statistics')} />
-          <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
+          <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/buyer/dashboard')} active={isActive('/buyer/dashboard')} />
           <SideNavIcon icon={<MessageSquare className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
           {isAdminOrClanMaster && (
             <>
