@@ -17,7 +17,9 @@ import { MarketplaceInfo } from '@/pages/MarketplaceInfo';
 
 // Auth pages
 import { Login } from '@/pages/auth/Login';
+import { BuyerLogin } from '@/pages/auth/BuyerLogin';
 import { Signup } from '@/pages/auth/Signup';
+import { BuyerSignup } from '@/pages/auth/BuyerSignup';
 import { EmailConfirmation } from '@/pages/auth/EmailConfirmation';
 import { ForgotPassword } from '@/pages/auth/ForgotPassword';
 import { ResetPassword } from '@/pages/auth/ResetPassword';
@@ -40,6 +42,16 @@ import { ListingDetails } from '@/pages/ListingDetails';
 import { BuyerDashboard } from '@/pages/BuyerDashboard';
 import { MyPurchases } from '@/pages/MyPurchases';
 import { PurchaseDetails } from '@/pages/PurchaseDetails';
+
+// Seller pages
+import { SellerDashboard } from '@/pages/seller/SellerDashboard';
+import { SellerPostAccount } from '@/pages/seller/SellerPostAccount';
+import { SellerWallet } from '@/pages/seller/SellerWallet';
+import { SellerSettings } from '@/pages/seller/SellerSettings';
+import { SellerRequest } from '@/pages/seller/SellerRequest';
+import { SellerRequestPending } from '@/pages/seller/SellerRequestPending';
+import { SellerRequestRejected } from '@/pages/seller/SellerRequestRejected';
+import { SellerShell } from '@/pages/seller/SellerShell';
 
 // Admin pages
 import { AdminPlayers } from '@/pages/admin/Players';
@@ -126,7 +138,9 @@ function AppRoutes() {
 
         {/* Auth routes */}
         <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/buyer-login" element={<BuyerLogin />} />
         <Route path="/auth/signup" element={<Signup />} />
+        <Route path="/auth/buyer-signup" element={<BuyerSignup />} />
         <Route path="/auth/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
@@ -158,7 +172,20 @@ function AppRoutes() {
         <Route path="/marketplace/purchases" element={<ProtectedRoute><Layout showSidebar><MyPurchases /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/purchases/:transactionId" element={<ProtectedRoute><Layout showSidebar><PurchaseDetails /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/orders" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />
+        <Route path="/buyer/dashboard" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />
         <Route path="/payment-success" element={<ProtectedRoute><Layout showSidebar><PaymentSuccess /></Layout></ProtectedRoute>} />
+
+        {/* Seller routes */}
+        <Route path="/seller/request" element={<ProtectedRoute><Layout showSidebar><SellerRequest /></Layout></ProtectedRoute>} />
+        <Route path="/seller/request/pending" element={<ProtectedRoute><Layout showSidebar><SellerRequestPending /></Layout></ProtectedRoute>} />
+        <Route path="/seller/request/rejected" element={<ProtectedRoute><Layout showSidebar><SellerRequestRejected /></Layout></ProtectedRoute>} />
+        
+        <Route path="/seller" element={<ProtectedRoute><SellerShell /></ProtectedRoute>}>
+          <Route path="dashboard" element={<SellerDashboard />} />
+          <Route path="post-account" element={<SellerPostAccount />} />
+          <Route path="wallet" element={<SellerWallet />} />
+          <Route path="settings" element={<SellerSettings />} />
+        </Route>
 
         {/* Admin routes */}
         <Route path="/admin" element={<ProtectedRoute><Layout showSidebar><AdminDashboard /></Layout></ProtectedRoute>} />

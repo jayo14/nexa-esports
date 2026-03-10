@@ -86,6 +86,10 @@ Deno.serve(async (req) => {
       if (inviteError.message.includes('already been registered')) {
         throw new Error(`The email ${normalizedEmail} is already registered.`)
       }
+      // Check for common internal errors
+      if (inviteError.message.includes('Database error saving new user')) {
+        throw new Error('Internal system error during user registration. Please try again in a moment.')
+      }
       throw new Error(`Failed to send invite email: ${inviteError.message}`)
     }
     
@@ -94,6 +98,9 @@ Deno.serve(async (req) => {
     if (!invitedUserId) {
       throw new Error('Failed to create or resolve invited user')
     }
+
+    // Small delay to allow any DB triggers on auth.users to finish
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     const usernameWithSuffix = `${usernameBase}_${invitedUserId.slice(0, 6)}`
 

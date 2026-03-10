@@ -19,7 +19,9 @@ import {
   Filter,
   ArrowUpDown,
   CreditCard,
-  Settings
+  Settings,
+  Store,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { useSellerStatus } from '@/hooks/useSellerStatus';
 
 export const BuyerDashboard: React.FC = () => {
   const { orders, ordersLoading } = useBuyerOrders();
@@ -35,6 +38,7 @@ export const BuyerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { notifications } = useNotifications();
+  const { sellerStatus, isPending, isApproved } = useSellerStatus();
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -251,9 +255,9 @@ export const BuyerDashboard: React.FC = () => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Wallet Summary */}
-            <Card className="bg-gradient-to-br from-card to-card/50 border-primary/20 shadow-lg md:col-span-1">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-primary/20 shadow-lg">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Wallet Balance</CardTitle>
               </CardHeader>
@@ -269,7 +273,7 @@ export const BuyerDashboard: React.FC = () => {
             </Card>
 
             {/* Active Orders Summary */}
-            <Card className="bg-card/50 border-primary/10 shadow-lg md:col-span-1">
+            <Card className="bg-card/50 border-primary/10 shadow-lg">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Orders</CardTitle>
               </CardHeader>
@@ -289,19 +293,72 @@ export const BuyerDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Profile Summary */}
-            <Card className="bg-card/50 border-primary/10 shadow-lg md:col-span-1">
+            {/* Seller Status Card */}
+            <Card className="bg-card/50 border-primary/10 shadow-lg">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Profile Status</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Seller Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isApproved ? (
+                  <>
+                    <div className="text-xl font-bold font-orbitron text-green-500 mb-1 flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5" /> Approved
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-4">Access your shop</div>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700" 
+                      size="sm"
+                      onClick={() => navigate('/seller/dashboard')}
+                    >
+                      Seller Dashboard <ExternalLink className="ml-2 h-4 w-4" />
+                    </Button>
+                  </>
+                ) : isPending ? (
+                  <>
+                    <div className="text-xl font-bold font-orbitron text-yellow-500 mb-1 flex items-center gap-2">
+                      <Clock className="h-5 w-5" /> Pending
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-4">Under review</div>
+                    <Button 
+                      variant="outline"
+                      className="w-full border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/10" 
+                      size="sm"
+                      disabled
+                    >
+                      Waiting for approval
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-xl font-bold font-orbitron text-foreground mb-1 flex items-center gap-2">
+                      <Store className="h-5 w-5 text-primary" /> Inactive
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-4">Start selling accounts</div>
+                    <Button 
+                      className="w-full" 
+                      size="sm"
+                      onClick={() => navigate('/seller/request')}
+                    >
+                      Become a Seller
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Profile Summary */}
+            <Card className="bg-card/50 border-primary/10 shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Account</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shrink-0">
                     <User className="h-5 w-5 text-primary" />
                   </div>
-                  <div>
-                    <div className="font-bold">{profile?.ign || 'User'}</div>
-                    <div className="text-xs text-muted-foreground capitalize">{profile?.role || 'Buyer'}</div>
+                  <div className="min-w-0">
+                    <div className="font-bold truncate">{profile?.ign || 'User'}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest truncate">{profile?.role || 'Buyer'}</div>
                   </div>
                 </div>
                 <Button 
@@ -310,7 +367,7 @@ export const BuyerDashboard: React.FC = () => {
                   size="sm"
                   onClick={() => setActiveTab('profile')}
                 >
-                  Manage Profile
+                  View Profile
                 </Button>
               </CardContent>
             </Card>

@@ -28,11 +28,29 @@ export const Login: React.FC = () => {
       // Currently, only email login is supported. If username logic is added later, it would be handled here.
       const success = await login(emailOrUsername.trim(), password);
       if (success) {
+        // Fetch session again to ensure we have the user
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error("Session not found after login");
+
+        // Check for seller status
+        const { data: sellerProfile } = await supabase
+          .from("seller_profiles" as any)
+          .select("seller_status")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
         toast({
           title: "Welcome back, warrior!",
           description: "Successfully logged into Nexa Esports",
         });
-        navigate(from, { replace: true });
+
+        if (sellerProfile?.seller_status === 'approved') {
+          navigate("/seller/dashboard", { replace: true });
+        } else if (sellerProfile?.seller_status === 'pending') {
+          navigate("/seller/request/pending", { replace: true });
+        } else {
+          navigate(from === '/dashboard' ? "/buyer/dashboard" : from, { replace: true });
+        }
       }
     } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       console.error('Login error:', error);

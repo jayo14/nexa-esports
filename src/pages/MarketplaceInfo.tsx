@@ -129,22 +129,29 @@ export const MarketplaceInfo: React.FC = () => {
             <div className="hidden md:flex items-center gap-4">
                <ThemeToggle />
                {user ? (
-                  <Link to="/dashboard">
-                     <Button className="font-rajdhani font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                        <LayoutDashboard className="w-4 h-4 mr-2" />
-                        Dashboard
-                     </Button>
-                  </Link>
-               ) : (
                   <div className="flex items-center gap-2">
-                     <Link to="/auth/login">
-                        <Button variant="ghost" className="font-rajdhani font-bold hover:bg-primary/5">
-                           Log In
+                     <Link to="/buyer/dashboard">
+                        <Button variant="outline" size="sm" className="font-rajdhani font-bold hover:bg-primary/5 border-primary/20 text-primary">
+                           <LayoutDashboard className="w-4 h-4 mr-2" />
+                           Buyer Dashboard
                         </Button>
                      </Link>
-                     <Link to="/auth/signup">
+                     <Link to="/dashboard">
                         <Button className="font-rajdhani font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                           Join Now
+                           Warrior Portal
+                        </Button>
+                     </Link>
+                  </div>
+               ) : (
+                  <div className="flex items-center gap-2">
+                     <Link to="/auth/buyer-login">
+                        <Button variant="ghost" className="font-rajdhani font-bold hover:bg-primary/5">
+                           Marketplace Login
+                        </Button>
+                     </Link>
+                     <Link to="/auth/buyer-signup">
+                        <Button className="font-rajdhani font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                           Create Account
                         </Button>
                      </Link>
                   </div>
@@ -181,22 +188,29 @@ export const MarketplaceInfo: React.FC = () => {
                         <div className="h-px bg-border/50 my-2" />
 
                         {user ? (
-                           <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                              <Button className="w-full font-rajdhani font-bold bg-primary text-white">
-                                 <LayoutDashboard className="w-5 h-5 mr-2" />
-                                 Dashboard
-                              </Button>
-                           </Link>
-                        ) : (
                            <>
-                              <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
-                                 <Button variant="outline" className="w-full justify-start font-rajdhani">
-                                    Log In
+                              <Link to="/buyer/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                                 <Button variant="outline" className="w-full justify-start font-rajdhani text-lg mb-2 border-primary/20 text-primary">
+                                    <LayoutDashboard className="w-5 h-5 mr-3" />
+                                    Buyer Dashboard
                                  </Button>
                               </Link>
-                              <Link to="/auth/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                                  <Button className="w-full font-rajdhani font-bold bg-primary text-white">
-                                    Join Now
+                                    Warrior Portal
+                                 </Button>
+                              </Link>
+                           </>
+                        ) : (
+                           <>
+                              <Link to="/auth/buyer-login" onClick={() => setIsMobileMenuOpen(false)}>
+                                 <Button variant="outline" className="w-full justify-start font-rajdhani">
+                                    Marketplace Login
+                                 </Button>
+                              </Link>
+                              <Link to="/auth/buyer-signup" onClick={() => setIsMobileMenuOpen(false)}>
+                                 <Button className="w-full font-rajdhani font-bold bg-primary text-white">
+                                    Create Account
                                  </Button>
                               </Link>
                            </>
@@ -418,7 +432,7 @@ export const MarketplaceInfo: React.FC = () => {
                            </CardContent>
 
                            <CardFooter className="p-4 pt-0">
-                              <Link to="/auth/login" className="w-full">
+                              <Link to="/auth/buyer-login" className="w-full">
                                  <Button className="w-full font-rajdhani font-bold bg-muted hover:bg-primary hover:text-white transition-colors">
                                     View Details <ArrowRight className="w-4 h-4 ml-2" />
                                  </Button>
@@ -494,14 +508,14 @@ export const MarketplaceInfo: React.FC = () => {
                         Create your account today and get started.
                      </p>
                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link to="/auth/signup">
+                        <Link to="/auth/buyer-signup">
                            <Button size="lg" className="w-full sm:w-auto font-orbitron font-bold text-lg px-8 py-6 shadow-xl shadow-primary/20">
-                              Create Free Account
+                              Create Buyer Account
                            </Button>
                         </Link>
-                        <Link to="/auth/login">
+                        <Link to="/auth/buyer-login">
                            <Button size="lg" variant="outline" className="w-full sm:w-auto font-orbitron font-bold text-lg px-8 py-6">
-                              Seller Dashboard
+                              Marketplace Login
                            </Button>
                         </Link>
                      </div>

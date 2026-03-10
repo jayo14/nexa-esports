@@ -1013,7 +1013,7 @@ export const AdminPlayers: React.FC = () => {
                 <UserPlus className="w-5 h-5" style={{ color: C.primary }} />
               </div>
               <div>
-                <h2 className="text-lg font-black uppercase tracking-wider text-white">Recruit New Operative</h2>
+                <DialogTitle className="text-lg font-black uppercase tracking-wider text-white">Recruit New Operative</DialogTitle>
                 <p className="text-xs text-slate-500 mt-0.5">An invite email will be sent with a password setup link</p>
               </div>
             </div>
