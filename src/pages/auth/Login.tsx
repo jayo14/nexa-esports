@@ -28,11 +28,9 @@ export const Login: React.FC = () => {
       // Currently, only email login is supported. If username logic is added later, it would be handled here.
       const success = await login(emailOrUsername.trim(), password);
       if (success) {
-        // Fetch session again to ensure we have the user
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) throw new Error("Session not found after login");
 
-        // Check for seller status
         const { data: sellerProfile } = await supabase
           .from("seller_profiles" as any)
           .select("seller_status")
@@ -49,6 +47,8 @@ export const Login: React.FC = () => {
         } else if (sellerProfile?.seller_status === 'pending') {
           navigate("/seller/request/pending", { replace: true });
         } else {
+          // If they came from dashboard but aren't clan members (no access code/role might be restricted)
+          // we can decide where to send them. Default to /dashboard for now or /buyer/dashboard
           navigate(from === '/dashboard' ? "/buyer/dashboard" : from, { replace: true });
         }
       }

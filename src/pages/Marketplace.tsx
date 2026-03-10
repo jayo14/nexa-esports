@@ -419,8 +419,7 @@ export const Marketplace: React.FC = () => {
                     </button>
                     ) : (
                     <button
-                        onClick={handleBecomeSeller}
-                        disabled={isRequestingSeller}
+                        onClick={() => navigate('/seller/request')}
                         className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all"
                         style={{
                         ...glassStyle,

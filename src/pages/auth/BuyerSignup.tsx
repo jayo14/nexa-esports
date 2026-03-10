@@ -72,7 +72,7 @@ export const BuyerSignup: React.FC = () => {
           title: "Welcome to NeXa Marketplace! 🛒",
           description: "Your account has been created. Please verify your email.",
         });
-        navigate('/auth/email-confirmation');
+        navigate('/auth/email-confirmation?buyer=true');
       }
     } catch (error: any) {
       toast({
