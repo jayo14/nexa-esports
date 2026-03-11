@@ -318,8 +318,26 @@ export const EventEditor: React.FC = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      
+      if (!isEditMode) {
+        // Notify all players about the new event
+        supabase.functions.invoke('send-notification', {
+          body: {
+            type: 'event_created',
+            title: `New Event: ${variables.name}`,
+            message: `${variables.description || 'A new event has been scheduled.'} Deployment: ${variables.date} at ${variables.time}`,
+            data: {
+              eventName: variables.name,
+              eventDate: variables.date,
+              eventTime: variables.time,
+              type: 'event_created'
+            }
+          }
+        });
+      }
+      
       toast({ title: isEditMode ? 'Event Updated' : 'Event Created', description: `Event ${isEditMode ? 'updated' : 'created'} successfully.` });
       navigate('/admin/events');
     },

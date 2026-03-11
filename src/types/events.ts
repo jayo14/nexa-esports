@@ -22,7 +22,7 @@ export interface Event {
   public?: boolean;
   thumbnail_url?: string;
   highlight_reel?: string;
-  event_participants?: { count: number }[];
+  event_participants?: any[];
   host?: {
     username: string;
     avatar_url: string;
