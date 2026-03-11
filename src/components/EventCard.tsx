@@ -115,7 +115,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
       const playerName = profile?.ign || profile?.username || user?.email;
 
       await sendNotification({
-        user?.id: adminId,
+        user_id: adminId,
         title: "Assignment Request",
         message: `Player ${playerName} has requested to join the event: ${event.name}.`,
         type: "assignment_request",

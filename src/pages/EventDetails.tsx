@@ -1,7 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Helmet } from 'react-helmet-async';
 import {
   FacebookShareButton,
@@ -75,6 +76,8 @@ export const EventDetails: React.FC = () => {
   const { eventId } = useParams();
   const navigate    = useNavigate();
   const { toast }   = useToast();
+  const { user }    = useAuth();
+  const queryClient = useQueryClient();
   const shareUrl    = window.location.href;
 
   const { data: event, isLoading, error } = useQuery({
@@ -179,6 +182,29 @@ export const EventDetails: React.FC = () => {
 
   const [titleMain, ...titleRest] = event.name.split(':');
   const titleSub = titleRest.join(':').trim();
+
+  const handleTrackParticipation = async () => {
+    if (!user?.id || !eventId) return;
+    try {
+      const { data: existing } = await supabase
+        .from('event_participants')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('player_id', user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from('event_participants').insert({
+          event_id: eventId,
+          player_id: user.id,
+          verified: true,
+        });
+        queryClient.invalidateQueries({ queryKey: ['event-details', eventId] });
+      }
+    } catch (err) {
+      console.error('Error tracking participation:', err);
+    }
+  };
   const participantRecords = event.event_participants || [];
   const participantCount = participantRecords.length;
   const confirmedCount = participantRecords.filter((participant) => participant.verified).length;
@@ -372,11 +398,12 @@ export const EventDetails: React.FC = () => {
 
                 {event.room_link ? (
                   <a href={event.room_link} target="_blank" rel="noreferrer"
-                    className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all"
+                    onClick={handleTrackParticipation}
+                    className="flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all text-center"
                     style={{ background: `${C.primary}1a`, border: `1px solid ${C.primary}4d`, color: C.primary }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = `${C.primary}33`)}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = `${C.primary}1a`)}>
-                    REVEAL LINK <ArrowRight className="w-4 h-4" />
+                    OPEN EVENT ROOM <ArrowRight className="w-4 h-4" />
                   </a>
                 ) : (
                   <button onClick={() => copyToClipboard()}
@@ -546,10 +573,17 @@ export const EventDetails: React.FC = () => {
                 href={event.room_link}
                 target="_blank"
                 rel="noreferrer"
+                onClick={handleTrackParticipation}
                 className="fixed right-6 bottom-24 md:bottom-8 z-50 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl"
                 style={{ background: C.primary }}
               >
-                <ExternalLink className="w-5 h-5" />
+                <div className="relative">
+                  <ExternalLink className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                  </span>
+                </div>
               </a>
             </TooltipTrigger>
             <TooltipContent>

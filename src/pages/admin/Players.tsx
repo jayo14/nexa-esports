@@ -775,7 +775,7 @@ export const AdminPlayers: React.FC = () => {
           email: normalizedEmail,
           fullName: normalizedFullName,
           role: inviteRole,
-          redirectTo: `${window.location.origin}/auth/reset-password`,
+          redirectTo: `${window.location.origin}/auth/onboarding`,
         },
       });
 
