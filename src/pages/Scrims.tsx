@@ -291,23 +291,23 @@ export const Scrims: React.FC = () => {
             
             return (
               <Card key={event.id} className="bg-card/50 border-border/30 backdrop-blur-sm hover:border-[#FF1F44]/30 transition-colors">
-                <CardHeader>
+                <CardHeader className="p-4 sm:p-8 pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3 flex-1">
                       <div className="p-2 bg-[#FF1F44]/20 rounded-lg">
                         <TypeIcon className="w-5 h-5 text-[#FF1F44]" />
                       </div>
                       <div className="flex-1">
-                        <CardTitle className="text-white text-lg mb-2">
+                        <CardTitle className="text-white text-base sm:text-lg mb-2">
                           {event.name}
                         </CardTitle>
-                        <div className="flex items-center space-x-4 text-sm text-gray-400">
+                        <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm text-gray-400">
                           <span className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
+                            <Calendar className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1" />
                             {new Date(event.date).toLocaleDateString()}
                           </span>
                           <span className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
+                            <Clock className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1" />
                             {event.time}
                           </span>
                         </div>
@@ -315,26 +315,26 @@ export const Scrims: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-col items-end space-y-2">
-                      <Badge className={getStatusColor(status)}>
+                      <Badge className={`${getStatusColor(status)} text-[10px] sm:text-xs px-2 py-0`}>
                         {status.toUpperCase()}
                       </Badge>
-                      <Badge variant="outline" className="border-border text-muted-foreground">
+                      <Badge variant="outline" className="border-border text-muted-foreground text-[10px] sm:text-xs px-2 py-0">
                         {event.type}
                       </Badge>
                     </div>
                   </div>
                 </CardHeader>
                 
-                <CardContent>
+                <CardContent className="p-4 sm:p-8 pt-0">
                   {event.description && (
-                    <p className="text-gray-300 text-sm mb-4">{event.description}</p>
+                    <p className="text-gray-300 text-xs sm:text-sm mb-4">{event.description}</p>
                   )}
                   
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center text-sm text-gray-400">
-                        <Users className="w-4 h-4 mr-1" />
-                        {(event.event_participants ?? []).length} participants
+                      <span className="flex items-center text-xs sm:text-sm text-gray-400">
+                        <Users className="w-3.5 sm:w-4 h-3.5 sm:h-4 mr-1" />
+                        {(event.event_participants ?? []).length} Players
                       </span>
                       <span className="flex items-center text-sm text-gray-400">
                         <MapPin className="w-4 h-4 mr-1" />
