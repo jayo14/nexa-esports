@@ -43,11 +43,10 @@ const BriefingCard: React.FC<{ iconNode: React.ReactNode; value: string; label: 
   iconNode, value, label,
 }) => (
   <div
-    className="p-6 shadow-xl relative group overflow-hidden cursor-default"
+    className="p-4 sm:p-6 shadow-xl relative group overflow-hidden cursor-default rounded-[24px] sm:rounded-[32px]"
     style={{
       ...glass,
       border: '1px solid rgba(255,255,255,0.05)',
-      borderRadius: '32px',
       transform: 'perspective(1000px) rotateY(-5deg) rotateX(2deg)',
       transition: 'transform 0.3s ease',
     }}
@@ -61,13 +60,13 @@ const BriefingCard: React.FC<{ iconNode: React.ReactNode; value: string; label: 
     }}
   >
     <div
-      className="w-12 h-12 rounded-2xl flex items-center justify-center mb-12 transition-transform group-hover:scale-110"
+      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-6 sm:mb-12 transition-transform group-hover:scale-110"
       style={{ background: `${C.primary}33`, color: C.primary }}
     >
       {iconNode}
     </div>
-    <h4 className="text-2xl font-bold mb-2 text-white">{value}</h4>
-    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">{label}</p>
+    <h4 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2 text-white">{value}</h4>
+    <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-widest">{label}</p>
   </div>
 );
 
