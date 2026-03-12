@@ -164,21 +164,21 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
     <Card className="group relative overflow-hidden bg-card/40 border-white/5 backdrop-blur-sm transition-all hover:bg-card/60 hover:border-white/10 hover:shadow-lg">
       <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#FF1F44] to-transparent opacity-50" />
       
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-4">
+      <CardHeader className="p-4 sm:p-8 pb-3 sm:pb-3">
+        <div className="flex justify-between items-start gap-2 sm:gap-4">
           <div className="space-y-1">
-            <CardTitle className="text-xl font-bold text-white group-hover:text-[#FF1F44] transition-colors flex items-center gap-2">
+            <CardTitle className="text-lg sm:text-xl font-bold text-white group-hover:text-[#FF1F44] transition-colors flex items-center gap-2">
               {event.name}
             </CardTitle>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-400">
               <span className={`font-semibold ${getTypeColor(event.type)}`}>{event.type}</span>
               <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
+                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 {new Date(event.date).toLocaleDateString()}
               </span>
               {event.time && (
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                   {event.time}
                   {event.end_time && ` - ${event.end_time}`}
                 </span>
@@ -191,9 +191,9 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="p-4 sm:p-8 pt-0 space-y-3 sm:space-y-4">
         {event.description && (
-          <p className="text-sm text-gray-400 line-clamp-2">{event.description}</p>
+          <p className="text-xs sm:text-sm text-gray-400 line-clamp-2">{event.description}</p>
         )}
 
         {event.status === 'completed' ? (

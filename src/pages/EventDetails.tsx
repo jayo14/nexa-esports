@@ -306,9 +306,10 @@ export const EventDetails: React.FC = () => {
                       <div key={i} className="w-8 h-8 rounded-full bg-slate-700" style={{ border: `2px solid ${C.bgDark}` }} />
                     ))}
                   </div>
-                  <span className="px-4 py-1.5 rounded-full text-xs font-bold"
+                  <span className="px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2"
                     style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    {participantCount} Participants
+                    <Users className="w-3.5 h-3.5" />
+                    {participantCount} Players
                   </span>
                 </div>
               </div>
