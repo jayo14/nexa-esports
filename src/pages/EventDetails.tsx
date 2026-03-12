@@ -262,7 +262,7 @@ export const EventDetails: React.FC = () => {
           <div className="flex-1 space-y-8 pb-8 min-w-0">
 
             {/* ── Hero ── */}
-            <section className="relative h-[320px] overflow-hidden shadow-2xl group flex-shrink-0" style={{ borderRadius: '32px' }}>
+            <section className="relative h-[240px] sm:h-[320px] overflow-hidden shadow-2xl group flex-shrink-0 rounded-[24px] sm:rounded-[32px]">
               {event.thumbnail_url ? (
                 <img
                   src={event.thumbnail_url}
@@ -274,7 +274,7 @@ export const EventDetails: React.FC = () => {
               )}
               <div className="absolute inset-0" style={{ background: `linear-gradient(to right, ${C.bgDark}, rgba(26,11,13,0.4), transparent)` }} />
 
-              <div className="relative h-full p-10 flex flex-col justify-center max-w-2xl">
+              <div className="relative h-full p-6 sm:p-10 flex flex-col justify-center max-w-2xl">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="bg-white text-black px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                     <Flame className="w-3 h-3 text-red-500" />
@@ -285,7 +285,7 @@ export const EventDetails: React.FC = () => {
                   )}
                 </div>
 
-                <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 leading-none text-white">
+                <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4 leading-none text-white">
                   {titleSub ? (
                     <>{titleMain}:{' '}<br /><span style={{ color: C.primary }}>{titleSub}</span></>
                   ) : (
@@ -314,7 +314,7 @@ export const EventDetails: React.FC = () => {
               </div>
 
               {/* Priority badge */}
-              <div className="absolute top-8 right-8 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"
+              <div className="absolute top-4 sm:top-8 right-4 sm:right-8 px-3 sm:px-4 py-1 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"
                 style={{ background: `${C.primary}33`, border: `1px solid ${C.primary}66`, color: C.primary, backdropFilter: 'blur(8px)' }}>
                 <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.primary }} />
                 {event.compulsory ? 'Mandatory Directive' : 'Priority Mission'}
@@ -346,7 +346,7 @@ export const EventDetails: React.FC = () => {
             {/* ── Access + Directive ── */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
               {/* Room link */}
-              <div className="p-8 flex flex-col justify-between" style={{ ...glass, borderRadius: '32px' }}>
+              <div className="p-5 sm:p-8 flex flex-col justify-between rounded-[24px] sm:rounded-[32px]" style={glass}>
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <Shield className="w-5 h-5" style={{ color: C.primary }} />
@@ -417,8 +417,8 @@ export const EventDetails: React.FC = () => {
               </div>
 
               {/* Directive */}
-              <div className="p-8 flex flex-col justify-between relative overflow-hidden"
-                style={{ background: `${C.primary}1a`, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: `1px solid ${C.primary}33`, borderRadius: '32px' }}>
+              <div className="p-5 sm:p-8 flex flex-col justify-between relative overflow-hidden rounded-[24px] sm:rounded-[32px]"
+                style={{ background: `${C.primary}1a`, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: `1px solid ${C.primary}33` }}>
                 <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full" style={{ background: `${C.primary}33`, filter: 'blur(40px)' }} />
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-4">
@@ -441,7 +441,7 @@ export const EventDetails: React.FC = () => {
             </section>
 
             {/* ── Social share ── */}
-            <section className="p-8 rounded-[32px]" style={glass}>
+            <section className="p-5 sm:p-8 rounded-[24px] sm:rounded-[32px]" style={glass}>
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Share Mission</h3>
               <div className="flex flex-wrap gap-3">
                 <button onClick={() => copyToClipboard()}
@@ -486,11 +486,11 @@ export const EventDetails: React.FC = () => {
           </div>
 
           {/* ── Right panel ── */}
-          <div className="w-80 space-y-6 flex-shrink-0">
+          <div className="w-full xl:w-80 space-y-6 flex-shrink-0">
 
             {/* Mission Intel donut */}
-            <section className="rounded-[32px] p-8 relative overflow-hidden flex flex-col"
-              style={{ ...glass, border: '1px solid rgba(255,255,255,0.05)', height: '450px' }}>
+            <section className="rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 relative overflow-hidden flex flex-col h-[400px] sm:h-[450px]"
+              style={{ ...glass, border: '1px solid rgba(255,255,255,0.05)' }}>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 opacity-50 pointer-events-none"
                 style={{ background: `radial-gradient(circle, ${C.primary}99 0%, transparent 70%)`, filter: 'blur(40px)' }} />
 
@@ -528,7 +528,7 @@ export const EventDetails: React.FC = () => {
             </section>
 
             {/* Active Warriors */}
-            <section className="rounded-[32px] p-6" style={{ ...glass, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <section className="rounded-[24px] sm:rounded-[32px] p-5 sm:p-6" style={{ ...glass, border: '1px solid rgba(255,255,255,0.05)' }}>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Warriors</h4>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
