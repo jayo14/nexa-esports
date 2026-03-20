@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useChat } from "@/hooks/useChat";
+import { MarketplaceCartButton } from '@/components/marketplace/MarketplaceCartButton';
 
 export const SellerDashboard: React.FC = () => {
   const { profile, user } = useAuth();
@@ -79,9 +80,12 @@ export const SellerDashboard: React.FC = () => {
             Here's what's happening with your store today.
           </p>
         </div>
-        <Button onClick={() => navigate("/seller/post-account")} className="font-orbitron text-xs">
-          <PlusSquare className="mr-2 h-4 w-4" /> Post New Account
-        </Button>
+        <div className="flex items-center gap-2">
+          <MarketplaceCartButton className="h-10 w-10 border rounded-md border-primary/20 bg-card/60 text-primary hover:bg-primary/10" />
+          <Button onClick={() => navigate("/seller/post-account")} className="font-orbitron text-xs">
+            <PlusSquare className="mr-2 h-4 w-4" /> Post New Account
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}

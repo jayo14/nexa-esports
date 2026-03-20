@@ -8,9 +8,10 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileMenu } from "@/components/MobileMenu";
+import { MarketplaceCartButton } from '@/components/marketplace/MarketplaceCartButton';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, LogOut, Menu, MessageSquare, Settings, Search, ShoppingBag, Bell } from "lucide-react";
+import { Users, LogOut, Menu, MessageSquare, Settings, Search, Bell } from "lucide-react";
 
 interface GlobalSearchResults {
   players: Array<{ id: string; ign: string | null; username: string | null }>;
@@ -555,13 +556,10 @@ export const Layout: React.FC<LayoutProps> = ({
                     )}
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <button
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-all"
+                    <MarketplaceCartButton
+                      className="w-10 h-10 text-slate-300 hover:text-white"
                       style={{ background: `${C.bgDark}80` }}
-                      onClick={() => navigate('/marketplace')}
-                    >
-                      <ShoppingBag className="w-5 h-5" />
-                    </button>
+                    />
                     <button
                       className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white relative"
                       style={{ background: `${C.bgDark}80` }}

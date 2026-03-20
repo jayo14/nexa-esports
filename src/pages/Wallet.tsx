@@ -355,13 +355,13 @@ const Wallet: React.FC = () => {
               <div className="absolute -right-20 -top-20 w-64 h-64 sm:w-96 sm:h-96 rounded-full"
                 style={{ background: `${PRIMARY}33`, filter: 'blur(120px)' }} />
 
-              <div className="flex justify-between items-start relative z-10">
-                <div>
+              <div className="flex justify-between items-start relative z-10 gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] mb-1 sm:mb-2">
                     Total Balance
                   </p>
-                  <div className="flex items-baseline gap-3 sm:gap-4">
-                    <h3 className="text-4xl sm:text-7xl font-black tracking-tighter text-white">
+                  <div className="flex items-baseline gap-2 sm:gap-4 min-w-0">
+                    <h3 className="text-[clamp(1.75rem,8vw,4.5rem)] leading-tight font-black tracking-tighter text-white break-all max-w-full">
                       {balanceVisible
                         ? `₦${Math.floor(animatedBalance).toLocaleString()}`
                         : '₦••••••'}
@@ -388,12 +388,12 @@ const Wallet: React.FC = () => {
 
               {/* Stats row */}
               <div className="flex items-center gap-6 sm:gap-12 relative z-10 mt-6 sm:mt-auto">
-                <div>
+                <div className="min-w-0">
                   <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-0.5">
                     Available
                   </p>
-                  <p className="text-base sm:text-xl font-bold text-white">
-                    ₦{walletBalance.toLocaleString()}
+                  <p className="text-sm sm:text-xl font-bold text-white break-all max-w-[180px] sm:max-w-none">
+                    {balanceVisible ? `₦${walletBalance.toLocaleString()}` : '₦••••••'}
                   </p>
                 </div>
                 <div className="h-8 sm:h-10 w-px bg-white/10" />

@@ -31,6 +31,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useSellerStatus } from '@/hooks/useSellerStatus';
+import { MarketplaceCartButton } from '@/components/marketplace/MarketplaceCartButton';
 
 export const BuyerDashboard: React.FC = () => {
   const { orders, ordersLoading } = useBuyerOrders();
@@ -235,6 +236,9 @@ export const BuyerDashboard: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2 relative z-10">
+          <MarketplaceCartButton
+            className="h-10 w-10 border rounded-md border-primary/20 bg-card/60 text-primary hover:bg-primary/10"
+          />
           <Button onClick={() => navigate('/marketplace')} variant="outline" className="font-rajdhani">
             Browse Market
           </Button>

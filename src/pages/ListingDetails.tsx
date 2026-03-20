@@ -35,6 +35,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckoutModal } from '@/components/marketplace/CheckoutModal';
 import { useChat } from '@/hooks/useChat';
+import { useMarketplaceCart } from '@/contexts/MarketplaceCartContext';
 
 /* ─── Tailwind utility helpers (inlined to avoid extra CSS files) ─── */
 const glass =
@@ -118,6 +119,7 @@ export const ListingDetails: React.FC = () => {
   const { data: listing, isLoading } = useListingDetails(listingId);
   const { getOrCreateConversation } = useChat();
   const [showCheckout, setShowCheckout] = useState(false);
+  const { addItem, isInCart } = useMarketplaceCart();
 
   /* ── Loading ── */
   if (isLoading) {
@@ -495,6 +497,23 @@ export const ListingDetails: React.FC = () => {
                   <div className="flex flex-col gap-3">
                     {profile?.id !== listing.seller_id ? (
                       <>
+                        <button
+                          onClick={() =>
+                            addItem({
+                              id: listing.id,
+                              title: listing.title,
+                              price: listing.price,
+                              sellerId: listing.seller_id,
+                              sellerIgn: listing.seller?.ign,
+                              imageUrl: listing.images?.[0],
+                              region: listing.region,
+                            })
+                          }
+                          className="w-full bg-emerald-700/30 hover:bg-emerald-700/40 text-emerald-200 font-black py-5 rounded-[18px] border border-emerald-400/20 transition-all flex items-center justify-center gap-3"
+                        >
+                          <Plus className="w-4 h-4" />
+                          {isInCart(listing.id) ? 'Already in Cart' : 'Add to Cart'}
+                        </button>
                         <button
                           onClick={() => setShowCheckout(true)}
                           disabled={isPurchasing}
