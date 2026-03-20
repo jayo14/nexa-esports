@@ -34,7 +34,7 @@ BEGIN
 
     -- Check for sufficient funds
     IF sender_balance < total_deduction THEN
-           RAISE EXCEPTION 'Insufficient funds for transfer and fee: You need to have extra NGN 50 in your wallet to cover the transfer fee', total_deduction, fee;
+           RAISE EXCEPTION 'Insufficient funds for transfer: You need to have extra NGN 50 in your wallet to cover the transfer fee', total_deduction, fee;
     END IF;
 
     -- Get recipient's wallet
