@@ -95,16 +95,20 @@ import { SnowEffect } from '@/components/effects/SnowEffect';
 import { FestiveLights } from '@/components/effects/FestiveLights';
 import { RamadanEffects } from '@/components/effects/RamadanEffects';
 import { useCapacitor } from '@/hooks/useCapacitor';
+import { MarketplaceCartProvider } from '@/contexts/MarketplaceCartContext';
+import { MarketplaceCartSheet } from '@/components/marketplace/MarketplaceCartSheet';
 
 function App() {
   return (
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <SnowEffect />
-          <FestiveLights />
-          <RamadanEffects />
-          <AppRoutes />
+          <MarketplaceCartProvider>
+            <SnowEffect />
+            <FestiveLights />
+            <RamadanEffects />
+            <AppRoutes />
+          </MarketplaceCartProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>
@@ -215,6 +219,7 @@ function AppRoutes() {
       <Toaster />
       <InstallPrompt />
       <UpdatePrompt />
+      <MarketplaceCartSheet />
     </>
   );
 }

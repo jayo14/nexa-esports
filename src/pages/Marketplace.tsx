@@ -4,6 +4,7 @@ import { useMarketplace } from '@/hooks/useMarketplace';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ShoppingCart,
+  Check,
   Plus,
   AlertCircle,
   Shield,
@@ -23,6 +24,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { useMarketplaceCart } from '@/contexts/MarketplaceCartContext';
 
 /* ─── Design tokens ─── */
 const primary = '#ea2a33';
@@ -36,7 +38,9 @@ const ListingCardStyled: React.FC<{
   listing: any;
   onPreview: (url: string) => void;
   onClick: () => void;
-}> = ({ listing, onClick, onPreview }) => {
+  onAddToCart: () => void;
+  inCart: boolean;
+}> = ({ listing, onClick, onPreview, onAddToCart, inCart }) => {
   const assets = listing.assets || {};
 
   const assetTags: string[] = [];
@@ -148,13 +152,29 @@ const ListingCardStyled: React.FC<{
           <p className="text-xl font-black" style={{ color: primary }}>
             ₦{listing.price.toLocaleString()}
           </p>
-          <button
-            className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
-            style={{ background: primary }}
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-          >
-            View
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+              style={{ background: inCart ? '#166534' : primary }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCart();
+              }}
+            >
+              {inCart ? (
+                <span className="inline-flex items-center gap-1"><Check className="w-3 h-3" /> In Cart</span>
+              ) : (
+                <span className="inline-flex items-center gap-1"><ShoppingCart className="w-3 h-3" /> Add</span>
+              )}
+            </button>
+            <button
+              className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+              style={{ background: primary }}
+              onClick={(e) => { e.stopPropagation(); onClick(); }}
+            >
+              View
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -174,6 +194,7 @@ export const Marketplace: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRegion, setFilterRegion] = useState('All Regions');
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  const { addItem, isInCart } = useMarketplaceCart();
 
   useEffect(() => {
     window.dispatchEvent(
@@ -362,6 +383,18 @@ export const Marketplace: React.FC = () => {
                             listing={listing}
                             onPreview={(url) => setPreviewVideoUrl(url)}
                             onClick={() => navigate(`/marketplace/listing/${listing.id}`)}
+                            inCart={isInCart(listing.id)}
+                            onAddToCart={() =>
+                              addItem({
+                                id: listing.id,
+                                title: listing.title,
+                                price: listing.price,
+                                sellerId: listing.seller_id,
+                                sellerIgn: listing.seller?.ign,
+                                imageUrl: listing.images?.[0],
+                                region: listing.region,
+                              })
+                            }
                           />
                         ))}
                     </div>
