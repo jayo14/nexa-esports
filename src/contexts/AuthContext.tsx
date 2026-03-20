@@ -74,6 +74,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const isPasswordRecoveryFlow = () => {
+    if (typeof window === "undefined") return false;
+
+    const currentUrl = new URL(window.location.href);
+    const hashParams = new URLSearchParams(currentUrl.hash.replace(/^#/, ""));
+
+    const isResetRoute = currentUrl.pathname === "/auth/reset-password";
+    const flowMarker = currentUrl.searchParams.get("flow");
+    const queryType = currentUrl.searchParams.get("type");
+    const hashType = hashParams.get("type");
+
+    const hasRecoveryTokens =
+      Boolean(currentUrl.searchParams.get("access_token")) ||
+      Boolean(currentUrl.searchParams.get("refresh_token")) ||
+      Boolean(currentUrl.searchParams.get("code")) ||
+      Boolean(hashParams.get("access_token")) ||
+      Boolean(hashParams.get("refresh_token"));
+
+    return (
+      isResetRoute &&
+      (flowMarker === "recovery" ||
+        queryType === "recovery" ||
+        hashType === "recovery" ||
+        hasRecoveryTokens)
+    );
+  };
+
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -164,6 +191,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (!mounted) return;
 
+        const recoveryFlow = isPasswordRecoveryFlow();
+
+        if (recoveryFlow) {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -187,6 +223,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!mounted) return;
 
         console.log("Auth event:", event);
+
+        const recoveryFlow = isPasswordRecoveryFlow();
+        if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && recoveryFlow)) {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -432,7 +478,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       console.log("Attempting password reset for:", email);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/reset-password?flow=recovery`,
       });
 
       if (error) {

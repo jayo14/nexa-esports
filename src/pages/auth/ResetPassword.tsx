@@ -25,10 +25,11 @@ export const ResetPassword: React.FC = () => {
       if (session) {
         setIsValidSession(true);
       } else {
-        // Check if we have a recovery token in the URL
+        // Check if we have a recovery token in the URL (query or hash)
         const urlParams = new URLSearchParams(window.location.search);
-        const accessToken = urlParams.get('access_token');
-        const refreshToken = urlParams.get('refresh_token');
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const accessToken = urlParams.get('access_token') || hashParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token');
         
         if (accessToken && refreshToken) {
           try {
@@ -80,10 +81,13 @@ export const ResetPassword: React.FC = () => {
 
       if (error) throw error;
 
+      // Force fresh login with the new password after reset.
+      await supabase.auth.signOut();
+
       setIsSuccess(true);
       toast({
         title: "Password Reset Successful",
-        description: "Your password has been updated successfully.",
+        description: "Your password has been updated. Please sign in with your new password.",
       });
       
       // Redirect to login after 2 seconds
