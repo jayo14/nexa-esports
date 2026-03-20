@@ -89,33 +89,55 @@ const Transfer = () => {
 
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
-    
-    
-    if (amountNum <= 0 || amountNum > walletBalance) {
+    const totalDeduction = amountNum + TRANSFER_FEE;
+
+    if (amountNum <= 0) {
       toast({
         title: "Invalid Amount",
-        description: "Please enter a valid amount within your balance.",
+        description: "Please enter an amount greater than ₦0.",
         variant: "destructive",
       });
       return;
     }
-    
+
+    if (totalDeduction > walletBalance) {
+      toast({
+        title: "Insufficient Funds",
+        description: `Your balance must cover ₦${totalDeduction.toLocaleString()} (amount + ₦${TRANSFER_FEE} fee).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('review');
-      const totalDeduction = amountNum + TRANSFER_FEE;
-      if (totalDeduction > walletBalance) {
-        toast({
-          title: "Invalid Amount",
-          description: `Please ensure your balance covers ₦${totalDeduction.toLocaleString()} (amount + ₦${TRANSFER_FEE} fee).`,
-          variant: "destructive",
-        });
-        return;
-      }
   };
 
   const handleReviewNext = async () => {
     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
     setShowPinVerify(true);
+  };
+
+  const performTransfer = async (recipientIgn: string, transferAmount: number) => {
+    if (!user?.id) {
+      throw new Error('You must be logged in to transfer funds.');
+    }
+
+    const { error } = await supabase.rpc('execute_user_transfer', {
+      sender_id: user.id,
+      recipient_ign: recipientIgn,
+      amount: transferAmount,
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Unable to complete transfer.');
+    }
+
+    const totalDeducted = transferAmount + TRANSFER_FEE;
+    toast({
+      title: 'Transfer Successful!',
+      description: `Transferred ₦${transferAmount.toLocaleString()} to recipient. ₦${TRANSFER_FEE} fee charged (total debited: ₦${totalDeducted.toLocaleString()}).`,
+    });
   };
 
   const handlePinSuccess = async () => {
@@ -127,56 +149,16 @@ const Transfer = () => {
       setTransferSuccess(true);
       fetchWalletBalance(); // Update balance
     } catch (error) {
-        console.error("Transfer error:", error);
-        setStep('review');
-    } finally {
-      const totalDeduction = amountNum + TRANSFER_FEE;
-    
-      if (amountNum <= 0) {
-        toast({
-          title: "Invalid Amount",
-          description: "Please enter an amount greater than ₦0.",
-          variant:"destructive",
-        });
-        return;
-      }
-    
-      if (totalDeduction > walletBalance) {
-        toast({
-          title: "Insufficient Funds",
-          description: `Your balance must cover ₦${totalDeduction.toLocaleString()} (amount + ₦${TRANSFER_FEE} fee).`,
-          variant: "destructive",
-        });
-        return;
-      }
-    
-      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+      console.error('Transfer error:', error);
+      const message = error instanceof Error ? error.message : 'Unable to complete transfer.';
+      toast({
+        title: 'Transfer Failed',
+        description: message,
+        variant: 'destructive',
+      });
       setStep('review');
-        if (error) {
-            let errorMessage = error.message;
-             try {
-                if (error.context && typeof error.context.json === 'function') {
-                    const errorBody = await error.context.json();
-                    errorMessage = errorBody.message || errorBody.error || errorMessage;
-                }
-            } catch (e) {
-                // Fallback
-            }
-            throw new Error(errorMessage);
-        }
-
-        const recipientAmount = transferAmount - TRANSFER_FEE;
-        toast({
-            title: "Transfer Successful!",
-            description: `₦${transferAmount.toLocaleString()} sent. Recipient receives ₦${recipientAmount.toLocaleString()} after ₦${TRANSFER_FEE} fee.`,
-          const totalDeducted = transferAmount + TRANSFER_FEE;
-          toast({
-            title: "Transfer Successful!",
-            description: `Transferred ₦${transferAmount.toLocaleString()} to recipient. ₦${TRANSFER_FEE} fee charged.`,
-            description: err.message || "Unable to complete transfer.",
-            variant: "destructive",
-        });
-        throw err;
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -339,7 +321,7 @@ const Transfer = () => {
                   <Coins className="h-4 w-4" />
                   <AlertTitle className="text-sm">Transaction Fee</AlertTitle>
                   <AlertDescription className="text-xs mt-0.5">
-                    A flat fee of ₦{TRANSFER_FEE} will be deducted from the transfer amount.
+                    A flat fee of ₦{TRANSFER_FEE} will be charged on top of the transfer amount.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -355,7 +337,7 @@ const Transfer = () => {
                 </Button>
                 <Button
                   onClick={handleAmountNext}
-                  disabled={!amount || Number(amount) <= TRANSFER_FEE || Number(amount) > walletBalance}
+                  disabled={!amount || Number(amount) <= 0 || (Number(amount) + TRANSFER_FEE) > walletBalance}
                   className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
@@ -410,10 +392,6 @@ const Transfer = () => {
                       <span className="font-bold text-destructive">₦{totalDeductedFromSender.toLocaleString()}</span>
                     </div>
                     <div className="h-px bg-border my-1" />
-                    <div className="flex justify-between text-base items-center">
-                      <span className="font-semibold">Deducted from Your Wallet</span>
-                      <span className="font-bold text-destructive">₦{Number(amount).toLocaleString()}</span>
-                    </div>
                     <div className="flex justify-between text-sm text-green-500 items-center mt-2">
                       <span className="font-semibold">Recipient Receives</span>
                       <span className="font-bold">₦{recipientReceives.toLocaleString()}</span>
