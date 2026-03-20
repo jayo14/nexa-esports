@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
-import { Calendar, Users, AlertTriangle, Clock, MapPin, CheckCircle2 } from "lucide-react";
+import { Calendar, Users, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { sendEventInvitationEmail } from "@/lib/emailService";
 
 interface Event {
   id: string;
@@ -46,7 +47,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // First, check if the user is assigned to a group for this event
       const { data: participantData, error: participantError } = await supabase
         .from("event_participants")
         .select("group_id")
@@ -58,7 +58,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         return { is_assigned: false };
       }
 
-      // If assigned, fetch group members and group name
       const { data: groupData, error: groupError } = await supabase
         .from("event_participants")
         .select("id, group_id, player_id, role, kills, verified, profiles!event_participants_player_id_fkey(id, username, ign, avatar_url)")
@@ -70,7 +69,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         return { is_assigned: true, members: [], group_name: "Unknown Group" };
       }
 
-      // Fetch group name
       const { data: groupNameData, error: groupNameError } = await supabase
         .from("event_groups")
         .select("name")
@@ -120,6 +118,19 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         message: `Player ${playerName} has requested to join the event: ${event.name}.`,
         type: "assignment_request",
       });
+
+      // Send invitation email if user has an email address
+      if (user.email) {
+        sendEventInvitationEmail({
+          to_email: user.email,
+          to_name: playerName ?? "Player",
+          event_name: event.name,
+          event_date: new Date(event.date).toLocaleDateString(),
+          event_time: event.time,
+          event_type: event.type,
+          description: event.description,
+        });
+      }
 
       toast({
         title: "Success",
