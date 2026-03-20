@@ -9,8 +9,8 @@ DECLARE
     recipient_id UUID;
     recipient_wallet_id UUID;
     fee DECIMAL(10, 2) := 50;
-    total_deduction DECIMAL(10, 2) := amount;
-    net_amount DECIMAL(10, 2) := amount - fee;
+    total_deduction DECIMAL(10, 2) := amount + fee;
+    net_amount DECIMAL(10, 2) := amount;
     sender_transaction_id UUID;
     sender_ign TEXT;
 BEGIN
@@ -34,7 +34,7 @@ BEGIN
 
     -- Check for sufficient funds
     IF sender_balance < total_deduction THEN
-        RAISE EXCEPTION 'Insufficient funds for transfer';
+           RAISE EXCEPTION 'Insufficient funds for transfer and fee: You need to have extra NGN 50 in your wallet to cover the transfer fee', total_deduction, fee;
     END IF;
 
     -- Get recipient's wallet
@@ -45,6 +45,7 @@ BEGIN
     END IF;
 
     -- Perform the transfer: deduct amount from sender, credit net_amount to recipient
+        -- Perform the transfer: deduct amount + fee from sender, credit full amount to recipient
     UPDATE wallets SET balance = balance - total_deduction WHERE id = sender_wallet_id;
     UPDATE wallets SET balance = balance + net_amount WHERE id = recipient_wallet_id;
 

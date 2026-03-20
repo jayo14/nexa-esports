@@ -282,19 +282,6 @@ export const ListingDetails: React.FC = () => {
                     </p>
                   </div>
                 </div>
-
-                {/* Rank Badge */}
-                <div
-                  className="flex-shrink-0 flex flex-col items-end gap-2 bg-black/40 backdrop-blur-md p-6 rounded-[24px] border border-white/10"
-                >
-                  <p className={sectionLabel}>Global Rank Status</p>
-                  <div className="flex items-center gap-3">
-                    <Trophy className="w-9 h-9 text-red-500" />
-                    <span className="text-3xl font-black text-white uppercase tracking-tighter">
-                      Legendary
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
 

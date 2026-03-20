@@ -90,14 +90,6 @@ const Transfer = () => {
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
     
-    if (amountNum <= TRANSFER_FEE) {
-      toast({
-        title: "Amount Too Low",
-        description: `Amount must be greater than ₦${TRANSFER_FEE} (transfer fee).`,
-        variant: "destructive",
-      });
-      return;
-    }
     
     if (amountNum <= 0 || amountNum > walletBalance) {
       toast({
@@ -110,6 +102,15 @@ const Transfer = () => {
     
     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('review');
+      const totalDeduction = amountNum + TRANSFER_FEE;
+      if (totalDeduction > walletBalance) {
+        toast({
+          title: "Invalid Amount",
+          description: `Please ensure your balance covers ₦${totalDeduction.toLocaleString()} (amount + ₦${TRANSFER_FEE} fee).`,
+          variant: "destructive",
+        });
+        return;
+      }
   };
 
   const handleReviewNext = async () => {
@@ -129,18 +130,28 @@ const Transfer = () => {
         console.error("Transfer error:", error);
         setStep('review');
     } finally {
-        setIsProcessing(false);
-    }
-  };
-
-  const performTransfer = async (recipientIgn: string, transferAmount: number) => {
-    try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const { error } = await supabase.functions.invoke('transfer-funds', {
-            headers: { 'Authorization': `Bearer ${session?.access_token}` },
-            body: { recipient_ign: recipientIgn, amount: transferAmount },
+      const totalDeduction = amountNum + TRANSFER_FEE;
+    
+      if (amountNum <= 0) {
+        toast({
+          title: "Invalid Amount",
+          description: "Please enter an amount greater than ₦0.",
+          variant:"destructive",
         });
-
+        return;
+      }
+    
+      if (totalDeduction > walletBalance) {
+        toast({
+          title: "Insufficient Funds",
+          description: `Your balance must cover ₦${totalDeduction.toLocaleString()} (amount + ₦${TRANSFER_FEE} fee).`,
+          variant: "destructive",
+        });
+        return;
+      }
+    
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+      setStep('review');
         if (error) {
             let errorMessage = error.message;
              try {
@@ -158,10 +169,10 @@ const Transfer = () => {
         toast({
             title: "Transfer Successful!",
             description: `₦${transferAmount.toLocaleString()} sent. Recipient receives ₦${recipientAmount.toLocaleString()} after ₦${TRANSFER_FEE} fee.`,
-        });
-    } catch (err: any) {
-        toast({
-            title: "Transfer Failed",
+          const totalDeducted = transferAmount + TRANSFER_FEE;
+          toast({
+            title: "Transfer Successful!",
+            description: `Transferred ₦${transferAmount.toLocaleString()} to recipient. ₦${TRANSFER_FEE} fee charged.`,
             description: err.message || "Unable to complete transfer.",
             variant: "destructive",
         });
@@ -169,7 +180,8 @@ const Transfer = () => {
     }
   };
 
-  const recipientReceives = Math.max(0, Number(amount) - TRANSFER_FEE);
+  const recipientReceives = Math.max(0, Number(amount));
+  const totalDeductedFromSender = Number(amount) + TRANSFER_FEE;
 
   return (
     <div className="container max-w-lg mx-auto py-6 space-y-6 animate-fade-in">
@@ -389,8 +401,13 @@ const Transfer = () => {
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-red-500">
-                      <span>Transfer Fee (deducted from amount)</span>
-                      <span>-₦{TRANSFER_FEE}</span>
+                      <span>Transfer Fee (added to amount)</span>
+                      <span>+₦{TRANSFER_FEE}</span>
+                    </div>
+                    <div className="h-px bg-border my-1" />
+                    <div className="flex justify-between text-base items-center">
+                      <span className="font-semibold">Total Deducted from Your Wallet</span>
+                      <span className="font-bold text-destructive">₦{totalDeductedFromSender.toLocaleString()}</span>
                     </div>
                     <div className="h-px bg-border my-1" />
                     <div className="flex justify-between text-base items-center">

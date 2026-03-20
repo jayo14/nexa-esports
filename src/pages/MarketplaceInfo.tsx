@@ -288,9 +288,18 @@ export const MarketplaceInfo: React.FC = () => {
                         {featuredListings.length > 0 ? (
                            featuredListings.map((listing, i) => (
                               <Card key={listing.id} className={`bg-card/40 backdrop-blur-md border-primary/20 transform hover:-translate-y-2 transition-all duration-500 ${i === 1 ? 'translate-y-12' : ''}`}>
-                                 <div className="aspect-video bg-black/50 relative overflow-hidden rounded-t-xl">
+                                 <div className="aspect-video bg-black/50 relative overflow-hidden rounded-t-xl group">
                                     {listing.video_url ? (
-                                       <video src={listing.video_url} className="w-full h-full object-cover opacity-80" autoPlay muted loop />
+                                       <video src={listing.video_url} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300" autoPlay muted loop />
+                                    ) : listing.images && listing.images.length > 0 ? (
+                                       <img 
+                                          src={listing.images[0]} 
+                                          alt={listing.title}
+                                          className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300"
+                                          onError={(e) => {
+                                             e.currentTarget.style.display = 'none';
+                                          }}
+                                       />
                                     ) : (
                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
                                           <ShoppingBag className="w-12 h-12 text-primary/20" />
@@ -369,7 +378,7 @@ export const MarketplaceInfo: React.FC = () => {
                      {displayListings.map(listing => (
                         <Card key={listing.id} className="group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden flex flex-col">
                            {/* Image Area */}
-                           <div className="aspect-[4/3] bg-black/50 relative overflow-hidden">
+                           <div className="aspect-[4/3] bg-black/50 relative overflow-hidden group">
                               {listing.video_url ? (
                                  <video
                                     src={listing.video_url}
@@ -380,6 +389,15 @@ export const MarketplaceInfo: React.FC = () => {
                                     onMouseLeave={e => {
                                        e.currentTarget.pause();
                                        e.currentTarget.currentTime = 0;
+                                    }}
+                                 />
+                              ) : listing.images && listing.images.length > 0 ? (
+                                 <img 
+                                    src={listing.images[0]} 
+                                    alt={listing.title}
+                                    className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                                    onError={(e) => {
+                                       e.currentTarget.style.display = 'none';
                                     }}
                                  />
                               ) : (

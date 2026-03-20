@@ -63,13 +63,13 @@ const ListingCardStyled: React.FC<{
       onClick={onClick}
     >
       {/* Media area */}
-      <div className="relative aspect-video bg-slate-900 overflow-hidden">
+      <div className="relative aspect-video bg-slate-900 overflow-hidden group">
         {listing.video_url ? (
           <>
             <div className="w-full h-full flex items-center justify-center bg-slate-800">
               <button
                 onClick={(e) => { e.stopPropagation(); onPreview(listing.video_url); }}
-                className="flex items-center justify-center w-12 h-12 rounded-full"
+                className="flex items-center justify-center w-12 h-12 rounded-full hover:scale-110 transition-transform"
                 style={{ background: `${primary}cc` }}
                 aria-label="Preview video"
               >
@@ -79,6 +79,15 @@ const ListingCardStyled: React.FC<{
               </button>
             </div>
           </>
+        ) : listing.images && listing.images.length > 0 ? (
+          <img 
+            src={listing.images[0]} 
+            alt={listing.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <ShoppingCart className="w-12 h-12 text-slate-700" />
@@ -373,7 +382,6 @@ export const Marketplace: React.FC = () => {
               <video
                 src={previewVideoUrl}
                 className="w-full h-full object-contain"
-                controls
                 autoPlay
               />
             )}

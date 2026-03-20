@@ -55,9 +55,18 @@ export const MyListingsScreen: React.FC = () => {
                 className="group border-primary/10 hover:border-primary/30 transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col shadow-sm hover:shadow-md cursor-pointer"
                 onClick={() => handleListingClick(listing.id)}
               >
-                <div className="aspect-video w-full bg-muted/30 flex items-center justify-center relative border-b border-primary/5">
+                <div className="aspect-video w-full bg-muted/30 flex items-center justify-center relative border-b border-primary/5 group overflow-hidden">
                   {listing.video_url ? (
-                    <video src={listing.video_url} className="w-full h-full object-cover" muted />
+                    <video src={listing.video_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" muted />
+                  ) : listing.images && listing.images.length > 0 ? (
+                    <img 
+                      src={listing.images[0]} 
+                      alt={listing.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                   ) : (
                     <ShoppingCart className="h-12 w-12 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
                   )}

@@ -108,15 +108,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onPreview }) 
       <div className={`absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-r ${tier.color}`} />
       
       {/* Card Thumbnail */}
-      <div className="aspect-video w-full bg-muted/20 flex items-center justify-center relative overflow-hidden">
+      <div className="aspect-video w-full bg-muted/20 flex items-center justify-center relative overflow-hidden group">
         {listing.video_url ? (
           <video 
             src={listing.video_url} 
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
             muted 
             loop
             onMouseOver={(e) => e.currentTarget.play()}
             onMouseOut={(e) => e.currentTarget.pause()}
+          />
+        ) : listing.images && listing.images.length > 0 ? (
+          <img 
+            src={listing.images[0]} 
+            alt={listing.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
         ) : (
           <ShoppingCart className="h-16 w-16 text-primary/10" />
