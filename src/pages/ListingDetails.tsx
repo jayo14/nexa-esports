@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMarketplace } from '@/hooks/useMarketplace';
+import { useMarketplace, type AccountListing } from '@/hooks/useMarketplace';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -116,10 +116,24 @@ export const ListingDetails: React.FC = () => {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const { useListingDetails, purchaseAccount, isPurchasing } = useMarketplace();
-  const { data: listing, isLoading } = useListingDetails(listingId);
+  const { data: listingData, isLoading } = useListingDetails(listingId);
   const { getOrCreateConversation } = useChat();
   const [showCheckout, setShowCheckout] = useState(false);
   const { addItem, isInCart } = useMarketplaceCart();
+
+  type ListingWithSeller = AccountListing & {
+    win_rate?: number;
+    level?: number;
+    seller?: {
+      id: string;
+      ign?: string;
+      username?: string;
+      avatar_url?: string;
+      display_name?: string;
+    } | null;
+  };
+
+  const listing = listingData as unknown as ListingWithSeller | null;
 
   /* ── Loading ── */
   if (isLoading) {
@@ -255,7 +269,7 @@ export const ListingDetails: React.FC = () => {
                     </span>
                     <span
                       className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                        listing.status === 'active'
+                        listing.status === 'available'
                           ? 'bg-green-500/20 text-green-400 border-green-500/40'
                           : 'bg-slate-500/20 text-slate-400 border-slate-500/40'
                       }`}
@@ -567,7 +581,7 @@ export const ListingDetails: React.FC = () => {
                 </span>
                 <span className="text-white font-black flex items-center gap-2 text-sm">
                   <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-                  {listing.status === 'active' ? 'Active' : listing.status}
+                  {listing.status === 'available' ? 'Active' : listing.status}
                 </span>
               </div>
               {listing.account_uid && (

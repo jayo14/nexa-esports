@@ -8,12 +8,14 @@ import { useMarketplaceCart } from '@/contexts/MarketplaceCartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useMarketplace } from '@/hooks/useMarketplace';
 
 export const MarketplaceCartSheet: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { items, isOpen, setIsOpen, removeItem, clearCart } = useMarketplaceCart();
+  const { purchaseAccount } = useMarketplace();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const totalAmount = useMemo(
@@ -71,18 +73,30 @@ export const MarketplaceCartSheet: React.FC = () => {
       let failedCount = 0;
 
       for (const item of checkoutableItems) {
-        const { data, error } = await supabase.rpc('marketplace_checkout', {
-          p_listing_id: item.id,
-          p_buyer_id: user.id,
-          p_price: item.price,
-        });
+        try {
+          const data = await new Promise<any>((resolve, reject) => {
+            purchaseAccount(
+              {
+                listingId: item.id,
+                buyerId: user.id,
+                price: Number(item.price),
+              },
+              {
+                onSuccess: resolve,
+                onError: reject,
+              }
+            );
+          });
 
-        if (error || !data?.success) {
+          if (!data?.success) {
+            failedCount += 1;
+            continue;
+          }
+
+          purchasedIds.push(item.id);
+        } catch {
           failedCount += 1;
-          continue;
         }
-
-        purchasedIds.push(item.id);
       }
 
       purchasedIds.forEach((id) => removeItem(id));
