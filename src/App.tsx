@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -117,7 +117,41 @@ function App() {
 
 function AppRoutes() {
   const { loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   useCapacitor();
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const queryParams = new URLSearchParams(location.search);
+
+    const queryType = queryParams.get('type');
+    const hashType = hashParams.get('type');
+
+    const hasRecoveryToken =
+      Boolean(queryParams.get('access_token')) ||
+      Boolean(queryParams.get('refresh_token')) ||
+      Boolean(queryParams.get('code')) ||
+      Boolean(hashParams.get('access_token')) ||
+      Boolean(hashParams.get('refresh_token'));
+
+    const isRecoveryFlow = queryType === 'recovery' || hashType === 'recovery' || hasRecoveryToken;
+    const isResetPage = location.pathname === '/auth/reset-password';
+
+    if (isRecoveryFlow && !isResetPage) {
+      const searchParams = new URLSearchParams(location.search);
+      searchParams.set('flow', 'recovery');
+
+      navigate(
+        {
+          pathname: '/auth/reset-password',
+          search: `?${searchParams.toString()}`,
+          hash: location.hash,
+        },
+        { replace: true }
+      );
+    }
+  }, [location.hash, location.pathname, location.search, navigate]);
 
   if (loading) {
     return (
