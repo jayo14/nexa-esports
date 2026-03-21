@@ -53,6 +53,9 @@ import { SellerRequestPending } from '@/pages/seller/SellerRequestPending';
 import { SellerRequestRejected } from '@/pages/seller/SellerRequestRejected';
 import { SellerShell } from '@/pages/seller/SellerShell';
 
+// Player listing page (read-only, player-facing)
+import { Players } from '@/pages/Players';
+
 // Admin pages
 import { AdminPlayers } from '@/pages/admin/Players';
 
@@ -195,6 +198,7 @@ function AppRoutes() {
         <Route path="/loadouts" element={<ProtectedRoute><Layout showSidebar><Loadouts /></Layout></ProtectedRoute>} />
         <Route path="/announcements" element={<ProtectedRoute><Layout showSidebar><Announcements /></Layout></ProtectedRoute>} />
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
+        <Route path="/players" element={<ProtectedRoute><Layout showSidebar><Players /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
         <Route path="/wallet/transfer" element={<ProtectedRoute><Layout showSidebar><Transfer /></Layout></ProtectedRoute>} />
         <Route path="/wallet/withdraw" element={<ProtectedRoute><Layout showSidebar><Withdraw /></Layout></ProtectedRoute>} />

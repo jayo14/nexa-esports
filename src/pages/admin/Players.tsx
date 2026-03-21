@@ -866,7 +866,7 @@ export const AdminPlayers: React.FC = () => {
               <span className="text-slate-500 text-sm">Season 14 Combat Log</span>
             </div>
             <h1 className="text-5xl font-black tracking-tighter text-slate-100 uppercase">
-              Member <span style={{ color: C.primary }}>Management</span>
+              Player <span style={{ color: C.primary }}>Management</span>
             </h1>
             <p className="text-slate-400 max-w-md mt-2">
               Track performance, discipline attendance records, and optimize clan roles for upcoming tournaments.
