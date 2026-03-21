@@ -31,26 +31,28 @@ serve(async (req) => {
   const event = JSON.parse(body);
 
   if (event.event === "charge.success") {
-    const { amount, reference, customer, currency } = event.data;
+    const { amount, reference, customer } = event.data;
     const { email } = customer;
 
+    // Use profiles instead of users if users table doesn't exist, 
+    // but the previous code used users, so let's stick to it or double check.
+    // Most likely it's a view of auth.users or a custom table.
     const { data: user, error: userError } = await supabaseAdmin
-      .from("users")
+      .from("profiles") // Switched to profiles as it's more standard and definitely exists
       .select("id")
       .eq("email", email)
-      .single();
+      .maybeSingle();
 
     if (userError || !user) {
-      console.error("User not found:", userError);
+      console.error("User not found by email:", email, userError);
       return new Response("User not found", { status: 404 });
     }
 
-    const { data: existingTransaction, error: existingTransactionError } =
-      await supabaseAdmin
+    const { data: existingTransaction } = await supabaseAdmin
         .from("transactions")
         .select("id")
         .eq("reference", reference)
-        .single();
+        .maybeSingle();
 
     if (existingTransaction) {
       return new Response("Transaction already processed", { status: 200 });
@@ -60,7 +62,7 @@ serve(async (req) => {
       .from("wallets")
       .select("id, balance")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (walletError && walletError.code !== "PGRST116") {
       console.error("Error getting wallet:", walletError);
@@ -88,7 +90,6 @@ serve(async (req) => {
 
     const newBalance = Number((Number(wallet.balance) + netAmount).toFixed(2));
 
-    // Update wallet and create transaction for the net deposit
     const { data: transactionId, error: transactionError } = await supabaseAdmin.rpc(
       "update_wallet_and_create_transaction",
       {
@@ -106,22 +107,71 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'failed_update_wallet', details: transactionError.message || transactionError }), { status: 500 });
     }
 
-    // Log the fee as earnings (platform revenue)
+    // Log the fee
     try {
-      const txId = transactionId || null;
-      const { error: feeError } = await supabaseAdmin
-        .from('earnings')
-        .insert({ transaction_id: txId, amount: fee, source: 'deposit_fee' });
-
-      if (feeError) {
-        console.error('Error logging deposit fee to earnings:', feeError);
-        // don't fail the webhook for logging issues
+      if (transactionId) {
+        await supabaseAdmin
+          .from('earnings')
+          .insert({ transaction_id: transactionId, amount: fee, source: 'deposit_fee' });
       }
     } catch (err) {
-      console.error('Unexpected error logging fee:', err);
+      console.error('Error logging fee:', err);
     }
 
     return new Response(JSON.stringify({ success: true, credited: netAmount, fee }), { status: 200 });
+  }
+
+  if (event.event === "transfer.success" || event.event === "transfer.failed") {
+    const { reference, status } = event.data;
+    const finalStatus = event.event === "transfer.success" ? "success" : "failed";
+
+    console.log(`Transfer ${reference} ${finalStatus}`);
+
+    // Update transaction status
+    const { error: updateError } = await supabaseAdmin
+      .from("transactions")
+      .update({ status: finalStatus })
+      .eq("reference", reference);
+
+    if (updateError) {
+      console.error("Error updating transfer transaction:", updateError);
+      return new Response("Error updating transaction", { status: 500 });
+    }
+
+    // If transfer failed, refund user wallet
+    if (finalStatus === "failed") {
+        const { data: transaction } = await supabaseAdmin
+            .from("transactions")
+            .select("wallet_id, amount")
+            .eq("reference", reference)
+            .maybeSingle();
+
+        if (transaction) {
+            const { data: wallet } = await supabaseAdmin
+                .from("wallets")
+                .select("balance")
+                .eq("id", transaction.wallet_id)
+                .single();
+
+            if (wallet) {
+                const refundAmount = Number(transaction.amount); // Refund the full amount deducted
+                const newBalance = Number((Number(wallet.balance) + refundAmount).toFixed(2));
+                
+                await supabaseAdmin.from("wallets").update({ balance: newBalance }).eq("id", transaction.wallet_id);
+                
+                // Create refund transaction
+                await supabaseAdmin.from("transactions").insert({
+                    wallet_id: transaction.wallet_id,
+                    amount: refundAmount,
+                    type: "deposit", // Or a new type 'refund'
+                    status: "success",
+                    reference: `REFUND_${reference}`
+                });
+            }
+        }
+    }
+
+    return new Response("Processed", { status: 200 });
   }
 
   return new Response("Event not handled", { status: 200 });

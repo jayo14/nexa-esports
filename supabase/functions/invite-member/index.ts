@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     const normalizedEmail = String(email).trim().toLowerCase()
     const normalizedFullName = String(fullName).trim()
-    
+
     // Determine the actual origin for redirects - priority: header > req.url
     const appOrigin = req.headers.get('origin') || new URL(req.url).origin
 
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       normalizedEmail,
       {
-        data: { 
+        data: {
           full_name: normalizedFullName,
           username: usernameBase,
           ign: ignBase,
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       }
       throw new Error(`Failed to send invite email: ${inviteError.message}`)
     }
-    
+
     const invitedUserId = inviteData.user?.id
 
     if (!invitedUserId) {
@@ -138,12 +138,12 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('invite-member function error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    
+
     let status = 400
     if (message.includes('Insufficient permissions')) status = 403
     if (message.includes('Unauthorized')) status = 401
     if (message.includes('Database error')) status = 500
-    
+
     return new Response(
       JSON.stringify({ error: message }),
       { status, headers: { ...corsHeaders(reqOrigin), 'Content-Type': 'application/json' } }

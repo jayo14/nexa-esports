@@ -191,7 +191,51 @@ serve(async (req) => {
         });
       }
 
-      // 2. Proceed with Paystack transfer for net amount (convert to kobo)
+      // 2. Resolve recipient code if not provided
+      let finalRecipientCode = recipient_code;
+      if (!finalRecipientCode) {
+        if (!account_number || !bank_code || !name) {
+          return new Response(JSON.stringify({ error: "recipient_code or (account_number, bank_code, name) required" }), {
+            headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+            status: 400,
+          });
+        }
+
+        console.log(`Creating recipient for account: ${account_number}`);
+        const recipientResponse = await fetch("https://api.paystack.co/transferrecipient", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "nuban",
+            name,
+            account_number,
+            bank_code,
+            currency: "NGN",
+          }),
+        });
+
+        const recipientResult = await recipientResponse.json();
+        if (!recipientResponse.ok || !recipientResult.status) {
+          return new Response(JSON.stringify({ error: "Failed to create transfer recipient", details: recipientResult }), {
+            headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+            status: 400,
+          });
+        }
+        finalRecipientCode = recipientResult.data.recipient_code;
+        
+        // Optionally update profile with recipient code in background
+        try {
+          const updatedBankingInfo = { ...(profileData?.banking_info || {}), paystack_recipient_code: finalRecipientCode };
+          await supabaseAdmin.from('profiles').update({ banking_info: updatedBankingInfo }).eq('id', user.id);
+        } catch (e) {
+          console.warn('Failed to update profile with recipient code:', e);
+        }
+      }
+
+      // 3. Proceed with Paystack transfer for net amount (convert to kobo)
       const amountInKobo = Math.floor(netAmount * 100);
       const paystackUrl = "https://api.paystack.co/transfer";
       
@@ -204,7 +248,7 @@ serve(async (req) => {
         body: JSON.stringify({
           source: "balance",
           amount: amountInKobo,
-          recipient: recipient_code,
+          recipient: finalRecipientCode,
           reason: "Wallet withdrawal",
         }),
       });
