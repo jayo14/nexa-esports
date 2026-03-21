@@ -7,6 +7,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PurchaseReceipt } from '@/components/marketplace/PurchaseReceipt';
 import { ArrowLeft, CheckCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import CryptoJS from 'crypto-js';
+
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'nexa-esports-default-secure-key-2026';
 
 export const PurchaseDetails: React.FC = () => {
   const { transactionId } = useParams();
@@ -30,7 +33,27 @@ export const PurchaseDetails: React.FC = () => {
       },
       {
         onSuccess: (data: any) => {
-          setCredentials(data.credentials);
+          if (data.success && data.credentials) {
+            try {
+              const decryptedBytes = CryptoJS.AES.decrypt(data.credentials, ENCRYPTION_KEY);
+              const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+              
+              if (!decryptedText) throw new Error('Decryption failed - possibly incorrect key');
+
+              setCredentials({
+                full_credentials: decryptedText,
+                notes: data.security_notes,
+                account_uid: data.account_uid
+              });
+            } catch (error) {
+              console.error('Decryption error:', error);
+              toast({
+                title: 'Security Error',
+                description: 'Failed to decrypt credentials. Please contact support.',
+                variant: 'destructive',
+              });
+            }
+          }
         },
       }
     );

@@ -1,74 +1,72 @@
 # Nexa Esports - Final Implementation Tasks
 
 ## Marketplace Stability
-- [x] Audit existing marketplace logic
-- [x] Fix state inconsistencies
-- [x] Add error boundaries
-- [x] Optimize API calls and caching
-- [x] Add retry + fallback mechanisms
+- [ ] Audit existing marketplace logic
+- [ ] Fix state inconsistencies
+- [ ] Add error boundaries
+- [ ] Optimize API calls and caching
+- [ ] Add retry + fallback mechanisms
 
 ## Cart System
-- [x] Create cart store (global state)
+- [ ] Create cart store (global state)
 - [x] Add add-to-cart / remove / update quantity
 - [x] Persist cart (localStorage + DB fallback)
-- [x] Handle multi-vendor cart logic
-- [x] UI implementation
+- [ ] Handle multi-vendor cart logic
+- [ ] UI implementation
 
 ## Checkout + Payment Flow
-- [x] Checkout page UI
-- [x] Payment gateway integration (Paystack/Flutterwave)
-- [x] Order creation logic
-- [x] Payment verification (webhook)
-- [x] Email receipt system
+- [ ] Checkout page UI
+- [ ] Payment gateway integration (Paystack/Flutterwave)
+- [ ] Order creation logic
+- [ ] Payment verification (webhook)
+- [ ] Email receipt system
 
 ## Escrow System
-- [x] Create escrow DB schema
-- [x] Lock funds after payment
-- [x] Seller submits CODM account details
-- [x] Buyer confirmation system
-- [x] Auto-release funds logic
-- [x] Dispute handling fallback
+- [ ] Create escrow DB schema
+- [ ] Lock funds after payment
+- [ ] Seller submits CODM account details
+- [ ] Buyer confirmation system
+- [ ] Auto-release funds logic
+- [ ] Dispute handling fallback
 
 ## Chat & Conversation System
 - [x] Realtime chat schema
 - [x] Message sending/receiving
-- [x] Delivery/read states
-- [x] Chat performance optimization
-- [x] UI/UX improvements
+- [ ] Delivery/read states
+- [ ] Chat performance optimization
+- [ ] UI/UX improvements
 
 ## Leaderboard Redesign
-- [x] Redesign layout
-- [x] Add filters (game, rank, clan)
-- [x] Optimize query performance
-- [x] Responsive UI
+- [ ] Redesign layout
+- [ ] Add filters (game, rank, clan)
+- [ ] Optimize query performance
+- [ ] Responsive UI
 
 ## Event Notification System
-- [x] Email notifications
-- [x] In-app notifications
-- [x] Push notifications (PWA)
-- [x] Event triggers (create/update/delete)
+- [ ] Email notifications
+- [ ] In-app notifications
+- [ ] Push notifications (PWA)
+- [ ] Event triggers (create/update/delete)
 
 ## Airtime Integration
-- [x] Select API provider
-- [x] Wallet deduction logic
-- [x] Airtime purchase flow
-- [x] Transaction logging
-- [x] Error handling
+- [ ] Select API provider
+- [ ] Wallet deduction logic
+- [ ] Airtime purchase flow
+- [ ] Transaction logging
+- [ ] Error handling
 
 ## Player Profile Viewing
-- [x] Public player listing page (/players)
+- [x] Public player listing page
 - [x] Player card UI
 - [x] Filter out banned users
-- [x] Role-based access
+- [ ] Role-based access
 - [x] Reuse admin structure (read-only)
 
 ## Accessibility Fixes
-- [x] Fix zoom issues on inputs (font-size: 16px)
-- [x] Prevent unwanted scaling (viewport meta)
-- [x] Improve mobile responsiveness
-- [x] Test across devices
-
----
+- [ ] Fix zoom issues on inputs
+- [ ] Prevent unwanted scaling
+- [ ] Improve mobile responsiveness
+- [ ] Test across devices
 
 ## Final QA
 - [ ] Full system testing

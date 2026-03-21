@@ -32,6 +32,8 @@ export interface AccountListing {
   created_at: string;
   updated_at: string;
   sold_at?: string;
+  account_credentials?: string;
+  security_notes?: string;
 }
 
 export const useMarketplace = () => {

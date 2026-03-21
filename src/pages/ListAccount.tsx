@@ -32,6 +32,9 @@ import {
 import { useMarketplace } from '@/hooks/useMarketplace';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import CryptoJS from 'crypto-js';
+
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'nexa-esports-default-secure-key-2026';
 
 const ASSET_OPTIONS = [
   { id: 'mythic_gun', label: 'Mythic Gun' },
@@ -75,6 +78,8 @@ export const ListAccount: React.FC = () => {
     region: '',
     refund_policy: false,
     other_login: '',
+    account_credentials: '',
+    security_notes: '',
   });
 
   const [selectedAssets, setSelectedAssets] = useState<Record<string, number>>({});
@@ -217,6 +222,21 @@ export const ListAccount: React.FC = () => {
       }
     }
 
+    if (!formData.account_credentials.trim()) {
+      toast({
+        title: "Credentials Required",
+        description: "Please provide account login details. These will be encrypted and only revealed to the buyer after a successful purchase.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Encrypt credentials before sending to DB
+    const encryptedCredentials = CryptoJS.AES.encrypt(
+      formData.account_credentials.trim(),
+      ENCRYPTION_KEY
+    ).toString();
+
     const listingPayload = {
       title: formData.title,
       account_uid: formData.account_uid,
@@ -232,6 +252,8 @@ export const ListAccount: React.FC = () => {
       refund_policy: formData.refund_policy,
       video_url: videoUrl,
       game: 'Call Of Duty Mobile',
+      account_credentials: encryptedCredentials,
+      security_notes: formData.security_notes,
     };
 
     createListing(listingPayload, {
@@ -512,6 +534,48 @@ export const ListAccount: React.FC = () => {
                 />
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/20 bg-primary/5 shadow-lg shadow-primary/5">
+          <CardHeader>
+            <CardTitle className="text-sm font-orbitron flex items-center gap-2 text-primary">
+              <Lock className="h-4 w-4" />
+              Secure Account Delivery (Escrow)
+            </CardTitle>
+            <CardDescription className="font-rajdhani text-xs">
+              These details are <span className="text-primary font-bold">encrypted</span> and will NOT be public. 
+              They are only revealed to the buyer after payment is confirmed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="credentials" className="flex items-center gap-1">
+                Login Credentials <span className="text-destructive">*</span>
+              </Label>
+              <Textarea 
+                id="credentials"
+                placeholder="Email: example@gmail.com&#10;Password: ********&#10;Backup Codes: 1234, 5678"
+                className="font-mono text-sm min-h-[100px] border-primary/20 bg-background/50"
+                value={formData.account_credentials}
+                onChange={(e) => setFormData({ ...formData, account_credentials: e.target.value })}
+              />
+              <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                End-to-end encrypted. Our staff cannot see your password.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="security_notes">Security Handover Notes</Label>
+              <Input 
+                id="security_notes"
+                placeholder="e.g. Please change the linked email immediately"
+                className="font-rajdhani"
+                value={formData.security_notes}
+                onChange={(e) => setFormData({ ...formData, security_notes: e.target.value })}
+              />
+            </div>
           </CardContent>
         </Card>
 

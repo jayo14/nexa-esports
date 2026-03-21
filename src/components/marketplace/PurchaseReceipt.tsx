@@ -47,6 +47,7 @@ interface PurchaseReceiptProps {
     linked_accounts?: string[];
     recovery_info?: string;
     notes?: string;
+    full_credentials?: string;
   };
   onRevealCredentials: () => void;
   isRevealing: boolean;
@@ -231,8 +232,49 @@ export const PurchaseReceipt: React.FC<PurchaseReceiptProps> = ({
                   </AlertDescription>
                 </Alert>
 
-                {/* Email */}
-                {credentials.email && (
+                {/* Decrypted Account Flow */}
+                {credentials.full_credentials && (
+                  <div className="p-4 bg-background/40 rounded-lg border border-primary/20 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Key className="h-4 w-4 text-primary" />
+                        <p className="text-xs text-muted-foreground font-rajdhani uppercase tracking-wider">Full Login Intel</p>
+                      </div>
+                      <div className="flex gap-2 print:hidden">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          <span className="ml-2">{showPassword ? 'Hide' : 'Show'}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8"
+                          onClick={() => copyToClipboard(credentials.full_credentials!, 'Credentials')}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                    {showPassword ? (
+                      <div className="p-4 bg-black/40 rounded border border-primary/10 font-mono text-sm whitespace-pre-wrap break-all overflow-auto max-h-[200px]">
+                        {credentials.full_credentials}
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-black/40 rounded border border-primary/10 font-mono text-sm tracking-widest text-center opacity-50">
+                        ••••••••••••••••••••••••••••••••
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Legacy individual fields if present */}
+                {!credentials.full_credentials && credentials.email && (
                   <div className="p-4 bg-background/40 rounded-lg border border-green-500/20 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -253,8 +295,7 @@ export const PurchaseReceipt: React.FC<PurchaseReceiptProps> = ({
                   </div>
                 )}
 
-                {/* Password */}
-                {credentials.password && (
+                {!credentials.full_credentials && credentials.password && (
                   <div className="p-4 bg-background/40 rounded-lg border border-red-500/20 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
