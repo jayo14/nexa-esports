@@ -321,22 +321,27 @@ export const EventEditor: React.FC = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       
-      if (!isEditMode) {
-        // Notify all players about the new event
-        supabase.functions.invoke('send-notification', {
-          body: {
-            type: 'event_created',
-            title: `New Event: ${variables.name}`,
-            message: `${variables.description || 'A new event has been scheduled.'} Deployment: ${variables.date} at ${variables.time}`,
-            data: {
-              eventName: variables.name,
-              eventDate: variables.date,
-              eventTime: variables.time,
-              type: 'event_created'
-            }
+      const notificationType = isEditMode ? 'event_updated' : 'event_created';
+      const notificationTitle = isEditMode ? `Update: ${variables.name}` : `New Event: ${variables.name}`;
+      const notificationMessage = isEditMode 
+        ? `Operational details for ${variables.name} have been updated. Review the latest intel.` 
+        : `${variables.description || 'A new event has been scheduled.'} Deployment: ${variables.date} at ${variables.time}`;
+
+      // Notify all players about the event action
+      supabase.functions.invoke('send-notification', {
+        body: {
+          type: notificationType,
+          title: notificationTitle,
+          message: notificationMessage,
+          data: {
+            eventId: eventId,
+            eventName: variables.name,
+            eventDate: variables.date,
+            eventTime: variables.time,
+            type: notificationType
           }
-        });
-      }
+        }
+      });
       
       toast({ title: isEditMode ? 'Event Updated' : 'Event Created', description: `Event ${isEditMode ? 'updated' : 'created'} successfully.` });
       navigate('/admin/events');

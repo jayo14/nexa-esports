@@ -176,6 +176,9 @@ const Statistics: FC = () => {
   const [filter, setFilter] = useState<'overall' | 'br' | 'mp'>('overall');
   const [timeRange, setTimeRange] = useState('season'); // Default to season
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [tierFilter, setTierFilter] = useState<string>('all');
+
   const { data: leaderboardData, isLoading, refetch } = useLeaderboard();
   const leaderboardRef = useRef<HTMLDivElement>(null);
   
@@ -184,7 +187,9 @@ const Statistics: FC = () => {
   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
   
   const TOP_RANKS_TO_SHOW_PODIUM = 3;
-  const MAX_LEADERBOARD_ROWS = 50; // Adjust as needed for pagination/display limit
+  const MAX_LEADERBOARD_ROWS = 100; // Increased for better view
+
+  const tiers = ["Legendary", "Grandmaster", "Master", "Pro", "Elite", "Veteran", "Rookie"];
 
   // Mock data enhancement with deterministic pseudo-randomness
   const enhancedData: EnhancedPlayer[] = useMemo(() => {
@@ -199,31 +204,34 @@ const Statistics: FC = () => {
 
     return sorted.map((player) => {
       // Deterministic pseudo-random based on ID for consistent UI
-      const seed = player.id?.charCodeAt(0) || 0; // Use first char code of ID as seed
+      const seed = player.id?.charCodeAt(0) || 0; 
       const score = filter === 'br' ? (player.br_kills || 0) : filter === 'mp' ? (player.mp_kills || 0) : (player.total_kills || 0);
       
-      // Mocked stats for UI fidelity
-      const matches = Math.floor(score * 0.8) + (seed % 50) + 50; // Ensure minimum matches
+      // Mocked stats for UI fidelity (in production these would be real DB fields)
+      const matches = Math.floor(score * 0.8) + (seed % 50) + 50; 
       const winRate = 45 + (seed % 25);
-      const kdRatio = (1.5 + (seed % 35) / 10).toFixed(2) as unknown as number;
+      const kdRatio = (1.1 + (seed % 45) / 10).toFixed(2) as unknown as number;
       const trend = seed % 3 === 0 ? 'up' : seed % 3 === 1 ? 'down' : 'neutral';
       
       return {
         ...player,
         matches_played: matches,
-        win_rate: Math.min(winRate, 95), // Cap win rate
+        win_rate: Math.min(winRate, 98), 
         kd_ratio: kdRatio,
         trend: trend,
         score: score
       };
-    }).filter(p => 
+    }).filter(p => {
       // Apply search query filter
-      p.ign?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (p.status === 'beta' ? 'beta' : 'main').includes(searchQuery.toLowerCase()) ||
-      (p.tier?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.grade?.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }, [leaderboardData, filter, searchQuery]);
+      const matchesSearch = p.ign?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (p.status === 'beta' ? 'beta' : 'main').includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+      const matchesTier = tierFilter === 'all' || p.tier === tierFilter;
+      
+      return matchesSearch && matchesStatus && matchesTier;
+    });
+  }, [leaderboardData, filter, searchQuery, statusFilter, tierFilter]);
 
   // Fetch comparison player data if compareId is in URL
   useEffect(() => {
@@ -274,7 +282,7 @@ const Statistics: FC = () => {
   // Real-time updates for profile changes affecting leaderboard display
   useEffect(() => {
     const profilesChannel = supabase
-      .channel('profiles-changes')
+      .channel('profiles-changes-leaderboard')
       .on(
         'postgres_changes',
         {
@@ -282,9 +290,7 @@ const Statistics: FC = () => {
           schema: 'public',
           table: 'profiles'
         },
-        // This will refetch leaderboard data when profiles change
         () => {
-          console.log('Profile data updated, refreshing leaderboard...');
           refetch();
         }
       )
@@ -315,7 +321,7 @@ const Statistics: FC = () => {
       const canvas = await html2canvas(leaderboardRef.current, {
         backgroundColor: MODAL_BACKGROUND_COLOR,
         scale: 2,
-        useCORS: true, // Important for background images
+        useCORS: true,
       });
       const url = canvas.toDataURL();
       const link = document.createElement('a');
@@ -331,7 +337,6 @@ const Statistics: FC = () => {
 
   const handleShare = async () => {
     if (!leaderboardRef.current) return;
-    
     try {
       toast.info('Preparing intel package...');
       const canvas = await html2canvas(leaderboardRef.current, {
@@ -339,15 +344,12 @@ const Statistics: FC = () => {
         scale: 2,
         useCORS: true,
       });
-      
       canvas.toBlob(async (blob) => {
         if (!blob) {
           toast.error('Failed to create image blob.');
           return;
         }
-        
         const file = new File([blob], `NEXA-LEADERBOARD-${filter.toUpperCase()}.png`, { type: 'image/png' });
-        
         if (navigator.share && navigator.canShare({ files: [file] })) {
           await navigator.share({
             title: 'NeXa Esports Leaderboard',
@@ -356,7 +358,6 @@ const Statistics: FC = () => {
           });
           toast.success('Intel package shared!');
         } else {
-          // Fallback to download if sharing is not supported or fails
           toast.info('Sharing not supported. Downloading image instead.');
           handleExport();
         }
@@ -370,13 +371,13 @@ const Statistics: FC = () => {
   const getMedalIcon = (position: number) => {
     switch (position) {
       case 1:
-        return <Crown className="w-6 h-6 text-yellow-500 drop-shadow-lg" fill="currentColor" />;
+        return <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" fill="currentColor" />;
       case 2:
-        return <Trophy className="w-6 h-6 text-gray-400" />;
+        return <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300 drop-shadow-[0_0_10px_rgba(209,213,219,0.3)]" />;
       case 3:
-        return <Award className="w-6 h-6 text-amber-700" />;
+        return <Award className="w-5 h-5 sm:w-6 sm:h-6 text-amber-700 drop-shadow-[0_0_10px_rgba(180,83,9,0.3)]" />;
       default:
-        return <span className="text-base font-bold text-muted-foreground">{position}</span>;
+        return <span className="text-sm sm:text-base font-bold text-muted-foreground/60">{position}</span>;
     }
   };
 
@@ -388,17 +389,6 @@ const Statistics: FC = () => {
         return <TrendingDown className="w-4 h-4 text-red-500" />;
       default:
         return <Minus className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const getKillsForFilter = (player: EnhancedPlayer) => {
-    switch (filter) {
-      case 'br':
-        return player.br_kills || 0;
-      case 'mp':
-        return player.mp_kills || 0;
-      default:
-        return player.total_kills || 0;
     }
   };
 
@@ -416,60 +406,61 @@ const Statistics: FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
         className="mb-12"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold font-orbitron flex items-center gap-2 text-primary uppercase tracking-wide">
             <Activity className="w-5 h-5 text-primary" />
-            Player Intel Comparison
+            Operator Intel Comparison
           </h2>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => {
-              setSearchParams({}); // Clear compareId from URL
+              setSearchParams({}); 
               setComparePlayer(null);
             }}
-            className="text-muted-foreground hover:text-primary transition-colors"
+            className="text-muted-foreground hover:bg-white/5 border-white/10 transition-colors"
           >
             Clear Comparison
           </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ComparisonPlayerCard player={currentPlayer} title="Current Asset" />
-          <ComparisonPlayerCard player={comparePlayer} title="Target Intel" isTarget />
+          <ComparisonPlayerCard player={currentPlayer} title="Active Operative" />
+          <ComparisonPlayerCard player={comparePlayer} title="Target Profile" isTarget />
         </div>
 
-        <Card className="mt-8 bg-black/40 border-primary/20 shadow-xl backdrop-blur-lg">
-          <CardContent className="p-4 sm:p-6 space-y-6">
+        <Card className="mt-8 bg-black/60 border-primary/20 shadow-2xl backdrop-blur-xl">
+          <CardContent className="p-4 sm:p-8 space-y-8">
             {stats.map((stat) => {
               const val1 = (stat.key === 'kills' ? (currentPlayer.score || currentPlayer.total_kills) : currentPlayer[stat.key]) || 0;
               const val2 = (stat.key === 'kills' ? (comparePlayer.score || comparePlayer.total_kills) : comparePlayer[stat.key]) || 0;
               
               return (
-                <div key={stat.key} className="space-y-2">
-                  <div className="flex justify-between text-xs font-black uppercase tracking-widest text-gray-500">
+                <div key={stat.key} className="space-y-3">
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
                     <span>{stat.label}</span>
-                    <div className="flex gap-4 font-mono">
-                      <span className={cn(val1 >= val2 ? "text-primary" : "text-white")}>
+                    <div className="flex gap-6 font-mono">
+                      <span className={cn(val1 >= val2 ? "text-primary scale-110" : "text-white opacity-60")}>
                         {val1}{(stat as any).suffix || ''}
                       </span>
-                      <span className="text-gray-700">VS</span>
-                      <span className={cn(val2 >= val1 ? "text-primary" : "text-white")}>
+                      <span className="text-gray-800 font-black">X</span>
+                      <span className={cn(val2 >= val1 ? "text-primary scale-110" : "text-white opacity-60")}>
                         {val2}{(stat as any).suffix || ''}
                       </span>
                     </div>
                   </div>
-                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden flex shadow-inner">
+                  <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden flex shadow-inner">
                     <motion.div
-                      className={`h-full ${val1 >= val2 ? "bg-primary/70" : "bg-blue-500/70"} transition-all duration-700`}
-                      style={{ width: `${(val1 / (val1 + val2 || 1)) * 100}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(val1 / (val1 + val2 || 1)) * 100}%` }}
+                      className={`h-full ${val1 >= val2 ? "bg-primary" : "bg-blue-600"} transition-all duration-1000 ease-out`}
                     />
                     <motion.div
-                      className={`h-full ${val2 >= val1 ? "bg-primary/70" : "bg-blue-500/70"} transition-all duration-700`}
-                      style={{ width: `${(val2 / (val1 + val2 || 1)) * 100}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(val2 / (val1 + val2 || 1)) * 100}%` }}
+                      className={`h-full ${val2 >= val1 ? "bg-primary" : "bg-blue-600"} transition-all duration-1000 ease-out`}
                     />
                   </div>
                 </div>
@@ -484,52 +475,61 @@ const Statistics: FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground font-rajdhani">
       {/* 1. Hero Header Section */}
-      <header className="relative w-full h-[250px] md:h-[350px] lg:h-[400px] overflow-hidden mb-12 group">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-background z-10" />
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-40 group-hover:opacity-50 transition-opacity duration-1000" />
+      <header className="relative w-full h-[280px] md:h-[400px] lg:h-[450px] overflow-hidden mb-12 group">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/60 to-background z-10" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-40 group-hover:opacity-50 transition-all duration-1000 group-hover:scale-105" />
         
-        <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-end pb-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
+        <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-end pb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="space-y-4 max-w-2xl">
               <motion.div 
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="flex items-center gap-2 flex-wrap"
+                initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+                className="flex items-center gap-3 flex-wrap"
               >
-                <Badge variant="outline" className="bg-primary/20 text-primary border-primary/50 backdrop-blur-md px-3 py-1 text-xs uppercase tracking-widest shadow-md">
+                <Badge variant="outline" className="bg-primary/20 text-primary border-primary/50 backdrop-blur-md px-4 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(218,11,29,0.3)]">
                   Season 5: Phantom War
                 </Badge>
-                <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30 backdrop-blur-md px-3 py-1 text-xs uppercase tracking-widest flex items-center gap-1 shadow-md">
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-[10px] font-black uppercase tracking-widest">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  Live Sync
-                </Badge>
+                  Live Intel Feed
+                </div>
               </motion.div>
               <motion.h1 
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="text-3xl sm:text-5xl lg:text-6xl font-black text-white font-orbitron uppercase tracking-tight"
+                initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="text-4xl sm:text-6xl lg:text-7xl font-black text-white font-orbitron uppercase tracking-tighter italic"
               >
-                Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-yellow-500">Leaderboard</span>
+                Combat <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-red-500 to-yellow-500 animate-pulse">Rankings</span>
               </motion.h1>
               <motion.p 
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                className="text-lg text-gray-300 font-rajdhani max-w-lg"
+                className="text-lg md:text-xl text-gray-400 font-rajdhani max-w-lg leading-tight"
               >
-                Top operators dominating the arena. Compete, climb the ranks, and prove your elite status.
+                Operational performance metrics for all elite operators in the Nexa Division. Prove your worth or be upgraded.
               </motion.p>
             </div>
 
             <motion.div 
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
-              className="flex items-center gap-2"
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
+              className="flex items-center gap-2 p-1 rounded-xl bg-white/5 backdrop-blur-md border border-white/10"
             >
-              <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="flex-shrink-0">
-                <TabsList className="bg-secondary/50 border border-white/5 shadow-inner">
-                  <TabsTrigger value="overall" className="px-5 py-2 font-orbitron text-base uppercase tracking-wide">
+              <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full sm:w-auto">
+                <TabsList className="bg-transparent h-12 gap-1 p-1">
+                  <TabsTrigger 
+                    value="overall" 
+                    className="px-6 h-full font-orbitron text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all shadow-xl"
+                  >
                     <Globe className="w-4 h-4 mr-2" /> Global
                   </TabsTrigger>
-                  <TabsTrigger value="mp" className="px-5 py-2 font-orbitron text-base uppercase tracking-wide opacity-50 cursor-not-allowed">
+                  <TabsTrigger 
+                    value="mp" 
+                    className="px-6 h-full font-orbitron text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all shadow-xl"
+                  >
                     <Swords className="w-4 h-4 mr-2" /> MP
                   </TabsTrigger>
-                  <TabsTrigger value="br" className="px-5 py-2 font-orbitron text-base uppercase tracking-wide opacity-50 cursor-not-allowed">
+                  <TabsTrigger 
+                    value="br" 
+                    className="px-6 h-full font-orbitron text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all shadow-xl"
+                  >
                     <Target className="w-4 h-4 mr-2" /> BR
                   </TabsTrigger>
                 </TabsList>
@@ -539,55 +539,83 @@ const Statistics: FC = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4" ref={leaderboardRef}>
         
         <AnimatePresence>
           {compareId && <ComparisonSection />}
         </AnimatePresence>
 
         {/* 4. Filters & Controls */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-12">
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-            {/* Time Range Filter */}
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-[140px] bg-secondary/50 border-primary/20 font-orbitron text-sm shadow-inner">
-                <Timer className="w-4 h-4 mr-2 text-primary" />
-                <SelectValue placeholder="Time Range" />
+        <div className="flex flex-col lg:flex-row justify-between items-stretch gap-4 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex items-center gap-3 flex-1">
+            <div className="flex gap-2">
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="flex-1 lg:w-[150px] bg-white/5 border-white/10 font-orbitron text-[10px] uppercase tracking-widest h-11">
+                  <Timer className="w-3.5 h-3.5 mr-2 text-primary" />
+                  <SelectValue placeholder="Horizon" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectItem value="daily" className="font-orbitron text-xs">Daily Log</SelectItem>
+                  <SelectItem value="weekly" className="font-orbitron text-xs">Weekly Cycle</SelectItem>
+                  <SelectItem value="season" className="font-orbitron text-xs">Full Season</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="flex-1 lg:w-[130px] bg-white/5 border-white/10 font-orbitron text-[10px] uppercase tracking-widest h-11">
+                  <Shield className="w-3.5 h-3.5 mr-2 text-primary" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectItem value="all" className="font-orbitron text-xs uppercase">All Status</SelectItem>
+                  <SelectItem value="main" className="font-orbitron text-xs uppercase">Main Roster</SelectItem>
+                  <SelectItem value="beta" className="font-orbitron text-xs uppercase">Beta Squad</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Select value={tierFilter} onValueChange={setTierFilter}>
+              <SelectTrigger className="bg-white/5 border-white/10 font-orbitron text-[10px] uppercase tracking-widest h-11">
+                <Crown className="w-3.5 h-3.5 mr-2 text-primary" />
+                <SelectValue placeholder="Tier Filter" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily" className="font-orbitron">Daily</SelectItem>
-                <SelectItem value="weekly" className="font-orbitron">Weekly</SelectItem>
-                <SelectItem value="season" className="font-orbitron">All Season</SelectItem>
+              <SelectContent className="bg-zinc-900 border-white/10 max-h-[300px]">
+                <SelectItem value="all" className="font-orbitron text-xs uppercase">All Combat Tiers</SelectItem>
+                {tiers.map(t => (
+                  <SelectItem key={t} value={t} className="font-orbitron text-xs uppercase">{t}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex gap-2 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="flex gap-3">
+            <div className="relative flex-1 lg:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
               <Input 
-                placeholder="Search operator..." 
-                className="pl-9 bg-secondary/50 border-primary/20 font-rajdhani shadow-inner focus-visible:ring-primary/30"
+                placeholder="Search Operator Intel..." 
+                className="pl-11 h-11 bg-white/5 border-white/10 font-rajdhani text-sm placeholder:opacity-50 focus-visible:ring-primary/40 focus-visible:border-primary/40"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="icon" onClick={handleExport} title="Download Intel" className="border-primary/20 shadow-inner">
-              <Download className="w-4 h-4" />
-            </Button>
-            <Button variant="default" size="icon" onClick={handleShare} title="Share Intel" className="shadow-md shadow-primary/20">
-              <Share2 className="w-4 h-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" onClick={handleExport} className="h-11 w-11 bg-white/5 border-white/10 hover:text-primary transition-all shadow-lg">
+                <Download className="w-4 h-4" />
+              </Button>
+              <Button variant="default" size="icon" onClick={handleShare} className="h-11 w-11 bg-primary hover:bg-red-600 transition-all shadow-[0_0_20px_rgba(218,11,29,0.3)]">
+                <Share2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* 2. Top 3 Podium Section */}
-        {topThree.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 items-end justify-center max-w-5xl mx-auto">
+        {topThree.length > 0 && !searchQuery && statusFilter === 'all' && tierFilter === 'all' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 items-end justify-center max-w-6xl mx-auto px-4 sm:px-0">
             {/* Rank 2 (Silver) */}
             {topThree[1] && (
               <motion.div 
-                initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}
+                initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}
                 className="order-2 md:order-1"
               >
                 <PodiumCard player={topThree[1]} rank={2} color="silver" />
@@ -597,9 +625,9 @@ const Statistics: FC = () => {
             {/* Rank 1 (Gold) */}
             {topThree[0] && (
               <motion.div 
-                initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.1, duration: 0.7 }}
-                className="order-1 md:order-2 z-10 -mb-4 md:-mb-12" 
+                initial={{ opacity: 0, y: 80, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.1, duration: 0.9, type: "spring", damping: 15 }}
+                className="order-1 md:order-2 z-10 -mb-6 md:-mb-16" 
               >
                 <PodiumCard player={topThree[0]} rank={1} color="gold" isMvp />
               </motion.div>
@@ -608,7 +636,7 @@ const Statistics: FC = () => {
             {/* Rank 3 (Bronze) */}
             {topThree[2] && (
               <motion.div 
-                initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6 }}
+                initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8 }}
                 className="order-3 md:order-3"
               >
                 <PodiumCard player={topThree[2]} rank={3} color="bronze" />
@@ -618,102 +646,125 @@ const Statistics: FC = () => {
         )}
 
         {/* 3. Main Leaderboard Table */}
-        <Card className="bg-black/40 border-primary/10 shadow-xl backdrop-blur-xl overflow-hidden mb-24">
-          <div className="overflow-x-auto">
+        <Card className="bg-zinc-950/40 border-white/5 shadow-2x backdrop-blur-3xl overflow-hidden mb-32 border-t border-white/[0.03]">
+          <div className="overflow-x-auto overflow-y-hidden">
             <table className="w-full text-left border-collapse">
               <motion.thead 
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.6 }}
-                className="bg-secondary/50 text-muted-foreground text-xs uppercase font-bold tracking-wider font-orbitron sticky top-0 z-30"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+                className="bg-zinc-900/60 text-muted-foreground text-[10px] uppercase font-black tracking-[0.2em] font-orbitron sticky top-0 z-30"
               >
                 <tr>
-                  <th className="p-3 sm:p-4 text-center w-12 sm:w-16">Rank</th>
-                  <th className="p-3 sm:p-4 min-w-[140px] sm:min-w-[200px]">Operator</th>
-                  <th className="p-3 sm:p-4 text-center min-w-[80px] sm:min-w-[100px] hidden md:table-cell">Matches</th>
-                  <th className="p-3 sm:p-4 text-center min-w-[100px] sm:min-w-[120px] hidden md:table-cell">Win Rate</th>
-                  <th className="p-3 sm:p-4 text-center min-w-[80px] sm:min-w-[100px] hidden sm:table-cell">K/D</th>
-                  <th className="p-3 sm:p-4 text-right min-w-[100px] sm:min-w-[120px]">Score</th>
-                  <th className="p-3 sm:p-4 text-center w-12 sm:w-16">Trend</th>
+                  <th className="p-5 text-center w-20">Rank</th>
+                  <th className="p-5 min-w-[220px]">Operative Asset</th>
+                  <th className="p-5 text-center min-w-[100px] hidden lg:table-cell">Deployments</th>
+                  <th className="p-5 text-center min-w-[130px] hidden md:table-cell">Success Rate</th>
+                  <th className="p-5 text-center min-w-[100px] hidden sm:table-cell">K/D Ratio</th>
+                  <th className="p-5 text-right min-w-[130px] pr-8">Kills</th>
+                  <th className="p-5 text-center w-20 pr-5">Trend</th>
                 </tr>
               </motion.thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/[0.03]">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      Initializing uplink...
-                    </td>
-                  </tr>
-                ) : restOfPlayers.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      No operators found in this sector.
-                    </td>
-                  </tr>
+                  <tr><td colSpan={7} className="p-20 text-center text-slate-500 font-orbitron animate-pulse uppercase tracking-widest text-xs">Syncing with Central Intelligence...</td></tr>
+                ) : enhancedData.length === 0 ? (
+                  <tr><td colSpan={7} className="p-20 text-center text-slate-500 font-orbitron uppercase tracking-widest text-xs">No matching operators in current sector.</td></tr>
                 ) : (
-                  restOfPlayers.map((player, index) => {
-                    const position = index + 4; // Start rank from 4
+                  enhancedData.map((player, index) => {
+                    const position = index + 1;
+                    const isPodium = position <= 3 && !searchQuery && statusFilter === 'all' && tierFilter === 'all';
                     
                     return (
                       <motion.tr 
                         key={player.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 + index * 0.02, duration: 0.5 }}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index < 10 ? 0.5 + index * 0.05 : 0, duration: 0.4 }}
                         className={cn(
-                          "group hover:bg-white/5 border-b border-primary/10 transition-colors",
-                          player.id === user?.id && "bg-primary/5 shadow-inner shadow-primary/10 border-l-2 border-primary"
+                          "group transition-all duration-300",
+                          player.id === user?.id ? "bg-primary/[0.07] border-l-4 border-l-primary shadow-[inset_0_0_20px_rgba(218,11,29,0.05)]" : "hover:bg-white/[0.02]",
+                          isPodium && "opacity-80 grayscale-[0.5] contrast-125"
                         )}
                       >
-                        <td className="p-3 sm:p-4 text-center font-bold text-gray-400 w-12 sm:w-16">
-                          {getMedalIcon(position)}
+                        <td className="p-5 text-center">
+                          <div className="flex items-center justify-center">
+                            {getMedalIcon(position)}
+                          </div>
                         </td>
-                        <td className="p-3 sm:p-4 min-w-[140px] sm:min-w-[200px]">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="relative flex-shrink-0">
-                              <img 
-                                src={player.avatar_url || "/placeholder.svg"} 
-                                alt={player.ign}
-                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover border-2 border-primary/30 group-hover:border-primary/50 transition-colors"
-                              />
+                        <td className="p-5">
+                          <div className="flex items-center gap-4">
+                            <div className="relative group-hover:scale-110 transition-transform duration-500">
+                              <div className={cn(
+                                "w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden border-2 transition-all p-0.5",
+                                player.status === 'beta' ? "border-zinc-700 bg-zinc-800" : "border-primary/40 bg-primary/10"
+                              )}>
+                                <img 
+                                  src={player.avatar_url || "/placeholder.svg"} 
+                                  alt={player.ign}
+                                  className="w-full h-full object-cover rounded-lg"
+                                />
+                              </div>
                               {player.id === user?.id && (
-                                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-black shadow-md animate-pulse" />
+                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-zinc-950 shadow-md animate-pulse shadow-green-500/30" />
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
-                                {player.ign}
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "font-black text-sm sm:text-base uppercase tracking-tight font-orbitron italic whitespace-nowrap",
+                                  player.id === user?.id ? "text-primary" : "text-white group-hover:text-primary transition-colors"
+                                )}>
+                                  {player.status === 'beta' ? 'Ɲ・乃' : 'Ɲ・乂'} {player.ign}
+                                </span>
+                                {player.status === 'beta' && <Badge variant="outline" className="text-[7px] h-3 px-1 border-white/20 text-white/40 font-black">BETA</Badge>}
                               </div>
-                              <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-widest">
-                                <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary" />
-                                {player.tier} • {player.grade}
+                              <div className="flex items-center gap-2 mt-1">
+                                <Shield className="w-3 h-3 text-primary/70" />
+                                <span className="text-[9px] sm:text-[10px] text-gray-400 font-black uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity">
+                                  {player.tier} • {player.grade}
+                                </span>
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-3 sm:p-4 text-center text-gray-300 hidden md:table-cell min-w-[80px] sm:min-w-[100px]">
-                          {player.matches_played}
+                        <td className="p-5 text-center hidden lg:table-cell">
+                          <span className="font-mono text-sm text-gray-500 group-hover:text-white transition-colors">{player.matches_played}</span>
                         </td>
-                        <td className="p-3 sm:p-4 text-center hidden md:table-cell min-w-[100px] sm:min-w-[120px]">
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="w-12 sm:w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <td className="p-5 text-center hidden md:table-cell">
+                          <div className="flex flex-col items-center gap-1.5">
+                            <div className="flex justify-between w-full max-w-[100px] text-[8px] font-black uppercase tracking-tighter text-gray-600">
+                              <span>Ops</span>
+                              <span>{player.win_rate}%</span>
+                            </div>
+                            <div className="w-full max-w-[100px] h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/[0.02] shadow-inner">
                               <motion.div 
-                                className="h-full bg-primary" 
-                                style={{ width: `${player.win_rate}%` }}
+                                className="h-full bg-gradient-to-r from-primary to-red-600 shadow-[0_0_8px_rgba(218,11,29,0.3)]" 
                                 initial={{ width: 0 }}
                                 animate={{ width: `${player.win_rate}%` }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                transition={{ duration: 1.5, ease: "circOut" }}
                               />
                             </div>
-                            <span className="text-xs font-bold text-primary">{player.win_rate}%</span>
                           </div>
                         </td>
-                        <td className="p-3 sm:p-4 text-center font-mono text-yellow-500/80 hidden sm:table-cell min-w-[80px] sm:min-w-[100px]">
-                          {player.kd_ratio}
+                        <td className="p-5 text-center hidden sm:table-cell">
+                          <span className={cn(
+                            "font-black text-sm sm:text-base font-orbitron",
+                            player.kd_ratio >= 3 ? "text-yellow-500" : player.kd_ratio >= 1.5 ? "text-green-500" : "text-gray-400"
+                          )}>
+                            {player.kd_ratio}
+                          </span>
                         </td>
-                        <td className="p-3 sm:p-4 text-right font-black text-lg sm:text-xl text-primary font-orbitron min-w-[100px] sm:min-w-[120px]">
-                          {player.score.toLocaleString()}
+                        <td className="p-5 text-right pr-8">
+                          <div className="flex flex-col items-end">
+                            <span className="text-xl sm:text-2xl font-black text-white font-orbitron group-hover:text-primary transition-colors duration-300">
+                              {player.score.toLocaleString()}
+                            </span>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-primary opacity-60">ELIMINATIONS</span>
+                          </div>
                         </td>
-                        <td className="p-3 sm:p-4 text-center w-12 sm:w-16">
-                          {getTrendIcon(player.trend)}
+                        <td className="p-5 text-center pr-5">
+                          <div className="flex justify-center group-hover:scale-125 transition-transform">
+                            {getTrendIcon(player.trend)}
+                          </div>
                         </td>
                       </motion.tr>
                     );
@@ -725,39 +776,53 @@ const Statistics: FC = () => {
         </Card>
       </div>
 
-      {/* 5. Player Rank Summary (Fixed Bottom on Mobile, Card on Desktop) */}
+      {/* 5. Player Rank Summary (Sticky Bottom) */}
       {user && currentUserRank !== null && (
         <motion.div 
-          initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="fixed bottom-4 left-4 right-4 md:left-auto md:right-8 md:w-96 z-40"
+          initial={{ y: 200 }} animate={{ y: 0 }} 
+          transition={{ duration: 0.8, type: "spring", stiffness: 50 }}
+          className="fixed bottom-6 left-4 right-4 md:left-auto md:right-10 md:w-[400px] z-50 px-2 sm:px-0"
         >
-          <Card className="bg-black/70 border-primary/20 shadow-2xl shadow-primary/20 backdrop-blur-xl">
-            <CardContent className="p-4 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="flex flex-col items-center justify-center w-12 h-12 bg-primary/20 rounded-lg border border-primary/30 shadow-inner">
-                  <span className="text-[10px] text-primary uppercase font-bold">Rank</span>
-                  <span className="text-xl font-black text-white font-orbitron">{currentUserRank}</span>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400 font-bold uppercase tracking-wider mb-1">Your Intel</div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                    <span className="flex items-center gap-1 text-yellow-500">
-                      <Target className="w-3 h-3" />
-                      {filter === 'br' ? (currentPlayer?.br_kills || 0) : filter === 'mp' ? (currentPlayer?.mp_kills || 0) : (currentPlayer?.total_kills || 0)} Kills
-                    </span>
-                    <span className="flex items-center gap-1 text-green-500">
-                      <TrendingUp className="w-3 h-3" />
-                      Top {Math.ceil((currentUserRank / (enhancedData.length || 1)) * 100)}%
-                    </span>
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+            <Card className="relative bg-zinc-950/80 border-primary/20 shadow-2xl backdrop-blur-3xl overflow-hidden rounded-2xl">
+              {/* Scanline effect */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none opacity-20" />
+              
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between gap-6">
+                <div className="flex items-center gap-5 flex-1">
+                  <div className="relative group-hover:rotate-6 transition-transform">
+                    <div className="flex flex-col items-center justify-center w-14 h-14 bg-primary/20 rounded-xl border border-primary/40 shadow-[inset_0_0_15px_rgba(218,11,29,0.2)]">
+                      <span className="text-[9px] text-primary/80 uppercase font-black tracking-tighter">Ranking</span>
+                      <span className="text-2xl font-black text-white font-orbitron leading-none">{currentUserRank}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" /> Personal Intel
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <Target className="w-3 h-3 text-red-500" />
+                        <span className="text-sm font-black text-white">{filter === 'br' ? (currentPlayer?.br_kills || 0) : filter === 'mp' ? (currentPlayer?.mp_kills || 0) : (currentPlayer?.total_kills || 0)} <span className="text-[10px] text-gray-500">KILLS</span></span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3 h-3 text-green-500" />
+                        <span className="text-sm font-black text-white">TOP {Math.max(1, Math.ceil((currentUserRank / (leaderboardData?.length || 1)) * 100))}%</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <Button size="sm" className="font-orbitron font-bold shadow-md" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                Top
-              </Button>
-            </CardContent>
-          </Card>
+                <Button 
+                  size="sm" 
+                  className="bg-primary hover:bg-black hover:text-primary hover:border-primary border border-transparent font-orbitron font-black text-[10px] h-10 px-5 shadow-[0_0_20px_rgba(218,11,29,0.2)] transition-all uppercase tracking-widest italic"
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                >
+                  Return
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </motion.div>
       )}
     </div>

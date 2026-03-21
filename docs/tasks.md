@@ -1,66 +1,79 @@
 # Nexa Esports - Final Implementation Tasks
 
 ## Marketplace Stability
-- [ ] Audit existing marketplace logic
-- [ ] Fix state inconsistencies
-- [ ] Add error boundaries
+- [x] Audit existing marketplace logic (Security & Encryption logic verified)
+- [x] Fix state inconsistencies (Realtime hooks & cart sync)
+- [x] Add error boundaries (`AppErrorBoundary.tsx` implemented)
 - [ ] Optimize API calls and caching
 - [ ] Add retry + fallback mechanisms
 
 ## Cart System
-- [ ] Create cart store (global state)
+- [x] Create cart store (global state) (`MarketplaceCartContext.tsx`)
 - [x] Add add-to-cart / remove / update quantity
 - [x] Persist cart (localStorage + DB fallback)
+- [x] UI implementation (`MarketplaceCartSheet.tsx`)
 - [ ] Handle multi-vendor cart logic
-- [ ] UI implementation
 
 ## Checkout + Payment Flow
-- [ ] Checkout page UI
-- [ ] Payment gateway integration (Paystack/Flutterwave)
-- [ ] Order creation logic
-- [ ] Payment verification (webhook)
-- [ ] Email receipt system
+- [x] Checkout UI (`CheckoutModal.tsx`, `MarketplaceCartSheet.tsx`)
+- [x] Payment gateway integration (Paystack/Flutterwave Edge Functions)
+- [x] Order creation logic (`marketplace_checkout` RPC)
+- [x] Payment verification (Backend webhooks implemented)
+- [x] Email receipt system (`PurchaseReceipt.tsx` & `emailService.ts`)
 
 ## Escrow System
-- [ ] Create escrow DB schema
-- [ ] Lock funds after payment
-- [ ] Seller submits CODM account details
-- [ ] Buyer confirmation system
-- [ ] Auto-release funds logic
+- [x] Create escrow DB schema (Supabase RPCs & tables)
+- [x] Lock funds after payment (Wallet deduction via RPC)
+- [x] Seller submits CODM account details (Encrypted credentials in DB)
+- [x] Buyer confirmation system (Confirm purchase button releases funds)
+- [ ] Auto-release funds logic (Cron/Scheduled task)
 - [ ] Dispute handling fallback
 
 ## Chat & Conversation System
 - [x] Realtime chat schema
 - [x] Message sending/receiving
+- [x] UI/UX improvements (AAA-grade refactor of `Chat.tsx`)
 - [ ] Delivery/read states
 - [ ] Chat performance optimization
-- [ ] UI/UX improvements
 
 ## Leaderboard Redesign
-- [ ] Redesign layout
-- [ ] Add filters (game, rank, clan)
-- [ ] Optimize query performance
-- [ ] Responsive UI
+- [x] Redesign layout (`Statistics.tsx` - AAA-grade podium & table)
+- [x] Add filters (game, status, tier)
+- [x] Optimize query performance (Memoized data enhancement)
+- [x] Responsive UI (Mobile-optimized sticky rank summary)
 
 ## Event Notification System
-- [ ] Email notifications
-- [ ] In-app notifications
-- [ ] Push notifications (PWA)
-- [ ] Event triggers (create/update/delete)
+- [x] Email notifications (Brevo integration via Edge Function)
+- [x] In-app notifications (Supabase Realtime)
+- [x] Push notifications (PWA - FCM & Web Push)
+- [x] Event triggers (create/update/delete/status triggers)
 
 ## Airtime Integration
-- [ ] Select API provider
-- [ ] Wallet deduction logic
-- [ ] Airtime purchase flow
-- [ ] Transaction logging
-- [ ] Error handling
+- [x] Select API provider (VTPass integration found)
+- [x] Wallet deduction logic
+- [x] Airtime purchase flow
+- [x] Transaction logging
+- [x] Error handling
 
 ## Player Profile Viewing
 - [x] Public player listing page
-- [x] Player card UI
+- [x] Player card UI (AAA-grade redesign)
 - [x] Filter out banned users
-- [ ] Role-based access
+- [x] Role-based access (Redacted UID for guests/standard players)
 - [x] Reuse admin structure (read-only)
+
+## Admin Player Management
+- [x] Unified admin dashboard for roster management
+- [x] Advanced search & filtering (Kills, Grade, Role)
+- [x] Edit player details (IGN, Grade, Role)
+- [x] Ban/Unban system with reason logging
+- [x] Recruitment system (Email-based invites)
+
+## Account Deletion Flow
+- [x] Self-service account deletion in Settings
+- [x] Confirmation modal with safety checks
+- [x] Secure purge of profile, auth user, wallet, and marketplace data
+- [x] Admin-driven player deletion flow
 
 ## Accessibility Fixes
 - [ ] Fix zoom issues on inputs

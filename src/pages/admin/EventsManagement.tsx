@@ -194,9 +194,26 @@ export const AdminEventsManagement: React.FC = () => {
       // Log status update
       await logEventStatusUpdate(eventName, oldStatus, newStatus);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["activities"] });
+      
+      // Notify all players about status change
+      supabase.functions.invoke('send-notification', {
+        body: {
+          type: 'event_status_changed',
+          title: `Status Update: ${variables.eventName}`,
+          message: `Operational status has changed from ${variables.oldStatus.toUpperCase()} to ${variables.newStatus.toUpperCase()}.`,
+          data: {
+            eventId: variables.eventId,
+            eventName: variables.eventName,
+            oldStatus: variables.oldStatus,
+            newStatus: variables.newStatus,
+            type: 'event_status_changed'
+          }
+        }
+      });
+
       toast({
         title: "Status Updated",
         description: "Event status has been updated successfully.",
@@ -223,9 +240,23 @@ export const AdminEventsManagement: React.FC = () => {
       // Log event deletion
       await logEventDelete(eventName);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["activities"] });
+      
+      // Notify all players about deletion/cancellation
+      supabase.functions.invoke('send-notification', {
+        body: {
+          type: 'event_deleted',
+          title: `Mission Aborted: ${variables.eventName}`,
+          message: `Intel suggests that ${variables.eventName} has been cancelled or removed from the operative schedule.`,
+          data: {
+            eventName: variables.eventName,
+            type: 'event_deleted'
+          }
+        }
+      });
+
       toast({
         title: "Event Deleted",
         description: "Event has been deleted successfully.",
