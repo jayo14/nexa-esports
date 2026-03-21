@@ -42,7 +42,7 @@ export const useMarketplace = () => {
   const { user } = useAuth();
 
   // Fetch all available listings
-  const { data: listings = [], isLoading: listingsLoading } = useQuery({
+  const { data: listings = [], isLoading: listingsLoading, refetch: refetchListings } = useQuery({
     queryKey: ['marketplaceListings'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,21 +59,20 @@ export const useMarketplace = () => {
         .eq('status', 'available')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching marketplace listings:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data as any[];
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch user's own listings
   const { data: myListings = [], isLoading: myListingsLoading } = useQuery({
     queryKey: ['myMarketplaceListings', user?.id],
     queryFn: async () => {
-      if (!user) {
-        throw new Error('Not authenticated');
-      }
+      if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
         .from('account_listings')
@@ -81,14 +80,12 @@ export const useMarketplace = () => {
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching my listings:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data as AccountListing[];
     },
     enabled: !!user,
-    retry: false,
+    staleTime: 60 * 1000, // 1 minute
+    retry: 1,
   });
 
   // Fetch a single listing by ID
@@ -112,23 +109,19 @@ export const useMarketplace = () => {
           .eq('id', listingId)
           .single();
 
-        if (error) {
-          console.error('Error fetching listing details:', error);
-          throw error;
-        }
+        if (error) throw error;
 
-        // Increment view count only if not already viewed in this session
+        // Efficient session-based view counting
         const viewedKey = `listing_viewed_${listingId}`;
-        const hasViewed = sessionStorage.getItem(viewedKey);
-        
-        if (!hasViewed) {
-          await supabase.rpc('increment_listing_views', { listing_id: listingId });
+        if (!sessionStorage.getItem(viewedKey)) {
+          supabase.rpc('increment_listing_views', { listing_id: listingId }).then();
           sessionStorage.setItem(viewedKey, 'true');
         }
 
         return data;
       },
       enabled: !!listingId,
+      staleTime: 2 * 60 * 1000, // 2 minutes
     });
   };
 
@@ -136,19 +129,11 @@ export const useMarketplace = () => {
   const createListingMutation = useMutation({
     mutationFn: async (listingData: Partial<AccountListing>) => {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('Not authenticated');
-      }
+      if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
         .from('account_listings')
-        .insert([
-          {
-            ...listingData,
-            seller_id: user.id,
-          },
-        ])
+        .insert([{ ...listingData, seller_id: user.id }])
         .select()
         .single();
 
@@ -157,31 +142,17 @@ export const useMarketplace = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
-      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
-      toast({
-        title: 'Success',
-        description: 'Listing created successfully',
-      });
+      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings', user?.id] });
+      toast({ title: 'Success', description: 'Listing created successfully' });
     },
-    onError: (error) => {
-      console.error('Error creating listing:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create listing',
-        variant: 'destructive',
-      });
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to create listing', variant: 'destructive' });
     },
   });
 
   // Update a listing
   const updateListingMutation = useMutation({
-    mutationFn: async ({
-      id,
-      updates,
-    }: {
-      id: string;
-      updates: Partial<AccountListing>;
-    }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<AccountListing> }) => {
       const { data, error } = await supabase
         .from('account_listings')
         .update(updates)
@@ -192,21 +163,14 @@ export const useMarketplace = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
-      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
-      toast({
-        title: 'Success',
-        description: 'Listing updated successfully',
-      });
+      queryClient.invalidateQueries({ queryKey: ['marketplaceListing', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings', user?.id] });
+      toast({ title: 'Success', description: 'Listing updated successfully' });
     },
-    onError: (error) => {
-      console.error('Error updating listing:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update listing',
-        variant: 'destructive',
-      });
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update listing', variant: 'destructive' });
     },
   });
 
@@ -217,24 +181,15 @@ export const useMarketplace = () => {
         .from('account_listings')
         .delete()
         .eq('id', listingId);
-
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
-      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
-      toast({
-        title: 'Success',
-        description: 'Listing deleted successfully',
-      });
+      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings', user?.id] });
+      toast({ title: 'Success', description: 'Listing deleted successfully' });
     },
-    onError: (error) => {
-      console.error('Error deleting listing:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete listing',
-        variant: 'destructive',
-      });
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to delete listing', variant: 'destructive' });
     },
   });
 
@@ -248,28 +203,24 @@ export const useMarketplace = () => {
       });
 
       if (error) throw error;
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Purchase failed');
-      }
-
+      if (!data.success) throw new Error(data.error || 'Purchase failed');
       return data;
     },
     onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplaceListing', variables.listingId] });
       queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] }); 
       queryClient.invalidateQueries({ queryKey: ['buyerPurchases'] });
       
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Send In-App Notification to Buyer
       if (user) {
         await supabase.from('notifications').insert([{
           user_id: user.id,
           type: 'marketplace_purchase',
           title: 'Purchase Successful',
-          message: `Your purchase has been completed. Funds are held in escrow for 3 days. View your receipt to access account credentials.`,
+          message: `Your purchase has been completed. Funds are held in escrow. View your receipt to access account credentials.`,
           data: { 
             transaction_id: data.transaction_id,
             url: `/marketplace/purchases/${data.transaction_id}` 
@@ -283,12 +234,7 @@ export const useMarketplace = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Checkout error:', error);
-      toast({
-        title: 'Purchase Failed',
-        description: error.message || 'An error occurred during checkout',
-        variant: 'destructive'
-      });
+      toast({ title: 'Purchase Failed', description: error.message || 'An error occurred during checkout', variant: 'destructive' });
     }
   });
 
@@ -301,26 +247,15 @@ export const useMarketplace = () => {
       });
 
       if (error) throw error;
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to reveal credentials');
-      }
-
+      if (!data.success) throw new Error(data.error || 'Failed to reveal credentials');
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buyerPurchases'] });
-      toast({
-        title: 'Credentials Revealed',
-        description: 'Account login details are now visible. Please change the password immediately.',
-      });
+      toast({ title: 'Credentials Revealed', description: 'Account login details are now visible.' });
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to Reveal Credentials',
-        description: error.message || 'An error occurred',
-        variant: 'destructive'
-      });
+      toast({ title: 'Failed to Reveal Credentials', description: error.message || 'An error occurred', variant: 'destructive' });
     }
   });
 
@@ -333,27 +268,16 @@ export const useMarketplace = () => {
       });
 
       if (error) throw error;
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to confirm purchase');
-      }
-
+      if (!data.success) throw new Error(data.error || 'Failed to confirm purchase');
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buyerPurchases'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      toast({
-        title: 'Purchase Confirmed',
-        description: 'Escrow has been released to the seller. Thank you for your purchase!',
-      });
+      toast({ title: 'Purchase Confirmed', description: 'Escrow has been released to the seller.' });
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to Confirm Purchase',
-        description: error.message || 'An error occurred',
-        variant: 'destructive'
-      });
+      toast({ title: 'Failed to Confirm Purchase', description: error.message || 'An error occurred', variant: 'destructive' });
     }
   });
 
@@ -363,7 +287,6 @@ export const useMarketplace = () => {
       queryKey: ['buyerPurchases'],
       queryFn: async () => {
         const { data: { user } } = await supabase.auth.getUser();
-        
         if (!user) throw new Error('Not authenticated');
 
         const { data, error } = await supabase
@@ -375,109 +298,9 @@ export const useMarketplace = () => {
         if (error) throw error;
         return data;
       },
-      enabled: async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return !!session;
-      },
+      retry: 2,
     });
   };
-
-  // Legacy purchase function (keeping for backward compatibility)
-  const purchaseAccountMutation = useMutation({
-    mutationFn: async ({ listingId, sellerId, price }: { listingId: string; sellerId: string; price: number }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('Not authenticated');
-      }
-
-      // Call the old RPC function if it exists
-      const { data, error } = await supabase.rpc('marketplace_purchase_listing', {
-        p_listing_id: listingId,
-        p_price: price
-      });
-
-      if (error) throw error;
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Purchase failed');
-      }
-
-      return data;
-    },
-    onSuccess: async (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['marketplaceListings'] });
-      queryClient.invalidateQueries({ queryKey: ['myMarketplaceListings'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] }); 
-      
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // Send In-App Notification to Buyer
-      if (user) {
-        await supabase.from('notifications').insert([{
-          user_id: user.id,
-          type: 'marketplace_purchase',
-          title: 'Order Placed Successfully',
-          message: `You have successfully purchased a listing for ₦${variables.price.toLocaleString()}. Funds are held in escrow.`,
-          data: { 
-            orderId: data.transaction_id,
-            listingId: variables.listingId,
-            url: '/marketplace/orders' 
-          }
-        }]);
-
-        // Send Email to Buyer (Client-side trigger)
-        try {
-          // Fetch listing details for the email
-          const { data: listing } = await supabase
-            .from('account_listings')
-            .select('title')
-            .eq('id', variables.listingId)
-            .single();
-            
-          const { sendOrderConfirmationEmail } = await import('@/lib/emailService');
-          await sendOrderConfirmationEmail({
-            to_email: user.email || '',
-            to_name: user.user_metadata?.ign || 'Buyer',
-            order_id: data.transaction_id,
-            listing_title: listing?.title || 'Account Listing',
-            price: variables.price,
-            seller_name: 'Seller' // We could fetch this if needed
-          });
-        } catch (e) {
-          console.error("Failed to send order email:", e);
-        }
-      }
-
-      // Send In-App Notification to Seller
-      if (variables.sellerId) {
-        await supabase.from('notifications').insert([{
-          user_id: variables.sellerId,
-          type: 'marketplace_sale',
-          title: 'New Order Received',
-          message: `Someone has purchased your listing! Funds are in escrow. Please deliver the account credentials.`,
-          data: { 
-            listingId: variables.listingId,
-            price: variables.price,
-            url: '/marketplace' // Or a seller dashboard if it existed
-          }
-        }]);
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Purchase initiated. Funds are held in escrow. Check your email for details.',
-      });
-    },
-    onError: (error: Error) => {
-      console.error('Error purchasing account:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to purchase account',
-        variant: 'destructive',
-      });
-    },
-  });
 
   // Check if marketplace is enabled
   const { data: isMarketplaceEnabled = false } = useQuery({
@@ -488,14 +311,10 @@ export const useMarketplace = () => {
         .select('value')
         .eq('key', 'marketplace_enabled')
         .single();
-
-      if (error) {
-        console.error('Error checking marketplace status:', error);
-        return false;
-      }
-      
+      if (error) return false;
       return data?.value === 'true';
     },
+    staleTime: 3600000, // 1 hour
   });
 
   return {
@@ -512,6 +331,7 @@ export const useMarketplace = () => {
     revealCredentials: revealCredentialsMutation.mutate,
     confirmPurchase: confirmPurchaseMutation.mutate,
     useBuyerPurchases,
+    refetchListings,
     isCreating: createListingMutation.isPending,
     isUpdating: updateListingMutation.isPending,
     isDeleting: deleteListingMutation.isPending,

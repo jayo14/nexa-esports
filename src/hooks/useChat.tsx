@@ -294,12 +294,6 @@ export const useChat = (conversationId?: string) => {
     },
   });
 
-  // Subscribe to real-time messages and conversations
-  useEffect(() => {
-    if (!user) return;
-
-    const channels: any[] = [];
-
   // Subscribe to real-time updates
   useEffect(() => {
     if (!user) return;
@@ -341,7 +335,7 @@ export const useChat = (conversationId?: string) => {
               last_message_at: newMessage.created_at,
               last_message_sender_id: newMessage.sender_id,
               updated_at: newMessage.created_at,
-            } : c).sort((a,b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+            } : c).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
           });
           
           // If not in the current conversation, we eventually need fresh unread counts
