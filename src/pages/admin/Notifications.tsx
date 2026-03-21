@@ -46,7 +46,7 @@ export const AdminNotifications: React.FC = () => {
 
       let query = supabase
         .from("notifications")
-        .select("*, user:profiles(ign, status)")
+        .select("*, user:profiles(ign, status), read_receipts:notification_read_broadcasts(id)")
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -61,19 +61,23 @@ export const AdminNotifications: React.FC = () => {
         console.error("Error fetching notifications:", error.message);
         return [];
       } else {
-        const formatted = data.map((n) => ({
-          id: n.id,
-          type: n.type,
-          message: n.message,
-          title: n.title,
-          playerName: (n.user as any)?.ign || "Unknown",
-          playerStatus: (n.user as any)?.status || "",
-          accessCode: (n.data as any)?.accessCode || "",
-          timestamp: n.created_at,
-          status: n.read ? "read" : "unread",
-          action: (n.action_data as any)?.action || "",
-          userId: n.user_id,
-        }));
+        const formatted = data.map((n) => {
+          const isRead = n.user_id ? n.read : (n.read_receipts && n.read_receipts.length > 0);
+          
+          return {
+            id: n.id,
+            type: n.type,
+            message: n.message,
+            title: n.title,
+            playerName: (n.user as any)?.ign || "Unknown",
+            playerStatus: (n.user as any)?.status || "",
+            accessCode: (n.data as any)?.accessCode || "",
+            timestamp: n.created_at,
+            status: isRead ? "read" : "unread",
+            action: (n.action_data as any)?.action || "",
+            userId: n.user_id,
+          };
+        });
         return formatted;
       }
     }
@@ -137,38 +141,78 @@ export const AdminNotifications: React.FC = () => {
   };
 
   const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase
-      .from("notifications")
-      .update({ read: true })
-      .eq("id", notificationId);
+    if (!profile?.id) return;
 
-    if (error) {
-      console.error("Error marking as read:", error);
-      return;
+    const notification = notifications.find(n => n.id === notificationId);
+    if (!notification) return;
+
+    if (notification.userId) {
+      // Personal notification
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", notificationId);
+
+      if (error) {
+        console.error("Error marking personal as read:", error);
+        return;
+      }
+    } else {
+      // Broadcast notification
+      const { error } = await supabase
+        .from("notification_read_broadcasts")
+        .upsert({ 
+          notification_id: notificationId,
+          user_id: profile.id
+        });
+
+      if (error) {
+        console.error("Error marking broadcast as read:", error);
+        return;
+      }
     }
 
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
   };
 
   const markAllAsRead = async () => {
-    const { error } = await supabase
-      .from("notifications")
-      .update({ read: true })
-      .eq("read", false);
+    if (!profile?.id) return;
 
-    if (error) {
-      console.error("Error marking all as read:", error);
-      return;
+    const unreadPersonalIds = notifications
+      .filter(n => n.userId && n.status === 'unread')
+      .map(n => n.id);
+
+    const unreadBroadcastIds = notifications
+      .filter(n => !n.userId && n.status === 'unread')
+      .map(n => n.id);
+
+    if (unreadPersonalIds.length > 0) {
+      await supabase
+        .from("notifications")
+        .update({ read: true })
+        .in("id", unreadPersonalIds);
+    }
+
+    if (unreadBroadcastIds.length > 0) {
+      const inserts = unreadBroadcastIds.map(id => ({
+        notification_id: id,
+        user_id: profile.id
+      }));
+      await supabase
+        .from("notification_read_broadcasts")
+        .upsert(inserts);
     }
 
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
     toast({
       title: "All Marked as Read",
-      description: "All notifications have been marked as read",
+      description: "All viewable notifications have been marked as read",
     });
   };
 
   const clearAllNotifications = async () => {
+    if (!isAdminOrClanMaster) return;
+
     const { error } = await supabase
       .from("notifications")
       .delete()
@@ -182,7 +226,7 @@ export const AdminNotifications: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
     toast({
       title: "Notifications Cleared",
-      description: "All notifications have been cleared",
+      description: "All system notifications have been cleared",
     });
   };
 
@@ -281,14 +325,16 @@ export const AdminNotifications: React.FC = () => {
             <CheckCircle className="w-4 h-4 mr-2" />
             Mark All Read
           </Button>
-          <Button
-            onClick={clearAllNotifications}
-            variant="outline"
-            className="font-rajdhani border-red-500 text-red-400 hover:bg-red-500/10"
-          >
-            <AlertCircle className="w-4 h-4 mr-2" />
-            Clear All
-          </Button>
+          {isAdminOrClanMaster && (
+            <Button
+              onClick={clearAllNotifications}
+              variant="outline"
+              className="font-rajdhani border-red-500 text-red-400 hover:bg-red-500/10"
+            >
+              <AlertCircle className="w-4 h-4 mr-2" />
+              Clear All
+            </Button>
+          )}
         </div>
       </div>
 
