@@ -193,18 +193,17 @@ export const AdminAnnouncementsManagement = () => {
         description: "Your announcement has been published successfully.",
       });
 
-      // Create notifications
-      const targets = selectedUsers.length > 0 ? selectedUsers : users.map(u => u.id);
-      const notifications = targets.map(targetId => ({
-        user_id: targetId,
+      // Create broadcast notification
+      const { error: notificationError } = await supabase.from('notifications').insert([{
+        user_id: null,
         title: newAnn.title,
         message: newAnn.content,
         type: 'announcement',
-      }));
-
-      const { error: notificationError } = await supabase.from('notifications').insert(notifications);
+        data: { announcement_id: newAnn.id }
+      }]);
+      
       if (notificationError) {
-        console.error("Error creating notifications:", notificationError.message);
+        console.error("Error creating broadcast notification:", notificationError.message);
       }
 
       // Send push notifications if announcement is published

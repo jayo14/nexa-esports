@@ -563,7 +563,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     <button
                       className="w-10 h-10 rounded-full flex items-center justify-center text-slate-300 hover:text-white relative"
                       style={{ background: `${C.bgDark}80` }}
-                      onClick={() => navigate('/announcements')}
+                      onClick={() => navigate('/notifications')}
                     >
                       <Bell className="w-5 h-5" />
                       <span

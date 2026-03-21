@@ -13,7 +13,7 @@ import {
   ShoppingBag,
   MessageSquare,
   Plus,
-  CalendarCheck,
+  Bell,
   HandCoins,
   Settings,
   CalendarDays,
@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
           {isAdminOrClanMaster && (
             <>
               <SideNavIcon icon={<CalendarDays className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
-              <SideNavIcon icon={<CalendarCheck className="w-5 h-5" />} onClick={() => navigate('/admin/attendance')} active={isActive('/admin/attendance')} />
+              <SideNavIcon icon={<Bell className="w-5 h-5" />} onClick={() => navigate('/notifications')} active={isActive('/notifications')} />
               <SideNavIcon icon={<HandCoins className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
               <SideNavIcon icon={<Settings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
               <SideNavIcon icon={<Layers className="w-5 h-5" />} onClick={() => navigate('/admin/loadouts')} active={isActive('/admin/loadouts')} />

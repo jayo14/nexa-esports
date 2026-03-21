@@ -42,6 +42,7 @@ import { ListingDetails } from '@/pages/ListingDetails';
 import { BuyerDashboard } from '@/pages/BuyerDashboard';
 import { MyPurchases } from '@/pages/MyPurchases';
 import { PurchaseDetails } from '@/pages/PurchaseDetails';
+import { Checkout } from '@/pages/Checkout';
 
 // Seller pages
 import { SellerDashboard } from '@/pages/seller/SellerDashboard';
@@ -211,6 +212,7 @@ function AppRoutes() {
         <Route path="/marketplace/my-listings" element={<ProtectedRoute><Layout showSidebar><MyListingsScreen /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/list" element={<ProtectedRoute><Layout showSidebar><ListAccount /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/listing/:listingId" element={<ProtectedRoute><Layout showSidebar><ListingDetails /></Layout></ProtectedRoute>} />
+        <Route path="/marketplace/checkout/:listingId" element={<ProtectedRoute><Layout showSidebar><Checkout /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/purchases" element={<ProtectedRoute><Layout showSidebar><MyPurchases /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/purchases/:transactionId" element={<ProtectedRoute><Layout showSidebar><PurchaseDetails /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/orders" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />
@@ -241,9 +243,8 @@ function AppRoutes() {
         <Route path="/admin/events/:eventId/edit" element={<ProtectedRoute><Layout showSidebar><EventEditor /></Layout></ProtectedRoute>} />
         <Route path="/admin/events/:eventId/assign" element={<ProtectedRoute><Layout showSidebar><EventAssignment /></Layout></ProtectedRoute>} />
         <Route path="/admin/event-assignment" element={<ProtectedRoute><Layout showSidebar><EventAssignment /></Layout></ProtectedRoute>} />
-        <Route path="/admin/attendance" element={<ProtectedRoute><Layout showSidebar><AdminAttendance /></Layout></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Layout showSidebar><AdminNotifications /></Layout></ProtectedRoute>} />
         <Route path="/admin/announcements" element={<ProtectedRoute><Layout showSidebar><AdminAnnouncementsManagement /></Layout></ProtectedRoute>} />
-        <Route path="/admin/notifications" element={<ProtectedRoute><Layout showSidebar><AdminNotifications /></Layout></ProtectedRoute>} />
         <Route path="/admin/activities" element={<ProtectedRoute><Layout showSidebar><Activities /></Layout></ProtectedRoute>} />
         <Route path="/admin/config" element={<ProtectedRoute allowedRoles={['clan_master']}><Layout showSidebar><AdminConfig /></Layout></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute><Layout showSidebar><Feedback /></Layout></ProtectedRoute>} />

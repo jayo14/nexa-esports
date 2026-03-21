@@ -20,8 +20,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const AdminNotifications: React.FC = () => {
+  const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,17 +36,26 @@ export const AdminNotifications: React.FC = () => {
     id: string;
   }>(null);
 
+  const isAdminOrClanMaster = profile?.role === 'admin' || profile?.role === 'clan_master';
+
   const { data: notifications = [], isLoading } = useQuery<any[]>({   
-    queryKey: ['notifications', currentPage, itemsPerPage], 
+    queryKey: ['notifications', currentPage, itemsPerPage, profile?.id], 
     queryFn: async () => {
       const from = currentPage * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("notifications")
         .select("*, user:profiles(ign, status)")
         .order("created_at", { ascending: false })
         .range(from, to);
+
+      // If not admin, only show their own notifications or broadcasts
+      if (!isAdminOrClanMaster && profile?.id) {
+        query = query.or(`user_id.eq.${profile.id},user_id.is.null`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching notifications:", error.message);

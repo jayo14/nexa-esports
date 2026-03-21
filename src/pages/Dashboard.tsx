@@ -146,23 +146,7 @@ export const Dashboard: React.FC = () => {
             <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
           </button>
 
-          {canManagePlayers && (
-            <button
-              className="bg-black/30 p-4 sm:p-5 rounded-3xl sm:rounded-[2.5rem] flex items-center justify-between border border-white/5 hover:bg-black/40 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-accent-red"
-              onClick={() => navigate('/attendance')}
-            >
-              <div className="flex items-center gap-3 sm:gap-4">
-                <span className="w-10 h-10 xs:w-12 xs:h-12 sm:w-14 sm:h-14 rounded-xl xs:rounded-2xl bg-gradient-to-br from-amber-400/40 to-primary/30 flex items-center justify-center">
-                  <CalendarCheck className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                </span>
-                <div>
-                  <h4 className="font-bold text-xs xs:text-sm text-white font-sans">Attendance</h4>
-                  <p className="text-white/40 text-[10px] xs:text-[11px] sm:text-xs mt-1 font-sans">Mark player presence</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
-            </button>
-          )}
+          {/* Removed Attendance Quick Action */}
 
           {canManagePlayers && (
             <button

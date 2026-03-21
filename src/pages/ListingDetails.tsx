@@ -33,7 +33,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckoutModal } from '@/components/marketplace/CheckoutModal';
 import { useChat } from '@/hooks/useChat';
 import { useMarketplaceCart } from '@/contexts/MarketplaceCartContext';
 
@@ -118,7 +117,6 @@ export const ListingDetails: React.FC = () => {
   const { useListingDetails, purchaseAccount, isPurchasing } = useMarketplace();
   const { data: listingData, isLoading } = useListingDetails(listingId);
   const { getOrCreateConversation } = useChat();
-  const [showCheckout, setShowCheckout] = useState(false);
   const { addItem, isInCart } = useMarketplaceCart();
 
   type ListingWithSeller = AccountListing & {
@@ -174,19 +172,6 @@ export const ListingDetails: React.FC = () => {
   }
 
   /* ── Handlers ── */
-  const handleCheckout = () => {
-    if (!profile?.id || !listing) return;
-    purchaseAccount(
-      { listingId: listing.id, buyerId: profile.id, price: listing.price },
-      {
-        onSuccess: (data: any) => {
-          setShowCheckout(false);
-          navigate(`/marketplace/purchases/${data.transaction_id}`);
-        },
-      }
-    );
-  };
-
   const handleContactSeller = async () => {
     if (!user || !listing) return;
     try {
@@ -529,8 +514,7 @@ export const ListingDetails: React.FC = () => {
                           {isInCart(listing.id) ? 'Already in Cart' : 'Add to Cart'}
                         </button>
                         <button
-                          onClick={() => setShowCheckout(true)}
-                          disabled={isPurchasing}
+                          onClick={() => navigate(`/marketplace/checkout/${listing.id}`)}
                           className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-60 text-white font-black py-6 rounded-[18px] transition-all flex items-center justify-center gap-3 text-base"
                           style={{ boxShadow: '0 8px 32px rgba(234,42,51,0.3)' }}
                         >
@@ -606,17 +590,6 @@ export const ListingDetails: React.FC = () => {
           </div>
         </div>
       </main>
-
-      {/* ── Checkout Modal ── */}
-      {listing && (
-        <CheckoutModal
-          open={showCheckout}
-          onOpenChange={setShowCheckout}
-          listing={listing}
-          onConfirm={handleCheckout}
-          isProcessing={isPurchasing}
-        />
-      )}
     </div>
   );
 };
