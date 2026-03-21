@@ -50,9 +50,10 @@ export const AdminNotifications: React.FC = () => {
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      // If not admin, only show their own notifications or broadcasts
+      // If not admin, only show their own notifications or non-admin broadcasts
       if (!isAdminOrClanMaster && profile?.id) {
-        query = query.or(`user_id.eq.${profile.id},user_id.is.null`);
+        // We filter out recruitment-related broadcasts from the 'user_id is null' set for regular users
+        query = query.or(`user_id.eq.${profile.id},and(user_id.is.null,not.type.in.(contact_form_submission,access_code_request))`);
       }
 
       const { data, error } = await query;
@@ -85,6 +86,8 @@ export const AdminNotifications: React.FC = () => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case "contact_form_submission":
+        return <Mail className="w-5 h-5 text-purple-400" />;
       case "access_code_request":
         return <Key className="w-5 h-5 text-yellow-400" />;
       case "new_player_joined":

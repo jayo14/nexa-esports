@@ -27,6 +27,7 @@ export const Dashboard: React.FC = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const canManagePlayers = profile?.role === 'admin' || profile?.role === 'clan_master';
+  const canManageAttendance = profile?.role === 'admin' || profile?.role === 'clan_master' || profile?.role === 'moderator';
 
   // Fetch all recent events
   const { data: allEvents = [] } = useQuery({
@@ -68,7 +69,7 @@ export const Dashboard: React.FC = () => {
   return (
     <>
       <CompleteProfileAlert />
-      
+
       {/* Main Content Grid - Responsive */}
       <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-12 gap-2 xs:gap-4 md:gap-6 px-2 xs:px-3 sm:px-4 md:px-6">
         {/* Hero Section */}
@@ -146,7 +147,23 @@ export const Dashboard: React.FC = () => {
             <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
           </button>
 
-          {/* Removed Attendance Quick Action */}
+          {canManageAttendance && (
+            <button
+              className="bg-black/30 p-4 sm:p-5 rounded-3xl sm:rounded-[2.5rem] flex items-center justify-between border border-white/5 hover:bg-black/40 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-accent-red"
+              onClick={() => navigate('/admin/attendance')}
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
+                <span className="w-10 h-10 xs:w-12 xs:h-12 sm:w-14 sm:h-14 rounded-xl xs:rounded-2xl bg-gradient-to-br from-amber-500/40 to-primary/30 flex items-center justify-center">
+                  <CalendarCheck className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                </span>
+                <div>
+                  <h4 className="font-bold text-xs xs:text-sm text-white font-sans">Attendance</h4>
+                  <p className="text-white/40 text-[10px] xs:text-[11px] sm:text-xs mt-1 font-sans">Track clan operations</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-white transition-colors" />
+            </button>
+          )}
 
           {canManagePlayers && (
             <button
@@ -181,27 +198,27 @@ export const Dashboard: React.FC = () => {
               const thumbnailUrl = (event as { thumbnail_url?: string | null }).thumbnail_url;
 
               return (
-              <div key={event.id} className="min-w-[140px] xs:min-w-[180px] sm:min-w-[300px] h-[140px] xs:h-[180px] sm:h-[360px] glass-card rounded-lg xs:rounded-2xl sm:rounded-[3rem] p-2 xs:p-4 sm:p-6 flex flex-col justify-end relative group cursor-pointer shadow-xl overflow-hidden" onClick={() => navigate(`/events/${event.id}`)}>
-                {thumbnailUrl ? (
-                  <img
-                    src={thumbnailUrl}
-                    alt={event.name}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/25 to-wine-dark/70" />
-                )}
-                <div className="absolute top-4 sm:top-6 left-4 sm:left-6 flex gap-2 z-10">
-                  <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white">
-                    <Play className="w-5 h-5 fill-current" />
-                  </span>
+                <div key={event.id} className="min-w-[140px] xs:min-w-[180px] sm:min-w-[300px] h-[140px] xs:h-[180px] sm:h-[360px] glass-card rounded-lg xs:rounded-2xl sm:rounded-[3rem] p-2 xs:p-4 sm:p-6 flex flex-col justify-end relative group cursor-pointer shadow-xl overflow-hidden" onClick={() => navigate(`/events/${event.id}`)}>
+                  {thumbnailUrl ? (
+                    <img
+                      src={thumbnailUrl}
+                      alt={event.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/25 to-wine-dark/70" />
+                  )}
+                  <div className="absolute top-4 sm:top-6 left-4 sm:left-6 flex gap-2 z-10">
+                    <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white">
+                      <Play className="w-5 h-5 fill-current" />
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-wine-dark/90 to-transparent rounded-2xl sm:rounded-[3rem] z-[1]"></div>
+                  <div className="relative z-10">
+                    <h4 className="text-base xs:text-lg sm:text-2xl font-bold mb-0.5 xs:mb-1 sm:mb-2 text-white font-display">{event.name}</h4>
+                    <p className="text-white/60 text-[10px] xs:text-xs font-sans">{event.type} • {new Date(event.date).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-wine-dark/90 to-transparent rounded-2xl sm:rounded-[3rem] z-[1]"></div>
-                <div className="relative z-10">
-                  <h4 className="text-base xs:text-lg sm:text-2xl font-bold mb-0.5 xs:mb-1 sm:mb-2 text-white font-display">{event.name}</h4>
-                  <p className="text-white/60 text-[10px] xs:text-xs font-sans">{event.type} • {new Date(event.date).toLocaleDateString()}</p>
-                </div>
-              </div>
               );
             }) : (
               <div className="text-white/40 font-sans italic">No new operations available.</div>

@@ -109,7 +109,7 @@ export const SellerDashboard: React.FC = () => {
             <Wallet className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-orbitron">₦{stats.balance.toLocaleString()}</div>
+            <div className="text-[clamp(1.1rem,5.5vw,1.5rem)] font-bold font-orbitron truncate">₦{stats.balance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">Available for withdrawal</p>
           </CardContent>
         </Card>

@@ -243,6 +243,7 @@ function AppRoutes() {
         <Route path="/admin/events/:eventId/edit" element={<ProtectedRoute><Layout showSidebar><EventEditor /></Layout></ProtectedRoute>} />
         <Route path="/admin/events/:eventId/assign" element={<ProtectedRoute><Layout showSidebar><EventAssignment /></Layout></ProtectedRoute>} />
         <Route path="/admin/event-assignment" element={<ProtectedRoute><Layout showSidebar><EventAssignment /></Layout></ProtectedRoute>} />
+        <Route path="/admin/attendance" element={<ProtectedRoute><Layout showSidebar><AdminAttendance /></Layout></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Layout showSidebar><AdminNotifications /></Layout></ProtectedRoute>} />
         <Route path="/admin/announcements" element={<ProtectedRoute><Layout showSidebar><AdminAnnouncementsManagement /></Layout></ProtectedRoute>} />
         <Route path="/admin/activities" element={<ProtectedRoute><Layout showSidebar><Activities /></Layout></ProtectedRoute>} />

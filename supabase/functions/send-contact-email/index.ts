@@ -27,20 +27,50 @@ serve(async (req) => {
       });
     }
 
-    const recipientEmail = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesportmail@gmail.com";
-    const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || recipientEmail;
+    // Initialize Supabase admin client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 1. Get IDs of all admins/clan_masters from profiles
+    const { data: adminProfiles, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, ign')
+      .in('role', ['admin', 'clan_master']);
+
+    if (profileError) throw profileError;
+
+    const adminIds = new Set(adminProfiles?.map((p: any) => p.id) || []);
+
+    // 2. Fetch all users from Auth (to get emails)
+    const { data: { users }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    if (authError) throw authError;
+
+    // Filter users who are admins and have emails
+    const recipients = users
+      .filter((u: any) => adminIds.has(u.id) && u.email)
+      .map((u: any) => ({
+        email: u.email!,
+        name: adminProfiles?.find((p: any) => p.id === u.id)?.ign || "Nexa Admin"
+      }));
+
+    // Default recipient if no admins found
+    const defaultRecipient = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesportmail@gmail.com";
+
+    if (recipients.length === 0) {
+      recipients.push({ email: defaultRecipient, name: "Nexa Esports Team" });
+    }
+
+    const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || defaultRecipient;
 
     const emailContent = {
       sender: {
-        name: "Nexa Esports Contact Form",
+        name: "Nexa Esports Recruitment",
         email: senderEmail,
       },
-      to: [
-        {
-          email: recipientEmail,
-          name: "Nexa Esports Team",
-        },
-      ],
+      to: recipients,
       subject: `Contact Form Submission from ${name}`,
       htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

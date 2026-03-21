@@ -360,8 +360,8 @@ const Wallet: React.FC = () => {
                   <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] mb-1 sm:mb-2">
                     Total Balance
                   </p>
-                  <div className="flex items-baseline gap-2 sm:gap-4 min-w-0">
-                    <h3 className="text-[clamp(1.75rem,8vw,4.5rem)] leading-tight font-black tracking-tighter text-white break-all max-w-full">
+                  <div className="flex items-baseline gap-2 sm:gap-4 min-w-0 flex-nowrap">
+                    <h3 className="text-[clamp(1.5rem,10.5vw,4.5rem)] leading-none font-black tracking-tighter text-white whitespace-nowrap overflow-hidden text-ellipsis">
                       {balanceVisible
                         ? `₦${Math.floor(animatedBalance).toLocaleString()}`
                         : '₦••••••'}

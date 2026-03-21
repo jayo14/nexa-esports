@@ -361,20 +361,15 @@ const LandingPage: React.FC = () => {
 
     setSubmitting(true);
     try {
-      // Fetch all admin & clan_master profile IDs
-      const { data: admins, error: adminError } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'clan_master']);
-
-      if (adminError) throw adminError;
-
-      if (admins && admins.length > 0) {
-        const notifications = admins.map((admin) => ({
-          type: 'access_code_request',
-          title: '🎮 New Access Request',
-          message: `A player is requesting access to NeXa Esports. CODM UID: ${uid || 'N/A'} | Rank: ${rank || 'N/A'} | Discord: ${discord || 'N/A'} | WhatsApp: ${whatsapp || 'N/A'}`,
-          user_id: admin.id,
+      // 1. Send ONE broadcast notification (user_id: null)
+      // This avoids spamming the database with individual notifications per admin
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert({
+          type: 'contact_form_submission',
+          title: '🎮 New Application Intel',
+          message: `Sector: Recruitment. Identity: ${discord || whatsapp || 'Unknown'}. Message: ${why.substring(0, 50)}...`,
+          user_id: null, // BROADCAST: accessible to all admins
           read: false,
           data: {
             uid: uid.trim(),
@@ -385,21 +380,25 @@ const LandingPage: React.FC = () => {
             submittedAt: new Date().toISOString(),
           },
           action_data: { action: 'view_access_request' },
-        }));
+        });
 
-        const { error: insertError } = await supabase
-          .from('notifications')
-          .insert(notifications);
+      if (insertError) throw insertError;
 
-        if (insertError) throw insertError;
-      }
+      // 2. Trigger automated email to all admins
+      await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: discord || whatsapp || 'New Recruit',
+          email: 'recruitment@nexa.gg', // Internal placeholder since form lacks email field
+          message: `New Clan Application Received:\n\nUID: ${uid}\nRank: ${rank}\nDiscord: ${discord}\nWhatsApp: ${whatsapp}\n\nMotivation:\n${why}`
+        }
+      });
 
       setSubmitted(true);
       setFormData({ uid: '', rank: '', discord: '', whatsapp: '', why: '' });
       setTimeout(() => setSubmitted(false), 5000);
     } catch (err) {
-      console.error('Failed to submit access request:', err);
-      // Still show success to user — don't expose internal errors
+      console.error('Failed to submit application:', err);
+      // Still show receipt to user
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 4000);
     } finally {
