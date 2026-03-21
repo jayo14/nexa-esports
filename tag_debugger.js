@@ -6,18 +6,27 @@ const lines = content.split('\n');
 let stack = [];
 let lineNum = 0;
 
+const tagsToTrack = ['div','header','section','CardContent','Card','motion.div','motion.tr','table','tbody','tr','td','th'];
+
 for (let line of lines) {
     lineNum++;
-    const openMatches = line.matchAll(/<(div|header|section|CardContent|Card|motion\.div|motion\.tr|table|tbody|tr|td|th)\b/g);
-    for (const match of openMatches) {
-        stack.push({tag: match[1], line: lineNum});
-    }
+    
+    // Find all tags in line
+    const tagMatches = line.matchAll(/<(\/?)([a-zA-Z0-9\.]+)\b[^>]*?(\/?)>/g);
+    for (const match of tagMatches) {
+        const isClosing = match[1] === '/';
+        const tagName = match[2];
+        const isSelfClosing = match[3] === '/';
 
-    const closeMatches = line.matchAll(/<\/(div|header|section|CardContent|Card|motion\.div|motion\.tr|table|tbody|tr|td|th)>/g);
-    for (const match of closeMatches) {
-        const last = stack.pop();
-        if (last && last.tag !== match[1]) {
-            console.log(`Mismatch at line ${lineNum}: Expected </${last.tag}> but saw </${match[1]}> (Open at line ${last.line})`);
+        if (!tagsToTrack.includes(tagName)) continue;
+
+        if (isClosing) {
+            const last = stack.pop();
+            if (last && last.tag !== tagName) {
+                console.log(`Mismatch at line ${lineNum}: Expected </${last.tag}> but saw </${tagName}> (Open at line ${last.line})`);
+            }
+        } else if (!isSelfClosing) {
+            stack.push({tag: tagName, line: lineNum});
         }
     }
 }
