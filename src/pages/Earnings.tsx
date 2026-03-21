@@ -108,7 +108,7 @@ const MetricCard: React.FC<{
           {icon}
         </div>
       </div>
-      <div className="text-3xl font-black text-white mb-1">{value}</div>
+      <div className="text-[clamp(1.1rem,6vw,1.875rem)] font-black text-white mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{value}</div>
       <div className="text-xs font-medium flex items-center gap-1" style={{ color: iconColor === '#22c55e' ? '#22c55e' : '#64748b' }}>
         {sub}
       </div>
@@ -670,7 +670,7 @@ const Earnings = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-1">
               <p className="text-xs text-slate-500 uppercase tracking-widest font-black">Available Balance</p>
-              <div className="text-3xl font-black" style={{ color: C.primary }}>
+              <div className="text-[clamp(1.5rem,8vw,2.25rem)] font-black whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: C.primary }}>
                 ₦{totalEarnings.toLocaleString()}
               </div>
             </div>
