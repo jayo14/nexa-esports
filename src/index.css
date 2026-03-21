@@ -314,6 +314,14 @@ All colors MUST be HSL.
   .theme-ramadan .ramadan-glow {
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
   }
+
+  /* Accessibility: prevent auto-zoom on inputs on iOS (font-size must be >= 16px).
+     Only applies to inputs that don't already have an explicit Tailwind text-size class. */
+  input:not([class*='text-']),
+  textarea:not([class*='text-']),
+  select:not([class*='text-']) {
+    font-size: 16px;
+  }
 }
 
 
