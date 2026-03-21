@@ -11,6 +11,9 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
   unread_count?: number;
+  last_message_content?: string;
+  last_message_at?: string;
+  last_message_sender_id?: string;
   listing?: {
     title: string;
     price: number;
@@ -36,6 +39,8 @@ export interface Message {
   sender_id: string;
   content: string;
   is_read: boolean;
+  delivered_at?: string;
+  read_at?: string;
   created_at: string;
 }
 
@@ -124,6 +129,7 @@ export const useChat = (conversationId?: string) => {
       })) as Conversation[];
     },
     enabled: !!user,
+    staleTime: 60000, // 1 minute stale time for conversation list
   });
 
   // Fetch messages for a specific conversation
@@ -148,6 +154,7 @@ export const useChat = (conversationId?: string) => {
     mutationFn: async ({ content, conversationId: targetConversationId }: { content: string; conversationId?: string }) => {
       const resolvedConversationId = targetConversationId || conversationId;
       if (!user || !resolvedConversationId) throw new Error('Not authenticated or no conversation selected');
+      
       const { data, error } = await supabase
         .from('messages')
         .insert([{ conversation_id: resolvedConversationId, sender_id: user.id, content }])
@@ -157,11 +164,51 @@ export const useChat = (conversationId?: string) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
+    onMutate: async (variables) => {
       const resolvedConversationId = variables.conversationId || conversationId;
-      if (resolvedConversationId) {
-        queryClient.invalidateQueries({ queryKey: ['messages', resolvedConversationId] });
+      if (!resolvedConversationId || !user) return;
+
+      // Optimistic update for messages
+      await queryClient.cancelQueries({ queryKey: ['messages', resolvedConversationId] });
+      const previousMessages = queryClient.getQueryData<Message[]>(['messages', resolvedConversationId]);
+      
+      const optimisticMsg: Message = {
+        id: `optimistic-${Date.now()}`,
+        conversation_id: resolvedConversationId,
+        sender_id: user.id,
+        content: variables.content,
+        is_read: false,
+        created_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData(['messages', resolvedConversationId], (old: Message[] = []) => [...old, optimisticMsg]);
+      
+      // Update conversation in list (optimistic)
+      queryClient.setQueryData(['conversations'], (old: Conversation[] = []) => {
+        return old.map(c => c.id === resolvedConversationId ? {
+          ...c,
+          last_message_content: variables.content.startsWith('__image__:') ? '📷 Shared an image' : variables.content,
+          last_message_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } : c).sort((a,b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+      });
+
+      return { previousMessages, resolvedConversationId };
+    },
+    onError: (err, variables, context) => {
+      if (context?.resolvedConversationId) {
+        queryClient.setQueryData(['messages', context.resolvedConversationId], context.previousMessages);
       }
+    },
+    onSuccess: (data, variables) => {
+      const resolvedConversationId = variables.conversationId || conversationId;
+      
+      // Replace optimistic message with actual data
+      queryClient.setQueryData(['messages', resolvedConversationId], (old: Message[] = []) => {
+        return old.map(m => m.id.startsWith('optimistic-') ? data : m);
+      });
+      
+      // Re-trigger conversations refresh to ensure sync with server
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
@@ -253,65 +300,85 @@ export const useChat = (conversationId?: string) => {
 
     const channels: any[] = [];
 
-    // Global conversations channel
-    const conversationsChannel = supabase
-      .channel(`conversations-global:${user.id}`)
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channels: any[] = [];
+
+    // Main communication channel
+    const chatChannel = supabase
+      .channel(`chat-main:${user.id}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'conversations',
-          filter: `buyer_id=eq.${user.id}`,
-        },
+        { event: '*', schema: 'public', table: 'conversations' },
         () => queryClient.invalidateQueries({ queryKey: ['conversations'] })
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'conversations',
-          filter: `seller_id=eq.${user.id}`,
-        },
-        () => queryClient.invalidateQueries({ queryKey: ['conversations'] })
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-        },
+        { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const newMessage = payload.new as Message;
-          // Invalidate conversations to update unread counts and last message
-          queryClient.invalidateQueries({ queryKey: ['conversations'] });
           
-          // If this message belongs to the current conversation, update messages cache
+          // Performance optimization: Manually update messages cache instead of full invalidation
           if (conversationId && newMessage.conversation_id === conversationId) {
             queryClient.setQueryData(['messages', conversationId], (old: Message[] = []) => {
-              if (old.some((m) => m.id === newMessage.id)) return old;
+              if (old.some(m => m.id === newMessage.id)) return old;
               return [...old, newMessage];
+            });
+            
+            // Auto-mark as read if looking at the chat
+            if (newMessage.sender_id !== user.id) {
+               supabase.from('messages').update({ is_read: true }).eq('id', newMessage.id).then();
+            }
+          }
+          
+          // Fast list update: Inject last message into the conversation list immediately
+          queryClient.setQueryData(['conversations'], (old: Conversation[] = []) => {
+            return old.map(c => c.id === newMessage.conversation_id ? {
+              ...c,
+              last_message_content: newMessage.content.startsWith('__image__:') ? '📷 Shared an image' : newMessage.content,
+              last_message_at: newMessage.created_at,
+              last_message_sender_id: newMessage.sender_id,
+              updated_at: newMessage.created_at,
+            } : c).sort((a,b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          });
+          
+          // If not in the current conversation, we eventually need fresh unread counts
+          if (!conversationId || newMessage.conversation_id !== conversationId) {
+             queryClient.invalidateQueries({ queryKey: ['conversations'] });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        (payload) => {
+          const updatedMessage = payload.new as Message;
+          // Synchronize delivery/read states in real-time
+          if (conversationId && updatedMessage.conversation_id === conversationId) {
+            queryClient.setQueryData(['messages', conversationId], (old: Message[] = []) => {
+              return old.map(m => m.id === updatedMessage.id ? updatedMessage : m);
             });
           }
         }
       )
       .subscribe();
     
-    channels.push(conversationsChannel);
+    channels.push(chatChannel);
 
     return () => {
       channels.forEach(channel => supabase.removeChannel(channel));
     };
   }, [user, conversationId, queryClient]);
 
+  // Handle marking messages as read when entering conversation
   useEffect(() => {
     if (!conversationId || !user || messages.length === 0) return;
 
     const unreadIncomingIds = messages
-      .filter((message) => message.sender_id !== user.id && !message.is_read)
-      .map((message) => message.id);
+      .filter((m) => m.sender_id !== user.id && !m.is_read)
+      .map((m) => m.id);
 
     if (unreadIncomingIds.length === 0) return;
 
@@ -321,13 +388,18 @@ export const useChat = (conversationId?: string) => {
         .update({ is_read: true })
         .in('id', unreadIncomingIds);
 
-      if (error) {
-        console.error('Failed to mark messages as read:', error);
+      if (error) console.error('Failed to mark as read:', error);
+      else {
+        // Optimistic local update for read indicators
+        queryClient.setQueryData(['messages', conversationId], (old: Message[] = []) => {
+          return old.map(m => unreadIncomingIds.includes(m.id) ? { ...m, is_read: true } : m);
+        });
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
       }
     };
 
     void markAsRead();
-  }, [conversationId, messages, user]);
+  }, [conversationId, messages.length, user, queryClient]);
 
   return {
     conversations,

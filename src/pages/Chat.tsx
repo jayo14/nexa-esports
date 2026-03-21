@@ -316,7 +316,7 @@ export const Chat: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-end mt-1">
                         <p className="text-xs max-[359px]:text-[11px] text-slate-500 truncate mr-2">
-                          {conv.listing?.title || 'Direct Comms'}
+                          {conv.last_message_content || conv.listing?.title || 'No messages yet'}
                         </p>
                         {!isActive && (conv.unread_count || 0) > 0 && (
                           <span
