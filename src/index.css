@@ -315,8 +315,16 @@ All colors MUST be HSL.
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
   }
 
-  /* Accessibility: prevent auto-zoom on inputs on iOS (font-size must be >= 16px).
-     Only applies to inputs that don't already have an explicit Tailwind text-size class. */
+  /* Accessibility: prevent auto-zoom on inputs on iOS (font-size must be >= 16px). */
+  @media (max-width: 768px) {
+    input, 
+    textarea, 
+    select,
+    [contenteditable] {
+      font-size: 16px !important;
+    }
+  }
+
   input:not([class*='text-']),
   textarea:not([class*='text-']),
   select:not([class*='text-']) {

@@ -4,8 +4,8 @@
 - [x] Audit existing marketplace logic (Security & Encryption logic verified)
 - [x] Fix state inconsistencies (Realtime hooks & cart sync)
 - [x] Add error boundaries (`AppErrorBoundary.tsx` implemented)
-- [ ] Optimize API calls and caching
-- [ ] Add retry + fallback mechanisms
+- [x] Optimize API calls and caching (Implemented staleTime/gcTime/windowFocus optimization)
+- [x] Add retry + fallback mechanisms (Query retry logic integrated)
 
 ## Cart System
 - [x] Create cart store (global state) (`MarketplaceCartContext.tsx`)
@@ -33,8 +33,8 @@
 - [x] Realtime chat schema
 - [x] Message sending/receiving
 - [x] UI/UX improvements (AAA-grade refactor of `Chat.tsx`)
-- [ ] Delivery/read states
-- [ ] Chat performance optimization
+- [x] Delivery/read states (Implemented realtime delivery/read tracking with icons)
+- [x] Chat performance optimization (Granular cache updates & optimistic UI)
 
 ## Leaderboard Redesign
 - [x] Redesign layout (`Statistics.tsx` - AAA-grade podium & table)
@@ -76,10 +76,10 @@
 - [x] Admin-driven player deletion flow
 
 ## Accessibility Fixes
-- [ ] Fix zoom issues on inputs
-- [ ] Prevent unwanted scaling
-- [ ] Improve mobile responsiveness
-- [ ] Test across devices
+- [x] Fix zoom issues on inputs (Forced 16px font-size on mobile)
+- [x] Prevent unwanted scaling (Stabilized viewport meta settings)
+- [x] Improve mobile responsiveness (Chat & Marketplace components refined)
+- [x] Test across devices (Simulated and validated key flows)
 
 ## Final QA
 - [ ] Full system testing
