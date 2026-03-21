@@ -45,6 +45,19 @@ import {
   Palette,
 } from "lucide-react";
 import { ThemeSettingsPanel } from "@/components/ThemeSettingsPanel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useDeleteAccount } from "@/hooks/useDeleteAccount";
+import { Trash2, AlertTriangle } from "lucide-react";
 
 // Device and brand data
 const deviceData = {
@@ -172,6 +185,7 @@ export const Settings: React.FC = () => {
     registerPush, 
     unregisterPush 
   } = useNativePush();
+  const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount();
 
   const [formData, setFormData] = useState({
     ign: "",
@@ -1254,7 +1268,7 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
 
-              {/* Security Notice */}
+              {/* Account Security Notice */}
               <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <div className="flex items-start space-x-3">
                   <Shield className="w-5 h-5 text-blue-500 mt-0.5" />
@@ -1268,6 +1282,52 @@ export const Settings: React.FC = () => {
                       support team immediately.
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Danger Zone: Account Deletion */}
+              <div className="mt-12 pt-8 border-t border-red-500/20">
+                <h4 className="text-red-500 font-bold uppercase tracking-widest text-sm flex items-center mb-4">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Danger Zone
+                </h4>
+                
+                <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="space-y-1 text-center md:text-left">
+                    <h5 className="text-white font-bold">Delete Account</h5>
+                    <p className="text-gray-400 text-sm">
+                      This action is permanent and cannot be undone. All your stats, wallet balance, and purchases will be purged.
+                    </p>
+                  </div>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="rounded-xl px-8 bg-red-600 hover:bg-red-700 font-black uppercase tracking-widest text-xs h-12 shadow-lg shadow-red-900/40">
+                        <Trash2 className="w-4 h-4 mr-2" /> Purge Account
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-[#1a0b0d] border-red-500/20 text-white rounded-[2rem]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-2xl font-black uppercase tracking-tighter text-red-500">
+                          Confirm Account Deletion
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-400">
+                          This operation will irreversibly wipe your profile, kills, attendance, activities, and ANY remaining wallet balance. 
+                          <span className="block mt-2 font-black text-red-400">Are you absolutely sure you want to proceed?</span>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="mt-6">
+                        <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl">Abort</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => user?.id && deleteAccount(user.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase tracking-widest px-6"
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? "Purging..." : "Confirm Purge"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </CardContent>

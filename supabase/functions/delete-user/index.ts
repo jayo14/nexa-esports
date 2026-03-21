@@ -32,14 +32,15 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    // Check if user has admin or clan_master role
+    // Check if user has admin or clan_master role OR is deleting themselves
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile || !['admin', 'clan_master'].includes(profile.role)) {
+    const isSelfDeletion = user.id === userId;
+    if (profileError || !profile || (!['admin', 'clan_master'].includes(profile.role) && !isSelfDeletion)) {
       throw new Error('Insufficient permissions')
     }
 
