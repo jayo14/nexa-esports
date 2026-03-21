@@ -37,56 +37,17 @@ import {
 } from 'lucide-react';
 
 /* ─── Design tokens ─── */
-const BG_DARK = '#1a0a0b';
+const BG_DARK = '#0a0a0b';
 const PRIMARY = '#ea2a33';
-const BURGUNDY = '#472426';
+const BURGUNDY = '#2d1416';
+const SLATE_DARK = '#1e293b';
 
 const glassPanel: React.CSSProperties = {
-  background: 'rgba(33, 17, 17, 0.7)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(234, 42, 51, 0.1)',
+  background: 'rgba(10, 10, 11, 0.75)',
+  backdropFilter: 'blur(16px)',
+  WebkitBackdropFilter: 'blur(16px)',
+  border: '1px solid rgba(234, 42, 51, 0.15)',
 };
-
-/* ─── Nav item ─── */
-const NavItem: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  collapsed?: boolean;
-  onClick?: () => void;
-}> = ({ icon, label, active, collapsed, onClick }) => (
-  <a
-    href="#"
-    onClick={(e) => { e.preventDefault(); onClick?.(); }}
-    className="flex items-center gap-4 px-4 py-3 rounded-xl transition-colors group"
-    style={
-      active
-        ? {
-            background: `${PRIMARY}33`,
-            color: PRIMARY,
-            border: `1px solid ${PRIMARY}33`,
-            boxShadow: `0 4px 12px ${PRIMARY}22`,
-          }
-        : { color: '#64748b' }
-    }
-    onMouseEnter={(e) => {
-      if (!active)
-        (e.currentTarget as HTMLAnchorElement).style.background = `${PRIMARY}1a`;
-    }}
-    onMouseLeave={(e) => {
-      if (!active)
-        (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
-    }}
-  >
-    <span className={active ? '' : 'group-hover:text-red-500 transition-colors'}>
-      {icon}
-    </span>
-    {!collapsed && (
-      <span className="hidden lg:block font-medium text-sm">{label}</span>
-    )}
-  </a>
-);
 
 /* ─── Main Component ─── */
 export const Chat: React.FC = () => {
@@ -342,46 +303,41 @@ export const Chat: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex-1 overflow-hidden">
-                    <div className="flex justify-between items-center">
-                      <h3
-                        className="font-bold text-sm max-[359px]:text-xs truncate"
-                        style={{ color: isActive ? '#f1f5f9' : '#cbd5e1' }}
-                      >
-                        {other?.ign || other?.username || 'Unknown'}
-                      </h3>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <span
-                          className="text-[10px] font-bold"
-                          style={{ color: isActive ? PRIMARY : '#64748b' }}
-                        >
-                          {format(new Date(conv.updated_at), 'HH:mm')}
-                        </span>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-bold text-sm max-[359px]:text-xs truncate text-slate-100">
+                          {other?.ign || other?.username || 'Unknown Operator'}
+                        </h3>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          <span className="text-[10px] text-slate-500">
+                            {format(new Date(conv.updated_at), 'HH:mm')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-end mt-1">
+                        <p className="text-xs max-[359px]:text-[11px] text-slate-500 truncate mr-2">
+                          {conv.listing?.title || 'Direct Comms'}
+                        </p>
                         {!isActive && (conv.unread_count || 0) > 0 && (
                           <span
-                            className="min-w-5 h-5 px-1.5 rounded-full inline-flex items-center justify-center text-[10px] font-black"
+                            className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-black shrink-0"
                             style={{
                               background: PRIMARY,
                               color: '#fff',
-                              boxShadow: `0 0 12px ${PRIMARY}66`,
+                              boxShadow: `0 0 12px ${PRIMARY}80`,
                             }}
-                            aria-label={`${conv.unread_count} unread messages`}
                           >
-                            {conv.unread_count! > 99 ? '99+' : conv.unread_count}
+                            {conv.unread_count}
                           </span>
                         )}
                       </div>
                     </div>
-                    <p className="text-xs max-[359px]:text-[11px] text-slate-500 truncate mt-0.5">
-                      {conv.listing?.title || 'Account listing'}
-                    </p>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
+                );
+              })
+            )}
+          </div>
+        </section>
 
       {/* ── Main Chat Window ── */}
       <main className={cn('flex-1 flex flex-col p-3 sm:p-4 md:p-6 overflow-hidden', !conversationId && 'hidden md:flex')}>
@@ -519,13 +475,12 @@ export const Chat: React.FC = () => {
                 className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: `${BURGUNDY} transparent` }}
               >
-                {activeConversation && (
+                {activeConversation && messages.length > 0 && (
                   <div className="flex justify-center">
                     <span
-                      className="px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
-                      style={{ background: `${PRIMARY}1a`, color: PRIMARY }}
+                      className="px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-slate-800/50 text-slate-500 border border-slate-700/50"
                     >
-                      Combat Intel — Today
+                      SECURE CHANNEL ESTABLISHED — {format(new Date(messages[0].created_at), 'MMM dd, yyyy')}
                     </span>
                   </div>
                 )}
