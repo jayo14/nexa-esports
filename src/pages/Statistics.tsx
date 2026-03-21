@@ -15,7 +15,6 @@ import {
   ChevronRight, Share2, Download, Timer, Activity, Link2, Award
 } from 'lucide-react';
 import { toast } from 'sonner';
-import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
 
@@ -318,6 +317,10 @@ const Statistics: FC = () => {
     if (!leaderboardRef.current) return;
     try {
       toast.info('Generating intel report...');
+      
+      // Dynamic import to reduce load time
+      const html2canvas = (await import('html2canvas')).default;
+      
       const canvas = await html2canvas(leaderboardRef.current, {
         backgroundColor: MODAL_BACKGROUND_COLOR,
         scale: 2,
@@ -339,6 +342,10 @@ const Statistics: FC = () => {
     if (!leaderboardRef.current) return;
     try {
       toast.info('Preparing intel package...');
+      
+      // Dynamic import to reduce load time
+      const html2canvas = (await import('html2canvas')).default;
+
       const canvas = await html2canvas(leaderboardRef.current, {
         backgroundColor: MODAL_BACKGROUND_COLOR,
         scale: 2,
@@ -608,14 +615,15 @@ const Statistics: FC = () => {
             </div>
           </div>
         </div>
-
-        {/* 2. Top 3 Podium Section */}
+          {/* 2. Top 3 Podium Section */}
         {topThree.length > 0 && !searchQuery && statusFilter === 'all' && tierFilter === 'all' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 items-end justify-center max-w-6xl mx-auto px-4 sm:px-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 items-end justify-center max-w-6xl mx-auto px-4 sm:px-0">
             {/* Rank 2 (Silver) */}
             {topThree[1] && (
               <motion.div 
-                initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}
+                initial={{ opacity: 0, scale: 0.9, y: 30 }} 
+                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                transition={{ duration: 0.5, delay: 0.2 }}
                 className="order-2 md:order-1"
               >
                 <PodiumCard player={topThree[1]} rank={2} color="silver" />
@@ -625,18 +633,21 @@ const Statistics: FC = () => {
             {/* Rank 1 (Gold) */}
             {topThree[0] && (
               <motion.div 
-                initial={{ opacity: 0, y: 80, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.1, duration: 0.9, type: "spring", damping: 15 }}
-                className="order-1 md:order-2 z-10 -mb-6 md:-mb-16" 
+                initial={{ opacity: 0, scale: 1.1, y: 40 }} 
+                animate={{ opacity: 1, scale: 1.1, y: 0 }} 
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="order-1 md:order-2 z-10 -mb-4 md:-mb-10 lg:-mb-12" 
               >
                 <PodiumCard player={topThree[0]} rank={1} color="gold" isMvp />
               </motion.div>
             )}
-
+ 
             {/* Rank 3 (Bronze) */}
             {topThree[2] && (
               <motion.div 
-                initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8 }}
+                initial={{ opacity: 0, scale: 0.9, y: 30 }} 
+                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                transition={{ duration: 0.5, delay: 0.3 }}
                 className="order-3 md:order-3"
               >
                 <PodiumCard player={topThree[2]} rank={3} color="bronze" />
