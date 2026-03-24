@@ -37,18 +37,18 @@ interface EnhancedPlayer {
   is_banned?: boolean;
 }
 
-const MODAL_BACKGROUND_COLOR = '#09090b'; 
+const MODAL_BACKGROUND_COLOR = '#13090d'; 
 
 // --- Reusable Components ---
 
 const ComparisonPlayerCard = ({ player, title, isTarget }: { player: any; title: string; isTarget?: boolean }) => (
   <Card className={cn(
-    "bg-black/40 border-white/5 relative overflow-hidden group",
-    isTarget ? "border-primary/30 shadow-lg shadow-primary/20" : "border-blue-500/30 shadow-lg shadow-blue-500/20"
+    "bg-[#1b0d12]/80 border-white/10 relative overflow-hidden group rounded-3xl",
+    isTarget ? "border-[#b33a5e]/50 shadow-lg shadow-[#7a233f]/25" : "border-[#8d2a44]/40 shadow-lg shadow-[#5c1630]/20"
   )}>
     <div className={cn(
       "absolute top-0 left-0 w-full h-1.5",
-      isTarget ? "bg-primary animate-pulse" : "bg-blue-500"
+      isTarget ? "bg-[#b33a5e] animate-pulse" : "bg-[#8d2a44]"
     )} />
     <CardContent className="p-4 sm:p-6">
       <div className="flex items-center gap-4">
@@ -56,12 +56,12 @@ const ComparisonPlayerCard = ({ player, title, isTarget }: { player: any; title:
           <img 
             src={player.avatar_url || "/placeholder.svg"} 
             alt={player.ign}
-            className="w-16 h-16 rounded-lg object-cover border-2 border-white/10 shadow-xl"
+            className="w-16 h-16 rounded-2xl object-cover border-2 border-white/10 shadow-xl"
           />
           <div className={cn(
             "absolute -bottom-2 -right-2 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest shadow-md",
-            isTarget ? "bg-primary text-white" : "bg-blue-500 text-white"
-          )}>
+              isTarget ? "bg-[#b33a5e] text-white" : "bg-[#8d2a44] text-white"
+            )}>
             {isTarget ? "TARGET" : "ASSET"}
           </div>
         </div>
@@ -72,7 +72,7 @@ const ComparisonPlayerCard = ({ player, title, isTarget }: { player: any; title:
             {player.is_banned && <Badge variant="destructive" className="text-[10px] h-4 px-1 font-mono">BANNED</Badge>}
           </h3>
           <div className="flex items-center gap-2 mt-1">
-            <Shield className="w-3 h-3 text-primary" />
+            <Shield className="w-3 h-3 text-[#d15a7d]" />
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
               {player.tier} • {player.grade}
             </span>
@@ -85,9 +85,9 @@ const ComparisonPlayerCard = ({ player, title, isTarget }: { player: any; title:
 
 const PodiumCard = ({ player, rank, color, isMvp }: { player: EnhancedPlayer; rank: number; color: 'gold' | 'silver' | 'bronze'; isMvp?: boolean }) => {
   const colors = {
-    gold: { border: 'border-yellow-500', text: 'text-yellow-500', bg: 'from-yellow-500/20', glow: 'shadow-yellow-500/30' },
-    silver: { border: 'border-gray-300', text: 'text-gray-300', bg: 'from-gray-300/20', glow: 'shadow-gray-300/30' },
-    bronze: { border: 'border-amber-700', text: 'text-amber-700', bg: 'from-amber-700/20', glow: 'shadow-amber-700/30' },
+    gold: { border: 'border-[#d4a657]', text: 'text-[#e7bf73]', bg: 'from-[#d4a657]/20', glow: 'shadow-[#9b6d2f]/30' },
+    silver: { border: 'border-[#c2b7c0]', text: 'text-[#ddd0db]', bg: 'from-[#c2b7c0]/20', glow: 'shadow-[#8d7b89]/30' },
+    bronze: { border: 'border-[#9a5b3c]', text: 'text-[#bf7c56]', bg: 'from-[#9a5b3c]/20', glow: 'shadow-[#6f3f28]/30' },
   };
   
   const theme = colors[color];
@@ -112,7 +112,7 @@ const PodiumCard = ({ player, rank, color, isMvp }: { player: EnhancedPlayer; ra
       )}
       
       <div className={cn(
-        "relative w-full rounded-2xl overflow-hidden bg-black/60 backdrop-blur-lg border-2 shadow-2xl transition-all duration-300",
+        "relative w-full rounded-3xl overflow-hidden bg-[#1a0d12]/80 backdrop-blur-lg border-2 shadow-2xl transition-all duration-300",
         theme.border, theme.glow
       )}>
         <div className={cn("absolute inset-0 bg-gradient-to-b to-transparent opacity-70", theme.bg)} />
@@ -144,7 +144,7 @@ const PodiumCard = ({ player, rank, color, isMvp }: { player: EnhancedPlayer; ra
             {player.ign}
           </h3>
           <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold uppercase tracking-widest mb-4">
-            <Shield className="w-3 h-3 text-primary" />
+              <Shield className="w-3 h-3 text-[#d15a7d]" />
             {player.tier} • {player.grade}
           </div>
           
@@ -301,30 +301,31 @@ const Statistics: FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-rajdhani">
-      <header className="relative w-full h-[300px] md:h-[400px] overflow-hidden mb-12 group">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/60 to-background z-10" />
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-40 group-hover:scale-105 transition-transform duration-1000" />
+    <div className="min-h-screen bg-[#10080b] text-foreground font-rajdhani">
+      <header className="relative w-full h-[300px] md:h-[400px] overflow-hidden mb-12 group rounded-b-[42px] border-b border-[#70263f]/40">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1f0b13]/95 via-[#2d1019]/85 to-[#10080b] z-10" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#3d1022] via-[#5a1b2f] to-[#2f0d1d] opacity-90" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(214,93,129,0.3),transparent_45%),radial-gradient(circle_at_80%_25%,rgba(148,48,84,0.35),transparent_40%),radial-gradient(circle_at_50%_100%,rgba(69,22,38,0.6),transparent_60%)]" />
         
         <div className="relative z-20 container mx-auto px-4 h-full flex flex-col justify-end pb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <div className="space-y-4">
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                <Badge variant="outline" className="bg-primary/20 text-primary border-primary/50 px-4 py-1 text-[10px] uppercase font-black">
+                <Badge variant="outline" className="bg-[#782544]/30 text-[#f19bb9] border-[#a73c63] px-4 py-1 text-[10px] uppercase font-black rounded-full">
                   Season 5: Phantom War
                 </Badge>
               </motion.div>
               <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-5xl md:text-7xl font-black text-white font-orbitron italic uppercase">
-                Combat <span className="text-primary animate-pulse font-bold">Rankings</span>
+                Combat <span className="text-[#f3adc7] animate-pulse font-bold">Rankings</span>
               </motion.h1>
-              <p className="text-gray-400 max-w-lg">Operational performance metrics for all elite operators in the Nexa Division.</p>
+              <p className="text-[#c7a6b2] max-w-lg">Operational performance metrics for all elite operators in the Nexa Division.</p>
             </div>
 
             <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-              <TabsList className="bg-white/5 border border-white/10 p-1 h-12">
-                <TabsTrigger value="overall" className="px-6 h-full font-orbitron text-xs data-[state=active]:bg-primary">Global</TabsTrigger>
-                <TabsTrigger value="mp" className="px-6 h-full font-orbitron text-xs data-[state=active]:bg-primary">MP</TabsTrigger>
-                <TabsTrigger value="br" className="px-6 h-full font-orbitron text-xs data-[state=active]:bg-primary">BR</TabsTrigger>
+              <TabsList className="bg-[#2a1119]/80 border border-[#7b2a46]/40 p-1 h-12 rounded-2xl">
+                <TabsTrigger value="overall" className="px-6 h-full font-orbitron text-xs rounded-xl data-[state=active]:bg-[#9f3557]">Global</TabsTrigger>
+                <TabsTrigger value="mp" className="px-6 h-full font-orbitron text-xs rounded-xl data-[state=active]:bg-[#9f3557]">MP</TabsTrigger>
+                <TabsTrigger value="br" className="px-6 h-full font-orbitron text-xs rounded-xl data-[state=active]:bg-[#9f3557]">BR</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -335,7 +336,7 @@ const Statistics: FC = () => {
         {compareId && comparePlayer && currentPlayer && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black font-orbitron text-primary uppercase italic">Intel Comparison</h2>
+              <h2 className="text-xl font-black font-orbitron text-[#e7779f] uppercase italic">Intel Comparison</h2>
               <Button variant="ghost" size="sm" onClick={() => setSearchParams({})} className="text-xs uppercase text-muted-foreground">Clear</Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -348,11 +349,11 @@ const Statistics: FC = () => {
         <div className="flex flex-col lg:flex-row justify-between gap-4 mb-12">
           <div className="flex flex-wrap items-center gap-3">
             <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-[140px] bg-white/5 border-white/10 h-11 font-orbitron text-[10px] uppercase">
-                <Timer className="w-3.5 h-3.5 mr-2 text-primary" />
+              <SelectTrigger className="w-[140px] bg-[#221018]/85 border-[#7b2a46]/40 h-11 font-orbitron text-[10px] uppercase rounded-xl">
+                <Timer className="w-3.5 h-3.5 mr-2 text-[#dd6a91]" />
                 <SelectValue placeholder="Horizon" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900">
+              <SelectContent className="bg-[#1d0d14] border-[#6f2741]">
                 <SelectItem value="daily">Daily Log</SelectItem>
                 <SelectItem value="weekly">Weekly Cycle</SelectItem>
                 <SelectItem value="season">Full Season</SelectItem>
@@ -360,11 +361,11 @@ const Statistics: FC = () => {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] bg-white/5 border-white/10 h-11 font-orbitron text-[10px] uppercase">
-                <Shield className="w-3.5 h-3.5 mr-2 text-primary" />
+              <SelectTrigger className="w-[140px] bg-[#221018]/85 border-[#7b2a46]/40 h-11 font-orbitron text-[10px] uppercase rounded-xl">
+                <Shield className="w-3.5 h-3.5 mr-2 text-[#dd6a91]" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900">
+              <SelectContent className="bg-[#1d0d14] border-[#6f2741]">
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="main">Main Roster</SelectItem>
                 <SelectItem value="beta">Beta Squad</SelectItem>
@@ -372,11 +373,11 @@ const Statistics: FC = () => {
             </Select>
 
             <Select value={tierFilter} onValueChange={setTierFilter}>
-              <SelectTrigger className="w-[140px] bg-white/5 border-white/10 h-11 font-orbitron text-[10px] uppercase">
-                <Crown className="w-3.5 h-3.5 mr-2 text-primary" />
+              <SelectTrigger className="w-[140px] bg-[#221018]/85 border-[#7b2a46]/40 h-11 font-orbitron text-[10px] uppercase rounded-xl">
+                <Crown className="w-3.5 h-3.5 mr-2 text-[#dd6a91]" />
                 <SelectValue placeholder="Tier" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900">
+              <SelectContent className="bg-[#1d0d14] border-[#6f2741]">
                 <SelectItem value="all">All Tiers</SelectItem>
                 {tiers.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
@@ -385,16 +386,16 @@ const Statistics: FC = () => {
 
           <div className="flex gap-3">
             <div className="relative flex-1 md:w-64 lg:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a58390]" />
               <Input 
                 placeholder="Search Operator..." 
-                className="pl-11 bg-white/5 border-white/10 h-11"
+                className="pl-11 bg-[#221018]/85 border-[#7b2a46]/40 h-11 rounded-xl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="icon" onClick={handleExport} className="h-11 w-11 bg-white/5 border-white/10"><Download className="w-4 h-4" /></Button>
-            <Button variant="default" size="icon" onClick={handleShare} className="h-11 w-11 bg-primary"><Share2 className="w-4 h-4" /></Button>
+            <Button variant="outline" size="icon" onClick={handleExport} className="h-11 w-11 bg-[#221018]/85 border-[#7b2a46]/40 rounded-xl"><Download className="w-4 h-4" /></Button>
+            <Button variant="default" size="icon" onClick={handleShare} className="h-11 w-11 bg-[#a4375c] hover:bg-[#8f2f50] rounded-xl"><Share2 className="w-4 h-4" /></Button>
           </div>
         </div>
 
@@ -418,10 +419,10 @@ const Statistics: FC = () => {
           </div>
         )}
 
-        <Card className="bg-zinc-900/40 border-white/5 overflow-hidden backdrop-blur-xl">
+        <Card className="bg-[#1a0d12]/85 border-[#6d2440]/35 overflow-hidden backdrop-blur-xl rounded-3xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <thead className="bg-[#2a121a]/90 text-[10px] font-black uppercase tracking-widest text-[#be9eaa]">
                 <tr>
                   <th className="p-5 text-center w-20">Rank</th>
                   <th className="p-5 min-w-[200px]">Operator</th>
@@ -442,24 +443,24 @@ const Statistics: FC = () => {
                       key={player.id} 
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }}
-                      className={cn("hover:bg-white/[0.02] transition-colors", player.id === user?.id && "bg-primary/10 border-l-2 border-primary")}
+                      className={cn("hover:bg-[#2a121a]/60 transition-colors", player.id === user?.id && "bg-[#8d2f50]/20 border-l-2 border-[#c65179]")}
                     >
                       <td className="p-5 text-center">{getMedalIcon(index + 1)}</td>
                       <td className="p-5">
                         <div className="flex items-center gap-4">
                           <img src={player.avatar_url || "/placeholder.svg"} className="w-10 h-10 rounded-lg object-cover border border-white/10" />
                           <div>
-                            <div className="font-orbitron font-black text-sm uppercase italic flex items-center gap-2">
-                              {player.ign}
-                              {player.status === 'beta' && <Badge className="text-[6px] h-3 px-1 uppercase">Beta</Badge>}
-                            </div>
+                             <div className="font-orbitron font-black text-sm uppercase italic flex items-center gap-2">
+                               {player.ign}
+                               {player.status === 'beta' && <Badge className="text-[6px] h-3 px-1 uppercase">Beta</Badge>}
+                             </div>
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest">{player.tier} • {player.grade}</div>
                           </div>
                         </div>
                       </td>
                       <td className="p-5 text-center hidden md:table-cell font-mono text-xs">{player.matches_played}</td>
                       <td className="p-5 text-center hidden sm:table-cell font-orbitron font-black text-sm">{player.kd_ratio}</td>
-                      <td className="p-5 text-right pr-8 font-orbitron font-black text-xl text-primary">{player.score.toLocaleString()}</td>
+                       <td className="p-5 text-right pr-8 font-orbitron font-black text-xl text-[#de6f95]">{player.score.toLocaleString()}</td>
                       <td className="p-5 text-center">{getTrendIcon(player.trend)}</td>
                     </motion.tr>
                   ))
@@ -472,14 +473,14 @@ const Statistics: FC = () => {
 
       {user && currentUserRank && (
         <motion.div initial={{ y: 100 }} animate={{ y: 0 }} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md">
-          <Card className="bg-black/80 border-primary/30 backdrop-blur-2xl shadow-2xl p-4 flex items-center justify-between">
+          <Card className="bg-[#1a0d12]/90 border-[#b34469]/40 backdrop-blur-2xl shadow-2xl p-4 flex items-center justify-between rounded-2xl">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary/20 rounded-xl border border-primary/40 flex flex-col items-center justify-center">
+              <div className="w-12 h-12 bg-[#a4375c]/20 rounded-xl border border-[#b34469]/40 flex flex-col items-center justify-center">
                 <span className="text-[8px] font-black uppercase">Rank</span>
                 <span className="text-xl font-black font-orbitron italic">#{currentUserRank}</span>
               </div>
               <div>
-                <div className="text-[10px] font-black uppercase text-primary">Personal Standing</div>
+                <div className="text-[10px] font-black uppercase text-[#e7779f]">Personal Standing</div>
                 <div className="text-sm font-bold text-white uppercase italic">{enhancedData[currentUserRank-1]?.ign}</div>
               </div>
             </div>

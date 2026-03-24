@@ -7,6 +7,7 @@ export interface MarketplaceCartItem {
   sellerId: string;
   sellerIgn?: string;
   imageUrl?: string;
+  videoUrl?: string;
   region?: string;
 }
 

@@ -36,13 +36,56 @@ export interface AccountListing {
   security_notes?: string;
 }
 
+interface CachedPayload<T> {
+  data: T;
+  updatedAt: number;
+}
+
+const MARKETPLACE_LISTINGS_CACHE_KEY = 'nexa_marketplace_listings_cache_v1';
+const MARKETPLACE_LISTING_DETAILS_CACHE_PREFIX = 'nexa_marketplace_listing_details_';
+const MARKETPLACE_MY_LISTINGS_CACHE_PREFIX = 'nexa_marketplace_my_listings_';
+
+function readCache<T>(key: string): CachedPayload<T> | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedPayload<T>;
+    if (!parsed || typeof parsed !== 'object' || !('data' in parsed) || !('updatedAt' in parsed)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache<T>(key: string, data: T) {
+  try {
+    const payload: CachedPayload<T> = {
+      data,
+      updatedAt: Date.now(),
+    };
+    localStorage.setItem(key, JSON.stringify(payload));
+  } catch {
+    // Ignore cache write errors.
+  }
+}
+
 export const useMarketplace = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const listingsCache = readCache<any[]>(MARKETPLACE_LISTINGS_CACHE_KEY);
+  const myListingsCacheKey = `${MARKETPLACE_MY_LISTINGS_CACHE_PREFIX}${user?.id ?? 'anon'}_v1`;
+  const myListingsCache = user?.id ? readCache<AccountListing[]>(myListingsCacheKey) : null;
 
   // Fetch all available listings
-  const { data: listings = [], isLoading: listingsLoading, refetch: refetchListings } = useQuery({
+  const {
+    data: listings = [],
+    isLoading: listingsLoading,
+    isFetching: listingsRefreshing,
+    refetch: refetchListings,
+  } = useQuery({
     queryKey: ['marketplaceListings'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -60,12 +103,17 @@ export const useMarketplace = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      writeCache(MARKETPLACE_LISTINGS_CACHE_KEY, data as any[]);
       return data as any[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    initialData: listingsCache?.data,
+    initialDataUpdatedAt: listingsCache?.updatedAt,
+    staleTime: 3 * 1000, // Refresh shortly after showing cache
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     refetchOnWindowFocus: false,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   // Fetch user's own listings
@@ -81,15 +129,23 @@ export const useMarketplace = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      writeCache(myListingsCacheKey, data as AccountListing[]);
       return data as AccountListing[];
     },
     enabled: !!user,
-    staleTime: 60 * 1000, // 1 minute
+    initialData: myListingsCache?.data,
+    initialDataUpdatedAt: myListingsCache?.updatedAt,
+    staleTime: 5 * 1000,
     retry: 1,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   // Fetch a single listing by ID
   const useListingDetails = (listingId?: string) => {
+    const detailsCacheKey = `${MARKETPLACE_LISTING_DETAILS_CACHE_PREFIX}${listingId ?? 'unknown'}_v1`;
+    const detailsCache = listingId ? readCache<any>(detailsCacheKey) : null;
+
     return useQuery({
       queryKey: ['marketplaceListing', listingId],
       queryFn: async () => {
@@ -110,6 +166,7 @@ export const useMarketplace = () => {
           .single();
 
         if (error) throw error;
+        writeCache(detailsCacheKey, data);
 
         // Efficient session-based view counting
         const viewedKey = `listing_viewed_${listingId}`;
@@ -121,7 +178,11 @@ export const useMarketplace = () => {
         return data;
       },
       enabled: !!listingId,
-      staleTime: 2 * 60 * 1000, // 2 minutes
+      initialData: detailsCache?.data,
+      initialDataUpdatedAt: detailsCache?.updatedAt,
+      staleTime: 5 * 1000,
+      refetchInterval: 30 * 1000,
+      refetchIntervalInBackground: false,
     });
   };
 
@@ -320,6 +381,7 @@ export const useMarketplace = () => {
   return {
     listings,
     listingsLoading,
+    listingsRefreshing,
     myListings,
     myListingsLoading,
     useListingDetails,

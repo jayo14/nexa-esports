@@ -70,7 +70,18 @@ const ListingCardStyled: React.FC<{
       <div className="relative aspect-video bg-slate-900 overflow-hidden group">
         {listing.video_url ? (
           <>
-            <div className="w-full h-full flex items-center justify-center bg-slate-800">
+            <div className="w-full h-full">
+              <video
+                src={listing.video_url}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+                playsInline
+                poster={listing.images?.[0]}
+              />
+              <div className="absolute inset-0 bg-black/35" />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
               <button
                 onClick={(e) => { e.stopPropagation(); onPreview(listing.video_url); }}
                 className="flex items-center justify-center w-12 h-12 rounded-full hover:scale-110 transition-transform"
@@ -87,6 +98,8 @@ const ListingCardStyled: React.FC<{
           <img 
             src={listing.images[0]} 
             alt={listing.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
@@ -186,7 +199,7 @@ export const Marketplace: React.FC = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { listings, listingsLoading, myListings, isMarketplaceEnabled } =
+  const { listings, listingsLoading, listingsRefreshing, myListings, isMarketplaceEnabled } =
     useMarketplace();
   const { isApproved, isPending, refetchSellerStatus } = useSellerStatus();
 
@@ -392,12 +405,20 @@ export const Marketplace: React.FC = () => {
                                 sellerId: listing.seller_id,
                                 sellerIgn: listing.seller?.ign,
                                 imageUrl: listing.images?.[0],
+                                videoUrl: listing.video_url,
                                 region: listing.region,
                               })
                             }
                           />
                         ))}
                     </div>
+                )}
+                {listingsRefreshing && (
+                  <div className="mt-4 text-center">
+                    <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">
+                      Updating listings...
+                    </span>
+                  </div>
                 )}
             </div>
         </main>
@@ -416,6 +437,9 @@ export const Marketplace: React.FC = () => {
                 src={previewVideoUrl}
                 className="w-full h-full object-contain"
                 autoPlay
+                controls
+                playsInline
+                preload="metadata"
               />
             )}
           </div>

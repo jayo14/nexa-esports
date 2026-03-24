@@ -1,21 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ShoppingCart, Trash2, XCircle } from 'lucide-react';
+import { ShoppingCart, Trash2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useMarketplaceCart } from '@/contexts/MarketplaceCartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useMarketplace } from '@/hooks/useMarketplace';
 
 export const MarketplaceCartSheet: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const { items, isOpen, setIsOpen, removeItem, clearCart } = useMarketplaceCart();
-  const { purchaseAccount } = useMarketplace();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const totalAmount = useMemo(
@@ -48,84 +45,22 @@ export const MarketplaceCartSheet: React.FC = () => {
     }
 
     setIsCheckingOut(true);
-    try {
-      const { data: wallet, error: walletError } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (walletError) throw walletError;
-
-      const checkoutTotal = checkoutableItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
-      const balance = Number(wallet?.balance || 0);
-
-      if (balance < checkoutTotal) {
-        toast({
-          title: 'Insufficient balance',
-          description: `You need ₦${checkoutTotal.toLocaleString()} but only have ₦${balance.toLocaleString()}.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const purchasedIds: string[] = [];
-      let failedCount = 0;
-
-      for (const item of checkoutableItems) {
-        try {
-          const data = await new Promise<any>((resolve, reject) => {
-            purchaseAccount(
-              {
-                listingId: item.id,
-                buyerId: user.id,
-                price: Number(item.price),
-              },
-              {
-                onSuccess: resolve,
-                onError: reject,
-              }
-            );
-          });
-
-          if (!data?.success) {
-            failedCount += 1;
-            continue;
-          }
-
-          purchasedIds.push(item.id);
-        } catch {
-          failedCount += 1;
-        }
-      }
-
-      purchasedIds.forEach((id) => removeItem(id));
-
-      if (purchasedIds.length > 0) {
-        toast({
-          title: 'Checkout completed',
-          description: `${purchasedIds.length} item(s) purchased successfully.${
-            failedCount > 0 ? ` ${failedCount} failed and remained in cart.` : ''
-          }`,
-        });
-        setIsOpen(false);
-        navigate('/marketplace/purchases');
-      } else {
-        toast({
-          title: 'Checkout failed',
-          description: 'No cart items could be purchased. They may already be sold.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Checkout failed',
-        description: error?.message || 'Something went wrong during checkout.',
-        variant: 'destructive',
-      });
-    } finally {
+    const targetItem = checkoutableItems[0];
+    if (!targetItem) {
       setIsCheckingOut(false);
+      return;
     }
+
+    if (checkoutableItems.length > 1) {
+      toast({
+        title: 'Select each account at checkout',
+        description: 'Opening checkout for the first eligible account in your cart.',
+      });
+    }
+
+    setIsOpen(false);
+    navigate(`/marketplace/checkout/${targetItem.id}`);
+    setIsCheckingOut(false);
   };
 
   return (
@@ -150,7 +85,18 @@ export const MarketplaceCartSheet: React.FC = () => {
             <>
               {items.map((item) => (
                 <div key={item.id} className="rounded-xl border p-3 flex items-start gap-3">
-                  {item.imageUrl ? (
+                  {item.videoUrl ? (
+                    <div className="w-16 h-16 rounded-md overflow-hidden border relative">
+                      <video
+                        src={item.videoUrl}
+                        className="w-full h-full object-cover"
+                        muted
+                        preload="metadata"
+                        playsInline
+                      />
+                      <div className="absolute inset-0 bg-black/30" />
+                    </div>
+                  ) : item.imageUrl ? (
                     <img
                       src={item.imageUrl}
                       alt={item.title}
@@ -171,6 +117,18 @@ export const MarketplaceCartSheet: React.FC = () => {
                       <p className="text-xs text-amber-500 mt-1">You cannot purchase your own listing.</p>
                     )}
                     <p className="text-base font-bold mt-2">₦{Number(item.price).toLocaleString()}</p>
+                    {item.sellerId !== user?.id && (
+                      <Button
+                        variant="link"
+                        className="h-auto p-0 mt-1 text-xs"
+                        onClick={() => {
+                          setIsOpen(false);
+                          navigate(`/marketplace/checkout/${item.id}`);
+                        }}
+                      >
+                        Checkout this account
+                      </Button>
+                    )}
                   </div>
 
                   <Button

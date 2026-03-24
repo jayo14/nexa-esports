@@ -220,13 +220,17 @@ export const ListingDetails: React.FC = () => {
             {/* Hero image */}
             <div className="h-[420px] md:h-[480px] relative">
               {listing.video_url ? (
-                <video
-                  src={listing.video_url}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  autoPlay
-                  muted
-                  loop
-                />
+                <>
+                  <video
+                    src={listing.video_url}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    muted
+                    preload="metadata"
+                    playsInline
+                    poster={listing.images?.[0]}
+                  />
+                  <div className="absolute inset-0 bg-black/35" />
+                </>
               ) : (
                 <div
                   className="absolute inset-0 bg-cover bg-center"
@@ -505,6 +509,7 @@ export const ListingDetails: React.FC = () => {
                               sellerId: listing.seller_id,
                               sellerIgn: listing.seller?.ign,
                               imageUrl: listing.images?.[0],
+                              videoUrl: listing.video_url,
                               region: listing.region,
                             })
                           }

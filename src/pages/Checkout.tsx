@@ -38,6 +38,7 @@ export const Checkout: React.FC = () => {
   const [securityAccepted, setSecurityAccepted] = useState(false);
 
   const listing = listingData as AccountListing | null;
+  const listingMediaThumb = listing?.video_url || listing?.images?.[0] || null;
 
   useEffect(() => {
     if (!isLoading && !listing) {
@@ -146,13 +147,30 @@ export const Checkout: React.FC = () => {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 blur-3xl rounded-full translate-x-10 -translate-y-10" />
                     
                     <div className="flex flex-col md:flex-row gap-8">
-                      <div className="w-full md:w-48 h-48 rounded-2xl overflow-hidden border border-white/10 bg-slate-900/50">
-                        {listing.images?.[0] ? (
-                          <img
-                            src={listing.images[0]}
-                            alt={listing.title}
-                            className="w-full h-full object-cover"
-                          />
+                      <div className="w-full md:w-48 h-48 rounded-2xl overflow-hidden border border-white/10 bg-slate-900/50 relative">
+                        {listingMediaThumb ? (
+                          listing.video_url ? (
+                            <>
+                              <video
+                                src={listing.video_url}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                                playsInline
+                              />
+                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white/90 bg-black/40 px-2 py-1 rounded-full">
+                                  Video Demo
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <img
+                              src={listingMediaThumb}
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          )
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-700">
                              <Lock className="w-12 h-12 opacity-20" />
