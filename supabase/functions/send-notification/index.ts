@@ -199,10 +199,9 @@ serve(async (req) => {
           const emailResults = await Promise.all(chunks.map(async (chunk, index) => {
             const emailBody = {
               sender: { name: senderName, email: senderEmail },
-              to: [{ email: senderEmail, name: senderName }], // sender to self
-              bcc: chunk, // actual recipients in BCC
               subject: title,
               htmlContent: generateEmailHtml(title, message, data, eventLink),
+              messageVersions: chunk.map(r => ({ to: [{ email: r.email, name: r.name }] }))
             };
             const emailRes = await sendViaBrevo(BREVO_API_KEY, emailBody);
 
