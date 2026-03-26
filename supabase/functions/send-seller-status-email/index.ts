@@ -14,6 +14,19 @@ interface Payload {
   reason?: string;
 }
 
+// --- Helper: Send via Brevo ---
+async function sendViaBrevo(apiKey: string, body: any) {
+  return await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
   Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -76,27 +89,24 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "api-key": Deno.env.get("BREVO_API_KEY") || "",
-      },
-      body: JSON.stringify({
-        sender: {
-          name: "NeXa Marketplace",
-          email: clanEmail,
-        },
+    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+
+    let emailRes;
+    if (BREVO_API_KEY) {
+      console.log("Sending seller status email via Brevo...");
+      emailRes = await sendViaBrevo(BREVO_API_KEY, {
+        sender: { name: "NeXa Marketplace", email: clanEmail },
         to: [{ email: recipientEmail }],
         subject,
-        htmlContent,
-      }),
-    });
+        htmlContent: htmlContent,
+      });
+    } else {
+      throw new Error("No Brevo API key found in environment");
+    }
 
-    if (!brevoResponse.ok) {
-      const details = await brevoResponse.text();
-      throw new Error(`Brevo API error: ${brevoResponse.status} ${details}`);
+    if (!emailRes.ok) {
+      const details = await emailRes.text();
+      throw new Error(`Email service error: ${emailRes.status} ${details}`);
     }
 
     return new Response(

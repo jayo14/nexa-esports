@@ -12,6 +12,19 @@ interface ContactFormData {
   message: string;
 }
 
+// --- Helper: Send via Brevo ---
+async function sendViaBrevo(apiKey: string, body: any) {
+  return await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -99,25 +112,23 @@ serve(async (req) => {
       },
     };
 
-    const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "api-key": Deno.env.get("BREVO_API_KEY") || "",
-      },
-      body: JSON.stringify(emailContent),
-    });
-
-    if (!brevoResponse.ok) {
-      const errorData = await brevoResponse.text();
-      console.error("Brevo API error:", errorData);
-      throw new Error(`Brevo API error: ${brevoResponse.status}`);
+    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    
+    let emailRes;
+    if (BREVO_API_KEY) {
+      console.log("Sending contact email via Brevo...");
+      emailRes = await sendViaBrevo(BREVO_API_KEY, emailContent);
+    } else {
+      throw new Error("No Brevo API key found in environment");
     }
 
-    const result = await brevoResponse.json();
+    if (!emailRes.ok) {
+      const errorData = await emailRes.text();
+      console.error("Email service error:", errorData);
+      throw new Error(`Email service error: ${emailRes.status}`);
+    }
 
-    return new Response(JSON.stringify({ success: true, messageId: result.messageId }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
