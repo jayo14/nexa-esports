@@ -297,9 +297,6 @@ importers:
       lovable-tagger:
         specifier: ^1.1.7
         version: 1.1.11(tsx@4.21.0)(vite@5.4.21(@types/node@22.19.1)(terser@5.44.1))
-      pnpm:
-        specifier: ^10.32.1
-        version: 10.32.1
       postcss:
         specifier: ^8.4.47
         version: 8.5.6
@@ -5067,11 +5064,6 @@ packages:
   plist@3.1.0:
     resolution: {integrity: sha512-uysumyrvkUX0rX/dEVqt8gC3sTBzd4zoWfLeS29nb53imdaXVvLINYXTI2GNqzaMuvacNx4uJQ8+b3zXR0pkgQ==}
     engines: {node: '>=10.4.0'}
-
-  pnpm@10.32.1:
-    resolution: {integrity: sha512-pwaTjw6JrBRWtlY+q07fHR+vM2jRGR/FxZeQ6W3JGORFarLmfWE94QQ9LoyB+HMD5rQNT/7KnfFe8a1Wc0jyvg==}
-    engines: {node: '>=18.12'}
-    hasBin: true
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -11274,8 +11266,6 @@ snapshots:
       '@xmldom/xmldom': 0.8.11
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
-
-  pnpm@10.32.1: {}
 
   possible-typed-array-names@1.1.0: {}
 
