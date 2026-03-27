@@ -76,7 +76,7 @@ serve(async (req) => {
       const { data: profiles, error: profileErr } = await supabaseAdmin
         .from('profiles')
         .select('id');
-      
+
       if (!profileErr && profiles) {
         targetUsers = profiles.map(p => p.id);
       }
@@ -189,7 +189,7 @@ serve(async (req) => {
 
         if (recipientList.length > 0) {
           const senderEmail = Deno.env.get("RESEND_SENDER_EMAIL") || "notifications@nexaesports.com";
-          const senderName = Deno.env.get("RESEND_SENDER_NAME") || "Nexa Esports Notifications";
+          const senderName = Deno.env.get("RESEND_SENDER_NAME") || "NeXa Esports Notifications";
           const eventLink = data?.eventId
             ? `https://nexaesports.com/events/${data.eventId}`
             : "https://nexaesports.com/scrims";
@@ -300,7 +300,7 @@ serve(async (req) => {
               <tr>
                 <td style="padding: 30px; text-align: center; border-top: 1px solid #333333; background-color: #121212;">
                   <p style="margin: 0; font-size: 12px; color: #666666; text-transform: uppercase; letter-spacing: 1px;">
-                    &copy; 2026 Nexa Esports Clan. Terminal Secured.
+                    &copy; 2026 NeXa Esports Clan. Terminal Secured.
                   </p>
                   <div style="margin-top: 15px;">
                     <a href="#" style="color: #666666; text-decoration: none; margin: 0 10px; font-size: 11px;">UNSUBSCRIBE</a>

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.nexaesports.app',
-  appName: 'Nexa Esports',
+  appName: 'NeXa Esports',
   webDir: 'dist',
   plugins: {
     SplashScreen: {

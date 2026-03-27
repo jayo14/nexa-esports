@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Nexa Esports</string>
-    <string name="title_activity_main">Nexa Esports</string>
+    <string name="app_name">NeXa Esports</string>
+    <string name="title_activity_main">NeXa Esports</string>
     <string name="package_name">com.nexaesports.app</string>
     <string name="custom_url_scheme">com.nexaesports.app</string>
 </resources>

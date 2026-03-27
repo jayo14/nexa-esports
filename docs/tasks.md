@@ -1,4 +1,4 @@
-# Nexa Esports - Final Implementation Tasks
+# NeXa Esports - Final Implementation Tasks
 
 ## Marketplace Stability
 - [x] Audit existing marketplace logic (Security & Encryption logic verified)

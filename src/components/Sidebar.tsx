@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
       }}
     >
       <div className="mb-8 w-12 h-12 flex items-center justify-center cursor-pointer" onClick={() => navigate('/dashboard')}>
-        <img src="/nexa-logo-ramadan.jpg" alt="Nexa Esports" className="w-12 h-12 rounded-full object-cover" />
+        <img src="/nexa-logo-ramadan.jpg" alt="NeXa Esports" className="w-12 h-12 rounded-full object-cover" />
       </div>
 
       <ScrollArea className="flex-1 w-full [&>[data-orientation='vertical']]:hidden">

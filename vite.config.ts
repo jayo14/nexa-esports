@@ -6,7 +6,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
-  
+
   return {
     base: '/',
     define: {
@@ -40,8 +40,8 @@ export default defineConfig(({ mode }) => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         },
         manifest: {
-          name: "Nexa Esports",
-          short_name: "Nexa Esports",
+          name: "NeXa Esports",
+          short_name: "NeXa Esports",
           description:
             "Nexa is a competitive clan-based esports platform that empowers gamers to join, manage, and dominate in tournaments. Track progress, build squads, and rise through the ranks in an immersive, mobile-ready experience.",
           start_url: "/dashboard",

@@ -72,19 +72,19 @@ serve(async (req) => {
     const defaultRecipient = Deno.env.get("CLAN_CONTACT_EMAIL") || "nexaesportmail@gmail.com";
 
     if (recipients.length === 0) {
-      recipients.push({ email: defaultRecipient, name: "Nexa Esports Team" });
+      recipients.push({ email: defaultRecipient, name: "NeXa Esports Team" });
     }
 
     const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || defaultRecipient;
 
     const emailContent = {
-      from: `Nexa Esports Recruitment <${senderEmail}>`,
+      from: `NeXa Esports Recruitment <${senderEmail}>`,
       to: recipients.map(r => r.email),
       subject: `Contact Form Submission from ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #FF1F44, #CC1936); padding: 20px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Nexa Esports Contact Form</h1>
+            <h1 style="color: white; margin: 0;">NeXa Esports Contact Form</h1>
           </div>
           <div style="padding: 20px; background: #f8f9fa;">
             <h2 style="color: #333;">New Contact Form Submission</h2>
@@ -97,7 +97,7 @@ serve(async (req) => {
               </div>
             </div>
             <p style="color: #666; font-size: 12px; margin-top: 20px;">
-              This email was sent from the Nexa Esports contact form.
+              This email was sent from the NeXa Esports contact form.
             </p>
           </div>
         </div>
@@ -106,7 +106,7 @@ serve(async (req) => {
     };
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    
+
     let emailRes;
     if (RESEND_API_KEY) {
       console.log("Sending contact email via Resend...");

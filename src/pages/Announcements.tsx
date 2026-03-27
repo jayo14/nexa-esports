@@ -126,7 +126,7 @@ export const Announcements: React.FC = () => {
             Clan Announcements
           </h1>
           <p className="text-gray-400">
-            Stay updated with the latest Nexa Esports news
+            Stay updated with the latest NeXa Esports news
           </p>
         </div>
 

@@ -33,7 +33,7 @@ const mockGalleryItems: GalleryItem[] = [
     type: 'image',
     src: 'https://ik.imagekit.io/mshcgnjju/NeXa/winners_circle.jpg',
     title: 'Tournament Win',
-    description: 'Nexa Esports claims championship title'
+    description: 'NeXa Esports claims championship title'
   },
   {
     id: 4,
@@ -176,8 +176,8 @@ export const ClanGallery: React.FC = () => {
               <button
                 key={index}
                 className={`w-5 h-2 rounded-sm transition-all duration-300 ${index === currentIndex
-                    ? 'bg-primary scale-125'
-                    : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  ? 'bg-primary scale-125'
+                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
                   }`}
                 onClick={() => goToSlide(index)}
               />

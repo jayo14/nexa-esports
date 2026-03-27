@@ -317,7 +317,7 @@ export const usePushNotifications = () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification('Test Notification', {
-        body: 'This is a test notification from Nexa Esports',
+        body: 'This is a test notification from NeXa Esports',
         icon: '/nexa-logo-ramadan.jpg',
         badge: '/pwa-192x192.png',
         tag: 'test-notification',

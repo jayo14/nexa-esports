@@ -13,7 +13,7 @@ export const TestPushNotifications = () => {
   const { user } = useAuth();
   const { isSupported, isSubscribed, permissionState, testNotification } = usePushNotifications();
   const [title, setTitle] = useState('Test Notification');
-  const [message, setMessage] = useState('This is a test push notification from Nexa Esports!');
+  const [message, setMessage] = useState('This is a test push notification from NeXa Esports!');
   const [isSending, setIsSending] = useState(false);
 
   // Send local test notification (doesn't require server)
@@ -121,10 +121,9 @@ export const TestPushNotifications = () => {
             <span>Subscribed: {isSubscribed ? 'Yes' : 'No'}</span>
           </div>
           <div className="flex items-center gap-1.5 text-sm">
-            <div className={`w-2 h-2 rounded-full ${
-              permissionState === 'granted' ? 'bg-green-500' : 
-              permissionState === 'denied' ? 'bg-red-500' : 'bg-yellow-500'
-            }`} />
+            <div className={`w-2 h-2 rounded-full ${permissionState === 'granted' ? 'bg-green-500' :
+                permissionState === 'denied' ? 'bg-red-500' : 'bg-yellow-500'
+              }`} />
             <span>Permission: {permissionState}</span>
           </div>
         </div>
@@ -137,7 +136,7 @@ export const TestPushNotifications = () => {
             placeholder="Enter notification title"
           />
         </div>
-        
+
         <div className="space-y-2">
           <label className="text-sm font-medium">Notification Message</label>
           <Textarea
@@ -149,7 +148,7 @@ export const TestPushNotifications = () => {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button 
+          <Button
             onClick={handleLocalTestNotification}
             disabled={isSending || !isSupported || !isSubscribed}
             variant="secondary"
@@ -158,8 +157,8 @@ export const TestPushNotifications = () => {
             <Smartphone className="h-4 w-4 mr-1.5" />
             {isSending ? 'Testing...' : 'Local Test'}
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleSendTestNotification}
             disabled={isSending || !title || !message}
             variant="outline"
@@ -168,8 +167,8 @@ export const TestPushNotifications = () => {
             <BellRing className="h-4 w-4 mr-1.5" />
             {isSending ? 'Sending...' : 'Send to Me'}
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleSendBroadcastNotification}
             disabled={isSending || !title || !message}
             variant="default"

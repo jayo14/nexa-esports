@@ -75,10 +75,10 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
     // Handle background messages
     onBackgroundMessage(messaging, (payload) => {
       console.log('[SW-FCM] Received background message:', payload);
-      
+
       if (payload.notification) {
         const { title, body } = payload.notification;
-        self.registration.showNotification(title || 'Nexa Esports', {
+        self.registration.showNotification(title || 'NeXa Esports', {
           body: body || '',
           icon: '/nexa-logo-ramadan.jpg',
           badge: '/pwa-192x192.png',
@@ -170,12 +170,12 @@ self.addEventListener('push', (event: PushEvent) => {
         data = event.data?.json();
       } catch {
         const text = event.data?.text();
-        data = { title: 'Nexa Esports', body: text };
+        data = { title: 'NeXa Esports', body: text };
       }
 
       console.log('[Service Worker] Push notification data:', data);
 
-      const title = data.title || 'Nexa Esports';
+      const title = data.title || 'NeXa Esports';
 
       // NotificationOptions following MDN Web Notifications API
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification
@@ -220,7 +220,7 @@ self.addEventListener('push', (event: PushEvent) => {
       console.error('[Service Worker] Error processing push notification:', error);
 
       // Show a fallback notification if parsing fails
-      await self.registration.showNotification('Nexa Esports', {
+      await self.registration.showNotification('NeXa Esports', {
         body: 'You have a new notification',
         icon: '/nexa-logo-ramadan.jpg',
         badge: '/pwa-192x192.png',

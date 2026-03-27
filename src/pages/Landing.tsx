@@ -574,7 +574,7 @@ const LandingPage: React.FC = () => {
                 </h1>
 
                 <p className="text-lg text-slate-300 max-w-lg leading-relaxed" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
-                  Experience the pinnacle of CODM competitive play with Nexa Esports. Join the ranks
+                  Experience the pinnacle of CODM competitive play with NeXa Esports. Join the ranks
                   of elite warriors and conquer the global leaderboard.
                 </p>
 
@@ -636,14 +636,14 @@ const LandingPage: React.FC = () => {
         {/* ══════════ MISSION BRIEFING ══════════ */}
         <section className="px-6 py-24 relative overflow-hidden">
           {/* Subtle tactical grid background */}
-          <div 
+          <div
             className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ 
+            style={{
               backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
               backgroundSize: '40px 40px'
             }}
           />
-          
+
           <div className="max-w-7xl mx-auto relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div>
@@ -655,7 +655,7 @@ const LandingPage: React.FC = () => {
                 </h2>
                 <div className="space-y-6 text-slate-400 text-lg leading-relaxed">
                   <p>
-                    Nexa Esports isn't just a platform; it's a <span className="text-white font-bold">digital command center</span> for the modern warrior. We founded Nexa with a singular tactical objective: to bridge the gap between casual mobile gaming and professional-grade competitive excellence.
+                    NeXa Esports isn't just a platform; it's a <span className="text-white font-bold">digital command center</span> for the modern warrior. We founded Nexa with a singular tactical objective: to bridge the gap between casual mobile gaming and professional-grade competitive excellence.
                   </p>
                   <p>
                     Our ecosystem empowers clans to move beyond simple matchmaking. We provide the tools for <span className="text-white font-bold">squad management</span>, precision <span className="text-white font-bold">loadout optimization</span>, and real-time <span className="text-white font-bold">combat analytics</span>.
@@ -664,7 +664,7 @@ const LandingPage: React.FC = () => {
                     Whether you're an independent operative looking to join an elite unit or a clan master aiming for global domination, Nexa provides the infrastructure to track your rise through the ranks and claim your place in the championship history.
                   </p>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-8 mt-12 pt-8 border-t border-white/5">
                   <div className="flex flex-col gap-1">
                     <span className="text-white font-black text-2xl tracking-tight">ELEVATE</span>
@@ -684,23 +684,23 @@ const LandingPage: React.FC = () => {
               <div className="relative">
                 {/* Visual representation of the 'Purpose' */}
                 <div className="aspect-square rounded-[40px] overflow-hidden border border-white/10 group">
-                  <img 
-                    src="https://images.pexels.com/photos/7915357/pexels-photo-7915357.jpeg?auto=compress&cs=tinysrgb&w=800" 
-                    alt="Tactical Headquarters" 
+                  <img
+                    src="https://images.pexels.com/photos/7915357/pexels-photo-7915357.jpeg?auto=compress&cs=tinysrgb&w=800"
+                    alt="Tactical Headquarters"
                     className="w-full h-full object-cover grayscale opacity-60 group-hover:scale-105 group-hover:grayscale-0 transition-all duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#221011] via-transparent to-transparent" />
-                  
+
                   {/* Floating floating indicators/badges */}
                   <div className="absolute top-12 left-[-20px] p-6 rounded-2xl bg-[#221011]/80 backdrop-blur-xl border border-rose-500/30 animate-pulse transition-all">
                     <Trophy className="w-8 h-8 text-rose-500" />
                   </div>
-                  
+
                   <div className="absolute bottom-12 right-[-20px] p-6 rounded-2xl bg-[#221011]/80 backdrop-blur-xl border border-green-500/30">
                     <Users className="w-8 h-8 text-green-500" />
                   </div>
                 </div>
-                
+
                 {/* Backdrop glow */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-rose-500/10 blur-[120px] -z-10" />
               </div>
@@ -1301,7 +1301,7 @@ const LandingPage: React.FC = () => {
 
           <div className="flex flex-col items-center md:items-start gap-2 text-center md:text-left">
             <p className="text-sm text-slate-500">
-              © 2024 Nexa Esports Clan. All Rights Reserved. Not affiliated with Activision or TiMi Studios.
+              © 2024 NeXa Esports Clan. All Rights Reserved. Not affiliated with Activision or TiMi Studios.
             </p>
             <div className="flex items-center gap-4">
               <a

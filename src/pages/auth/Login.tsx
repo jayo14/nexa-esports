@@ -39,7 +39,7 @@ export const Login: React.FC = () => {
 
         toast({
           title: "Welcome back, warrior!",
-          description: "Successfully logged into Nexa Esports",
+          description: "Successfully logged into NeXa Esports",
         });
 
         if (sellerProfile?.seller_status === 'approved') {

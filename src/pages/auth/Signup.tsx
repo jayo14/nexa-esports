@@ -235,7 +235,7 @@ export const Signup: React.FC = () => {
               Recruitment
             </span>
           </h1>
-          <p className="text-muted-foreground font-rajdhani">Join the elite Nexa Esports ranks</p>
+          <p className="text-muted-foreground font-rajdhani">Join the elite NeXa Esports ranks</p>
         </div>
 
         {/* Form */}
