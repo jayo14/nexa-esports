@@ -2,6 +2,7 @@
 // This file initializes Firebase for push notifications
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
+import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { arrayBufferToBase64 } from '@/lib/pushUtils';
 
@@ -18,6 +19,7 @@ const firebaseConfig = {
 
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
+let analytics: Analytics | null = null;
 
 /**
  * Initialize Firebase App
@@ -38,6 +40,15 @@ export const initializeFirebase = (): FirebaseApp | null => {
 
     firebaseApp = initializeApp(firebaseConfig);
     console.log('[FCM] Firebase initialized successfully');
+
+    // Initialize Analytics if supported
+    isSupported().then(yes => {
+      if (yes) {
+        analytics = getAnalytics(firebaseApp!);
+        console.log('[FCM] Firebase Analytics initialized');
+      }
+    });
+
     return firebaseApp;
   } catch (error) {
     console.error('[FCM] Error initializing Firebase:', error);

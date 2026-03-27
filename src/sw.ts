@@ -3,6 +3,8 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst } from 'workbox-strategies';
+import { initializeApp } from 'firebase/app';
+import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -38,6 +40,51 @@ cleanupOutdatedCaches();
 // Claim clients immediately
 self.skipWaiting();
 clientsClaim();
+
+// ============================================
+// FIREBASE CLOUD MESSAGING (FCM)
+// ============================================
+
+// Firebase configuration
+// These should ideally be environment variables, but for the service worker 
+// with injectManifest, we'll hardcode them or use a build-time replacement.
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+};
+
+try {
+  const firebaseApp = initializeApp(firebaseConfig);
+  const messaging = getMessaging(firebaseApp);
+
+  onBackgroundMessage(messaging, (payload) => {
+    console.log('[SW] Service Worker received background message:', payload);
+    
+    // Customize notification here if needed, 
+    // though FCM usually shows its own notification if 'notification' property is present.
+    const notificationTitle = payload.notification?.title || 'Nexa Esports';
+    const notificationOptions = {
+      body: payload.notification?.body || 'New update available',
+      icon: payload.notification?.icon || '/nexa-logo-ramadan.jpg',
+      badge: '/pwa-192x192.png',
+      data: payload.data,
+    };
+
+    // Only show if payload doesn't already have a notification that browser will handle
+    // Actually, onBackgroundMessage is ONLY called if the payload has ONLY 'data' or 
+    // if you want to override.
+    if (!payload.notification) {
+      return self.registration.showNotification(notificationTitle, notificationOptions);
+    }
+  });
+} catch (error) {
+  console.error('[SW] Firebase initialization failed:', error);
+}
 
 // ============================================
 // OFFLINE EXPERIENCE & NETWORK INTERCEPTION
@@ -126,7 +173,7 @@ self.addEventListener('push', (event: PushEvent) => {
 
       // NotificationOptions following MDN Web Notifications API
       // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification
-      const options: NotificationOptions & { image?: string } = {
+      const options: any = {
         body: data.body || data.message || '',
         icon: data.icon || '/nexa-logo-ramadan.jpg',
         badge: data.badge || '/pwa-192x192.png', // Smaller badge for notification tray
@@ -136,10 +183,10 @@ self.addEventListener('push', (event: PushEvent) => {
           url: data.data?.url || data.url || '/dashboard',
           timestamp: data.data?.timestamp || Date.now(),
         },
-        actions: data.actions || [
+        actions: (data.actions || [
           { action: 'open', title: 'Open' },
           { action: 'dismiss', title: 'Dismiss' }
-        ],
+        ]) as any,
         requireInteraction: data.requireInteraction ?? false,
         silent: data.silent ?? false,
         // Vibration pattern for mobile devices (MDN Vibration API)

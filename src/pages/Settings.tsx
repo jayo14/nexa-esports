@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { subscribeToPushNotifications } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -421,7 +422,20 @@ export const Settings: React.FC = () => {
       if (isNativePushSupported) {
         await registerPush(user.id);
       } else {
-        await subscribeToPush(user.id);
+        // Use Firebase FCM for web
+        const success = await subscribeToPushNotifications(user.id);
+        if (success) {
+          toast({
+            title: "Notifications Enabled",
+            description: "You will now receive push notifications via FCM."
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to enable notifications. Please try again.",
+            variant: "destructive"
+          });
+        }
       }
     } else {
       if (isNativePushSupported) {
