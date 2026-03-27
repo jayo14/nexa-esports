@@ -1252,13 +1252,28 @@ const LandingPage: React.FC = () => {
             <h2 className="text-lg font-black tracking-tight">NeXa Esports</h2>
           </div>
 
-          <div className="flex flex-col items-center md:items-start gap-1 text-center md:text-left">
+          <div className="flex flex-col items-center md:items-start gap-2 text-center md:text-left">
             <p className="text-sm text-slate-500">
               © 2024 Nexa Esports Clan. All Rights Reserved. Not affiliated with Activision or TiMi Studios.
             </p>
+            <div className="flex items-center gap-4">
+              <a
+                href="/privacy"
+                className="text-xs text-slate-400 hover:text-rose-500 transition-colors"
+              >
+                Privacy Policy
+              </a>
+              <span className="w-1 h-1 rounded-full bg-slate-700" />
+              <a
+                href="/terms"
+                className="text-xs text-slate-400 hover:text-rose-500 transition-colors"
+              >
+                Terms of Service
+              </a>
+            </div>
             <a
               href="mailto:nexaesportmail@gmail.com"
-              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs text-slate-400 hover:text-slate-200 transition-colors mt-1"
             >
               Contact: nexaesportmail@gmail.com
             </a>

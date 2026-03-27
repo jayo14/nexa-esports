@@ -14,6 +14,8 @@ import NotFound from '@/pages/NotFound';
 import { Blog } from '@/pages/Blog';
 import { BlogPost } from '@/pages/BlogPost';
 import { MarketplaceInfo } from '@/pages/MarketplaceInfo';
+import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
+import { TermsOfService } from '@/pages/TermsOfService';
 
 // Auth pages
 import { Login } from '@/pages/auth/Login';
@@ -177,6 +179,8 @@ function AppRoutes() {
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/marketplace-info" element={<MarketplaceInfo />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="/events/:eventId" element={<ProtectedRoute><Layout showSidebar pageScroll><EventDetails /></Layout></ProtectedRoute>} />
 
         {/* Auth routes */}

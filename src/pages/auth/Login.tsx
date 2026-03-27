@@ -216,6 +216,14 @@ export const Login: React.FC = () => {
           <Link to="/" className="block text-muted-foreground hover:text-foreground text-sm font-rajdhani underline underline-offset-2">
             ← Back to Home
           </Link>
+          <div className="flex items-center justify-center gap-4 pt-4">
+            <Link to="/privacy" className="text-[10px] uppercase tracking-widest text-white/30 hover:text-white/60 transition-colors">
+              Privacy
+            </Link>
+            <Link to="/terms" className="text-[10px] uppercase tracking-widest text-white/30 hover:text-white/60 transition-colors">
+              Terms
+            </Link>
+          </div>
         </div>
       </div>
     </div>
