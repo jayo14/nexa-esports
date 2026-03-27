@@ -17,6 +17,14 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+// Debug log for production (safe values)
+console.log('[FCM] Firebase Config check:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasProjectId: !!firebaseConfig.projectId,
+  hasAppId: !!firebaseConfig.appId,
+  hasSenderId: !!firebaseConfig.messagingSenderId,
+});
+
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 let analytics: Analytics | null = null;
@@ -104,11 +112,32 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
       return null;
     }
 
-    const token = await getToken(messagingInstance, {
-      vapidKey,
-      serviceWorkerRegistration: await navigator.serviceWorker.ready,
-    });
+    const registration = await navigator.serviceWorker.ready;
 
+    let token: string | null = null;
+    try {
+      token = await getToken(messagingInstance, {
+        vapidKey,
+        serviceWorkerRegistration: registration,
+      });
+    } catch (tokenError: any) {
+      if (tokenError.code === 'messaging/unsupported-browser') {
+        console.error('[FCM] getToken failed: Browser does not support FCM or service worker is not registered correctly.', tokenError);
+      } else if (tokenError.code === 'messaging/permission-blocked') {
+        console.error('[FCM] getToken failed: Notification permission blocked by user or browser settings.', tokenError);
+      } else if (tokenError.code === 'messaging/token-unsubscribe-failed') {
+        console.error('[FCM] getToken failed: Failed to unsubscribe from previous token.', tokenError);
+      } else {
+        console.error('[FCM] getToken failed with unknown error:', tokenError);
+      }
+      return null;
+    }
+
+    if (!token) {
+      throw new Error('FCM Token generation returned null');
+    }
+
+    console.log('[FCM] Token generated successfully');
     console.log('[FCM] Token obtained:', token);
     return token;
   } catch (error) {

@@ -58,32 +58,38 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-try {
-  const firebaseApp = initializeApp(firebaseConfig);
-  const messaging = getMessaging(firebaseApp);
+// Debug logging for SW (standard logs are visible in Application tab > Service Workers)
+console.log('[SW-FCM] Config check:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasProjectId: !!firebaseConfig.projectId,
+  hasAppId: !!firebaseConfig.appId,
+});
 
-  onBackgroundMessage(messaging, (payload) => {
-    console.log('[SW] Service Worker received background message:', payload);
-    
-    // Customize notification here if needed, 
-    // though FCM usually shows its own notification if 'notification' property is present.
-    const notificationTitle = payload.notification?.title || 'Nexa Esports';
-    const notificationOptions = {
-      body: payload.notification?.body || 'New update available',
-      icon: payload.notification?.icon || '/nexa-logo-ramadan.jpg',
-      badge: '/pwa-192x192.png',
-      data: payload.data,
-    };
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error('[SW-FCM] Missing required Firebase configuration. Background messaging will not work.');
+} else {
+  try {
+    const app = initializeApp(firebaseConfig);
+    const messaging = getMessaging(app);
 
-    // Only show if payload doesn't already have a notification that browser will handle
-    // Actually, onBackgroundMessage is ONLY called if the payload has ONLY 'data' or 
-    // if you want to override.
-    if (!payload.notification) {
-      return self.registration.showNotification(notificationTitle, notificationOptions);
-    }
-  });
-} catch (error) {
-  console.error('[SW] Firebase initialization failed:', error);
+    // Handle background messages
+    onBackgroundMessage(messaging, (payload) => {
+      console.log('[SW-FCM] Received background message:', payload);
+      
+      if (payload.notification) {
+        const { title, body } = payload.notification;
+        self.registration.showNotification(title || 'Nexa Esports', {
+          body: body || '',
+          icon: '/nexa-logo-ramadan.jpg',
+          badge: '/pwa-192x192.png',
+          data: payload.data,
+        });
+      }
+    });
+    console.log('[SW-FCM] Background messaging initialized');
+  } catch (error) {
+    console.error('[SW-FCM] Initialization failed:', error);
+  }
 }
 
 // ============================================

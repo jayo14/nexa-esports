@@ -47,6 +47,7 @@ interface AuthContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
   displayRole: string;
+  signInWithGoogle: () => Promise<void>;
 }
 
 interface SignupData {
@@ -563,6 +564,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      console.log("Attempting Google Sign-In");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        console.error("Google Sign-In error:", error);
+        toast({
+          title: "Google Sign-In Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Google Sign-In exception:", error);
+      toast({
+        title: "Google Sign-In Failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   const displayRole =
     profile?.role === "clan_master"
       ? "Clan Master"
@@ -581,6 +614,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     updateProfile,
     refreshProfile: fetchProfile,
     displayRole,
+    signInWithGoogle,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
