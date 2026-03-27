@@ -12,14 +12,13 @@ interface ContactFormData {
   message: string;
 }
 
-// --- Helper: Send via Brevo ---
-async function sendViaBrevo(apiKey: string, body: any) {
-  return await fetch("https://api.brevo.com/v3/smtp/email", {
+// --- Helper: Send via Resend ---
+async function sendViaResend(apiKey: string, body: any) {
+  return await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      "Accept": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "api-key": apiKey,
     },
     body: JSON.stringify(body),
   });
@@ -79,13 +78,10 @@ serve(async (req) => {
     const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || defaultRecipient;
 
     const emailContent = {
-      sender: {
-        name: "Nexa Esports Recruitment",
-        email: senderEmail,
-      },
-      to: recipients,
+      from: `Nexa Esports Recruitment <${senderEmail}>`,
+      to: recipients.map(r => r.email),
       subject: `Contact Form Submission from ${name}`,
-      htmlContent: `
+      html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #FF1F44, #CC1936); padding: 20px; text-align: center;">
             <h1 style="color: white; margin: 0;">Nexa Esports Contact Form</h1>
@@ -106,20 +102,17 @@ serve(async (req) => {
           </div>
         </div>
       `,
-      replyTo: {
-        email,
-        name,
-      },
+      reply_to: `${name} <${email}>`,
     };
 
-    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     
     let emailRes;
-    if (BREVO_API_KEY) {
-      console.log("Sending contact email via Brevo...");
-      emailRes = await sendViaBrevo(BREVO_API_KEY, emailContent);
+    if (RESEND_API_KEY) {
+      console.log("Sending contact email via Resend...");
+      emailRes = await sendViaResend(RESEND_API_KEY, emailContent);
     } else {
-      throw new Error("No Brevo API key found in environment");
+      throw new Error("No Resend API key found in environment");
     }
 
     if (!emailRes.ok) {

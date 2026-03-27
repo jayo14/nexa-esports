@@ -7,14 +7,13 @@ const corsHeaders = {
 };
 
 
-// --- Helper: Send via Brevo ---
-async function sendViaBrevo(apiKey: string, body: any) {
-  return await fetch("https://api.brevo.com/v3/smtp/email", {
+// --- Helper: Send via Resend ---
+async function sendViaResend(apiKey: string, body: any) {
+  return await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      "Accept": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "api-key": apiKey,
     },
     body: JSON.stringify(body),
   });
@@ -105,11 +104,11 @@ serve(async (req) => {
       console.error("Error sending push notifications:", pushError);
     }
 
-    // Send emails via Brevo
+    // Send emails via Resend
     try {
-      const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+      const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
-      if (BREVO_API_KEY) {
+      if (RESEND_API_KEY) {
         let recipientList = [];
 
         if (user_id) {
@@ -180,13 +179,13 @@ serve(async (req) => {
         console.log(`Total recipient list built: ${recipientList.length} emails.`);
 
         if (recipientList.length > 0) {
-          const senderEmail = Deno.env.get("BREVO_SENDER_EMAIL") || "notifications@nexaesports.com";
-          const senderName = Deno.env.get("BREVO_SENDER_NAME") || "Nexa Esports Notifications";
+          const senderEmail = Deno.env.get("RESEND_SENDER_EMAIL") || "notifications@nexaesports.com";
+          const senderName = Deno.env.get("RESEND_SENDER_NAME") || "Nexa Esports Notifications";
           const eventLink = data?.eventId
             ? `https://nexaesports.com/events/${data.eventId}`
             : "https://nexaesports.com/scrims";
 
-          const serviceName = "Brevo";
+          const serviceName = "Resend";
           const CHUNK_SIZE = 95;
 
           const chunks = [];
@@ -198,12 +197,12 @@ serve(async (req) => {
 
           const emailResults = await Promise.all(chunks.map(async (chunk, index) => {
             const emailBody = {
-              sender: { name: senderName, email: senderEmail },
+              from: `${senderName} <${senderEmail}>`,
+              to: chunk.map(r => r.email),
               subject: title,
-              htmlContent: generateEmailHtml(title, message, data, eventLink),
-              messageVersions: chunk.map(r => ({ to: [{ email: r.email, name: r.name }] }))
+              html: generateEmailHtml(title, message, data, eventLink),
             };
-            const emailRes = await sendViaBrevo(BREVO_API_KEY, emailBody);
+            const emailRes = await sendViaResend(RESEND_API_KEY, emailBody);
 
             if (!emailRes.ok) {
               const errorText = await emailRes.text();
@@ -227,7 +226,7 @@ serve(async (req) => {
           console.warn("Email requested but recipient list is empty.");
         }
       } else {
-        console.warn("BREVO_API_KEY not found in environment secrets.");
+        console.warn("RESEND_API_KEY not found in environment secrets.");
       }
     } catch (emailError) {
       console.error("Critical error in email sending logic:", emailError);

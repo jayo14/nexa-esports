@@ -14,14 +14,13 @@ interface Payload {
   reason?: string;
 }
 
-// --- Helper: Send via Brevo ---
-async function sendViaBrevo(apiKey: string, body: any) {
-  return await fetch("https://api.brevo.com/v3/smtp/email", {
+// --- Helper: Send via Resend ---
+async function sendViaResend(apiKey: string, body: any) {
+  return await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      "Accept": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "api-key": apiKey,
     },
     body: JSON.stringify(body),
   });
@@ -89,19 +88,19 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
     let emailRes;
-    if (BREVO_API_KEY) {
-      console.log("Sending seller status email via Brevo...");
-      emailRes = await sendViaBrevo(BREVO_API_KEY, {
-        sender: { name: "NeXa Marketplace", email: clanEmail },
-        to: [{ email: recipientEmail }],
+    if (RESEND_API_KEY) {
+      console.log("Sending seller status email via Resend...");
+      emailRes = await sendViaResend(RESEND_API_KEY, {
+        from: `Nexa Marketplace <${clanEmail}>`,
+        to: [recipientEmail],
         subject,
-        htmlContent: htmlContent,
+        html: htmlContent,
       });
     } else {
-      throw new Error("No Brevo API key found in environment");
+      throw new Error("No Resend API key found in environment");
     }
 
     if (!emailRes.ok) {
