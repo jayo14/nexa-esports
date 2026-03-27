@@ -45,42 +45,51 @@ serve(async (req) => {
       );
     }
 
-    // Determine target users for notification
+    // Create notification record(s)
+    let insertData;
     let targetUsers = [];
+
     if (user_id) {
-      // Send to specific user
+      // Targeted notification
+      insertData = [{
+        type,
+        title,
+        message,
+        user_id,
+        data,
+        action_data,
+      }];
       targetUsers = [user_id];
     } else {
-      // Send to all users
-      const { data: profiles, error } = await supabaseAdmin
+      // Broadcast notification - insert ONLY ONE entry with user_id=null
+      // The frontend will treat null as a broadcast for all users
+      insertData = [{
+        type,
+        title,
+        message,
+        user_id: null,
+        data,
+        action_data,
+      }];
+
+      // We still need list of users for push/email
+      const { data: profiles, error: profileErr } = await supabaseAdmin
         .from('profiles')
         .select('id');
-
-      if (error) {
-        console.error("Error fetching profiles:", error);
-      } else if (profiles) {
+      
+      if (!profileErr && profiles) {
         targetUsers = profiles.map(p => p.id);
       }
     }
 
-    // Insert notifications for all target users
-    const notifications = targetUsers.map(userId => ({
-      type,
-      title,
-      message,
-      user_id: userId,
-      data,
-      action_data,
-    }));
-
     const { error: insertError } = await supabaseAdmin
       .from('notifications')
-      .insert(notifications);
+      .insert(insertData);
 
     if (insertError) {
       console.error("Error inserting notifications:", insertError);
       return new Response(
-        JSON.stringify({ error: "Failed to create notifications" }),
+        JSON.stringify({ error: "Failed to create notification(s)" }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 500,

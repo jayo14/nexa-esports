@@ -31,6 +31,7 @@ interface UserProfile {
   is_banned?: boolean;
   ban_reason?: string;
   ban_expires_at?: string;
+  wallet_balance?: number;
 }
 
 interface AuthContextType {
@@ -44,6 +45,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
+  refreshProfile: () => Promise<void>;
   displayRole: string;
 }
 
@@ -101,7 +103,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userIdOverride?: string) => {
+    const userId = userIdOverride || user?.id;
+    if (!userId) return;
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -109,14 +113,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         .eq("id", userId)
         .single();
 
+      const profileData = data as any;
+
       if (error) {
         console.error("Profile fetch error:", error);
         return;
       }
 
       // Check for ban
-      if (data.is_banned) {
-        const banExpiresAt = data.ban_expires_at ? new Date(data.ban_expires_at) : null;
+      if (profileData.is_banned) {
+        const banExpiresAt = profileData.ban_expires_at ? new Date(profileData.ban_expires_at) : null;
         const now = new Date();
 
         if (banExpiresAt && now > banExpiresAt) {
@@ -132,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             } as any)
             .eq("id", userId);
 
-          data.is_banned = false;
+          profileData.is_banned = false;
         } else {
           // Active ban
           console.log("User is banned");
@@ -141,7 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setSession(null);
           setProfile(null);
 
-          let description = `Reason: ${data.ban_reason || 'Violation of rules'}.`;
+          let description = `Reason: ${profileData.ban_reason || 'Violation of rules'}.`;
           if (banExpiresAt) {
             const diffTime = Math.abs(banExpiresAt.getTime() - now.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -155,16 +161,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             description: description,
             variant: "destructive",
             duration: 10000,
-          });
+          } as any);
           return;
         }
       }
 
+      // Fetch wallet balance
+      const { data: walletData } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', userId)
+        .maybeSingle();
+
       setProfile({
-        ...data,
-        player_uid: (data as any).player_uid || "",
-        social_links: data.social_links as Record<string, string> | null,
-        banking_info: data.banking_info as Record<string, string> | null,
+        ...profileData,
+        player_uid: profileData.player_uid || "",
+        social_links: profileData.social_links as Record<string, string> | null,
+        banking_info: profileData.banking_info as Record<string, string> | null,
+        wallet_balance: walletData?.balance || 0,
       });
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -298,7 +312,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           icon: "/nexa-logo-ramadan.jpg",
           badge: "/pwa-192x192.png",
           tag: "login-greeting",
-          vibrate: [100, 50, 100],
+          vibrate: [100, 50, 100] as any,
           requireInteraction: false,
           data: {
             url: "/dashboard",
@@ -324,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             try {
               subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(vapidKey)
+                applicationServerKey: urlBase64ToUint8Array(vapidKey) as any
               });
               console.log("[Push] New subscription created successfully");
             } catch (subscribeError) {
@@ -565,6 +579,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     logout,
     resetPassword,
     updateProfile,
+    refreshProfile: fetchProfile,
     displayRole,
   };
 

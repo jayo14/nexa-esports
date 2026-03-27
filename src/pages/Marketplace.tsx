@@ -69,18 +69,28 @@ const ListingCardStyled: React.FC<{
       {/* Media area */}
       <div className="relative aspect-video bg-slate-900 overflow-hidden group">
         {listing.video_url ? (
-          <>
-            <div className="w-full h-full">
-              <video
-                src={listing.video_url}
-                className="w-full h-full object-cover"
-                muted
-                preload="metadata"
-                playsInline
-                poster={listing.images?.[0]}
-              />
-              <div className="absolute inset-0 bg-black/35" />
-            </div>
+          <div className="w-full h-full relative group">
+            <video
+              src={listing.video_url}
+              className="w-full h-full object-cover"
+              muted
+              loop
+              preload="none"
+              playsInline
+              poster={listing.images?.[0]}
+              onMouseEnter={(e) => {
+                const video = e.currentTarget;
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch(() => {});
+                }
+              }}
+              onMouseLeave={(e) => {
+                const video = e.currentTarget;
+                video.pause();
+              }}
+            />
+            <div className="absolute inset-0 bg-black/35" />
             <div className="absolute inset-0 flex items-center justify-center">
               <button
                 onClick={(e) => { e.stopPropagation(); onPreview(listing.video_url); }}
@@ -93,7 +103,7 @@ const ListingCardStyled: React.FC<{
                 </svg>
               </button>
             </div>
-          </>
+          </div>
         ) : listing.images && listing.images.length > 0 ? (
           <img 
             src={listing.images[0]} 

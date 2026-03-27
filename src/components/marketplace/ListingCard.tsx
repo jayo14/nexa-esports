@@ -115,8 +115,22 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onPreview }) 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
             muted 
             loop
-            onMouseOver={(e) => e.currentTarget.play()}
-            onMouseOut={(e) => e.currentTarget.pause()}
+            preload="none"
+            playsInline
+            poster={listing.images && listing.images.length > 0 ? listing.images[0] : undefined}
+            onMouseEnter={(e) => {
+              const video = e.currentTarget;
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                  console.warn("Video play interrupted or failed:", error);
+                });
+              }
+            }}
+            onMouseLeave={(e) => {
+              const video = e.currentTarget;
+              video.pause();
+            }}
           />
         ) : listing.images && listing.images.length > 0 ? (
           <img 

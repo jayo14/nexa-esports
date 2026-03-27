@@ -5,16 +5,23 @@ type ToastInput = {
   title?: React.ReactNode
   description?: React.ReactNode
   variant?: "default" | "destructive"
+  duration?: number
 }
 
-function toast({ title, description, variant }: ToastInput) {
+function toast({ title, description, variant, duration }: ToastInput) {
+  // Ensure title is a renderable string/node to prevent Error #31
+  const sanitizedTitle = typeof title === 'object' && title !== null && !React.isValidElement(title)
+    ? (title as any).title ?? JSON.stringify(title)
+    : title;
+
+  const options = {
+    description: description ? String(description) : undefined,
+    duration: duration,
+  };
+
   const id = variant === "destructive"
-    ? sonnerToast.error(title ?? "Error", {
-        description: description ? String(description) : undefined,
-      })
-    : sonnerToast(title ?? "Notification", {
-        description: description ? String(description) : undefined,
-      })
+    ? sonnerToast.error(sanitizedTitle ?? "Error", options)
+    : sonnerToast(sanitizedTitle ?? "Notification", options)
 
   return {
     id: String(id),

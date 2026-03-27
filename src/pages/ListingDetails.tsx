@@ -222,12 +222,24 @@ export const ListingDetails: React.FC = () => {
               {listing.video_url ? (
                 <>
                   <video
+                    key={listing.video_url}
                     src={listing.video_url}
                     className="absolute inset-0 w-full h-full object-cover"
                     muted
-                    preload="metadata"
+                    loop
+                    autoPlay
+                    preload="auto"
                     playsInline
                     poster={listing.images?.[0]}
+                    onLoadedData={(e) => {
+                      const video = e.currentTarget;
+                      const playPromise = video.play();
+                      if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                           // Autoplay might be blocked or interrupted, we gracefully ignore
+                        });
+                      }
+                    }}
                   />
                   <div className="absolute inset-0 bg-black/35" />
                 </>

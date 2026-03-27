@@ -159,7 +159,11 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
               The app hit an unexpected error and recovered into safe mode.
             </p>
             {this.state.errorMessage && (
-              <p className="text-xs text-destructive break-words">{this.state.errorMessage}</p>
+              <p className="text-xs text-destructive break-words">
+                {typeof this.state.errorMessage === 'string'
+                  ? this.state.errorMessage
+                  : JSON.stringify(this.state.errorMessage)}
+              </p>
             )}
             <button
               onClick={this.handleReload}

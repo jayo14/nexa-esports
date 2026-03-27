@@ -34,6 +34,13 @@ export interface AccountListing {
   sold_at?: string;
   account_credentials?: string;
   security_notes?: string;
+  seller?: {
+    id: string;
+    ign?: string;
+    username?: string;
+    avatar_url?: string;
+    display_name?: string;
+  };
 }
 
 interface CachedPayload<T> {
@@ -74,7 +81,7 @@ function writeCache<T>(key: string, data: T) {
 export const useMarketplace = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const listingsCache = readCache<any[]>(MARKETPLACE_LISTINGS_CACHE_KEY);
   const myListingsCacheKey = `${MARKETPLACE_MY_LISTINGS_CACHE_PREFIX}${user?.id ?? 'anon'}_v1`;
   const myListingsCache = user?.id ? readCache<AccountListing[]>(myListingsCacheKey) : null;
@@ -274,6 +281,9 @@ export const useMarketplace = () => {
       queryClient.invalidateQueries({ queryKey: ['wallet'] }); 
       queryClient.invalidateQueries({ queryKey: ['buyerPurchases'] });
       
+      // Refresh global profile state (including wallet balance)
+      await refreshProfile();
+
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
