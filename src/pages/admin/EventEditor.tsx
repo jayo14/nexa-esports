@@ -338,6 +338,9 @@ export const EventEditor: React.FC = () => {
             eventName: variables.name,
             eventDate: variables.date,
             eventTime: variables.time,
+            description: variables.description || notificationMessage,
+            thumbnailUrl: variables.thumbnail_url || null,
+            hostName: hosts.find(h => h.id === variables.host_id)?.ign || 'NeXa Command',
             type: notificationType
           }
         }

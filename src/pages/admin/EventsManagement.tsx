@@ -201,15 +201,21 @@ export const AdminEventsManagement: React.FC = () => {
       // Notify all players about status change
       supabase.functions.invoke('send-notification', {
         body: {
-          type: 'event_status_changed',
-          title: `Status Update: ${variables.eventName}`,
-          message: `Operational status has changed from ${variables.oldStatus.toUpperCase()} to ${variables.newStatus.toUpperCase()}.`,
+          type: variables.newStatus === 'cancelled' ? 'event_cancelled' : 'event_status_changed',
+          title: variables.newStatus === 'cancelled'
+            ? `Event Cancelled: ${variables.eventName}`
+            : `Status Update: ${variables.eventName}`,
+          message: variables.newStatus === 'cancelled'
+            ? `${variables.eventName} has been cancelled. We apologize for any inconvenience.`
+            : `Operational status has changed from ${variables.oldStatus.toUpperCase()} to ${variables.newStatus.toUpperCase()}.`,
           data: {
             eventId: variables.eventId,
             eventName: variables.eventName,
+            eventDate: events.find(e => e.id === variables.eventId)?.date,
+            eventTime: events.find(e => e.id === variables.eventId)?.time,
             oldStatus: variables.oldStatus,
             newStatus: variables.newStatus,
-            type: 'event_status_changed'
+            type: variables.newStatus === 'cancelled' ? 'event_cancelled' : 'event_status_changed'
           }
         }
       });
@@ -230,7 +236,7 @@ export const AdminEventsManagement: React.FC = () => {
 
   // Delete event mutation
   const deleteEventMutation = useMutation({
-    mutationFn: async ({ eventId, eventName }: { eventId: string; eventName: string }) => {
+    mutationFn: async ({ eventId, eventName, eventDate, eventTime }: { eventId: string; eventName: string; eventDate?: string; eventTime?: string }) => {
       const { error } = await supabase
         .from("events")
         .delete()
@@ -248,10 +254,12 @@ export const AdminEventsManagement: React.FC = () => {
       supabase.functions.invoke('send-notification', {
         body: {
           type: 'event_deleted',
-          title: `Mission Aborted: ${variables.eventName}`,
-          message: `Intel suggests that ${variables.eventName} has been cancelled or removed from the operative schedule.`,
+          title: `Event Cancelled: ${variables.eventName}`,
+          message: `${variables.eventName} has been cancelled or removed from the operative schedule. We apologize for any inconvenience.`,
           data: {
             eventName: variables.eventName,
+            eventDate: variables.eventDate,
+            eventTime: variables.eventTime,
             type: 'event_deleted'
           }
         }
@@ -274,7 +282,7 @@ export const AdminEventsManagement: React.FC = () => {
 
   const handleDelete = (event: Event) => {
     if (confirm("Are you sure you want to delete this event?")) {
-      deleteEventMutation.mutate({ eventId: event.id, eventName: event.name });
+      deleteEventMutation.mutate({ eventId: event.id, eventName: event.name, eventDate: event.date, eventTime: event.time });
     }
   };
 
