@@ -6,6 +6,10 @@ import App from './App.tsx'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import './index.css';
 import './App.css';
+import { initializeFirebase } from '@/lib/firebase';
+
+// Initialize Firebase
+initializeFirebase();
 
 // Create a client
 const queryClient = new QueryClient({

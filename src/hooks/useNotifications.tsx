@@ -59,19 +59,20 @@ export const useNotifications = () => {
 
   // Fetch event notifications for all users (everyone gets event notifications)
   const { data: eventNotifications = [] } = useQuery({
-    queryKey: ["event-notifications"],
+    queryKey: ["event-notifications", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("notifications")
-        .select("*")
+        .select("*, read_receipts:notification_read_broadcasts(id)")
         .in("type", [
           "event_created",
           "event_updated",
           "event_reminder",
           "scrim_scheduled",
         ])
+        .or(`user_id.eq.${user.id},user_id.is.null`)
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -80,31 +81,39 @@ export const useNotifications = () => {
         return [];
       }
 
-      return data.map((notification) => ({
-        id: notification.id,
-        type: notification.type,
-        message: notification.message,
-        title: notification.title,
-        playerName: (notification.data as any)?.playerName || "Unknown",
-        accessCode: (notification.data as any)?.accessCode || "",
-        timestamp: notification.created_at,
-        status: notification.read ? ("read" as const) : ("unread" as const),
-        action: (notification.action_data as any)?.action || notification.type,
-        data: notification.data,
-      }));
+      return data.map((notification: any) => {
+        const isBroadcast = !notification.user_id;
+        const isRead = isBroadcast 
+          ? (notification.read_receipts && (notification.read_receipts as any[]).some(r => r.id))
+          : notification.read;
+
+        return {
+          id: notification.id,
+          type: notification.type,
+          message: notification.message,
+          title: notification.title,
+          playerName: (notification.data as any)?.playerName || "Unknown",
+          accessCode: (notification.data as any)?.accessCode || "",
+          timestamp: notification.created_at,
+          status: isRead ? ("read" as const) : ("unread" as const),
+          action: (notification.action_data as any)?.action || notification.type,
+          data: notification.data,
+          isBroadcast,
+        };
+      });
     },
     enabled: !!user?.id,
   });
 
   // Fetch admin-only notifications (only admins get these)
   const { data: adminNotifications = [] } = useQuery({
-    queryKey: ["admin-notifications"],
+    queryKey: ["admin-notifications", user?.id],
     queryFn: async () => {
       if (!user?.id || profile?.role !== "admin") return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("notifications")
-        .select("*")
+        .select("*, read_receipts:notification_read_broadcasts(id)")
         .in("type", [
           "access_code_request",
           "new_player_joined",
@@ -112,6 +121,7 @@ export const useNotifications = () => {
           "admin_alert",
           "assignment_request",
         ])
+        .or(`user_id.eq.${user.id},user_id.is.null`)
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -120,18 +130,26 @@ export const useNotifications = () => {
         return [];
       }
 
-      return data.map((notification) => ({
-        id: notification.id,
-        type: notification.type,
-        message: notification.message,
-        title: notification.title,
-        playerName: (notification.data as any)?.playerName || "Unknown",
-        accessCode: (notification.data as any)?.accessCode || "",
-        timestamp: notification.created_at,
-        status: notification.read ? ("read" as const) : ("unread" as const),
-        action: (notification.action_data as any)?.action || notification.type,
-        data: notification.data,
-      }));
+      return data.map((notification: any) => {
+        const isBroadcast = !notification.user_id;
+        const isRead = isBroadcast 
+          ? (notification.read_receipts && (notification.read_receipts as any[]).some(r => r.id))
+          : notification.read;
+
+        return {
+          id: notification.id,
+          type: notification.type,
+          message: notification.message,
+          title: notification.title,
+          playerName: (notification.data as any)?.playerName || "Unknown",
+          accessCode: (notification.data as any)?.accessCode || "",
+          timestamp: notification.created_at,
+          status: isRead ? ("read" as const) : ("unread" as const),
+          action: (notification.action_data as any)?.action || notification.type,
+          data: notification.data,
+          isBroadcast,
+        };
+      });
     },
     enabled: !!user?.id && profile?.role === "admin",
   });
@@ -213,14 +231,31 @@ export const useNotifications = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read: true })
-        .eq("id", notificationId);
+      const notification = notifications.find(n => n.id === notificationId);
+      if (!notification) return;
 
-      if (error) {
-        console.error("Error marking notification as read:", error);
-        throw error;
+      if ((notification as any).isBroadcast) {
+        const { error } = await (supabase as any)
+          .from("notification_read_broadcasts")
+          .upsert({ 
+            notification_id: notificationId,
+            user_id: user?.id
+          });
+
+        if (error) {
+          console.error("Error marking broadcast as read:", error);
+          throw error;
+        }
+      } else {
+        const { error } = await supabase
+          .from("notifications")
+          .update({ read: true })
+          .eq("id", notificationId);
+
+        if (error) {
+          console.error("Error marking notification as read:", error);
+          throw error;
+        }
       }
     },
     onSuccess: () => {
@@ -248,18 +283,36 @@ export const useNotifications = () => {
         localStorage.setItem("readAnnouncements", JSON.stringify(newReadAnnouncements));
       }
 
-      const notificationIds = notifications
-        .filter((n) => !n.id.startsWith("announcement-"))
-        .map((n) => n.id);
+      const unreadPersonal = notifications
+        .filter((n) => !n.id.startsWith("announcement-") && !(n as any).isBroadcast && n.status === "unread");
+      
+      const unreadBroadcasts = notifications
+        .filter((n) => !n.id.startsWith("announcement-") && (n as any).isBroadcast && n.status === "unread");
 
-      if (notificationIds.length > 0) {
+      if (unreadPersonal.length > 0) {
+        const personalIds = unreadPersonal.map(n => n.id);
         const { error } = await supabase
           .from("notifications")
           .update({ read: true })
-          .in("id", notificationIds);
+          .in("id", personalIds);
 
         if (error) {
-          console.error("Error marking all notifications as read:", error);
+          console.error("Error marking all personal notifications as read:", error);
+          throw error;
+        }
+      }
+
+      if (unreadBroadcasts.length > 0 && user?.id) {
+        const broadcastInserts = unreadBroadcasts.map(n => ({
+          notification_id: n.id,
+          user_id: user.id
+        }));
+        const { error } = await (supabase as any)
+          .from("notification_read_broadcasts")
+          .upsert(broadcastInserts);
+
+        if (error) {
+          console.error("Error marking all broadcasts as read:", error);
           throw error;
         }
       }
