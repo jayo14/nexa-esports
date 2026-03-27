@@ -4,7 +4,7 @@ import {
   Gift, Trophy, Mail, MessageCircle, ArrowRight,
   Globe, AtSign, Video, CheckCircle, Swords,
   ChevronDown, ChevronLeft, ChevronRight, Menu, X, Pause, Play, Loader2,
-  Copy, Check, ShoppingBag,
+  Copy, Check, ShoppingBag, Shield
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -633,31 +633,78 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* ══════════ STATS ══════════ */}
-        <section id="warriors" className="px-6 py-12">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-            <StatCard
-              label="Active Roster"
-              value="70+"
-              sub="Elite Warriors"
-              icon={<Users className="w-6 h-6" />}
-              glowColor={C.primary}
-            />
-            <StatCard
-              label="Combat Success"
-              value="95%"
-              sub="Global Win Rate"
-              icon={<TrendingUp className="w-6 h-6" />}
-              glowColor="#0bda92"
-              valueColor="#0bda92"
-            />
-            <StatCard
-              label="Competitive Standing"
-              value="#1"
-              sub="Regional Ranking"
-              icon={<Award className="w-6 h-6" />}
-              glowColor={C.primary}
-            />
+        {/* ══════════ MISSION BRIEFING ══════════ */}
+        <section className="px-6 py-24 relative overflow-hidden">
+          {/* Subtle tactical grid background */}
+          <div 
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ 
+              backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+              backgroundSize: '40px 40px'
+            }}
+          />
+          
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-rose-500/10 border border-rose-500/20 text-rose-500 mb-8">
+                  <Shield className="w-3 h-3" /> Operational Briefing
+                </div>
+                <h2 className="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter leading-[0.9] mb-8">
+                  The Nexa <span className="text-rose-500">Mission</span>
+                </h2>
+                <div className="space-y-6 text-slate-400 text-lg leading-relaxed">
+                  <p>
+                    Nexa Esports isn't just a platform; it's a <span className="text-white font-bold">digital command center</span> for the modern warrior. We founded Nexa with a singular tactical objective: to bridge the gap between casual mobile gaming and professional-grade competitive excellence.
+                  </p>
+                  <p>
+                    Our ecosystem empowers clans to move beyond simple matchmaking. We provide the tools for <span className="text-white font-bold">squad management</span>, precision <span className="text-white font-bold">loadout optimization</span>, and real-time <span className="text-white font-bold">combat analytics</span>.
+                  </p>
+                  <p>
+                    Whether you're an independent operative looking to join an elite unit or a clan master aiming for global domination, Nexa provides the infrastructure to track your rise through the ranks and claim your place in the championship history.
+                  </p>
+                </div>
+                
+                <div className="flex flex-wrap gap-8 mt-12 pt-8 border-t border-white/5">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-white font-black text-2xl tracking-tight">ELEVATE</span>
+                    <span className="text-[10px] uppercase tracking-widest text-slate-500">Your Combat Skillset</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-white font-black text-2xl tracking-tight">MANAGE</span>
+                    <span className="text-[10px] uppercase tracking-widest text-slate-500">Elite Squad Units</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-white font-black text-2xl tracking-tight">DOMINATE</span>
+                    <span className="text-[10px] uppercase tracking-widest text-slate-500">Tournament Tiers</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative">
+                {/* Visual representation of the 'Purpose' */}
+                <div className="aspect-square rounded-[40px] overflow-hidden border border-white/10 group">
+                  <img 
+                    src="https://images.pexels.com/photos/7915357/pexels-photo-7915357.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                    alt="Tactical Headquarters" 
+                    className="w-full h-full object-cover grayscale opacity-60 group-hover:scale-105 group-hover:grayscale-0 transition-all duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#221011] via-transparent to-transparent" />
+                  
+                  {/* Floating floating indicators/badges */}
+                  <div className="absolute top-12 left-[-20px] p-6 rounded-2xl bg-[#221011]/80 backdrop-blur-xl border border-rose-500/30 animate-pulse transition-all">
+                    <Trophy className="w-8 h-8 text-rose-500" />
+                  </div>
+                  
+                  <div className="absolute bottom-12 right-[-20px] p-6 rounded-2xl bg-[#221011]/80 backdrop-blur-xl border border-green-500/30">
+                    <Users className="w-8 h-8 text-green-500" />
+                  </div>
+                </div>
+                
+                {/* Backdrop glow */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-rose-500/10 blur-[120px] -z-10" />
+              </div>
+            </div>
           </div>
         </section>
 
