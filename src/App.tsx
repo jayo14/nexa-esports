@@ -24,6 +24,7 @@ import { EmailConfirmation } from '@/pages/auth/EmailConfirmation';
 import { ForgotPassword } from '@/pages/auth/ForgotPassword';
 import { ResetPassword } from '@/pages/auth/ResetPassword';
 import { Onboarding } from '@/pages/auth/Onboarding';
+import { AuthCallback } from '@/pages/auth/AuthCallback';
 
 // Protected pages
 import { Dashboard } from '@/pages/Dashboard';
@@ -186,6 +187,7 @@ function AppRoutes() {
         <Route path="/auth/email-confirmation" element={<EmailConfirmation />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/onboarding" element={<Onboarding />} />
 
         {/* Protected routes */}
