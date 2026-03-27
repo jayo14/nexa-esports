@@ -135,17 +135,21 @@ function AppRoutes() {
     const queryType = queryParams.get('type');
     const hashType = hashParams.get('type');
 
+    // IMPORTANT: Only treat as recovery if `type=recovery` is explicitly set.
+    // Do NOT include `code` here — Google OAuth also uses a `code` param and
+    // it must NOT be treated as a password reset flow.
     const hasRecoveryToken =
       Boolean(queryParams.get('access_token')) ||
       Boolean(queryParams.get('refresh_token')) ||
-      Boolean(queryParams.get('code')) ||
       Boolean(hashParams.get('access_token')) ||
       Boolean(hashParams.get('refresh_token'));
 
     const isRecoveryFlow = queryType === 'recovery' || hashType === 'recovery' || hasRecoveryToken;
+    const isCallbackPage = location.pathname === '/auth/callback';
     const isResetPage = location.pathname === '/auth/reset-password';
 
-    if (isRecoveryFlow && !isResetPage) {
+    // Never hijack the OAuth callback page
+    if (isRecoveryFlow && !isResetPage && !isCallbackPage) {
       const searchParams = new URLSearchParams(location.search);
       searchParams.set('flow', 'recovery');
 
