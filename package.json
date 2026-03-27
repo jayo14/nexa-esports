@@ -115,7 +115,6 @@
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
     "lovable-tagger": "^1.1.7",
-    "pnpm": "^10.32.1",
     "postcss": "^8.4.47",
     "supabase": "^2.84.4",
     "tailwindcss": "^3.4.11",
@@ -125,5 +124,5 @@
     "vite-plugin-pwa": "^1.0.2",
     "workbox-window": "^7.3.0"
   },
-  "packageManager": "pnpm@10.17.1+sha512.17c560fca4867ae9473a3899ad84a88334914f379be46d455cbf92e5cf4b39d34985d452d2583baf19967fa76cb5c17bc9e245529d0b98745721aa7200ecaf7a"
+  "packageManager": "pnpm@9.15.4"
 }
