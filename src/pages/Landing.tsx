@@ -411,6 +411,15 @@ const LandingPage: React.FC = () => {
       className="relative min-h-screen w-full flex flex-col overflow-x-hidden"
       style={{ background: C.bgDark, color: '#f1f5f9' }}
     >
+      {/* ══════════ GLOBAL TACTICAL GRID OVERLAY ══════════ */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+          zIndex: 0,
+        }}
+      />
       {/* ══════════ NAVBAR ══════════ */}
       <header
         className="fixed top-0 w-full z-50 px-6 py-4 transition-all duration-300"
@@ -635,15 +644,6 @@ const LandingPage: React.FC = () => {
 
         {/* ══════════ MISSION BRIEFING ══════════ */}
         <section className="px-6 py-24 relative overflow-hidden">
-          {/* Subtle tactical grid background */}
-          <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{
-              backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-              backgroundSize: '40px 40px'
-            }}
-          />
-
           <div className="max-w-7xl mx-auto relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div>
