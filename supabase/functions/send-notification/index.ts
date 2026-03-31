@@ -195,7 +195,7 @@ serve(async (req) => {
             : "https://nexaesports.com/scrims";
 
           const serviceName = "Resend";
-          const CHUNK_SIZE = 95;
+          const CHUNK_SIZE = 50;
 
           const chunks = [];
           for (let i = 0; i < recipientList.length; i += CHUNK_SIZE) {
