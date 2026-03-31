@@ -188,7 +188,7 @@ serve(async (req) => {
         console.log(`Total recipient list built: ${recipientList.length} emails.`);
 
         if (recipientList.length > 0) {
-          const senderEmail = Deno.env.get("RESEND_SENDER_EMAIL") || "notifications@nexaesports.com";
+          const senderEmail = Deno.env.get("RESEND_SENDER_EMAIL") || "clanmaster@notification.nexaesports.com";
           const senderName = Deno.env.get("RESEND_SENDER_NAME") || "NeXa Esports Notifications";
           const eventLink = data?.eventId
             ? `https://nexaesports.com/events/${data.eventId}`
