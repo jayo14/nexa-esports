@@ -105,6 +105,18 @@ import { useCapacitor } from '@/hooks/useCapacitor';
 import { MarketplaceCartProvider } from '@/contexts/MarketplaceCartContext';
 import { MarketplaceCartSheet } from '@/components/marketplace/MarketplaceCartSheet';
 
+// Team pages
+import { Teams } from '@/pages/Teams';
+import { TeamPage } from '@/pages/TeamPage';
+import { CreateTeam } from '@/pages/CreateTeam';
+import { TeamChat } from '@/pages/TeamChat';
+// Admin competitive pages
+import { AdminMatchDays } from '@/pages/admin/MatchDays';
+import { AdminLobbyEntry } from '@/pages/admin/LobbyEntry';
+import { AdminSeasonalLeaderboard } from '@/pages/admin/SeasonalLeaderboard';
+// Player-facing competitive pages
+import { CompetitiveLeaderboard } from '@/pages/CompetitiveLeaderboard';
+
 function App() {
   return (
     <Router>
@@ -229,6 +241,13 @@ function AppRoutes() {
         <Route path="/buyer/dashboard" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />
         <Route path="/payment-success" element={<ProtectedRoute><Layout showSidebar><PaymentSuccess /></Layout></ProtectedRoute>} />
 
+        {/* Team routes */}
+        <Route path="/teams" element={<ProtectedRoute><Layout showSidebar><Teams /></Layout></ProtectedRoute>} />
+        <Route path="/teams/create" element={<ProtectedRoute><Layout showSidebar><CreateTeam /></Layout></ProtectedRoute>} />
+        <Route path="/teams/:teamId" element={<ProtectedRoute><Layout showSidebar><TeamPage /></Layout></ProtectedRoute>} />
+        <Route path="/teams/:teamId/chat" element={<ProtectedRoute><Layout showSidebar><TeamChat /></Layout></ProtectedRoute>} />
+        <Route path="/leaderboard/competitive" element={<ProtectedRoute><Layout showSidebar><CompetitiveLeaderboard /></Layout></ProtectedRoute>} />
+
         {/* Seller routes */}
         <Route path="/seller/request" element={<ProtectedRoute><Layout showSidebar><SellerRequest /></Layout></ProtectedRoute>} />
         <Route path="/seller/request/pending" element={<ProtectedRoute><Layout showSidebar><SellerRequestPending /></Layout></ProtectedRoute>} />
@@ -261,6 +280,9 @@ function AppRoutes() {
         <Route path="/admin/feedback" element={<ProtectedRoute><Layout showSidebar><Feedback /></Layout></ProtectedRoute>} />
         <Route path="/admin/earnings" element={<ProtectedRoute><Layout showSidebar><Earnings /></Layout></ProtectedRoute>} />
         <Route path="/admin/seasons" element={<ProtectedRoute><Layout showSidebar><AdminSeasons /></Layout></ProtectedRoute>} />
+        <Route path="/admin/match-days" element={<ProtectedRoute><Layout showSidebar><AdminMatchDays /></Layout></ProtectedRoute>} />
+        <Route path="/admin/match-days/:matchDayId/lobbies/:lobbyId/entry" element={<ProtectedRoute><Layout showSidebar><AdminLobbyEntry /></Layout></ProtectedRoute>} />
+        <Route path="/admin/seasonal-leaderboard" element={<ProtectedRoute><Layout showSidebar><AdminSeasonalLeaderboard /></Layout></ProtectedRoute>} />
         <Route path="/health" element={<ProtectedRoute allowedRoles={['clan_master']}><Layout showSidebar><Health /></Layout></ProtectedRoute>} />
 
         {/* 404 */}

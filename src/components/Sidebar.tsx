@@ -21,6 +21,8 @@ import {
   Crosshair,
   Activity,
   Users,
+  Swords,
+  Trophy,
 } from 'lucide-react';
 
 const C = {
@@ -98,9 +100,12 @@ export const Sidebar: React.FC<SidebarProps> = () => {
           <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/buyer/dashboard')} active={isActive('/buyer/dashboard')} />
           <SideNavIcon icon={<MessageSquare className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
           <SideNavIcon icon={<Users className="w-5 h-5" />} onClick={() => navigate('/players')} active={isActive('/players')} />
+          <SideNavIcon icon={<Swords className="w-5 h-5" />} onClick={() => navigate('/teams')} active={isActive('/teams')} />
+          <SideNavIcon icon={<Trophy className="w-5 h-5" />} onClick={() => navigate('/leaderboard/competitive')} active={isActive('/leaderboard/competitive')} />
           {isAdminOrClanMaster && (
             <>
               <SideNavIcon icon={<CalendarDays className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
+              <SideNavIcon icon={<Swords className="w-5 h-5" />} onClick={() => navigate('/admin/match-days')} active={isActive('/admin/match-days')} />
               <SideNavIcon icon={<Bell className="w-5 h-5" />} onClick={() => navigate('/notifications')} active={isActive('/notifications')} />
               <SideNavIcon icon={<HandCoins className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
               <SideNavIcon icon={<Settings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
