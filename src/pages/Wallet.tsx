@@ -14,7 +14,7 @@ import { useWalletSettings } from '@/hooks/useWalletSettings';
 import { useTransactionPin } from '@/hooks/useTransactionPin';
 import { SetupPinDialog } from '@/components/SetupPinDialog';
 import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
-import { FlutterwaveHistory } from '@/components/wallet/FlutterwaveHistory';
+import { PagaPaymentHistory } from '@/components/wallet/PagaPaymentHistory';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { useCountUp } from '@/hooks/useCountUp';

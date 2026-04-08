@@ -16,16 +16,16 @@ const PaymentSuccess: React.FC = () => {
 
     useEffect(() => {
         const query = new URLSearchParams(location.search);
-        const reference = query.get('reference');
-        const transaction_id = query.get('transaction_id');
-        
-        console.log('Payment success page loaded with:', { reference, transaction_id });
+        // Paga returns referenceNumber, but also support legacy 'reference' and 'transaction_id'
+        const referenceNumber =
+            query.get('referenceNumber') ||
+            query.get('reference') ||
+            query.get('transaction_id');
 
-        if (transaction_id && transaction_id !== 'null' && transaction_id !== 'undefined') {
-            verifyPayment(transaction_id, reference || undefined);
-        } else if (reference) {
-            // If we only have reference, try with that
-            verifyPayment('', reference);
+        console.log('Payment success page loaded with:', { referenceNumber });
+
+        if (referenceNumber && referenceNumber !== 'null' && referenceNumber !== 'undefined') {
+            verifyPayment(referenceNumber);
         } else {
             setStatus('error');
             setMessage('No payment reference found.');
@@ -35,7 +35,10 @@ const PaymentSuccess: React.FC = () => {
     useEffect(() => {
         if (status === 'success') {
             const query = new URLSearchParams(location.search);
-            const reference = query.get('reference');
+            const reference =
+                query.get('referenceNumber') ||
+                query.get('reference') ||
+                query.get('transaction_id');
             const timer = setTimeout(() => {
                 if (reference) {
                     navigate(`/wallet?showReceipt=${reference}`);
@@ -47,11 +50,11 @@ const PaymentSuccess: React.FC = () => {
         }
     }, [status, navigate, location.search]);
 
-      const verifyPayment = async (transaction_id: string, tx_ref?: string) => {
-        const { data, error } = await supabase.functions.invoke('flutterwave-verify-payment', {
+      const verifyPayment = async (referenceNumber: string) => {
+        const { data, error } = await supabase.functions.invoke('paga-verify-payment', {
           body: {
-            transaction_id,
-            tx_ref
+            referenceNumber,
+            tx_ref: referenceNumber,
           },
         });
         
@@ -75,7 +78,7 @@ const PaymentSuccess: React.FC = () => {
             await updateProfile({}); // Re-fetch profile
         } else {
             setStatus('error');
-            setMessage(`Payment failed: ${data.data?.status || 'Unknown error'}`);
+            setMessage(`Payment failed: ${data.error || 'Unknown error'}`);
         }
     };
 

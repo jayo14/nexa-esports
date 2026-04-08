@@ -106,7 +106,7 @@ const FundWallet = () => {
         }
 
         // Call the edge function to initiate payment
-        const { data, error } = await supabase.functions.invoke('flutterwave-initiate-payment', {
+        const { data, error } = await supabase.functions.invoke('paga-initiate-payment', {
             headers: {
                 'Authorization': `Bearer ${session.access_token}`,
             },
