@@ -169,7 +169,7 @@ const Withdraw = () => {
     };
     
     const { data: { session } } = await supabase.auth.getSession();
-    const { data: transferData, error: transferError } = await supabase.functions.invoke('flutterwave-transfer', {
+    const { data: transferData, error: transferError } = await supabase.functions.invoke('paga-transfer', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` },
         body: transferPayload,
     });

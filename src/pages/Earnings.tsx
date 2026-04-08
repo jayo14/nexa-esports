@@ -231,7 +231,7 @@ const Earnings = () => {
     setIsCashingOut(true);
     try {
       const bankingInfo = profile?.banking_info as any;
-      const { data, error } = await supabase.functions.invoke('flutterwave-transfer', {
+      const { data, error } = await supabase.functions.invoke('paga-transfer', {
         body: {
           endpoint: 'initiate-transfer', amount: cashOutAmount,
           account_bank: bankingInfo.bank_code, account_number: bankingInfo.account_number,
@@ -245,8 +245,8 @@ const Earnings = () => {
         const errorMessage = payload?.message || error?.message || 'Unexpected error';
         if (errorCode === 'withdrawals_disabled_today') {
           toast({ title: 'Withdrawals Not Available Today', description: 'Not allowed on Sundays. Try Monday.', variant: 'destructive' });
-        } else if (errorCode === 'insufficient_flutterwave_balance') {
-          toast({ title: 'Service Unavailable', description: 'Unable to process right now. Try later.', variant: 'destructive' });
+        } else if (errorCode === 'withdrawals_disabled') {
+          toast({ title: 'Service Unavailable', description: 'Withdrawals are currently disabled. Try later.', variant: 'destructive' });
         } else {
           toast({ title: 'Cash Out Failed', description: errorMessage, variant: 'destructive' });
         }
