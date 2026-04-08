@@ -161,7 +161,7 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
                 <Shield className="h-5 w-5 text-blue-500" />
                 <AlertTitle className="text-blue-500 font-semibold mb-1">Secure Payment</AlertTitle>
                 <AlertDescription className="text-sm text-blue-500/80">
-                  Your payment is processed securely via Flutterwave.
+                  Your payment is processed securely via Paga.
                 </AlertDescription>
               </Alert>
             </div>
