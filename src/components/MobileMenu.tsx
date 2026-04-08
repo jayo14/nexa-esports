@@ -28,6 +28,7 @@ import {
   Trophy,
   ShoppingBag,
   LogOut,
+  Swords,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -62,6 +63,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
     { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
     { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Swords, label: 'Teams', path: '/teams', primary: false },
+    { icon: Trophy, label: 'Competitive Leaderboard', path: '/leaderboard/competitive', primary: false },
     { icon: Megaphone, label: 'Announcements', path: '/announcements', primary: false },
     { icon: Settings, label: 'Settings', path: '/settings', primary: false },
   ];
@@ -75,6 +78,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
     { icon: Crosshair, label: 'Scrims', path: '/scrims', primary: false },
     { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Swords, label: 'Teams', path: '/teams', primary: false },
+    { icon: Trophy, label: 'Competitive Leaderboard', path: '/leaderboard/competitive', primary: false },
     { icon: Clock, label: 'Attendance', path: '/admin/attendance', primary: false },
     { icon: Megaphone, label: 'Announcements', path: '/announcements', primary: false },
     { icon: Settings, label: 'Settings', path: '/settings', primary: false },
@@ -89,6 +94,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
     { icon: Crosshair, label: 'Scrims', path: '/admin/scrims', primary: false },
     { icon: Package, label: 'Loadouts', path: '/loadouts', primary: false },
     { icon: Sword, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
+    { icon: Swords, label: 'Teams', path: '/teams', primary: false },
+    { icon: Trophy, label: 'Competitive Leaderboard', path: '/leaderboard/competitive', primary: false },
+    { icon: Swords, label: 'Match Days', path: '/admin/match-days', primary: false },
     { icon: Calendar, label: 'Events', path: '/admin/events', primary: false },
     { icon: Trophy, label: 'Seasons', path: '/admin/seasons', primary: false },
     { icon: Clock, label: 'Attendance', path: '/admin/attendance', primary: false },
