@@ -1003,7 +1003,7 @@ export const Settings: React.FC = () => {
                         className="w-full justify-between bg-background/50 border-border text-white hover:bg-background/60"
                       >
                         {formData.banking_info.bank_code
-                          ? banks.find((bank) => (bank.uuid || bank.code) === formData.banking_info.bank_code)?.name || "Select your bank"
+                          ? banks.find((bank) => (bank.uuid || bank.bankUUID || bank.bankUuid || bank.code) === formData.banking_info.bank_code)?.name || "Select your bank"
                           : "Select your bank"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -1014,7 +1014,7 @@ export const Settings: React.FC = () => {
                         <CommandEmpty>No bank found.</CommandEmpty>
                         <CommandGroup className="max-h-64 overflow-auto">
                           {banks.map((bank) => {
-                            const value = bank.uuid || bank.code;
+                            const value = bank.uuid || bank.bankUUID || bank.bankUuid || bank.code;
                             const isSelected = formData.banking_info.bank_code === value;
 
                             return (
