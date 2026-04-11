@@ -6,7 +6,7 @@
 
 export async function generatePagaHashAsync(fields: string[], hashKey: string): Promise<string> {
   // Append the hashKey to the concatenated fields, then SHA-512 the whole string
-  const hashInput = [...fields.filter((f) => f != null && f !== ''), hashKey].join('');
+  const hashInput = [...fields.filter(Boolean), hashKey].join('');
   const encoder = new TextEncoder();
   const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashInput));
   return Array.from(new Uint8Array(hashBuffer))
