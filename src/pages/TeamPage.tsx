@@ -25,7 +25,10 @@ export const TeamPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { myTeam, myMembership, leaveTeam, kickMember } = useTeams();
-  const { seasonLeaderboard, activeSeason } = useCompetitive();
+  const { seasonLeaderboard, activeSeason } = useCompetitive() as {
+    seasonLeaderboard?: Array<{ team_id: string; rank: number; season_points: number; season_kills: number }>;
+    activeSeason?: { name: string } | null;
+  };
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -54,7 +57,7 @@ export const TeamPage: React.FC = () => {
     fetch();
   }, [teamId]);
 
-  const seasonStats = seasonLeaderboard.find((s) => s.team_id === teamId);
+  const seasonStats = (seasonLeaderboard ?? []).find((s) => s.team_id === teamId);
 
   const handleLeave = async () => {
     setActionLoading(true);
