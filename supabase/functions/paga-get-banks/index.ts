@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { generatePagaBusinessHash, pagaHeaders } from "../_shared/pagaAuth.ts";
+import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim();
+  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
@@ -36,13 +36,14 @@ serve(async (req) => {
       );
     }
 
-    // Paga getBanks hash: typically just the salt if no parameters
-    const hash = await generatePagaBusinessHash([], PAGA_HASH_KEY);
+    // Paga getBanks hash: Typically referenceNumber + salt
+    const referenceNumber = generateReferenceNumber("GB");
+    const hash = await generatePagaBusinessHash([referenceNumber], PAGA_HASH_KEY);
 
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
       method: "POST",
       headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-      body: JSON.stringify({}),
+      body: JSON.stringify({ referenceNumber }),
     });
 
     const responseText = await pagaResponse.text();
@@ -57,8 +58,9 @@ serve(async (req) => {
     }
 
     if (!pagaResponse.ok || (pagaData.responseCode !== 0 && pagaData.responseCode !== "0")) {
+      console.error("Paga getBanks error:", JSON.stringify(pagaData));
       return new Response(
-        JSON.stringify({ error: "Failed to fetch banks", details: pagaData.responseMessage }),
+        JSON.stringify({ error: "Failed to fetch banks", details: pagaData.responseMessage, paga_response: pagaData }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
       );
     }

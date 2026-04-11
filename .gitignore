@@ -31,3 +31,6 @@ dev-dist/
 supabase/.temp/
 .vercel
 .env*.local
+
+.vercel
+.env*.local
