@@ -19,6 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useNativePush } from "@/hooks/useNativePush";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import {
   Settings as SettingsIcon,
   User,
@@ -44,6 +47,8 @@ import {
   BellRing,
   BellOff,
   Palette,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { ThemeSettingsPanel } from "@/components/ThemeSettingsPanel";
 import {
@@ -207,6 +212,7 @@ export const Settings: React.FC = () => {
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
   const [activeTab, setActiveTab] = useState("profile");
   const [banks, setBanks] = useState<any[]>([]);
+  const [bankComboboxOpen, setBankComboboxOpen] = useState(false);
 
   useEffect(() => {
     const fetchBanks = async () => {
@@ -988,31 +994,59 @@ export const Settings: React.FC = () => {
                     <BadgeDollarSign className="w-4 h-4 mr-2 text-lime-500" />
                     Bank Name
                   </Label>
-                  <Select
-                    value={formData.banking_info.bank_code || ""}
-                    onValueChange={(uuid) => {
-                      const selectedBank = banks.find(bank => (bank.uuid || bank.code) === uuid);
-                      setFormData((prev) => ({
-                        ...prev,
-                        banking_info: {
-                          ...prev.banking_info,
-                          bank_code: uuid,
-                          bank_name: selectedBank?.name || '',
-                        },
-                      }))
-                    }}
-                  >
-                    <SelectTrigger className="bg-background/50 border-border text-white">
-                      <SelectValue placeholder="Select your bank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {banks.map((bank) => (
-                        <SelectItem key={bank.uuid || bank.id} value={bank.uuid || bank.code}>
-                          {bank.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={bankComboboxOpen} onOpenChange={setBankComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={bankComboboxOpen}
+                        className="w-full justify-between bg-background/50 border-border text-white hover:bg-background/60"
+                      >
+                        {formData.banking_info.bank_code
+                          ? banks.find((bank) => (bank.uuid || bank.code) === formData.banking_info.bank_code)?.name || "Select your bank"
+                          : "Select your bank"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search bank..." />
+                        <CommandEmpty>No bank found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {banks.map((bank) => {
+                            const value = bank.uuid || bank.code;
+                            const isSelected = formData.banking_info.bank_code === value;
+
+                            return (
+                              <CommandItem
+                                key={value}
+                                value={`${bank.name} ${value}`}
+                                onSelect={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    banking_info: {
+                                      ...prev.banking_info,
+                                      bank_code: value,
+                                      bank_name: bank.name || "",
+                                    },
+                                  }));
+                                  setBankComboboxOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    isSelected ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {bank.name}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 

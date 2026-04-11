@@ -93,26 +93,25 @@ serve(async (req) => {
       );
     }
 
-    // Use Paga Checkout Link — no server-side hash or IP whitelisting required for collection
+    // Use Paga hosted checkout URL for wallet collection.
     const CHECKOUT_BASE = PAGA_IS_SANDBOX
-      ? "https://beta.mypaga.com/paga-webservices/m/collect"
-      : "https://www.mypaga.com/paga-webservices/m/collect";
+      ? "https://beta-checkout.paga.com"
+      : "https://checkout.paga.com";
 
     const nameParts = (customer.name || "Nexa User").split(" ");
     const params = new URLSearchParams({
-      merchantKey: PAGA_PUBLIC_KEY,
-      referenceNumber,
+      public_key: PAGA_PUBLIC_KEY,
+      payment_reference: referenceNumber,
       amount: String(amount),
       currency: "NGN",
-      callbackUrl,
-      customerEmail: customer.email,
-      customerFirstName: nameParts[0],
-      customerLastName: nameParts.slice(1).join(" ") || "User",
-      customerPhoneNumber: customer.phone || "",
-      paymentContextDescription: "Wallet Funding",
-      displayName: "NeXa Esports",
-      isMerchantPayment: "false",
+      callback_url: callbackUrl,
+      email: customer.email,
+      description: "Wallet Funding",
+      display_name: "NeXa Esports",
     });
+    if (nameParts[0]) params.set("first_name", nameParts[0]);
+    if (nameParts.slice(1).join(" ")) params.set("last_name", nameParts.slice(1).join(" "));
+    if (customer.phone) params.set("phoneNumber", customer.phone);
 
     const checkoutUrl = `${CHECKOUT_BASE}?${params.toString()}`;
 
