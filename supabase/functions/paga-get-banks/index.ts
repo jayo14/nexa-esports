@@ -65,7 +65,7 @@ serve(async (req) => {
       );
     }
 
-    const banks = pagaData.banks || pagaData.data || [];
+    const banks = pagaData.bank || pagaData.banks || pagaData.data || [];
 
     // Cache the result
     banksCache = { data: banks, fetchedAt: Date.now() };

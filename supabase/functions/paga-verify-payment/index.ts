@@ -54,7 +54,7 @@ serve(async (req) => {
     // Paga transaction status hash: referenceNumber + salt
     const hash = await generatePagaBusinessHash([reference], PAGA_HASH_KEY);
 
-    const pagaResponse = await fetch(`${PAGA_BASE_URL}/getMerchantTransactionDetails`, {
+    const pagaResponse = await fetch(`${PAGA_BASE_URL}/transactionStatus`, {
       method: "POST",
       headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
       body: JSON.stringify({ referenceNumber: reference }),
@@ -77,6 +77,8 @@ serve(async (req) => {
     const isSuccess =
       pagaData.responseCode === 0 ||
       pagaData.responseCode === "0" ||
+      pagaData.status === "SUCCESSFUL" ||
+      pagaData.transactionStatus === "SUCCESSFUL" ||
       pagaData.status === "SUCCESS" ||
       pagaData.transactionStatus === "SUCCESS";
 

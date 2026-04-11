@@ -240,6 +240,7 @@ serve(async (req) => {
       senderPrincipal: PAGA_PUBLIC_KEY,
       remarks: narration || "Wallet withdrawal",
       recipientPhoneNumber: "",
+      statusCallbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`,
     };
 
     console.log("Calling Paga depositToBank...");

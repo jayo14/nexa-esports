@@ -990,13 +990,13 @@ export const Settings: React.FC = () => {
                   </Label>
                   <Select
                     value={formData.banking_info.bank_code || ""}
-                    onValueChange={(code) => {
-                      const selectedBank = banks.find(bank => bank.code === code);
+                    onValueChange={(uuid) => {
+                      const selectedBank = banks.find(bank => (bank.uuid || bank.code) === uuid);
                       setFormData((prev) => ({
                         ...prev,
                         banking_info: {
                           ...prev.banking_info,
-                          bank_code: code,
+                          bank_code: uuid,
                           bank_name: selectedBank?.name || '',
                         },
                       }))
@@ -1007,7 +1007,7 @@ export const Settings: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {banks.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.code}>
+                        <SelectItem key={bank.uuid || bank.id} value={bank.uuid || bank.code}>
                           {bank.name}
                         </SelectItem>
                       ))}
