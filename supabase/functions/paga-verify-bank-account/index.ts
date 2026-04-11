@@ -15,18 +15,13 @@ serve(async (req) => {
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
   const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
+  const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
+  const FLW_SECRET_KEY = Deno.env.get("FLW_SECRET_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
   const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
-      return new Response(
-        JSON.stringify({ error: "Service not configured: Paga credentials missing" }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-
     const { account_number, bank_code } = await req.json();
 
     if (!account_number || !bank_code) {
@@ -118,11 +113,77 @@ serve(async (req) => {
       );
     }
 
-    const attempts: Array<{ endpoint: string; payload: Record<string, string>; hashFieldVariants: string[][] }> = [];
+    // Prefer Flutterwave for account-name verification to avoid Paga schema inconsistencies.
+    if (FLW_SECRET_KEY && bankDetails.name) {
+      const normalize = (value: string) =>
+        value
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "")
+          .replace(/microfinancebank|microfinance|mfb/g, "");
+
+      try {
+        const flwBanksResponse = await fetch("https://api.flutterwave.com/v3/banks/NG", {
+          headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` },
+        });
+        const flwBanksJson = await flwBanksResponse.json();
+        const flwBanks = (flwBanksJson?.data as Array<{ code: string; name: string }> | undefined) || [];
+        const target = normalize(bankDetails.name);
+        const matchedFlwBank =
+          flwBanks.find((bank) => normalize(bank.name) === target) ||
+          flwBanks.find((bank) => normalize(bank.name).includes(target) || target.includes(normalize(bank.name)));
+
+        if (matchedFlwBank?.code) {
+          const resolveResponse = await fetch("https://api.flutterwave.com/v3/accounts/resolve", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${FLW_SECRET_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              account_number,
+              account_bank: matchedFlwBank.code,
+            }),
+          });
+          const resolveJson = await resolveResponse.json();
+          if (resolveJson?.status === "success" && resolveJson?.data?.account_name) {
+            return new Response(
+              JSON.stringify({
+                status: "success",
+                account_name: resolveJson.data.account_name,
+                data: {
+                  provider: "flutterwave-fallback",
+                  bank_name: matchedFlwBank.name,
+                  bank_code: matchedFlwBank.code,
+                },
+              }),
+              { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
+            );
+          }
+        }
+      } catch (flwError) {
+        console.warn("Flutterwave fallback failed:", flwError);
+      }
+    }
+
+    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
+      return new Response(
+        JSON.stringify({ error: "Account verification unavailable: Paga and Flutterwave verification are not configured." }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+      );
+    }
+
+    const attempts: Array<{ endpoint: string; payloadVariants: Record<string, string>[]; hashFieldVariants: string[][] }> = [];
     if (bankDetails.uuid) {
       attempts.push({
         endpoint: "validateDepositToBank",
-        payload: { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
+        payloadVariants: [
+          { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
+          { destinationBankUuid: bankDetails.uuid, destinationBankAccountNumber: account_number },
+          { destinationBankUUID: bankDetails.uuid, destinationAccountNumber: account_number },
+          { destinationBankUuid: bankDetails.uuid, destinationAccountNumber: account_number },
+          { bankUUID: bankDetails.uuid, accountNumber: account_number },
+          { bankUuid: bankDetails.uuid, accountNumber: account_number },
+        ],
         hashFieldVariants: [
           [bankDetails.uuid, account_number],
           [account_number, bankDetails.uuid],
@@ -133,7 +194,14 @@ serve(async (req) => {
       });
       attempts.push({
         endpoint: "validateDepositToWallet",
-        payload: { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
+        payloadVariants: [
+          { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
+          { destinationBankUuid: bankDetails.uuid, destinationBankAccountNumber: account_number },
+          { destinationBankUUID: bankDetails.uuid, destinationAccountNumber: account_number },
+          { destinationBankUuid: bankDetails.uuid, destinationAccountNumber: account_number },
+          { bankUUID: bankDetails.uuid, accountNumber: account_number },
+          { bankUuid: bankDetails.uuid, accountNumber: account_number },
+        ],
         hashFieldVariants: [
           [bankDetails.uuid, account_number],
           [account_number, bankDetails.uuid],
@@ -146,7 +214,11 @@ serve(async (req) => {
     if (bankDetails.code) {
       attempts.push({
         endpoint: "validateDepositToWallet",
-        payload: { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
+        payloadVariants: [
+          { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
+          { destinationBankCode: bankDetails.code, destinationAccountNumber: account_number },
+          { bankCode: bankDetails.code, accountNumber: account_number },
+        ],
         hashFieldVariants: [
           [bankDetails.code, account_number],
           [account_number, bankDetails.code],
@@ -157,7 +229,11 @@ serve(async (req) => {
       });
       attempts.push({
         endpoint: "validateDepositToBank",
-        payload: { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
+        payloadVariants: [
+          { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
+          { destinationBankCode: bankDetails.code, destinationAccountNumber: account_number },
+          { bankCode: bankDetails.code, accountNumber: account_number },
+        ],
         hashFieldVariants: [
           [bankDetails.code, account_number],
           [account_number, bankDetails.code],
@@ -171,34 +247,37 @@ serve(async (req) => {
     let pagaData: any = null;
     let lastResponseStatus = 400;
     for (const attempt of attempts) {
-      for (const hashFields of attempt.hashFieldVariants) {
-        const referenceNumber = generateReferenceNumber("NX_VBA");
-        const hash = await generatePagaBusinessHash(
-          [referenceNumber, ...hashFields],
-          PAGA_HASH_KEY
-        );
+      for (const payload of attempt.payloadVariants) {
+        for (const hashFields of attempt.hashFieldVariants) {
+          const referenceNumber = generateReferenceNumber("NX_VBA");
+          const hash = await generatePagaBusinessHash(
+            [referenceNumber, ...hashFields],
+            PAGA_HASH_KEY
+          );
 
-        const pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
-          method: "POST",
-          headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-          body: JSON.stringify({
-            referenceNumber,
-            ...attempt.payload,
-          }),
-        });
+          const pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
+            method: "POST",
+            headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+            body: JSON.stringify({
+              referenceNumber,
+              ...payload,
+            }),
+          });
 
-        const responseText = await pagaResponse.text();
-        try {
-          pagaData = JSON.parse(responseText);
-        } catch {
-          pagaData = { responseCode: -1, responseMessage: "Invalid JSON response from Paga", raw: responseText };
+          const responseText = await pagaResponse.text();
+          try {
+            pagaData = JSON.parse(responseText);
+          } catch {
+            pagaData = { responseCode: -1, responseMessage: "Invalid JSON response from Paga", raw: responseText };
+          }
+
+          console.log(`Paga ${attempt.endpoint} response:`, JSON.stringify(pagaData));
+          lastResponseStatus = pagaResponse.status;
+          if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") {
+            break;
+          }
         }
-
-        console.log(`Paga ${attempt.endpoint} response:`, JSON.stringify(pagaData));
-        lastResponseStatus = pagaResponse.status;
-        if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") {
-          break;
-        }
+        if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") break;
       }
       if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") break;
     }
@@ -206,6 +285,50 @@ serve(async (req) => {
     const isSuccess = pagaData?.responseCode === 0 || pagaData?.responseCode === "0";
 
     if (!isSuccess) {
+      const isParameterSchemaError =
+        pagaData?.responseCode === 400 &&
+        String(pagaData?.errorMessage || "").toLowerCase().includes("parameter names could not be found");
+
+      if (isParameterSchemaError && PAYSTACK_SECRET_KEY && bankDetails.name) {
+        const normalize = (value: string) =>
+          value
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "")
+            .replace(/microfinancebank|microfinance|mfb/g, "");
+
+        const { data: paystackBanksData } = await fetch("https://api.paystack.co/bank", {
+          headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+        }).then((r) => r.json());
+
+        const paystackBanks = (paystackBanksData as Array<{ name: string; code: string }> | undefined) || [];
+        const target = normalize(bankDetails.name);
+        const matchedPaystackBank =
+          paystackBanks.find((bank) => normalize(bank.name) === target) ||
+          paystackBanks.find((bank) => normalize(bank.name).includes(target) || target.includes(normalize(bank.name)));
+
+        if (matchedPaystackBank?.code) {
+          const paystackResolve = await fetch(
+            `https://api.paystack.co/bank/resolve?account_number=${encodeURIComponent(account_number)}&bank_code=${encodeURIComponent(matchedPaystackBank.code)}`,
+            { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } }
+          ).then((r) => r.json());
+
+          if (paystackResolve?.status && paystackResolve?.data?.account_name) {
+            return new Response(
+              JSON.stringify({
+                status: "success",
+                account_name: paystackResolve.data.account_name,
+                data: {
+                  provider: "paystack-fallback",
+                  bank_name: matchedPaystackBank.name,
+                  bank_code: matchedPaystackBank.code,
+                },
+              }),
+              { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
+            );
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({
           error: pagaData?.responseMessage || "Account verification failed",
