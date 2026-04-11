@@ -81,9 +81,10 @@ serve(async (req) => {
     const callbackUrl = redirect_url || `${origin}/payment-success`;
 
     // Paga Collect API hash: referenceNumber + amount + currency + customerPhoneNumber + customerEmail + salt
-    // Note: Use exact parameter order as per Paga docs
+    // Note: Amount should be formatted to 2 decimal places in the hash
+    const formattedAmount = Number(amount).toFixed(2);
     const hash = await generatePagaBusinessHash(
-      [referenceNumber, String(amount), "NGN", customer.phone || "", customer.email],
+      [referenceNumber, formattedAmount, "NGN", customer.phone || "", customer.email],
       PAGA_HASH_KEY
     );
 

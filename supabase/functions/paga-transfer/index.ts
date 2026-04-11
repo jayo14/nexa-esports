@@ -223,10 +223,10 @@ serve(async (req) => {
       metadata: { fee, netAmount, account_number, account_bank, beneficiary_name },
     });
 
-    // Call Paga deposit to bank API
     // Hash: referenceNumber + amount + destinationBankUUID + destinationBankAccountNumber + salt
+    const formattedAmount = Number(amount).toFixed(2);
     const hash = await generatePagaBusinessHash(
-      [referenceNumber, String(amount), account_bank || "", account_number || ""],
+      [referenceNumber, formattedAmount, account_bank || "", account_number || ""],
       PAGA_HASH_KEY
     );
 
