@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { generatePagaHashAsync } from "../_shared/pagaAuth.ts";
+import { generatePagaBusinessHash } from "../_shared/pagaAuth.ts";
 
 serve(async (req) => {
   // Paga webhooks are POST requests with JSON body
@@ -32,8 +32,8 @@ serve(async (req) => {
   const amount = String(event.amount || "");
   const statusCode = String(event.statusCode || event.responseCode || "");
 
-  const expectedHash = await generatePagaHashAsync(
-    [referenceNumber, amount, statusCode, PAGA_PUBLIC_KEY],
+  const expectedHash = await generatePagaBusinessHash(
+    [referenceNumber, amount, statusCode],
     PAGA_HASH_KEY
   );
 

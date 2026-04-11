@@ -51,18 +51,12 @@ serve(async (req) => {
       );
     }
 
-    // Paga transaction status hash: referenceNumber + apiKey (hashKey)
-    const hash = await generatePagaHashAsync([reference, PAGA_PUBLIC_KEY], PAGA_HASH_KEY);
+    // Paga transaction status hash: referenceNumber + salt
+    const hash = await generatePagaBusinessHash([reference], PAGA_HASH_KEY);
 
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/getMerchantTransactionDetails`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "principal": PAGA_PUBLIC_KEY,
-        "credentials": hash,
-        "hash": hash,
-      },
+      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
       body: JSON.stringify({ referenceNumber: reference }),
     });
 

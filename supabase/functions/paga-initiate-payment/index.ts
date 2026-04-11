@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { generatePagaHashAsync, generateReferenceNumber } from "../_shared/pagaAuth.ts";
+import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
@@ -14,13 +14,14 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
+  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
   
   const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY) {
+    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
       return new Response(
         JSON.stringify({ error: "Payment service not configured: Paga credentials missing" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
@@ -79,9 +80,10 @@ serve(async (req) => {
     const referenceNumber = generateReferenceNumber("NX");
     const callbackUrl = redirect_url || `${origin}/payment-success`;
 
-    // Paga Collect API hash: referenceNumber + amount + callbackUrl + apiKey (hashKey)
-    const hash = await generatePagaHashAsync(
-      [referenceNumber, String(amount), callbackUrl, PAGA_PUBLIC_KEY],
+    // Paga Collect API hash: referenceNumber + amount + currency + customerPhoneNumber + customerEmail + salt
+    // Note: Use exact parameter order as per Paga docs
+    const hash = await generatePagaBusinessHash(
+      [referenceNumber, String(amount), "NGN", customer.phone || "", customer.email],
       PAGA_HASH_KEY
     );
 
@@ -105,13 +107,7 @@ serve(async (req) => {
 
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/collectMoney`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "principal": PAGA_PUBLIC_KEY,
-        "credentials": hash,
-        "hash": hash,
-      },
+      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
       body: JSON.stringify(payload),
     });
 
