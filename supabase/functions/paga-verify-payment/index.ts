@@ -3,7 +3,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { generatePagaHashAsync } from "../_shared/pagaAuth.ts";
 
-const PAGA_BASE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
+const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
+const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -13,6 +14,9 @@ serve(async (req) => {
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
+  const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
+
+  const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
     if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY) {
