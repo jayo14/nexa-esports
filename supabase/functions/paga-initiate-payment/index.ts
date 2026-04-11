@@ -12,6 +12,7 @@ serve(async (req) => {
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
+  const PAGA_CALLBACK_URL = Deno.env.get("PAGA_CALLBACK_URL")?.trim();
 
   try {
     if (!PAGA_PUBLIC_KEY) {
@@ -71,7 +72,26 @@ serve(async (req) => {
     }
 
     const referenceNumber = generateReferenceNumber("NX");
-    const callbackUrl = redirect_url || `${origin}/payment-success`;
+
+    // Prefer server-side PAGA_CALLBACK_URL env var (required for non-HTTPS/localhost origins).
+    // Fall back to the redirect_url supplied by the client only when it is a valid HTTPS URL.
+    // Paga rejects callback URLs that are not publicly accessible HTTPS addresses.
+    let callbackUrl: string;
+    if (PAGA_CALLBACK_URL) {
+      callbackUrl = PAGA_CALLBACK_URL;
+    } else if (redirect_url && redirect_url.startsWith("https://")) {
+      callbackUrl = redirect_url;
+    } else {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Payment cannot be initiated: no valid HTTPS callback URL is available. " +
+            "Set the PAGA_CALLBACK_URL environment variable to your production URL " +
+            "(e.g. https://your-domain.com/payment-success).",
+        }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+      );
+    }
 
     // Use Paga Checkout Link — no server-side hash or IP whitelisting required for collection
     const CHECKOUT_BASE = PAGA_IS_SANDBOX
