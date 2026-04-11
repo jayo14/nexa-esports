@@ -22,14 +22,35 @@ export function useTeamChat(teamId: string | null) {
 
       const { data, error } = await supabase
         .from('team_messages')
-        .select('*, profile:profiles(username, avatar_url)')
+        .select('*')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) throw error;
 
-      const fetched = ((data as unknown as TeamMessage[]) || []).reverse();
+      const baseMessages = (data as TeamMessage[]) || [];
+      const userIds = [...new Set(baseMessages.map((m) => m.user_id).filter(Boolean))];
+      let profileMap = new Map<string, { username: string; avatar_url?: string }>();
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', userIds);
+        profileMap = new Map(
+          ((profilesData as Array<{ id: string; username: string; avatar_url?: string }> | null) || []).map((profile) => [
+            profile.id,
+            { username: profile.username, avatar_url: profile.avatar_url },
+          ])
+        );
+      }
+
+      const fetched = baseMessages
+        .map((msg) => ({
+          ...msg,
+          profile: profileMap.get(msg.user_id),
+        }))
+        .reverse();
 
       if (pageNum === 0) {
         setMessages(fetched);
@@ -61,12 +82,25 @@ export function useTeamChat(teamId: string | null) {
           // Fetch the new message with profile
           const { data } = await supabase
             .from('team_messages')
-            .select('*, profile:profiles(username, avatar_url)')
+            .select('*')
             .eq('id', payload.new.id)
             .single();
 
           if (data) {
-            setMessages((prev) => [...prev, data as unknown as TeamMessage]);
+            const message = data as TeamMessage;
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', message.user_id)
+              .maybeSingle();
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                ...message,
+                profile: profileData || undefined,
+              },
+            ]);
           }
         }
       )
