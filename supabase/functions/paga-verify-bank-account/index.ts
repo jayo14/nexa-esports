@@ -36,9 +36,7 @@ serve(async (req) => {
       });
     }
 
-    const resolveBankUUID = async (candidate: string): Promise<string | null> => {
-      if (UUID_REGEX.test(candidate)) return candidate;
-
+    const fetchBanks = async (): Promise<any[]> => {
       const getBanksRef = generateReferenceNumber("GB");
       const getBanksHash = await generatePagaBusinessHash([getBanksRef], PAGA_HASH_KEY);
       const getBanksResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
@@ -52,14 +50,18 @@ serve(async (req) => {
       try {
         banksData = JSON.parse(banksText);
       } catch {
-        return null;
+        return [];
       }
 
       if (!getBanksResponse.ok || (banksData.responseCode !== 0 && banksData.responseCode !== "0")) {
-        return null;
+        return [];
       }
 
-      const banks = banksData.bank || banksData.banks || banksData.data || [];
+      return banksData.bank || banksData.banks || banksData.data || [];
+    };
+
+    const banks = await fetchBanks();
+    const resolveBankDetails = (candidate: string): { uuid: string | null; code: string | null; name: string | null } => {
       const normalizedCandidate = String(candidate).trim().toLowerCase();
       const matchedBank = banks.find((bank: any) => {
         const values = [
@@ -68,6 +70,7 @@ serve(async (req) => {
           bank?.bankUuid,
           bank?.code,
           bank?.bankCode,
+          bank?.destinationBankCode,
           bank?.id,
           bank?.name,
         ]
@@ -77,19 +80,35 @@ serve(async (req) => {
         return values.includes(normalizedCandidate);
       });
 
-      if (!matchedBank) return null;
+      if (!matchedBank) {
+        return {
+          uuid: UUID_REGEX.test(candidate) ? candidate : null,
+          code: null,
+          name: null,
+        };
+      }
 
-      const resolved =
+      const uuid =
         matchedBank.uuid ||
         matchedBank.bankUUID ||
         matchedBank.bankUuid ||
         null;
+      const code =
+        matchedBank.code ||
+        matchedBank.bankCode ||
+        matchedBank.destinationBankCode ||
+        matchedBank.id ||
+        null;
 
-      return resolved ? String(resolved) : null;
+      return {
+        uuid: uuid ? String(uuid) : null,
+        code: code ? String(code) : null,
+        name: matchedBank.name ? String(matchedBank.name) : null,
+      };
     };
 
-    const bankUUID = await resolveBankUUID(String(bank_code));
-    if (!bankUUID) {
+    const bankDetails = resolveBankDetails(String(bank_code));
+    if (!bankDetails.uuid && !bankDetails.code) {
       return new Response(
         JSON.stringify({
           error: "Invalid bank selected. Please re-select your bank and try again.",
@@ -99,43 +118,79 @@ serve(async (req) => {
       );
     }
 
-    const referenceNumber = generateReferenceNumber("NX_VBA");
-
-    // Paga account validation hash: referenceNumber + destinationBankUUID + destinationBankAccountNumber + salt
-    const hash = await generatePagaBusinessHash(
-      [referenceNumber, bankUUID, account_number],
-      PAGA_HASH_KEY
-    );
-
-    const pagaResponse = await fetch(`${PAGA_BASE_URL}/validateDepositToBank`, {
-      method: "POST",
-      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-      body: JSON.stringify({
-        referenceNumber,
-        destinationBankUUID: bankUUID,
-        destinationBankAccountNumber: account_number,
-      }),
-    });
-
-    const responseText = await pagaResponse.text();
-    let pagaData: any;
-    try {
-      pagaData = JSON.parse(responseText);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid response from Paga" }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
-      );
+    const attempts: Array<{ endpoint: string; payload: Record<string, string>; hashFields: string[] }> = [];
+    if (bankDetails.uuid) {
+      attempts.push({
+        endpoint: "validateDepositToBank",
+        payload: { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
+        hashFields: [bankDetails.uuid, account_number],
+      });
+      attempts.push({
+        endpoint: "validateDepositToWallet",
+        payload: { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
+        hashFields: [bankDetails.uuid, account_number],
+      });
+    }
+    if (bankDetails.code) {
+      attempts.push({
+        endpoint: "validateDepositToWallet",
+        payload: { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
+        hashFields: [bankDetails.code, account_number],
+      });
+      attempts.push({
+        endpoint: "validateDepositToBank",
+        payload: { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
+        hashFields: [bankDetails.code, account_number],
+      });
     }
 
-    console.log("Paga validateDepositToBank response:", JSON.stringify(pagaData));
+    let pagaData: any = null;
+    let lastResponseStatus = 400;
+    for (const attempt of attempts) {
+      const referenceNumber = generateReferenceNumber("NX_VBA");
+      const hash = await generatePagaBusinessHash(
+        [referenceNumber, ...attempt.hashFields],
+        PAGA_HASH_KEY
+      );
 
-    const isSuccess = pagaData.responseCode === 0 || pagaData.responseCode === "0";
+      const pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
+        method: "POST",
+        headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+        body: JSON.stringify({
+          referenceNumber,
+          ...attempt.payload,
+        }),
+      });
+
+      const responseText = await pagaResponse.text();
+      try {
+        pagaData = JSON.parse(responseText);
+      } catch {
+        pagaData = { responseCode: -1, responseMessage: "Invalid JSON response from Paga", raw: responseText };
+      }
+
+      console.log(`Paga ${attempt.endpoint} response:`, JSON.stringify(pagaData));
+      lastResponseStatus = pagaResponse.status;
+      if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") {
+        break;
+      }
+    }
+
+    const isSuccess = pagaData?.responseCode === 0 || pagaData?.responseCode === "0";
 
     if (!isSuccess) {
       return new Response(
-        JSON.stringify({ error: pagaData.responseMessage || "Account verification failed", details: pagaData }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
+        JSON.stringify({
+          error: pagaData?.responseMessage || "Account verification failed",
+          details: pagaData,
+          bank_context: {
+            selected_bank_code: bank_code,
+            resolved_bank_uuid: bankDetails.uuid,
+            resolved_bank_code: bankDetails.code,
+            resolved_bank_name: bankDetails.name,
+          },
+        }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: lastResponseStatus || 400 }
       );
     }
 
