@@ -118,62 +118,89 @@ serve(async (req) => {
       );
     }
 
-    const attempts: Array<{ endpoint: string; payload: Record<string, string>; hashFields: string[] }> = [];
+    const attempts: Array<{ endpoint: string; payload: Record<string, string>; hashFieldVariants: string[][] }> = [];
     if (bankDetails.uuid) {
       attempts.push({
         endpoint: "validateDepositToBank",
         payload: { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
-        hashFields: [bankDetails.uuid, account_number],
+        hashFieldVariants: [
+          [bankDetails.uuid, account_number],
+          [account_number, bankDetails.uuid],
+          [account_number],
+          [bankDetails.uuid],
+          [],
+        ],
       });
       attempts.push({
         endpoint: "validateDepositToWallet",
         payload: { destinationBankUUID: bankDetails.uuid, destinationBankAccountNumber: account_number },
-        hashFields: [bankDetails.uuid, account_number],
+        hashFieldVariants: [
+          [bankDetails.uuid, account_number],
+          [account_number, bankDetails.uuid],
+          [account_number],
+          [bankDetails.uuid],
+          [],
+        ],
       });
     }
     if (bankDetails.code) {
       attempts.push({
         endpoint: "validateDepositToWallet",
         payload: { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
-        hashFields: [bankDetails.code, account_number],
+        hashFieldVariants: [
+          [bankDetails.code, account_number],
+          [account_number, bankDetails.code],
+          [account_number],
+          [bankDetails.code],
+          [],
+        ],
       });
       attempts.push({
         endpoint: "validateDepositToBank",
         payload: { destinationBankCode: bankDetails.code, destinationBankAccountNumber: account_number },
-        hashFields: [bankDetails.code, account_number],
+        hashFieldVariants: [
+          [bankDetails.code, account_number],
+          [account_number, bankDetails.code],
+          [account_number],
+          [bankDetails.code],
+          [],
+        ],
       });
     }
 
     let pagaData: any = null;
     let lastResponseStatus = 400;
     for (const attempt of attempts) {
-      const referenceNumber = generateReferenceNumber("NX_VBA");
-      const hash = await generatePagaBusinessHash(
-        [referenceNumber, ...attempt.hashFields],
-        PAGA_HASH_KEY
-      );
+      for (const hashFields of attempt.hashFieldVariants) {
+        const referenceNumber = generateReferenceNumber("NX_VBA");
+        const hash = await generatePagaBusinessHash(
+          [referenceNumber, ...hashFields],
+          PAGA_HASH_KEY
+        );
 
-      const pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
-        method: "POST",
-        headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-        body: JSON.stringify({
-          referenceNumber,
-          ...attempt.payload,
-        }),
-      });
+        const pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
+          method: "POST",
+          headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+          body: JSON.stringify({
+            referenceNumber,
+            ...attempt.payload,
+          }),
+        });
 
-      const responseText = await pagaResponse.text();
-      try {
-        pagaData = JSON.parse(responseText);
-      } catch {
-        pagaData = { responseCode: -1, responseMessage: "Invalid JSON response from Paga", raw: responseText };
+        const responseText = await pagaResponse.text();
+        try {
+          pagaData = JSON.parse(responseText);
+        } catch {
+          pagaData = { responseCode: -1, responseMessage: "Invalid JSON response from Paga", raw: responseText };
+        }
+
+        console.log(`Paga ${attempt.endpoint} response:`, JSON.stringify(pagaData));
+        lastResponseStatus = pagaResponse.status;
+        if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") {
+          break;
+        }
       }
-
-      console.log(`Paga ${attempt.endpoint} response:`, JSON.stringify(pagaData));
-      lastResponseStatus = pagaResponse.status;
-      if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") {
-        break;
-      }
+      if (pagaData?.responseCode === 0 || pagaData?.responseCode === "0") break;
     }
 
     const isSuccess = pagaData?.responseCode === 0 || pagaData?.responseCode === "0";
