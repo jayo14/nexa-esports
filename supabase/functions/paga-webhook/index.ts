@@ -45,12 +45,11 @@ serve(async (req) => {
 
   // Enforce signature check in production; allow unsigned in sandbox/development
   const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
-  if (!IS_SANDBOX && (!receivedHash || receivedHash !== expectedHash)) {
-    console.error("Invalid or missing webhook signature");
-    return new Response("Invalid signature", { status: 401 });
-  } else if (receivedHash && receivedHash !== expectedHash) {
-    console.error("Invalid webhook signature");
-    return new Response("Invalid signature", { status: 401 });
+  if (!IS_SANDBOX || receivedHash) {
+    if (!receivedHash || receivedHash !== expectedHash) {
+      console.error("Invalid or missing webhook signature");
+      return new Response("Invalid signature", { status: 401 });
+    }
   }
 
   const isSuccess =

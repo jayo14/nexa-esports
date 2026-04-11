@@ -991,7 +991,7 @@ export const Settings: React.FC = () => {
                   <Select
                     value={formData.banking_info.bank_code || ""}
                     onValueChange={(uuid) => {
-                      const selectedBank = banks.find(bank => bank.uuid === uuid);
+                      const selectedBank = banks.find(bank => (bank.uuid || bank.code) === uuid);
                       setFormData((prev) => ({
                         ...prev,
                         banking_info: {
