@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { generatePagaHashAsync } from "../_shared/pagaAuth.ts";
+import { generatePagaBusinessHash, pagaHeaders } from "../_shared/pagaAuth.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
@@ -15,19 +15,19 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
+  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
   const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY) {
+    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
       return new Response(
-        JSON.stringify({ error: "Service not configured: Paga credentials missing" }),
+        JSON.stringify({ error: "Service not configured: Paga credentials missing (Public Key, Password, or Hash Key)" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
       );
     }
-
     // Return cached banks if still fresh
     if (banksCache && Date.now() - banksCache.fetchedAt < CACHE_TTL_MS) {
       return new Response(
@@ -36,18 +36,12 @@ serve(async (req) => {
       );
     }
 
-    // Paga getBanks hash: apiKey (hashKey)
-    const hash = await generatePagaHashAsync([PAGA_PUBLIC_KEY], PAGA_HASH_KEY);
+    // Paga getBanks hash: typically just the salt if no parameters
+    const hash = await generatePagaBusinessHash([], PAGA_HASH_KEY);
 
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "principal": PAGA_PUBLIC_KEY,
-        "credentials": hash,
-        "hash": hash,
-      },
+      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
       body: JSON.stringify({}),
     });
 
