@@ -15,6 +15,8 @@ import {
   Trophy,
   Crown,
   Loader2,
+  UserPlus,
+  CheckSquare,
 } from 'lucide-react';
 
 const PRIMARY = '#ec131e';
@@ -22,7 +24,7 @@ const PRIMARY = '#ec131e';
 export const TeamPage: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const { myTeam, myMembership, leaveTeam, kickMember } = useTeams();
   const { seasonLeaderboard, activeSeason } = useCompetitive() as {
@@ -34,9 +36,13 @@ export const TeamPage: React.FC = () => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [players, setPlayers] = useState<Array<{ id: string; ign: string | null; username: string | null; avatar_url: string | null; is_banned?: boolean | null }>>([]);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [playersLoading, setPlayersLoading] = useState(false);
 
   const isMine = myTeam?.id === teamId;
   const isCaptain = isMine && myMembership?.role === 'captain';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'clan_master';
 
   useEffect(() => {
     if (!teamId) return;
@@ -56,6 +62,42 @@ export const TeamPage: React.FC = () => {
     };
     fetch();
   }, [teamId]);
+
+  useEffect(() => {
+    if (!isAdmin || !teamId) return;
+    const fetchAssignablePlayers = async () => {
+      setPlayersLoading(true);
+      const [{ data: profilesData, error: profilesError }, { data: membersData, error: membersError }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, ign, username, avatar_url, is_banned')
+          .order('username', { ascending: true }),
+        supabase
+          .from('team_members')
+          .select('user_id, team_id'),
+      ]);
+
+      if (profilesError || membersError) {
+        toast({
+          title: 'Error',
+          description: profilesError?.message || membersError?.message || 'Failed to load players',
+          variant: 'destructive',
+        });
+        setPlayersLoading(false);
+        return;
+      }
+
+      const memberships = (membersData as Array<{ user_id: string; team_id: string }> | null) || [];
+      const membershipMap = new Map(memberships.map((m) => [m.user_id, m.team_id]));
+      const availablePlayers = ((profilesData as Array<{ id: string; ign: string | null; username: string | null; avatar_url: string | null; is_banned?: boolean | null }> | null) || [])
+        .filter((p) => !p.is_banned)
+        .filter((p) => !membershipMap.has(p.id));
+
+      setPlayers(availablePlayers);
+      setPlayersLoading(false);
+    };
+    fetchAssignablePlayers();
+  }, [isAdmin, teamId, toast]);
 
   const seasonStats = (seasonLeaderboard ?? []).find((s) => s.team_id === teamId);
 
@@ -78,6 +120,45 @@ export const TeamPage: React.FC = () => {
       setMembers((prev) => prev.filter((m) => m.user_id !== userId));
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const togglePlayerSelection = (playerId: string) => {
+    setSelectedPlayerIds((prev) =>
+      prev.includes(playerId) ? prev.filter((id) => id !== playerId) : [...prev, playerId]
+    );
+  };
+
+  const handleAssignPlayers = async () => {
+    if (!teamId || selectedPlayerIds.length === 0) return;
+    setActionLoading(true);
+    try {
+      const rows = selectedPlayerIds.map((id) => ({
+        team_id: teamId,
+        user_id: id,
+        role: 'member' as const,
+      }));
+
+      const { error } = await supabase
+        .from('team_members')
+        .insert(rows);
+
+      if (error) throw error;
+
+      const { data: memberData } = await supabase
+        .from('team_members')
+        .select('*, profile:profiles(username, ign, avatar_url, tier)')
+        .eq('team_id', teamId)
+        .order('role', { ascending: true });
+
+      setMembers((memberData as unknown as TeamMember[]) || []);
+      setPlayers((prev) => prev.filter((p) => !selectedPlayerIds.includes(p.id)));
+      setSelectedPlayerIds([]);
+      toast({ title: 'Players Added', description: 'Selected players were assigned to this team.' });
+    } catch (err: any) {
+      toast({ title: 'Assign Failed', description: err.message || 'Could not assign players.', variant: 'destructive' });
     } finally {
       setActionLoading(false);
     }
@@ -260,6 +341,69 @@ export const TeamPage: React.FC = () => {
             })}
           </div>
         </div>
+
+        {isAdmin && (
+          <div
+            className="rounded-2xl p-5 space-y-4"
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-bold text-white text-sm uppercase tracking-wider">Add Players to Team</h3>
+              <Button
+                onClick={handleAssignPlayers}
+                disabled={actionLoading || selectedPlayerIds.length === 0}
+                className="rounded-xl gap-2"
+                style={{ background: PRIMARY, color: '#fff' }}
+              >
+                <UserPlus className="w-4 h-4" />
+                Assign to Team ({selectedPlayerIds.length})
+              </Button>
+            </div>
+
+            {playersLoading ? (
+              <div className="py-8 flex justify-center">
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: PRIMARY }} />
+              </div>
+            ) : players.length === 0 ? (
+              <p className="text-slate-500 text-sm">No available players to assign.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {players.map((player) => {
+                  const selected = selectedPlayerIds.includes(player.id);
+                  return (
+                    <button
+                      key={player.id}
+                      type="button"
+                      onClick={() => togglePlayerSelection(player.id)}
+                      className="rounded-xl p-3 text-left transition-all"
+                      style={{
+                        background: selected ? `${PRIMARY}20` : 'rgba(255,255,255,0.04)',
+                        border: selected ? `1px solid ${PRIMARY}99` : '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={player.avatar_url || '/placeholder.svg'}
+                          alt={player.username || player.ign || 'Player'}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white font-semibold text-sm truncate">{player.ign || player.username || 'Unknown'}</p>
+                          <p className="text-slate-400 text-xs truncate">@{player.username || 'unknown'}</p>
+                        </div>
+                        <CheckSquare className="w-4 h-4" style={{ color: selected ? PRIMARY : '#64748b' }} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
