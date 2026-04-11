@@ -37,9 +37,9 @@ serve(async (req) => {
 
     const referenceNumber = generateReferenceNumber("NX_VBA");
 
-    // Paga account validation hash: referenceNumber + accountNumber + bankUUID + salt
+    // Paga account validation hash: referenceNumber + destinationBankUUID + destinationBankAccountNumber + salt
     const hash = await generatePagaBusinessHash(
-      [referenceNumber, account_number, bank_code],
+      [referenceNumber, bank_code, account_number],
       PAGA_HASH_KEY
     );
 

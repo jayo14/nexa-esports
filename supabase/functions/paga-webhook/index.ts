@@ -43,8 +43,12 @@ serve(async (req) => {
     event.hash ||
     "";
 
-  // Only enforce signature check when a hash header is present
-  if (receivedHash && receivedHash !== expectedHash) {
+  // Enforce signature check in production; allow unsigned in sandbox/development
+  const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
+  if (!IS_SANDBOX && (!receivedHash || receivedHash !== expectedHash)) {
+    console.error("Invalid or missing webhook signature");
+    return new Response("Invalid signature", { status: 401 });
+  } else if (receivedHash && receivedHash !== expectedHash) {
     console.error("Invalid webhook signature");
     return new Response("Invalid signature", { status: 401 });
   }

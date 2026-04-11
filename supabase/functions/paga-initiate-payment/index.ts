@@ -2,10 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
-
-const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
-const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
+import { generateReferenceNumber } from "../_shared/pagaAuth.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -14,16 +11,12 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
-  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
-  
-  const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
+    if (!PAGA_PUBLIC_KEY) {
       return new Response(
-        JSON.stringify({ error: "Payment service not configured: Paga credentials missing" }),
+        JSON.stringify({ error: "Payment service not configured: PAGA_PUBLIC_KEY missing" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
       );
     }
@@ -80,64 +73,30 @@ serve(async (req) => {
     const referenceNumber = generateReferenceNumber("NX");
     const callbackUrl = redirect_url || `${origin}/payment-success`;
 
-    // Paga Collect API hash: referenceNumber + amount + currency + customerPhoneNumber + customerEmail + salt
-    // Note: Amount should be formatted to 2 decimal places in the hash
-    const formattedAmount = Number(amount).toFixed(2);
-    const hash = await generatePagaBusinessHash(
-      [referenceNumber, formattedAmount, "NGN", customer.phone || "", customer.email],
-      PAGA_HASH_KEY
-    );
+    // Use Paga Checkout Link — no server-side hash or IP whitelisting required for collection
+    const CHECKOUT_BASE = PAGA_IS_SANDBOX
+      ? "https://beta.mypaga.com/paga-webservices/m/collect"
+      : "https://www.mypaga.com/paga-webservices/m/collect";
 
-    const payload = {
+    const nameParts = (customer.name || "Nexa User").split(" ");
+    const params = new URLSearchParams({
+      merchantKey: PAGA_PUBLIC_KEY,
       referenceNumber,
-      amount,
+      amount: String(amount),
       currency: "NGN",
       callbackUrl,
-      phoneNumber: customer.phone || "",
-      email: customer.email,
-      firstName: (customer.name || "Nexa User").split(" ")[0],
-      lastName: (customer.name || "Nexa User").split(" ").slice(1).join(" ") || "User",
+      customerEmail: customer.email,
+      customerFirstName: nameParts[0],
+      customerLastName: nameParts.slice(1).join(" ") || "User",
+      customerPhoneNumber: customer.phone || "",
       paymentContextDescription: "Wallet Funding",
-      isMerchantPayment: false,
-      displayName: "Nexa Elite Nexus",
-      allowPartialPayment: false,
-      expiryDateTimeUTC: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    };
-
-    console.log("Initiating Paga Collect payment...");
-
-    const pagaResponse = await fetch(`${PAGA_BASE_URL}/collectMoney`, {
-      method: "POST",
-      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-      body: JSON.stringify(payload),
+      displayName: "NeXa Esports",
+      isMerchantPayment: "false",
     });
 
-    const responseText = await pagaResponse.text();
-    let pagaData: any;
-    try {
-      pagaData = JSON.parse(responseText);
-    } catch {
-      console.error("Paga response not valid JSON:", responseText);
-      return new Response(
-        JSON.stringify({ error: "Invalid response from payment provider", details: responseText.substring(0, 200) }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
-      );
-    }
+    const checkoutUrl = `${CHECKOUT_BASE}?${params.toString()}`;
 
-    console.log("Paga response:", JSON.stringify(pagaData));
-
-    if (!pagaResponse.ok || (pagaData.responseCode !== 0 && pagaData.responseCode !== "0")) {
-      return new Response(
-        JSON.stringify({
-          error: "Payment initialization failed",
-          details: pagaData.responseMessage || "Unknown error",
-          paga_response: pagaData,
-        }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
-      );
-    }
-
-    // Store pending payment reference with userId in metadata table for later verification
+    // Pre-log pending transaction for later verification
     await supabaseAdmin.from("transactions").insert({
       user_id: user.id,
       type: "deposit",
@@ -149,14 +108,12 @@ serve(async (req) => {
       if (error) console.warn("Could not pre-log pending transaction:", error.message);
     });
 
+    console.log("Paga checkout URL generated:", checkoutUrl);
+
     return new Response(
       JSON.stringify({
         status: "success",
-        data: {
-          link: pagaData.url || pagaData.paymentUrl || pagaData.redirectUrl,
-          tx_ref: referenceNumber,
-          referenceNumber,
-        },
+        data: { link: checkoutUrl, tx_ref: referenceNumber, referenceNumber },
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );
