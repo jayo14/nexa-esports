@@ -26,14 +26,14 @@ serve(async (req) => {
 
   console.log("Paga webhook received:", JSON.stringify(event));
 
-  // Validate webhook signature using HMAC-SHA-512
-  // Paga signs webhooks with: hash(referenceNumber + amount + statusCode + hashKey)
+  // Validate webhook signature using plain SHA-512
+  // Paga signs webhooks with: SHA-512(referenceNumber + amount + statusCode + hashKey)
   const referenceNumber = event.referenceNumber || event.transactionId || "";
   const amount = String(event.amount || "");
   const statusCode = String(event.statusCode || event.responseCode || "");
 
   const expectedHash = await generatePagaHashAsync(
-    [referenceNumber, amount, statusCode, PAGA_PUBLIC_KEY],
+    [referenceNumber, amount, statusCode],
     PAGA_HASH_KEY
   );
 

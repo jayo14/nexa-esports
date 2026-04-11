@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { generatePagaHashAsync } from "../_shared/pagaAuth.ts";
+import { generatePagaHashAsync, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
@@ -15,13 +15,14 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
+  const PAGA_PASSWORD = Deno.env.get("PAGA_PASSWORD")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
   const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY) {
+    if (!PAGA_PUBLIC_KEY || !PAGA_PASSWORD || !PAGA_HASH_KEY) {
       return new Response(
         JSON.stringify({ error: "Service not configured: Paga credentials missing" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
@@ -36,19 +37,15 @@ serve(async (req) => {
       );
     }
 
-    // Paga getBanks hash: apiKey (hashKey)
-    const hash = await generatePagaHashAsync([PAGA_PUBLIC_KEY], PAGA_HASH_KEY);
+    const referenceNumber = generateReferenceNumber("NX_GB");
+
+    // Paga getBanks hash: SHA-512(referenceNumber + hashKey)
+    const hash = await generatePagaHashAsync([referenceNumber], PAGA_HASH_KEY);
 
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "principal": PAGA_PUBLIC_KEY,
-        "credentials": hash,
-        "hash": hash,
-      },
-      body: JSON.stringify({}),
+      headers: pagaHeaders(hash, PAGA_PUBLIC_KEY, PAGA_PASSWORD),
+      body: JSON.stringify({ referenceNumber }),
     });
 
     const responseText = await pagaResponse.text();

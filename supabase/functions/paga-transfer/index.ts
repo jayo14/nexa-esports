@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { generatePagaHashAsync, generateReferenceNumber } from "../_shared/pagaAuth.ts";
+import { generatePagaHashAsync, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
@@ -14,13 +14,14 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
+  const PAGA_PASSWORD = Deno.env.get("PAGA_PASSWORD")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
   const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY) {
+    if (!PAGA_PUBLIC_KEY || !PAGA_PASSWORD || !PAGA_HASH_KEY) {
       return new Response(
         JSON.stringify({ error: "Transfer service not configured: Paga credentials missing" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
@@ -222,10 +223,10 @@ serve(async (req) => {
       metadata: { fee, netAmount, account_number, account_bank, beneficiary_name },
     });
 
-    // Call Paga deposit to bank API
-    // Hash: referenceNumber + amount + destinationBankUUID + destinationBankAccountNumber + senderPrincipal (hashKey)
+    // Call Paga depositToBank API
+    // Hash: SHA-512(referenceNumber + amount + destinationBankUUID + destinationBankAccountNumber + hashKey)
     const hash = await generatePagaHashAsync(
-      [referenceNumber, String(amount), account_bank || "", account_number || "", PAGA_PUBLIC_KEY],
+      [referenceNumber, String(amount), account_bank || "", account_number || ""],
       PAGA_HASH_KEY
     );
 
@@ -235,22 +236,14 @@ serve(async (req) => {
       currency: "NGN",
       destinationBankUUID: account_bank,
       destinationBankAccountNumber: account_number,
-      transferReference: referenceNumber,
-      senderPrincipal: PAGA_PUBLIC_KEY,
+      recipientName: beneficiary_name || "",
       remarks: narration || "Wallet withdrawal",
-      recipientPhoneNumber: "",
     };
 
     console.log("Calling Paga depositToBank...");
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/depositToBank`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "principal": PAGA_PUBLIC_KEY,
-        "credentials": hash,
-        "hash": hash,
-      },
+      headers: pagaHeaders(hash, PAGA_PUBLIC_KEY, PAGA_PASSWORD),
       body: JSON.stringify(pagaPayload),
     });
 

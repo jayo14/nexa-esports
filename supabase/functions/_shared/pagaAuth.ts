@@ -1,33 +1,26 @@
-// Helper for Paga API HMAC authentication
+// Helper for Paga Business REST API authentication
+//
+// Paga uses plain SHA-512 (NOT HMAC).
+// Hash = SHA-512( field1 + field2 + ... + hashKey )
+// Headers: principal = publicKey, credentials = password (plain text), hash = computed hash
 
-export function generatePagaHash(fields: string[], apiPassword: string): string {
-  const hashInput = fields.filter(Boolean).join('');
+export async function generatePagaHashAsync(fields: string[], hashKey: string): Promise<string> {
+  // Append the hashKey to the concatenated fields, then SHA-512 the whole string
+  const hashInput = [...fields.filter((f) => f != null && f !== ''), hashKey].join('');
   const encoder = new TextEncoder();
-  const keyData = encoder.encode(apiPassword);
-  const msgData = encoder.encode(hashInput);
-
-  return crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign'])
-    .then((key) => crypto.subtle.sign('HMAC', key, msgData))
-    .then((sig) => Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, '0')).join('')) as unknown as string;
+  const hashBuffer = await crypto.subtle.digest('SHA-512', encoder.encode(hashInput));
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
-export async function generatePagaHashAsync(fields: string[], apiPassword: string): Promise<string> {
-  const hashInput = fields.filter(Boolean).join('');
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(apiPassword);
-  const msgData = encoder.encode(hashInput);
-  const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, msgData);
-  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-export function pagaHeaders(hash: string, apiKey: string): Record<string, string> {
+export function pagaHeaders(hash: string, publicKey: string, password: string): Record<string, string> {
   return {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Authorization': hash,
-    'principal': apiKey,
-    'credentials': hash,
+    'principal': publicKey,
+    'credentials': password,
+    'hash': hash,
   };
 }
 
