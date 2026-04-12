@@ -174,12 +174,32 @@ const Withdraw = () => {
         body: transferPayload,
     });
     
-    if (transferError || !transferData.status) {
-        let message = transferData?.message || transferError?.message;
-        if (transferData?.error === 'withdrawals_disabled_today') message = 'Withdrawals disabled on Sundays.';
-        
-        toast({ title: "Withdrawal Failed", description: message || 'Withdrawal failed', variant: "destructive" });
-        throw new Error(message || 'Withdrawal failed');
+    if (transferError) {
+        let transferErrorPayload: any = null;
+        const errorContext = (transferError as any)?.context;
+        if (errorContext?.json) {
+            transferErrorPayload = await errorContext.json().catch(() => null);
+        }
+
+        const errorCode = transferErrorPayload?.error;
+        let message = transferErrorPayload?.message || transferError?.message || 'Withdrawal failed';
+        if (errorCode === 'withdrawals_disabled_today') {
+            message = 'Withdrawals are not allowed on Sundays in your region.';
+        }
+
+        toast({ title: "Withdrawal Failed", description: message, variant: "destructive" });
+        throw new Error(message);
+    }
+
+    if (!transferData?.status) {
+        const errorCode = transferData?.error;
+        let message = transferData?.message || 'Withdrawal failed';
+        if (errorCode === 'withdrawals_disabled_today') {
+            message = 'Withdrawals are not allowed on Sundays in your region.';
+        }
+
+        toast({ title: "Withdrawal Failed", description: message, variant: "destructive" });
+        throw new Error(message);
     }
     
     toast({
