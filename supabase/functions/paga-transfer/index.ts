@@ -229,11 +229,14 @@ serve(async (req) => {
     const hashAmount = String(amount);
     const hashRecipientPhone = phoneNumber || "07000000000";
     
-    // Paga is notoriously inconsistent with hash parameter ordering.
-    // We try a few common variations if the first one fails with "Invalid request hash".
+    // Paga's hash validation logic for depositToBank is extremely specific.
+    // Based on recent errors, it seems the phone number in the payload might NOT belong in the hash,
+    // or its presence/absence in the hash string is very particular.
     const hashVariants = [
-      [referenceNumber, hashAmount, account_bank || "", account_number || "", hashRecipientPhone], // Standard
-      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || "", hashRecipientPhone], // With Currency
+      [referenceNumber, hashAmount, account_bank || "", account_number || ""], // No phone in hash
+      [referenceNumber, hashAmount, account_bank || "", account_number || "", hashRecipientPhone], // Standard with phone
+      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || ""], // Currency, no phone
+      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || "", hashRecipientPhone], // Currency + phone
       [referenceNumber, hashAmount, account_bank || "", account_number || "", hashRecipientPhone, referenceNumber], // With TransferReference
     ];
 
