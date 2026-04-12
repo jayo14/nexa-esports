@@ -126,10 +126,11 @@ serve(async (req) => {
     // Check day-of-week restriction
     const { data: profileData } = await supabaseAdmin
       .from("profiles")
-      .select("id, timezone, country")
+      .select("id, timezone, country, phone")
       .eq("id", user.id)
       .maybeSingle();
 
+    const phoneNumber = profileData?.phone || "";
     const tzFromProfile = profileData?.timezone;
     const country = (profileData?.country || "").toString();
     const DEFAULT_TZ = Deno.env.get("DEFAULT_USER_TIMEZONE") || "Africa/Lagos";
@@ -226,13 +227,14 @@ serve(async (req) => {
     // According to Paga Business API documentation for depositToBank, the hash order is:
     // referenceNumber + amount + currency + destinationBankUUID + destinationBankAccountNumber + recipientPhoneNumber + salt
     const hashAmount = String(amount);
+    const hashRecipientPhone = phoneNumber || "07000000000";
     
     // Paga is notoriously inconsistent with hash parameter ordering.
     // We try a few common variations if the first one fails with "Invalid request hash".
     const hashVariants = [
-      [referenceNumber, hashAmount, account_bank || "", account_number || "", ""], // Standard
-      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || "", ""], // With Currency
-      [referenceNumber, hashAmount, account_bank || "", account_number || "", "", referenceNumber], // With TransferReference
+      [referenceNumber, hashAmount, account_bank || "", account_number || "", hashRecipientPhone], // Standard
+      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || "", hashRecipientPhone], // With Currency
+      [referenceNumber, hashAmount, account_bank || "", account_number || "", hashRecipientPhone, referenceNumber], // With TransferReference
     ];
 
     let pagaResponse: Response | null = null;
@@ -249,10 +251,11 @@ serve(async (req) => {
             currency: "NGN",
             destinationBankUUID: account_bank,
             destinationBankAccountNumber: account_number,
+            recipientName: beneficiary_name || "Nexa User",
+            recipientPhoneNumber: phoneNumber || "07000000000",
             transferReference: referenceNumber,
             senderPrincipal: PAGA_PUBLIC_KEY,
             remarks: narration || "Wallet withdrawal",
-            recipientPhoneNumber: "",
             statusCallbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`,
         };
 
