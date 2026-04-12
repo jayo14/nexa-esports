@@ -223,45 +223,72 @@ serve(async (req) => {
       metadata: { fee, netAmount, account_number, account_bank, beneficiary_name },
     });
 
-    // Hash: referenceNumber + amount + destinationBankUUID + destinationBankAccountNumber + salt
-    const formattedAmount = Number(amount).toFixed(2);
-    const hash = await generatePagaBusinessHash(
-      [referenceNumber, formattedAmount, account_bank || "", account_number || ""],
-      PAGA_HASH_KEY
-    );
+    // According to Paga Business API documentation for depositToBank, the hash order is:
+    // referenceNumber + amount + currency + destinationBankUUID + destinationBankAccountNumber + recipientPhoneNumber + salt
+    const hashAmount = String(amount);
+    
+    // Paga is notoriously inconsistent with hash parameter ordering.
+    // We try a few common variations if the first one fails with "Invalid request hash".
+    const hashVariants = [
+      [referenceNumber, hashAmount, account_bank || "", account_number || "", ""], // Standard
+      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || "", ""], // With Currency
+      [referenceNumber, hashAmount, account_bank || "", account_number || "", "", referenceNumber], // With TransferReference
+    ];
 
-    const pagaPayload = {
-      referenceNumber,
-      amount,
-      currency: "NGN",
-      destinationBankUUID: account_bank,
-      destinationBankAccountNumber: account_number,
-      transferReference: referenceNumber,
-      senderPrincipal: PAGA_PUBLIC_KEY,
-      remarks: narration || "Wallet withdrawal",
-      recipientPhoneNumber: "",
-      statusCallbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`,
-    };
+    let pagaResponse: Response | null = null;
+    let pagaData: any = null;
 
-    console.log("Calling Paga depositToBank...");
-    const pagaResponse = await fetch(`${PAGA_BASE_URL}/depositToBank`, {
-      method: "POST",
-      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-      body: JSON.stringify(pagaPayload),
-    });
+    for (let i = 0; i < hashVariants.length; i++) {
+        const fields = hashVariants[i];
+        console.log(`Attempting Paga transfer with hash variant ${i + 1}...`);
+        const hash = await generatePagaBusinessHash(fields, PAGA_HASH_KEY);
 
-    const responseText = await pagaResponse.text();
-    let pagaData: any;
-    try {
-      pagaData = JSON.parse(responseText);
-    } catch {
-      // Rollback wallet balance
-      await supabaseAdmin.from("wallets").update({ balance: wallet.balance }).eq("id", wallet.id);
-      await supabaseAdmin.from("transactions").update({ status: "failed" }).eq("reference", referenceNumber);
-      return new Response(
-        JSON.stringify({ error: "Invalid response from transfer provider" }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
-      );
+        const pagaPayload = {
+            referenceNumber,
+            amount: Number(amount),
+            currency: "NGN",
+            destinationBankUUID: account_bank,
+            destinationBankAccountNumber: account_number,
+            transferReference: referenceNumber,
+            senderPrincipal: PAGA_PUBLIC_KEY,
+            remarks: narration || "Wallet withdrawal",
+            recipientPhoneNumber: "",
+            statusCallbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`,
+        };
+
+        pagaResponse = await fetch(`${PAGA_BASE_URL}/depositToBank`, {
+            method: "POST",
+            headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+            body: JSON.stringify(pagaPayload),
+        });
+
+        const responseText = await pagaResponse.text();
+        try {
+            pagaData = JSON.parse(responseText);
+        } catch {
+            pagaData = { error: "Invalid JSON", raw: responseText };
+        }
+
+        // If it's not a hash error, or it's a success, we stop here.
+        const isHashError = pagaData.details?.errorMessage?.toLowerCase().includes("invalid request hash") || 
+                           String(pagaData.errorMessage || "").toLowerCase().includes("invalid request hash") ||
+                           String(pagaData.responseMessage || "").toLowerCase().includes("invalid request hash");
+        
+        if (!isHashError) {
+            break;
+        }
+        
+        console.warn(`Hash variant ${i + 1} failed with Invalid Request Hash. Trying next...`);
+    }
+
+    if (!pagaResponse || !pagaData) {
+        // Rollback wallet balance
+        await supabaseAdmin.from("wallets").update({ balance: wallet.balance }).eq("id", wallet.id);
+        await supabaseAdmin.from("transactions").update({ status: "failed" }).eq("reference", referenceNumber);
+        return new Response(
+            JSON.stringify({ error: "Failed to communicate with transfer provider" }),
+            { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+        );
     }
 
     console.log("Paga depositToBank response:", JSON.stringify(pagaData));
