@@ -227,6 +227,7 @@ serve(async (req) => {
     // Fetch banks to resolve the bank code from the UUID if possible
     // This helps avoid Paga internal errors when only UUID is provided
     let bankCode = "";
+    let bankSample: any[] | string = "Empty list";
     try {
         const getBanksRef = generateReferenceNumber("GB");
         const getBanksHash = await generatePagaBusinessHash([getBanksRef], PAGA_HASH_KEY);
@@ -235,13 +236,17 @@ serve(async (req) => {
             headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, getBanksHash),
             body: JSON.stringify({ referenceNumber: getBanksRef }),
         });
+        
         const banksData = await getBanksResponse.json();
         const banksList = banksData.bank || banksData.banks || banksData.data || [];
+        bankSample = banksList.length > 0 ? banksList.slice(0, 3) : "Empty list";
         
+        const target = (account_bank || "").toLowerCase().trim();
         const matchedBank = banksList.find((b: any) => {
-            const uuidMatch = [b.uuid, b.bankUUID, b.bankUuid, b.id].some(v => v === account_bank);
-            const codeMatch = [b.code, b.bankCode, b.destinationBankCode].some(v => v === account_bank);
-            return uuidMatch || codeMatch;
+            const values = [b.uuid, b.bankUUID, b.bankUuid, b.id, b.code, b.bankCode, b.destinationBankCode]
+                .filter(v => typeof v === 'string')
+                .map(v => v.toLowerCase().trim());
+            return values.includes(target);
         });
 
         if (matchedBank) {
@@ -252,12 +257,14 @@ serve(async (req) => {
     }
 
     const hashAmount = String(amount);
-    const hashRecipientPhone = phoneNumber || "07000000000";
+    const normalizedPhone = (phoneNumber || "7000000000").replace(/\D/g, '').slice(-10);
     
+    // Paga's hash validation logic for depositToBank is extremely specific.
     const hashVariants = [
       [referenceNumber, hashAmount, account_bank || "", account_number || ""],
       [referenceNumber, hashAmount, bankCode || account_bank || "", account_number || ""],
-      [referenceNumber, hashAmount, account_bank || "", account_number || "", hashRecipientPhone],
+      [referenceNumber, hashAmount, account_bank || "", account_number || "", normalizedPhone],
+      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || ""],
     ];
 
     let pagaResponse: Response | null = null;
@@ -265,6 +272,7 @@ serve(async (req) => {
 
     for (let i = 0; i < hashVariants.length; i++) {
         const fields = hashVariants[i];
+        console.log(`Attempting Paga transfer with hash variant ${i + 1}...`);
         const hash = await generatePagaBusinessHash(fields, PAGA_HASH_KEY);
 
         const pagaPayload: any = {
@@ -273,17 +281,15 @@ serve(async (req) => {
             currency: "NGN",
             destinationBankUUID: account_bank,
             destinationBankAccountNumber: account_number,
-            recipientName: beneficiary_name || "Nexa User",
-            recipientPhoneNumber: hashRecipientPhone,
-            recipientMobileNumber: hashRecipientPhone,
+            recipientName: (beneficiary_name || "Nexa User").toUpperCase(),
+            recipientPhoneNumber: normalizedPhone,
+            recipientMobileNumber: normalizedPhone,
             transferReference: referenceNumber,
             senderPrincipal: PAGA_PUBLIC_KEY,
-            remarks: narration || "Wallet withdrawal",
+            remarks: "Withdrawal",
             statusCallbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`,
         };
 
-        // ONLY add destinationBankCode if we actually resolved it. 
-        // Sending an empty string "" causes Paga backend to crash with "begin 0, end 2, length 0".
         if (bankCode) {
             pagaPayload.destinationBankCode = bankCode;
             pagaPayload.destinationBank = bankCode;
@@ -300,12 +306,25 @@ serve(async (req) => {
         const responseText = await pagaResponse.text();
         try {
             pagaData = JSON.parse(responseText);
-            // Help debugging by including the payload in the error if it fails
             if (pagaData.responseCode && pagaData.responseCode !== 0 && pagaData.responseCode !== "0") {
-                pagaData.debug_attempted_payload = { ...pagaPayload, senderPrincipal: "HIDDEN" };
+                pagaData.debug_attempted_payload = { 
+                    ...pagaPayload, 
+                    senderPrincipal: "HIDDEN",
+                    resolved_bank_code: bankCode,
+                    banks_sample: bankSample
+                };
             }
         } catch {
-            pagaData = { error: "Invalid JSON", raw: responseText, debug_attempted_payload: { ...pagaPayload, senderPrincipal: "HIDDEN" } };
+            pagaData = { 
+                error: "Invalid JSON", 
+                raw: responseText, 
+                debug_attempted_payload: { 
+                    ...pagaPayload, 
+                    senderPrincipal: "HIDDEN",
+                    resolved_bank_code: bankCode,
+                    banks_sample: bankSample
+                } 
+            };
         }
 
         // If it's not a hash error, or it's a success, we stop here.
