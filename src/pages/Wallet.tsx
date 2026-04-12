@@ -6,6 +6,7 @@ import {
   Eye, EyeOff, Send, Download, Upload, MoreHorizontal,
   Smartphone, Wallet as WalletIcon, ShoppingCart, Users,
   Settings, TrendingUp, LayoutGrid,
+  Loader2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -190,6 +191,8 @@ const Wallet: React.FC = () => {
   const animatedBalance = useCountUp({ end: walletBalance, duration: 1500, start: 0 });
   const { checkPinExists } = useTransactionPin();
   const { settings: walletSettings } = useWalletSettings();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const refreshInterval = useRef<NodeJS.Timeout | null>(null);
 
   const REDEEM_COOLDOWN_SECONDS = 600;
 
@@ -254,6 +257,15 @@ const Wallet: React.FC = () => {
       }));
       setTransactions(enriched);
       setTotalTransactions(count || 0);
+
+      // Check for pending transactions to auto-refresh
+      const hasPending = enriched.some(t => t.status === 'pending' && t.raw_type === 'deposit');
+      if (hasPending && !refreshInterval.current) {
+        refreshInterval.current = setInterval(() => fetchWalletData(currentPage), 5000);
+      } else if (!hasPending && refreshInterval.current) {
+        clearInterval(refreshInterval.current);
+        refreshInterval.current = null;
+      }
     } catch (err) {
       console.error(err);
     }
@@ -307,6 +319,34 @@ const Wallet: React.FC = () => {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const showReceiptRef = query.get('showReceipt');
+    const referenceNumber = query.get('referenceNumber') || query.get('reference');
+
+    // Handle payment verification if landed directly
+    if (referenceNumber && !showReceiptRef) {
+      const verifyPayment = async () => {
+        setIsVerifying(true);
+        try {
+          const { data } = await supabase.functions.invoke('paga-verify-payment', {
+            body: { referenceNumber, tx_ref: referenceNumber }
+          });
+          if (data?.status === 'success' || data?.message === 'Transaction already processed') {
+            toast({ title: 'Payment Confirmed', description: 'Your deposit has been verified and credited.' });
+            fetchWalletData(currentPage);
+          }
+        } catch (err) {
+          console.error('Auto-verification failed:', err);
+        } finally {
+          setIsVerifying(false);
+          // Clean up URL
+          const ns = new URLSearchParams(location.search);
+          ns.delete('referenceNumber');
+          ns.delete('reference');
+          navigate(location.pathname + (ns.toString() ? '?' + ns.toString() : ''), { replace: true });
+        }
+      };
+      verifyPayment();
+    }
+
     if (showReceiptRef && transactions.length > 0 && receiptShownRef.current !== showReceiptRef) {
       const tx = transactions.find(t => t.reference === showReceiptRef);
       if (tx) {
@@ -317,7 +357,13 @@ const Wallet: React.FC = () => {
         navigate(location.pathname + (ns.toString() ? '?' + ns.toString() : ''), { replace: true });
       }
     }
-  }, [location.search, transactions, navigate, handleViewReceipt]);
+  }, [location.search, transactions, navigate, handleViewReceipt, fetchWalletData, currentPage, toast]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshInterval.current) clearInterval(refreshInterval.current);
+    };
+  }, []);
 
   /* ── Filter transactions ── */
   const filterMap: Record<string, string[]> = {
@@ -335,7 +381,7 @@ const Wallet: React.FC = () => {
 
   return (
     <div className="flex overflow-hidden">
-      
+
       {/* ── Main content ── */}
       <main
         className="flex-1 flex flex-col overflow-y-auto"
@@ -368,9 +414,15 @@ const Wallet: React.FC = () => {
                     </h3>
                     {balanceVisible && (
                       <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full flex items-center gap-1 sm:gap-1.5"
-                        style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" />
-                        <span className="text-emerald-500 text-[10px] sm:text-xs font-bold">Active</span>
+                        style={{ background: isVerifying ? 'rgba(234,179,8,0.1)' : 'rgba(34,197,94,0.1)', border: isVerifying ? '1px solid rgba(234,179,8,0.2)' : '1px solid rgba(34,197,94,0.2)' }}>
+                        {isVerifying ? (
+                          <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 animate-spin" />
+                        ) : (
+                          <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" />
+                        )}
+                        <span className={`${isVerifying ? 'text-yellow-500' : 'text-emerald-500'} text-[10px] sm:text-xs font-bold`}>
+                          {isVerifying ? 'Verifying...' : 'Active'}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -485,23 +537,24 @@ const Wallet: React.FC = () => {
                 {TABS.map((tab) => {
                   const Icon = tab.icon;
                   return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all"
-                    style={
-                      activeTab === tab.key
-                        ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
-                        : { color: '#64748b' }
-                    }
-                  >
-                    <Icon className="w-3 h-3 sm:w-4 h-4" />
-                    <span className={activeTab === tab.key ? 'inline' : 'hidden min-[430px]:inline'}>{tab.label}</span>
-                  </button>
-                )})}
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all"
+                      style={
+                        activeTab === tab.key
+                          ? { background: 'rgba(255,255,255,0.1)', color: '#fff' }
+                          : { color: '#64748b' }
+                      }
+                    >
+                      <Icon className="w-3 h-3 sm:w-4 h-4" />
+                      <span className={activeTab === tab.key ? 'inline' : 'hidden min-[430px]:inline'}>{tab.label}</span>
+                    </button>
+                  )
+                })}
               </nav>
-              
-              <button 
+
+              <button
                 className="sm:hidden p-2 rounded-lg"
                 style={glassButton}
                 onClick={() => navigate('/wallet/more-transactions')}
