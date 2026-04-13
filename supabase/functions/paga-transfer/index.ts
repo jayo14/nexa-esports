@@ -270,92 +270,174 @@ serve(async (req) => {
       bankUuid = String(account_bank).trim().toUpperCase();
     }
 
-    const hashAmount = String(amount);
-    const normalizedPhone = (phoneNumber || "7000000000").replace(/\D/g, '').slice(-10);
-    
-    // Paga's hash validation logic for depositToBank is extremely specific.
-    const hashVariants = [
-      [referenceNumber, hashAmount, account_bank || "", account_number || ""],
-      [referenceNumber, hashAmount, bankCode || account_bank || "", account_number || ""],
-      [referenceNumber, hashAmount, bankUuid || account_bank || "", account_number || ""],
-      [referenceNumber, hashAmount, account_bank || "", account_number || "", normalizedPhone],
-      [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || ""],
+    const amountNumber = Number(amount);
+    const amountFixed = amountNumber.toFixed(2);
+    const phoneDigits = (phoneNumber || "").replace(/\D/g, "");
+    const phoneLocal = phoneDigits.length >= 10 ? phoneDigits.slice(-10) : "7000000000";
+    const phoneIntl = phoneDigits.startsWith("234")
+      ? phoneDigits
+      : phoneDigits.length === 11 && phoneDigits.startsWith("0")
+      ? `234${phoneDigits.slice(1)}`
+      : `234${phoneLocal}`;
+    const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`;
+    const recipientName = (beneficiary_name || "Nexa User").toUpperCase();
+
+    const cleanPayload = (payload: Record<string, unknown>) =>
+      Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== ""));
+
+    const baseHashVariants = [
+      [referenceNumber, String(amountNumber), bankCode || bankUuid || account_bank || "", account_number || ""],
+      [referenceNumber, amountFixed, bankCode || bankUuid || account_bank || "", account_number || ""],
+      [referenceNumber, String(amountNumber), account_number || ""],
+      [referenceNumber, amountFixed, account_number || ""],
+      [referenceNumber, String(amountNumber)],
+      [referenceNumber],
+    ];
+
+    const requestAttempts: Array<{ endpoint: string; payload: Record<string, unknown> }> = [
+      {
+        endpoint: "depositToBank",
+        payload: cleanPayload({
+          referenceNumber,
+          amount: amountNumber,
+          currency: "NGN",
+          destinationBankUUID: bankUuid || account_bank,
+          destinationBankCode: bankCode || undefined,
+          destinationBank: bankCode || bankUuid || account_bank,
+          destinationBankAccountNumber: account_number,
+          destinationBankAccountName: recipientName,
+          recipientName,
+          recipientPhoneNumber: phoneLocal,
+          recipientMobileNumber: phoneLocal,
+          transferReference: referenceNumber,
+          senderPrincipal: PAGA_PUBLIC_KEY,
+          reason: narration || "Withdrawal",
+          remarks: narration || "Withdrawal",
+          statusCallbackUrl: callbackUrl,
+        }),
+      },
+      {
+        endpoint: "depositToBank",
+        payload: cleanPayload({
+          referenceNumber,
+          amount: amountFixed,
+          currency: "NGN",
+          destinationBankCode: bankCode || undefined,
+          destinationBankAccountNumber: account_number,
+          destinationBankAccountName: recipientName,
+          recipientName,
+          recipientPhoneNumber: phoneIntl,
+          transferReference: referenceNumber,
+          reason: narration || "Withdrawal",
+          statusCallbackUrl: callbackUrl,
+        }),
+      },
+      {
+        endpoint: "moneyTransferToBankAccount",
+        payload: cleanPayload({
+          referenceNumber,
+          amount: amountNumber,
+          currency: "NGN",
+          destinationBankCode: bankCode || undefined,
+          destinationBankAccountNumber: account_number,
+          destinationBankAccountName: recipientName,
+          recipientName,
+          reason: narration || "Withdrawal",
+          remarks: narration || "Withdrawal",
+          transferReference: referenceNumber,
+          statusCallbackUrl: callbackUrl,
+        }),
+      },
+      {
+        endpoint: "moneyTransferToBankAccount",
+        payload: cleanPayload({
+          referenceNumber,
+          amount: amountFixed,
+          currency: "NGN",
+          destinationBankCode: bankCode || undefined,
+          destinationBankAccountNumber: account_number,
+          destinationBankAccountName: recipientName,
+          reason: narration || "Withdrawal",
+          transferReference: referenceNumber,
+          statusCallbackUrl: callbackUrl,
+        }),
+      },
     ];
 
     let pagaResponse: Response | null = null;
     let pagaData: any = null;
 
-    for (let i = 0; i < hashVariants.length; i++) {
-        const fields = hashVariants[i];
-        console.log(`Attempting Paga transfer with hash variant ${i + 1}...`);
+    for (let attemptIndex = 0; attemptIndex < requestAttempts.length; attemptIndex++) {
+      const attempt = requestAttempts[attemptIndex];
+
+      for (let hashIndex = 0; hashIndex < baseHashVariants.length; hashIndex++) {
+        const fields = baseHashVariants[hashIndex];
         const hash = await generatePagaBusinessHash(fields, PAGA_HASH_KEY);
+        console.log(`Attempting Paga transfer: endpoint=${attempt.endpoint}, payload=${attemptIndex + 1}, hash=${hashIndex + 1}`);
 
-        const pagaPayload: any = {
-            referenceNumber,
-            amount: Number(amount),
-            currency: "NGN",
-            destinationBankUUID: bankUuid || account_bank,
-            destinationBankAccountNumber: account_number,
-            recipientName: (beneficiary_name || "Nexa User").toUpperCase(),
-            recipientPhoneNumber: normalizedPhone,
-            recipientMobileNumber: normalizedPhone,
-            transferReference: referenceNumber,
-            senderPrincipal: PAGA_PUBLIC_KEY,
-            remarks: "Withdrawal",
-            statusCallbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`,
-        };
-
-        if (bankCode) {
-            pagaPayload.destinationBankCode = bankCode;
-            pagaPayload.destinationBank = bankCode;
-        } else {
-            pagaPayload.destinationBank = bankUuid || account_bank;
-        }
-
-        pagaResponse = await fetch(`${PAGA_BASE_URL}/depositToBank`, {
-            method: "POST",
-            headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-            body: JSON.stringify(pagaPayload),
+        pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
+          method: "POST",
+          headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+          body: JSON.stringify(attempt.payload),
         });
 
         const responseText = await pagaResponse.text();
         try {
-            pagaData = JSON.parse(responseText);
-            if (pagaData.responseCode && pagaData.responseCode !== 0 && pagaData.responseCode !== "0") {
-                pagaData.debug_attempted_payload = { 
-                    ...pagaPayload, 
-                    senderPrincipal: "HIDDEN",
-                    resolved_bank_code: bankCode,
-                    resolved_bank_uuid: bankUuid,
-                    resolved_bank_name: bankName,
-                    banks_sample: bankSample
-                };
-            }
+          pagaData = JSON.parse(responseText);
         } catch {
-            pagaData = { 
-                error: "Invalid JSON", 
-                raw: responseText, 
-                debug_attempted_payload: { 
-                    ...pagaPayload, 
-                    senderPrincipal: "HIDDEN",
-                    resolved_bank_code: bankCode,
-                    resolved_bank_uuid: bankUuid,
-                    resolved_bank_name: bankName,
-                    banks_sample: bankSample
-                } 
-            };
+          pagaData = { error: "Invalid JSON", raw: responseText };
         }
 
-        // If it's not a hash error, or it's a success, we stop here.
-        const isHashError = pagaData.details?.errorMessage?.toLowerCase().includes("invalid request hash") || 
-                           String(pagaData.errorMessage || "").toLowerCase().includes("invalid request hash") ||
-                           String(pagaData.responseMessage || "").toLowerCase().includes("invalid request hash");
-        
-        if (!isHashError) {
-            break;
+        const isSuccessAttempt =
+          pagaData?.responseCode === 0 ||
+          pagaData?.responseCode === "0" ||
+          pagaData?.status === "SUCCESS" ||
+          pagaData?.status === "SUCCESSFUL" ||
+          pagaData?.transactionStatus === "SUCCESS" ||
+          pagaData?.transactionStatus === "SUCCESSFUL";
+
+        pagaData.debug_attempted_payload = {
+          ...attempt.payload,
+          senderPrincipal: "HIDDEN",
+          attempted_endpoint: attempt.endpoint,
+          attempted_hash_index: hashIndex + 1,
+          resolved_bank_code: bankCode,
+          resolved_bank_uuid: bankUuid,
+          resolved_bank_name: bankName,
+          banks_sample: bankSample,
+        };
+
+        if (isSuccessAttempt) break;
+
+        const errText = [
+          pagaData?.details?.errorMessage,
+          pagaData?.errorMessage,
+          pagaData?.responseMessage,
+          pagaData?.message,
+          pagaData?.error,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        const isHashError = errText.includes("invalid request hash");
+        const isKnownBadPayload = errText.includes("begin 0, end 2, length 0");
+
+        if (!isHashError && !isKnownBadPayload) {
+          // Non-hash provider error: keep latest and stop trying more hashes for this payload.
+          break;
         }
-        
-        console.warn(`Hash variant ${i + 1} failed with Invalid Request Hash. Trying next...`);
+      }
+
+      const attemptSucceeded =
+        pagaData?.responseCode === 0 ||
+        pagaData?.responseCode === "0" ||
+        pagaData?.status === "SUCCESS" ||
+        pagaData?.status === "SUCCESSFUL" ||
+        pagaData?.transactionStatus === "SUCCESS" ||
+        pagaData?.transactionStatus === "SUCCESSFUL";
+
+      if (attemptSucceeded) break;
     }
 
     if (!pagaResponse || !pagaData) {
@@ -386,6 +468,9 @@ serve(async (req) => {
       // Mask internal merchant balance errors (Code 139 is insufficient merchant balance)
       if (pagaData.responseCode === 139 || String(pagaData.responseCode) === "139") {
           userSafeMessage = "Withdrawal service is currently unavailable. Please try again later.";
+      }
+      if (String(userSafeMessage).toLowerCase().includes("begin 0, end 2, length 0")) {
+          userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
       }
 
       return new Response(
