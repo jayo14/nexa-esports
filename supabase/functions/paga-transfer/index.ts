@@ -378,12 +378,58 @@ serve(async (req) => {
             currency: "NGN",
             reason: narration || "Withdrawal",
           }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountNumber,
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationAccountHolderNameAtBank: recipientName,
+            currency: "NGN",
+            transactionReference: referenceNumber,
+            reason: narration || "Withdrawal",
+          }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountFixed,
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationAccountHolderNameAtBank: recipientName,
+            currency: "NGN",
+            transactionReference: referenceNumber,
+            recipientPhoneNumber: phoneLocal,
+            reason: narration || "Withdrawal",
+          }),
+        ],
+      },
+      {
+        endpoint: "moneyTransferToBank",
+        payloadVariants: [
+          cleanPayload({
+            referenceNumber,
+            amount: amountNumber,
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationAccountHolderNameAtBank: recipientName,
+            currency: "NGN",
+            transactionReference: referenceNumber,
+            reason: narration || "Withdrawal",
+          }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountFixed,
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationBankAccountName: recipientName,
+            currency: "NGN",
+            reason: narration || "Withdrawal",
+          }),
         ],
       },
     ];
 
     let pagaResponse: Response | null = null;
     let pagaData: any = null;
+    const attemptTrace: Array<Record<string, unknown>> = [];
 
     for (let attemptIndex = 0; attemptIndex < requestAttempts.length; attemptIndex++) {
       const attempt = requestAttempts[attemptIndex];
@@ -426,6 +472,7 @@ serve(async (req) => {
             resolved_bank_uuid: bankUuid,
             resolved_bank_name: bankName,
             banks_sample: bankSample,
+            attempts_tried: attemptTrace.slice(-10),
           };
 
           if (isSuccessAttempt) break;
@@ -440,6 +487,14 @@ serve(async (req) => {
             .filter(Boolean)
             .join(" ")
             .toLowerCase();
+
+          attemptTrace.push({
+            endpoint: attempt.endpoint,
+            payloadVariant: payloadVariantIndex + 1,
+            hashIndex: hashIndex + 1,
+            responseCode: pagaData?.responseCode ?? null,
+            errorMessage: pagaData?.errorMessage || pagaData?.responseMessage || pagaData?.message || null,
+          });
 
           const isHashError = errText.includes("invalid request hash");
           const isKnownBadPayload = errText.includes("begin 0, end 2, length 0");
