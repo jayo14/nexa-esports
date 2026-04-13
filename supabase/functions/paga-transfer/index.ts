@@ -190,9 +190,9 @@ serve(async (req) => {
     }
 
     if (Number(wallet.balance) < amount) {
-      return new Response(JSON.stringify({ error: "Insufficient wallet balance" }), {
+      return new Response(JSON.stringify({ status: false, error: "Insufficient wallet balance", message: "Insufficient wallet balance" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-        status: 400,
+        status: 200,
       });
     }
 
@@ -344,8 +344,8 @@ serve(async (req) => {
         await supabaseAdmin.from("wallets").update({ balance: wallet.balance }).eq("id", wallet.id);
         await supabaseAdmin.from("transactions").update({ status: "failed" }).eq("reference", referenceNumber);
         return new Response(
-            JSON.stringify({ error: "Failed to communicate with transfer provider" }),
-            { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+            JSON.stringify({ status: false, error: "Failed to communicate with transfer provider", message: "Failed to communicate with transfer provider" }),
+            { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
         );
     }
 
@@ -364,12 +364,21 @@ serve(async (req) => {
         .update({ status: "failed", metadata: { ...pagaData } })
         .eq("reference", referenceNumber);
 
+      let userSafeMessage = pagaData.message || pagaData.responseMessage || "Transfer failed";
+      
+      // Mask internal merchant balance errors (Code 139 is insufficient merchant balance)
+      if (pagaData.responseCode === 139 || String(pagaData.responseCode) === "139") {
+          userSafeMessage = "Withdrawal service is currently unavailable. Please try again later.";
+      }
+
       return new Response(
         JSON.stringify({
-          error: pagaData.responseMessage || "Transfer failed",
+          status: false,
+          error: userSafeMessage,
+          message: userSafeMessage,
           details: pagaData,
         }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
       );
     }
 
