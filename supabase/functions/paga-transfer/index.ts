@@ -294,73 +294,91 @@ serve(async (req) => {
       [referenceNumber],
     ];
 
-    const requestAttempts: Array<{ endpoint: string; payload: Record<string, unknown> }> = [
+    const requestAttempts: Array<{ endpoint: string; payloadVariants: Array<Record<string, unknown>> }> = [
       {
         endpoint: "depositToBank",
-        payload: cleanPayload({
-          referenceNumber,
-          amount: amountNumber,
-          currency: "NGN",
-          destinationBankUUID: bankUuid || account_bank,
-          destinationBankCode: bankCode || undefined,
-          destinationBank: bankCode || bankUuid || account_bank,
-          destinationBankAccountNumber: account_number,
-          destinationBankAccountName: recipientName,
-          recipientName,
-          recipientPhoneNumber: phoneLocal,
-          recipientMobileNumber: phoneLocal,
-          transferReference: referenceNumber,
-          senderPrincipal: PAGA_PUBLIC_KEY,
-          reason: narration || "Withdrawal",
-          remarks: narration || "Withdrawal",
-          statusCallbackUrl: callbackUrl,
-        }),
-      },
-      {
-        endpoint: "depositToBank",
-        payload: cleanPayload({
-          referenceNumber,
-          amount: amountFixed,
-          currency: "NGN",
-          destinationBankCode: bankCode || undefined,
-          destinationBankAccountNumber: account_number,
-          destinationBankAccountName: recipientName,
-          recipientName,
-          recipientPhoneNumber: phoneIntl,
-          transferReference: referenceNumber,
-          reason: narration || "Withdrawal",
-          statusCallbackUrl: callbackUrl,
-        }),
+        payloadVariants: [
+          cleanPayload({
+            referenceNumber,
+            amount: amountNumber,
+            currency: "NGN",
+            destinationBankUUID: bankUuid || account_bank,
+            destinationBankCode: bankCode || undefined,
+            destinationBank: bankCode || bankUuid || account_bank,
+            destinationBankAccountNumber: account_number,
+            destinationBankAccountName: recipientName,
+            recipientName,
+            recipientPhoneNumber: phoneLocal,
+            recipientMobileNumber: phoneLocal,
+            transferReference: referenceNumber,
+            reason: narration || "Withdrawal",
+            remarks: narration || "Withdrawal",
+            statusCallbackUrl: callbackUrl,
+          }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountFixed,
+            currency: "NGN",
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationAccountNumber: account_number,
+            destinationBankAccountName: recipientName,
+            recipientName,
+            recipientPhoneNumber: phoneIntl,
+            reason: narration || "Withdrawal",
+            statusCallbackUrl: callbackUrl,
+          }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountNumber,
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            recipientName,
+            recipientPhoneNumber: phoneLocal,
+          }),
+        ],
       },
       {
         endpoint: "moneyTransferToBankAccount",
-        payload: cleanPayload({
-          referenceNumber,
-          amount: amountNumber,
-          currency: "NGN",
-          destinationBankCode: bankCode || undefined,
-          destinationBankAccountNumber: account_number,
-          destinationBankAccountName: recipientName,
-          recipientName,
-          reason: narration || "Withdrawal",
-          remarks: narration || "Withdrawal",
-          transferReference: referenceNumber,
-          statusCallbackUrl: callbackUrl,
-        }),
-      },
-      {
-        endpoint: "moneyTransferToBankAccount",
-        payload: cleanPayload({
-          referenceNumber,
-          amount: amountFixed,
-          currency: "NGN",
-          destinationBankCode: bankCode || undefined,
-          destinationBankAccountNumber: account_number,
-          destinationBankAccountName: recipientName,
-          reason: narration || "Withdrawal",
-          transferReference: referenceNumber,
-          statusCallbackUrl: callbackUrl,
-        }),
+        payloadVariants: [
+          // Strict minimal payload based on integration note
+          cleanPayload({
+            referenceNumber,
+            amount: amountNumber,
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationBankAccountName: recipientName,
+            currency: "NGN",
+            reason: narration || "Withdrawal",
+          }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountFixed,
+            destinationBankCode: bankCode || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationBankAccountHolderName: recipientName,
+            currency: "NGN",
+            narration: narration || "Withdrawal",
+          }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountNumber,
+            destinationBankCode: bankCode || undefined,
+            destinationAccountNumber: account_number,
+            destinationAccountName: recipientName,
+            currency: "NGN",
+            reason: narration || "Withdrawal",
+          }),
+          cleanPayload({
+            referenceNumber,
+            amount: amountNumber,
+            destinationBankUUID: bankUuid || undefined,
+            destinationBankAccountNumber: account_number,
+            destinationBankAccountName: recipientName,
+            currency: "NGN",
+            reason: narration || "Withdrawal",
+          }),
+        ],
       },
     ];
 
@@ -369,26 +387,71 @@ serve(async (req) => {
 
     for (let attemptIndex = 0; attemptIndex < requestAttempts.length; attemptIndex++) {
       const attempt = requestAttempts[attemptIndex];
+      for (let payloadVariantIndex = 0; payloadVariantIndex < attempt.payloadVariants.length; payloadVariantIndex++) {
+        const payload = attempt.payloadVariants[payloadVariantIndex];
 
-      for (let hashIndex = 0; hashIndex < baseHashVariants.length; hashIndex++) {
-        const fields = baseHashVariants[hashIndex];
-        const hash = await generatePagaBusinessHash(fields, PAGA_HASH_KEY);
-        console.log(`Attempting Paga transfer: endpoint=${attempt.endpoint}, payload=${attemptIndex + 1}, hash=${hashIndex + 1}`);
+        for (let hashIndex = 0; hashIndex < baseHashVariants.length; hashIndex++) {
+          const fields = baseHashVariants[hashIndex];
+          const hash = await generatePagaBusinessHash(fields, PAGA_HASH_KEY);
+          console.log(`Attempting Paga transfer: endpoint=${attempt.endpoint}, payload=${payloadVariantIndex + 1}, hash=${hashIndex + 1}`);
 
-        pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
-          method: "POST",
-          headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-          body: JSON.stringify(attempt.payload),
-        });
+          pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
+            method: "POST",
+            headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+            body: JSON.stringify(payload),
+          });
 
-        const responseText = await pagaResponse.text();
-        try {
-          pagaData = JSON.parse(responseText);
-        } catch {
-          pagaData = { error: "Invalid JSON", raw: responseText };
+          const responseText = await pagaResponse.text();
+          try {
+            pagaData = JSON.parse(responseText);
+          } catch {
+            pagaData = { error: "Invalid JSON", raw: responseText };
+          }
+
+          const isSuccessAttempt =
+            pagaData?.responseCode === 0 ||
+            pagaData?.responseCode === "0" ||
+            pagaData?.status === "SUCCESS" ||
+            pagaData?.status === "SUCCESSFUL" ||
+            pagaData?.transactionStatus === "SUCCESS" ||
+            pagaData?.transactionStatus === "SUCCESSFUL";
+
+          pagaData.debug_attempted_payload = {
+            ...payload,
+            senderPrincipal: "HIDDEN",
+            attempted_endpoint: attempt.endpoint,
+            attempted_payload_variant: payloadVariantIndex + 1,
+            attempted_hash_index: hashIndex + 1,
+            resolved_bank_code: bankCode,
+            resolved_bank_uuid: bankUuid,
+            resolved_bank_name: bankName,
+            banks_sample: bankSample,
+          };
+
+          if (isSuccessAttempt) break;
+
+          const errText = [
+            pagaData?.details?.errorMessage,
+            pagaData?.errorMessage,
+            pagaData?.responseMessage,
+            pagaData?.message,
+            pagaData?.error,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+          const isHashError = errText.includes("invalid request hash");
+          const isKnownBadPayload = errText.includes("begin 0, end 2, length 0");
+          const isBadParamName = errText.includes("parameter names could not be found");
+
+          if (!isHashError && !isKnownBadPayload && !isBadParamName) {
+            // Non-retriable provider error for this payload shape.
+            break;
+          }
         }
 
-        const isSuccessAttempt =
+        const payloadSucceeded =
           pagaData?.responseCode === 0 ||
           pagaData?.responseCode === "0" ||
           pagaData?.status === "SUCCESS" ||
@@ -396,37 +459,7 @@ serve(async (req) => {
           pagaData?.transactionStatus === "SUCCESS" ||
           pagaData?.transactionStatus === "SUCCESSFUL";
 
-        pagaData.debug_attempted_payload = {
-          ...attempt.payload,
-          senderPrincipal: "HIDDEN",
-          attempted_endpoint: attempt.endpoint,
-          attempted_hash_index: hashIndex + 1,
-          resolved_bank_code: bankCode,
-          resolved_bank_uuid: bankUuid,
-          resolved_bank_name: bankName,
-          banks_sample: bankSample,
-        };
-
-        if (isSuccessAttempt) break;
-
-        const errText = [
-          pagaData?.details?.errorMessage,
-          pagaData?.errorMessage,
-          pagaData?.responseMessage,
-          pagaData?.message,
-          pagaData?.error,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        const isHashError = errText.includes("invalid request hash");
-        const isKnownBadPayload = errText.includes("begin 0, end 2, length 0");
-
-        if (!isHashError && !isKnownBadPayload) {
-          // Non-hash provider error: keep latest and stop trying more hashes for this payload.
-          break;
-        }
+        if (payloadSucceeded) break;
       }
 
       const attemptSucceeded =
@@ -463,7 +496,7 @@ serve(async (req) => {
       // Rollback wallet debit atomically
       await supabaseAdmin.rpc("rollback_wallet_debit", { p_reference: referenceNumber });
 
-      let userSafeMessage = pagaData.message || pagaData.responseMessage || "Transfer failed";
+      let userSafeMessage = pagaData.errorMessage || pagaData.message || pagaData.responseMessage || "Transfer failed";
       
       // Mask internal merchant balance errors (Code 139 is insufficient merchant balance)
       if (pagaData.responseCode === 139 || String(pagaData.responseCode) === "139") {
