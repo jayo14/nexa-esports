@@ -73,20 +73,31 @@ serve(async (req) => {
 
     const referenceNumber = generateReferenceNumber("NX");
 
-    // Prefer server-side PAGA_CALLBACK_URL env var (required for non-HTTPS/localhost origins).
-    // Fall back to the redirect_url supplied by the client only when it is a valid HTTPS URL.
-    // Paga rejects callback URLs that are not publicly accessible HTTPS addresses.
-    let callbackUrl: string;
-    if (PAGA_CALLBACK_URL) {
-      callbackUrl = PAGA_CALLBACK_URL;
+    // ── Resolve the browser redirect URL ────────────────────────────────────
+    // Priority:
+    //  1. PAGA_FRONTEND_URL env var  (explicit production frontend URL)
+    //  2. client-supplied redirect_url  (set to window.location.origin + /payment-success)
+    //  3. PAGA_CALLBACK_URL env var  (legacy fallback — may be the webhook URL, so lowest priority)
+    //
+    // NOTE: PAGA_CALLBACK_URL is intentionally deprioritised because it is often
+    // set to the server-side webhook endpoint, NOT to the user-facing page.
+    const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
+
+    let callbackUrl: string | null = null;
+    if (PAGA_FRONTEND_URL) {
+      callbackUrl = PAGA_FRONTEND_URL;
     } else if (redirect_url && redirect_url.startsWith("https://")) {
       callbackUrl = redirect_url;
-    } else {
+    } else if (PAGA_CALLBACK_URL && PAGA_CALLBACK_URL.startsWith("https://")) {
+      callbackUrl = PAGA_CALLBACK_URL;
+    }
+
+    if (!callbackUrl) {
       return new Response(
         JSON.stringify({
           error:
-            "Payment cannot be initiated: no valid HTTPS callback URL is available. " +
-            "Set the PAGA_CALLBACK_URL environment variable to your production URL " +
+            "Payment cannot be initiated: no valid HTTPS return URL is available. " +
+            "Set PAGA_FRONTEND_URL to your production frontend URL " +
             "(e.g. https://your-domain.com/payment-success).",
         }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }

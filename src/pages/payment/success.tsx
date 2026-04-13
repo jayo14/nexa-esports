@@ -7,6 +7,38 @@ import { Button } from '@/components/ui/button';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 
+/** Parse a reference number from ALL URL formats Paga may produce:
+ *  - ?referenceNumber=NX_...
+ *  - ?reference=NX_...
+ *  - ?transaction_id=NX_...
+ *  - ?data={encoded JSON with paymentDetails.refNo}
+ */
+function extractReference(search: string): string | null {
+  const query = new URLSearchParams(search);
+  // Standard params
+  const direct =
+    query.get('referenceNumber') ||
+    query.get('reference') ||
+    query.get('transaction_id');
+  if (direct && direct !== 'null' && direct !== 'undefined') return direct;
+
+  // Paga payment-complete ?data= format
+  const rawData = query.get('data');
+  if (rawData) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(rawData));
+      const refNo =
+        parsed?.paymentDetails?.refNo ||
+        parsed?.paymentDetails?.referenceNumber ||
+        parsed?.refNo;
+      if (refNo && refNo !== 'null') return refNo;
+    } catch {
+      // ignore parse errors
+    }
+  }
+  return null;
+}
+
 const PRIMARY = '#ec131e';
 
 const glassMorphism: React.CSSProperties = {
@@ -21,19 +53,16 @@ const PaymentSuccess: React.FC = () => {
     const [message, setMessage] = useState('Verifying your payment secure transaction...');
     const [newBalance, setNewBalance] = useState<number | null>(null);
     const [paymentRef, setPaymentRef] = useState<string | null>(null);
+    const [countdown, setCountdown] = useState(5);
     const location = useLocation();
     const navigate = useNavigate();
     const { updateProfile } = useAuth();
 
     useEffect(() => {
-        const query = new URLSearchParams(location.search);
-        const referenceNumber =
-            query.get('referenceNumber') ||
-            query.get('reference') ||
-            query.get('transaction_id');
+        const reference = extractReference(location.search);
 
-        if (referenceNumber && referenceNumber !== 'null' && referenceNumber !== 'undefined') {
-            verifyPayment(referenceNumber);
+        if (reference) {
+            verifyPayment(reference);
         } else {
             console.error('No reference number found in URL:', location.search);
             setStatus('error');
@@ -72,15 +101,22 @@ const PaymentSuccess: React.FC = () => {
                 setMessage('Deposit received successfully! Your wallet balance has been updated.');
                 setNewBalance(data.newBalance || null);
                 await updateProfile({}); // Refresh profile data
-                
+
                 // Store reference so the button can also open the receipt
-                const reference = new URLSearchParams(location.search).get('referenceNumber') || referenceNumber;
+                const reference = extractReference(location.search) || referenceNumber;
                 setPaymentRef(reference);
 
-                // Automatically redirect to wallet with receipt after 4 seconds
-                setTimeout(() => {
-                    navigate(`/wallet?showReceipt=${reference}`);
-                }, 4000);
+                // Countdown then auto-redirect
+                let secs = 5;
+                setCountdown(secs);
+                const timer = setInterval(() => {
+                    secs -= 1;
+                    setCountdown(secs);
+                    if (secs <= 0) {
+                        clearInterval(timer);
+                        navigate(`/wallet?showReceipt=${reference}`);
+                    }
+                }, 1000);
             } else {
                 setStatus('error');
                 setMessage(data.error || 'Payment verification failed.');
@@ -139,6 +175,12 @@ const PaymentSuccess: React.FC = () => {
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">New Balance</p>
                             <p className="text-3xl font-black text-white">₦{newBalance.toLocaleString()}</p>
                         </div>
+                    )}
+
+                    {status === 'success' && countdown > 0 && (
+                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                            Redirecting in {countdown}s…
+                        </p>
                     )}
 
                     <div className="w-full pt-4">
