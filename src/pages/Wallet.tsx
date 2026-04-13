@@ -347,15 +347,46 @@ const Wallet: React.FC = () => {
       verifyPayment();
     }
 
-    if (showReceiptRef && transactions.length > 0 && receiptShownRef.current !== showReceiptRef) {
-      const tx = transactions.find(t => t.reference === showReceiptRef);
-      if (tx) {
+    if (showReceiptRef && receiptShownRef.current !== showReceiptRef) {
+      const openReceiptByReference = async () => {
+        let tx = transactions.find(t => t.reference === showReceiptRef);
+
+        // Fallback: fetch directly in case the transaction is not on the current page yet.
+        if (!tx) {
+          const { data: directTx } = await supabase
+            .from('transactions')
+            .select('id, type, amount, status, reference, created_at, currency')
+            .eq('reference', showReceiptRef)
+            .maybeSingle();
+
+          if (directTx) {
+            tx = {
+              id: directTx.id,
+              description: directTx.type,
+              date: new Date(directTx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+                ' • ' + new Date(directTx.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+              amount: ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction'].includes(directTx.type) ? -Number(directTx.amount) : Number(directTx.amount),
+              type: directTx.type,
+              raw_type: directTx.type,
+              status: directTx.status,
+              reference: directTx.reference,
+              created_at: directTx.created_at,
+              currency: directTx.currency || 'NGN',
+            };
+            fetchWalletData(currentPage);
+          }
+        }
+
+        if (!tx) return;
+
         receiptShownRef.current = showReceiptRef;
-        handleViewReceipt(tx);
+        await handleViewReceipt(tx);
         const ns = new URLSearchParams(location.search);
         ns.delete('showReceipt');
         navigate(location.pathname + (ns.toString() ? '?' + ns.toString() : ''), { replace: true });
-      }
+      };
+
+      openReceiptByReference();
     }
   }, [location.search, transactions, navigate, handleViewReceipt, fetchWalletData, currentPage, toast]);
 

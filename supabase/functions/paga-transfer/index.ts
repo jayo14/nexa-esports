@@ -173,6 +173,8 @@ serve(async (req) => {
     }
 
     const referenceNumber = generateReferenceNumber("NX_WD");
+    const fee = Number((amount * 0.04).toFixed(2));
+    const expectedNetAmount = Number((amount - fee).toFixed(2));
 
     // ── Atomic debit: reserves funds and pre-logs transaction ──────────
     // Using the debit_wallet RPC prevents race conditions and ensures
@@ -184,7 +186,7 @@ serve(async (req) => {
         p_amount:    amount,
         p_reference: referenceNumber,
         p_currency:  "NGN",
-        p_metadata:  JSON.stringify({ fee, netAmount: Number((amount * 0.96).toFixed(2)), account_number, account_bank, beneficiary_name }),
+        p_metadata:  { fee, netAmount: expectedNetAmount, account_number, account_bank, beneficiary_name },
       }
     );
 
@@ -204,7 +206,7 @@ serve(async (req) => {
     }
 
     const newBalance = debitResult.new_balance;
-    const netAmount  = debitResult.net_amount;
+    const netAmount  = Number(debitResult.net_amount ?? expectedNetAmount);
 
     // Fetch banks to resolve the bank code from the UUID if possible
     // This helps avoid Paga internal errors when only UUID is provided
@@ -322,9 +324,8 @@ serve(async (req) => {
     }
 
     if (!pagaResponse || !pagaData) {
-        // Rollback wallet balance
-        await supabaseAdmin.from("wallets").update({ balance: wallet.balance }).eq("id", wallet.id);
-        await supabaseAdmin.from("transactions").update({ status: "failed" }).eq("reference", referenceNumber);
+        // Rollback the pending debit atomically
+        await supabaseAdmin.rpc("rollback_wallet_debit", { p_reference: referenceNumber });
         return new Response(
             JSON.stringify({ status: false, error: "Failed to communicate with transfer provider", message: "Failed to communicate with transfer provider" }),
             { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
@@ -366,7 +367,7 @@ serve(async (req) => {
     // Finalize withdrawal atomically (mark success + log fee)
     await supabaseAdmin.rpc("finalize_wallet_debit", {
       p_reference: referenceNumber,
-      p_metadata: JSON.stringify({ fee, netAmount, account_number, account_bank, paga_response: pagaData }),
+      p_metadata: { fee, netAmount, account_number, account_bank, paga_response: pagaData },
     });
 
     return new Response(

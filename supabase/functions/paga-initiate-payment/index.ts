@@ -75,22 +75,29 @@ serve(async (req) => {
 
     // ── Resolve the browser redirect URL ────────────────────────────────────
     // Priority:
-    //  1. PAGA_FRONTEND_URL env var  (explicit production frontend URL)
-    //  2. client-supplied redirect_url  (set to window.location.origin + /payment-success)
-    //  3. PAGA_CALLBACK_URL env var  (legacy fallback — may be the webhook URL, so lowest priority)
+    //  1. client-supplied redirect_url (current app origin + /payment-success)
+    //  2. PAGA_FRONTEND_URL env var
+    //  3. PAGA_CALLBACK_URL env var (legacy fallback)
     //
-    // NOTE: PAGA_CALLBACK_URL is intentionally deprioritised because it is often
-    // set to the server-side webhook endpoint, NOT to the user-facing page.
+    // We always normalize to an HTTPS app URL and prefer /payment-success path.
     const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
+    const normalizeRedirectUrl = (candidate?: string | null): string | null => {
+      if (!candidate || !candidate.startsWith("https://")) return null;
+      try {
+        const parsed = new URL(candidate);
+        if (!parsed.pathname || parsed.pathname === "/") {
+          parsed.pathname = "/payment-success";
+        }
+        return parsed.toString();
+      } catch {
+        return null;
+      }
+    };
 
-    let callbackUrl: string | null = null;
-    if (PAGA_FRONTEND_URL) {
-      callbackUrl = PAGA_FRONTEND_URL;
-    } else if (redirect_url && redirect_url.startsWith("https://")) {
-      callbackUrl = redirect_url;
-    } else if (PAGA_CALLBACK_URL && PAGA_CALLBACK_URL.startsWith("https://")) {
-      callbackUrl = PAGA_CALLBACK_URL;
-    }
+    const callbackUrl =
+      normalizeRedirectUrl(redirect_url) ||
+      normalizeRedirectUrl(PAGA_FRONTEND_URL) ||
+      normalizeRedirectUrl(PAGA_CALLBACK_URL);
 
     if (!callbackUrl) {
       return new Response(
@@ -116,6 +123,8 @@ serve(async (req) => {
       amount: String(amount),
       currency: "NGN",
       callback_url: callbackUrl,
+      redirect_url: callbackUrl,
+      return_url: callbackUrl,
       email: customer.email,
       description: "Wallet Funding",
       display_name: "NeXa Esports",
