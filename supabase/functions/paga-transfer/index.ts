@@ -172,57 +172,39 @@ serve(async (req) => {
       });
     }
 
-    const fee = Number((amount * 0.04).toFixed(2));
-    const netAmount = Number((amount - fee).toFixed(2));
-
-    // Verify wallet balance
-    const { data: wallet, error: walletError } = await supabaseAdmin
-      .from("wallets")
-      .select("id, balance")
-      .eq("user_id", user.id)
-      .single();
-
-    if (walletError || !wallet) {
-      return new Response(JSON.stringify({ error: "Wallet not found" }), {
-        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-        status: 404,
-      });
-    }
-
-    if (Number(wallet.balance) < amount) {
-      return new Response(JSON.stringify({ status: false, error: "Insufficient wallet balance", message: "Insufficient wallet balance" }), {
-        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
     const referenceNumber = generateReferenceNumber("NX_WD");
-    const newBalance = Number((Number(wallet.balance) - amount).toFixed(2));
 
-    // Deduct wallet balance first (safe deduction)
-    const { error: deductError } = await supabaseAdmin
-      .from("wallets")
-      .update({ balance: newBalance })
-      .eq("id", wallet.id)
-      .eq("user_id", user.id);
+    // ── Atomic debit: reserves funds and pre-logs transaction ──────────
+    // Using the debit_wallet RPC prevents race conditions and ensures
+    // the transaction record has wallet_id set from the start.
+    const { data: debitResult, error: debitError } = await supabaseAdmin.rpc(
+      "debit_wallet",
+      {
+        p_user_id:   user.id,
+        p_amount:    amount,
+        p_reference: referenceNumber,
+        p_currency:  "NGN",
+        p_metadata:  JSON.stringify({ fee, netAmount: Number((amount * 0.96).toFixed(2)), account_number, account_bank, beneficiary_name }),
+      }
+    );
 
-    if (deductError) {
-      console.error("Error deducting wallet balance:", deductError);
-      return new Response(JSON.stringify({ error: "Failed to process withdrawal" }), {
-        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
-        status: 500,
-      });
+    if (debitError || !debitResult?.success) {
+      const errMsg = debitResult?.error || debitError?.message || "Failed to process withdrawal";
+      if (errMsg === "insufficient_balance") {
+        return new Response(
+          JSON.stringify({ status: false, error: "Insufficient wallet balance", message: "Insufficient wallet balance" }),
+          { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+      console.error("debit_wallet error:", debitError || debitResult);
+      return new Response(
+        JSON.stringify({ error: "Failed to process withdrawal" }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+      );
     }
 
-    // Log transaction as pending
-    await supabaseAdmin.from("transactions").insert({
-      user_id: user.id,
-      type: "withdrawal",
-      status: "pending",
-      amount,
-      reference: referenceNumber,
-      metadata: { fee, netAmount, account_number, account_bank, beneficiary_name },
-    });
+    const newBalance = debitResult.new_balance;
+    const netAmount  = debitResult.net_amount;
 
     // Fetch banks to resolve the bank code from the UUID if possible
     // This helps avoid Paga internal errors when only UUID is provided
@@ -354,15 +336,14 @@ serve(async (req) => {
     const isSuccess =
       pagaData.responseCode === 0 ||
       pagaData.responseCode === "0" ||
-      pagaData.status === "SUCCESS";
+      pagaData.status === "SUCCESS" ||
+      pagaData.status === "SUCCESSFUL" ||
+      pagaData.transactionStatus === "SUCCESS" ||
+      pagaData.transactionStatus === "SUCCESSFUL";
 
     if (!isSuccess) {
-      // Rollback wallet balance on failure
-      await supabaseAdmin.from("wallets").update({ balance: wallet.balance }).eq("id", wallet.id);
-      await supabaseAdmin
-        .from("transactions")
-        .update({ status: "failed", metadata: { ...pagaData } })
-        .eq("reference", referenceNumber);
+      // Rollback wallet debit atomically
+      await supabaseAdmin.rpc("rollback_wallet_debit", { p_reference: referenceNumber });
 
       let userSafeMessage = pagaData.message || pagaData.responseMessage || "Transfer failed";
       
@@ -382,17 +363,11 @@ serve(async (req) => {
       );
     }
 
-    // Mark transaction as success and log fee
-    await supabaseAdmin
-      .from("transactions")
-      .update({ status: "success", metadata: { fee, netAmount, account_number, account_bank, paga_response: pagaData } })
-      .eq("reference", referenceNumber);
-
-    try {
-      await supabaseAdmin.from("earnings").insert({ amount: fee, source: "withdrawal_fee" });
-    } catch (err) {
-      console.error("Error logging withdrawal fee:", err);
-    }
+    // Finalize withdrawal atomically (mark success + log fee)
+    await supabaseAdmin.rpc("finalize_wallet_debit", {
+      p_reference: referenceNumber,
+      p_metadata: JSON.stringify({ fee, netAmount, account_number, account_bank, paga_response: pagaData }),
+    });
 
     return new Response(
       JSON.stringify({ status: true, message: "Withdrawal successful", referenceNumber, netAmount }),
