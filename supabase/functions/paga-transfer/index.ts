@@ -211,6 +211,8 @@ serve(async (req) => {
     // Fetch banks to resolve the bank code from the UUID if possible
     // This helps avoid Paga internal errors when only UUID is provided
     let bankCode = "";
+    let bankUuid = "";
+    let bankName = "";
     let bankSample: any[] | string = "Empty list";
     try {
         const getBanksRef = generateReferenceNumber("GB");
@@ -225,19 +227,47 @@ serve(async (req) => {
         const banksList = banksData.bank || banksData.banks || banksData.data || [];
         bankSample = banksList.length > 0 ? banksList.slice(0, 3) : "Empty list";
         
-        const target = (account_bank || "").toLowerCase().trim();
+        const target = String(account_bank || "").trim().toLowerCase();
+        const targetNoHyphen = target.replace(/-/g, "");
         const matchedBank = banksList.find((b: any) => {
-            const values = [b.uuid, b.bankUUID, b.bankUuid, b.id, b.code, b.bankCode, b.destinationBankCode]
+            const values = [
+                b.uuid,
+                b.bankUUID,
+                b.bankUuid,
+                b.id,
+                b.code,
+                b.bankCode,
+                b.destinationBankCode,
+                b.interInstitutionCode,
+                b.sortCode,
+                b.name,
+            ]
                 .filter(v => typeof v === 'string')
                 .map(v => v.toLowerCase().trim());
-            return values.includes(target);
+            const valuesNoHyphen = values.map(v => v.replace(/-/g, ""));
+            return values.includes(target) || valuesNoHyphen.includes(targetNoHyphen);
         });
 
         if (matchedBank) {
-            bankCode = matchedBank.code || matchedBank.bankCode || matchedBank.destinationBankCode || "";
+            bankCode =
+              matchedBank.destinationBankCode ||
+              matchedBank.bankCode ||
+              matchedBank.code ||
+              matchedBank.interInstitutionCode ||
+              matchedBank.sortCode ||
+              "";
+            bankUuid = matchedBank.uuid || matchedBank.bankUUID || matchedBank.bankUuid || "";
+            bankName = matchedBank.name || "";
         }
     } catch (e) {
         console.warn("Failed to resolve bank code:", e);
+    }
+
+    if (!bankCode && /^\d{3,6}$/.test(String(account_bank || "").trim())) {
+      bankCode = String(account_bank).trim();
+    }
+    if (!bankUuid && /^[0-9a-fA-F-]{36}$/.test(String(account_bank || "").trim())) {
+      bankUuid = String(account_bank).trim().toUpperCase();
     }
 
     const hashAmount = String(amount);
@@ -247,6 +277,7 @@ serve(async (req) => {
     const hashVariants = [
       [referenceNumber, hashAmount, account_bank || "", account_number || ""],
       [referenceNumber, hashAmount, bankCode || account_bank || "", account_number || ""],
+      [referenceNumber, hashAmount, bankUuid || account_bank || "", account_number || ""],
       [referenceNumber, hashAmount, account_bank || "", account_number || "", normalizedPhone],
       [referenceNumber, hashAmount, "NGN", account_bank || "", account_number || ""],
     ];
@@ -263,7 +294,7 @@ serve(async (req) => {
             referenceNumber,
             amount: Number(amount),
             currency: "NGN",
-            destinationBankUUID: account_bank,
+            destinationBankUUID: bankUuid || account_bank,
             destinationBankAccountNumber: account_number,
             recipientName: (beneficiary_name || "Nexa User").toUpperCase(),
             recipientPhoneNumber: normalizedPhone,
@@ -278,7 +309,7 @@ serve(async (req) => {
             pagaPayload.destinationBankCode = bankCode;
             pagaPayload.destinationBank = bankCode;
         } else {
-            pagaPayload.destinationBank = account_bank;
+            pagaPayload.destinationBank = bankUuid || account_bank;
         }
 
         pagaResponse = await fetch(`${PAGA_BASE_URL}/depositToBank`, {
@@ -295,6 +326,8 @@ serve(async (req) => {
                     ...pagaPayload, 
                     senderPrincipal: "HIDDEN",
                     resolved_bank_code: bankCode,
+                    resolved_bank_uuid: bankUuid,
+                    resolved_bank_name: bankName,
                     banks_sample: bankSample
                 };
             }
@@ -306,6 +339,8 @@ serve(async (req) => {
                     ...pagaPayload, 
                     senderPrincipal: "HIDDEN",
                     resolved_bank_code: bankCode,
+                    resolved_bank_uuid: bankUuid,
+                    resolved_bank_name: bankName,
                     banks_sample: bankSample
                 } 
             };
