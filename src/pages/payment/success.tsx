@@ -20,6 +20,7 @@ const PaymentSuccess: React.FC = () => {
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
     const [message, setMessage] = useState('Verifying your payment secure transaction...');
     const [newBalance, setNewBalance] = useState<number | null>(null);
+    const [paymentRef, setPaymentRef] = useState<string | null>(null);
     const location = useLocation();
     const navigate = useNavigate();
     const { updateProfile } = useAuth();
@@ -72,8 +73,11 @@ const PaymentSuccess: React.FC = () => {
                 setNewBalance(data.newBalance || null);
                 await updateProfile({}); // Refresh profile data
                 
-                // Automatically redirect after 4 seconds
+                // Store reference so the button can also open the receipt
                 const reference = new URLSearchParams(location.search).get('referenceNumber') || referenceNumber;
+                setPaymentRef(reference);
+
+                // Automatically redirect to wallet with receipt after 4 seconds
                 setTimeout(() => {
                     navigate(`/wallet?showReceipt=${reference}`);
                 }, 4000);
@@ -140,10 +144,10 @@ const PaymentSuccess: React.FC = () => {
                     <div className="w-full pt-4">
                         {status === 'success' ? (
                             <Button 
-                                onClick={() => navigate('/wallet')}
+                                onClick={() => navigate(paymentRef ? `/wallet?showReceipt=${paymentRef}` : '/wallet')}
                                 className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold text-base transition-all scale-100 active:scale-95 flex items-center justify-center gap-2"
                             >
-                                Continue to Wallet <ArrowRight className="w-5 h-5" />
+                                View Receipt <ArrowRight className="w-5 h-5" />
                             </Button>
                         ) : status === 'error' ? (
                             <Button 

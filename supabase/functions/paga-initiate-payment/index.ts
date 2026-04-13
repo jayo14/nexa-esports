@@ -108,6 +108,8 @@ serve(async (req) => {
       email: customer.email,
       description: "Wallet Funding",
       display_name: "NeXa Esports",
+      // Default to bank transfer; other methods (card, USSD, Paga account) remain available
+      payment_method: "bank_transfer",
     });
     if (nameParts[0]) params.set("first_name", nameParts[0]);
     if (nameParts.slice(1).join(" ")) params.set("last_name", nameParts.slice(1).join(" "));
