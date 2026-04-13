@@ -72,12 +72,29 @@ const PaymentSuccess: React.FC = () => {
 
     const verifyPayment = async (referenceNumber: string) => {
         try {
+            // Parse Paga's ?data= payload (if present) and send it along so the
+            // edge function can extract the amount even if the DB pre-log failed.
+            let pagaData: Record<string, unknown> | undefined;
+            const rawData = new URLSearchParams(location.search).get('data');
+            if (rawData) {
+                try { pagaData = JSON.parse(decodeURIComponent(rawData)); } catch { /* ignore */ }
+            }
+
+            // Include the user's auth token so the edge function can identify
+            // the user even if the pre-logged transaction record was lost.
+            const { data: { session } } = await supabase.auth.getSession();
+
             const { data, error } = await supabase.functions.invoke('paga-verify-payment', {
+                headers: session?.access_token
+                    ? { Authorization: `Bearer ${session.access_token}` }
+                    : {},
                 body: {
                     referenceNumber,
                     tx_ref: referenceNumber,
+                    ...(pagaData ? { pagaData } : {}),
                 },
             });
+
 
             if (error) {
                 console.error('Payment verification error:', error);

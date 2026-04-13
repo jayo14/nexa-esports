@@ -128,17 +128,46 @@ serve(async (req) => {
 
     const checkoutUrl = `${CHECKOUT_BASE}?${params.toString()}`;
 
-    // Pre-log pending transaction for later verification
-    await supabaseAdmin.from("transactions").insert({
-      user_id: user.id,
-      type: "deposit",
-      status: "pending",
-      amount,
-      reference: referenceNumber,
-      metadata: { userId: user.id, email: customer.email, source: "paga" },
-    }).then(({ error }) => {
-      if (error) console.warn("Could not pre-log pending transaction:", error.message);
-    });
+    // ── Pre-log pending transaction ───────────────────────────────────────────
+    // We MUST include wallet_id because the transactions table has a NOT NULL
+    // constraint on that column. Look up (or auto-create) the wallet first.
+    let walletId: string | null = null;
+    const { data: existingWallet } = await supabaseAdmin
+      .from("wallets")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingWallet?.id) {
+      walletId = existingWallet.id;
+    } else {
+      // Auto-create wallet for new users
+      const { data: newWallet, error: walletCreateError } = await supabaseAdmin
+        .from("wallets")
+        .insert({ user_id: user.id, balance: 0 })
+        .select("id")
+        .maybeSingle();
+      if (walletCreateError) {
+        console.warn("Could not create wallet:", walletCreateError.message);
+      } else {
+        walletId = newWallet?.id ?? null;
+      }
+    }
+
+    if (walletId) {
+      const { error: txError } = await supabaseAdmin.from("transactions").insert({
+        wallet_id: walletId,
+        user_id: user.id,
+        type: "deposit",
+        status: "pending",
+        amount,
+        reference: referenceNumber,
+        metadata: { userId: user.id, email: customer.email, source: "paga" },
+      });
+      if (txError) console.warn("Could not pre-log pending transaction:", txError.message);
+    } else {
+      console.warn("No wallet_id available — pending transaction NOT pre-logged for ref:", referenceNumber);
+    }
 
     console.log("Paga checkout URL generated:", checkoutUrl);
 

@@ -74,7 +74,7 @@ serve(async (req) => {
       return respond({ error: "Payment service not configured: Paga credentials missing" }, 500);
     }
 
-    const { referenceNumber, tx_ref } = await req.json();
+    const { referenceNumber, tx_ref, pagaData: clientPagaData } = await req.json();
     const reference = referenceNumber || tx_ref;
 
     if (!reference) {
@@ -83,32 +83,30 @@ serve(async (req) => {
 
     // ── Step 1: Idempotency check ─────────────────────────────────────────────
     // If our DB already shows success (webhook fired), return immediately.
-    const { data: existingTx } = await supabaseAdmin
+    const { data: existingTx, error: txLookupErr } = await supabaseAdmin
       .from("transactions")
       .select("id, status, amount, user_id, wallet_id")
       .eq("reference", reference)
       .maybeSingle();
 
+    if (txLookupErr) console.warn("Transaction lookup error:", txLookupErr.message);
+
     if (existingTx?.status === "success") {
       // Fetch updated wallet balance to return to client
       let newBalance: number | null = null;
-      if (existingTx.user_id) {
-        const { data: wallet } = await supabaseAdmin
-          .from("wallets")
-          .select("balance")
-          .eq("user_id", existingTx.user_id)
-          .maybeSingle();
-        newBalance = wallet ? Number(wallet.balance) : null;
-      }
+      const walletQuery = existingTx.user_id
+        ? supabaseAdmin.from("wallets").select("balance").eq("user_id", existingTx.user_id).maybeSingle()
+        : existingTx.wallet_id
+        ? supabaseAdmin.from("wallets").select("balance").eq("id", existingTx.wallet_id).maybeSingle()
+        : Promise.resolve({ data: null });
+
+      const { data: wallet } = await walletQuery;
+      newBalance = wallet ? Number((wallet as any).balance) : null;
       console.log("Transaction already processed (idempotent):", reference);
       return respond({ message: "Transaction already processed", status: "success", newBalance });
     }
 
     // ── Step 2: Try Paga transactionStatus API ────────────────────────────────
-    // NOTE: This endpoint works best for merchant-initiated transfers.
-    // For incoming collection payments (checkout), it may return a non-success
-    // code even when the payment succeeded. We use it as the primary check
-    // but fall back gracefully when it doesn't confirm.
     const pagaCheck = await checkPagaTransactionStatus(
       reference,
       PAGA_BASE_URL,
@@ -118,10 +116,15 @@ serve(async (req) => {
     );
 
     // ── Step 3: Determine amount to credit ───────────────────────────────────
-    // Prefer Paga's verified amount; fall back to what we pre-logged.
+    // Prefer Paga's verified amount → DB pre-logged amount → client-sent Paga data amount
+    const clientAmount =
+      clientPagaData?.paymentDetails?.amount ||
+      clientPagaData?.paymentDetails?.total;
+
     const amountToCredit =
       pagaCheck.amount ||
-      (existingTx?.amount ? Number(existingTx.amount) : null);
+      (existingTx?.amount ? Number(existingTx.amount) : null) ||
+      (clientAmount ? Number(clientAmount) : null);
 
     if (!amountToCredit) {
       console.error("No amount available for reference:", reference);
@@ -129,29 +132,48 @@ serve(async (req) => {
     }
 
     // ── Step 4: Resolve user_id ───────────────────────────────────────────────
-    let userId = existingTx?.user_id;
+    // Primary: from pre-logged transaction.
+    // Fallback: from the authenticated user's JWT (user must still be logged in
+    // when /payment-success calls this function).
+    let userId: string | null = existingTx?.user_id ?? null;
+
+    if (!userId) {
+      // Try authenticating via the Authorization header from the success page
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader) {
+        try {
+          const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+          const anonClient = createClient(
+            Deno.env.get("SUPABASE_URL") ?? "",
+            Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+            { global: { headers: { Authorization: authHeader } } }
+          );
+          const { data: { user: authUser } } = await anonClient.auth.getUser();
+          if (authUser?.id) {
+            userId = authUser.id;
+            console.log("Resolved user_id from JWT fallback:", userId);
+          }
+        } catch (authErr) {
+          console.warn("JWT auth fallback failed:", authErr);
+        }
+      }
+    }
+
     if (!userId) {
       console.error("user_id not found for reference:", reference);
-      return respond({ error: "User not found. Cannot credit wallet." }, 400);
+      return respond({ error: "Session expired. Please log into the NeXa app and check your wallet — your payment may already be credited." }, 400);
     }
 
     if (pagaCheck.success) {
-      // ── Path A: Paga confirmed success → credit immediately ──────────────
       console.log("Paga confirmed payment. Crediting wallet for user:", userId);
     } else {
-      // ── Path B: Paga API didn't confirm (common for collection payments) ──
-      // We trust the pending transaction because:
-      //  1. The reference was generated by us (not the user)
-      //  2. Paga's checkout only issues a redirect to callback_url on success
-      //  3. We only pre-log pending tx during an authenticated initiation
-      // This ensures we don't leave users with uncredited balances.
       console.log(
         "Paga API did not confirm — crediting via pending transaction trust model. Ref:", reference,
         "Paga raw:", JSON.stringify(pagaCheck.raw)
       );
     }
 
-    // ── Step 5: Credit wallet via RPC (idempotent, advisory-locked) ──────────
+    // ── Step 5: Credit wallet via RPC (idempotent) ────────────────────────────
     const { data: newBalance, error: creditError } = await supabaseAdmin.rpc("credit_wallet", {
       p_user_id:   userId,
       p_amount:    amountToCredit,
@@ -170,6 +192,7 @@ serve(async (req) => {
       message: "Payment verified and wallet credited",
       newBalance: Number(newBalance),
     });
+
 
   } catch (error) {
     console.error("Error in paga-verify-payment:", error);
