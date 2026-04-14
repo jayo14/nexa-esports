@@ -4,26 +4,26 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Home,
-  Wallet,
-  Gamepad2,
-  Package,
-  Tv,
-  BarChart2,
-  ShoppingBag,
-  MessageSquare,
-  Plus,
-  Bell,
-  HandCoins,
-  Settings,
-  CalendarDays,
-  Layers,
-  Crosshair,
-  Activity,
-  Users,
-  Swords,
-  Trophy,
-} from 'lucide-react';
+  MdHome,
+  MdAccountBalanceWallet,
+  MdSportsEsports,
+  MdStorefront,
+  MdCampaign,
+  MdBarChart,
+  MdShoppingBag,
+  MdChat,
+  MdAdd,
+  MdNotifications,
+  MdPayments,
+  MdSettings,
+  MdEvent,
+  MdInventory,
+  MdGpsFixed,
+  MdTimeline,
+  MdPeople,
+  MdSecurity,
+  MdEmojiEvents,
+} from 'react-icons/md';
 
 const C = {
   primary: '#ec131e',
@@ -87,29 +87,29 @@ export const Sidebar: React.FC<SidebarProps> = () => {
 
       <ScrollArea className="flex-1 w-full [&>[data-orientation='vertical']]:hidden">
         <nav className="flex flex-col items-center gap-5 pb-2">
-          <SideNavIcon icon={<Home className="w-5 h-5" />} onClick={() => navigate('/dashboard')} active={isActive('/dashboard')} />
-          <SideNavIcon icon={<Wallet className="w-5 h-5" />} onClick={() => navigate('/wallet')} active={isActive('/wallet')} />
+          <SideNavIcon icon={<MdHome className="w-5 h-5" />} onClick={() => navigate('/dashboard')} active={isActive('/dashboard')} />
+          <SideNavIcon icon={<MdAccountBalanceWallet className="w-5 h-5" />} onClick={() => navigate('/wallet')} active={isActive('/wallet')} />
           <SideNavIcon
-            icon={<Gamepad2 className="w-5 h-5" />}
+            icon={<MdSportsEsports className="w-5 h-5" />}
             onClick={() => navigate('/scrims')}
             active={isActive('/scrims') || location.pathname.startsWith('/events/')}
           />
-          <SideNavIcon icon={<Package className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
-          <SideNavIcon icon={<Tv className="w-5 h-5" />} onClick={() => navigate('/announcements')} active={isActive('/announcements')} />
-          <SideNavIcon icon={<BarChart2 className="w-5 h-5" />} onClick={() => navigate('/statistics')} active={isActive('/statistics')} />
-          <SideNavIcon icon={<ShoppingBag className="w-5 h-5" />} onClick={() => navigate('/buyer/dashboard')} active={isActive('/buyer/dashboard')} />
-          <SideNavIcon icon={<MessageSquare className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
-          <SideNavIcon icon={<Users className="w-5 h-5" />} onClick={() => navigate('/players')} active={isActive('/players')} />
-          <SideNavIcon icon={<Swords className="w-5 h-5" />} onClick={() => navigate('/teams')} active={isActive('/teams')} />
+          <SideNavIcon icon={<MdStorefront className="w-5 h-5" />} onClick={() => navigate('/marketplace')} active={isActive('/marketplace')} />
+          <SideNavIcon icon={<MdCampaign className="w-5 h-5" />} onClick={() => navigate('/announcements')} active={isActive('/announcements')} />
+          <SideNavIcon icon={<MdBarChart className="w-5 h-5" />} onClick={() => navigate('/statistics')} active={isActive('/statistics')} />
+          <SideNavIcon icon={<MdShoppingBag className="w-5 h-5" />} onClick={() => navigate('/buyer/dashboard')} active={isActive('/buyer/dashboard')} />
+          <SideNavIcon icon={<MdChat className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
+          <SideNavIcon icon={<MdPeople className="w-5 h-5" />} onClick={() => navigate('/players')} active={isActive('/players')} />
+          <SideNavIcon icon={<MdSecurity className="w-5 h-5" />} onClick={() => navigate('/teams')} active={isActive('/teams')} />
           {isAdminOrClanMaster && (
             <>
-              <SideNavIcon icon={<CalendarDays className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
-              <SideNavIcon icon={<Bell className="w-5 h-5" />} onClick={() => navigate('/notifications')} active={isActive('/notifications')} />
-              <SideNavIcon icon={<HandCoins className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
-              <SideNavIcon icon={<Settings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
-              <SideNavIcon icon={<Layers className="w-5 h-5" />} onClick={() => navigate('/admin/loadouts')} active={isActive('/admin/loadouts')} />
-              <SideNavIcon icon={<Crosshair className="w-5 h-5" />} onClick={() => navigate('/admin/weapon-layouts')} active={isActive('/admin/weapon-layouts')} />
-              <SideNavIcon icon={<Activity className="w-5 h-5" />} onClick={() => navigate('/admin/activities')} active={isActive('/admin/activities')} />
+              <SideNavIcon icon={<MdEvent className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
+              <SideNavIcon icon={<MdNotifications className="w-5 h-5" />} onClick={() => navigate('/notifications')} active={isActive('/notifications')} />
+              <SideNavIcon icon={<MdPayments className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
+              <SideNavIcon icon={<MdSettings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
+              <SideNavIcon icon={<MdInventory className="w-5 h-5" />} onClick={() => navigate('/admin/loadouts')} active={isActive('/admin/loadouts')} />
+              <SideNavIcon icon={<MdGpsFixed className="w-5 h-5" />} onClick={() => navigate('/admin/weapon-layouts')} active={isActive('/admin/weapon-layouts')} />
+              <SideNavIcon icon={<MdTimeline className="w-5 h-5" />} onClick={() => navigate('/admin/activities')} active={isActive('/admin/activities')} />
             </>
           )}
         </nav>
@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
         className="w-10 h-10 mt-auto rounded-full flex items-center justify-center"
         style={{ background: `${C.primary}33`, border: `1px solid ${C.primary}66`, color: C.primary }}
       >
-        <Plus className="w-4 h-4" />
+        <MdAdd className="w-4 h-4" />
       </button>
     </aside>
   );
