@@ -8,6 +8,7 @@ import { ArrowDown, ArrowRight, Coins, Loader2, CheckCircle2 } from 'lucide-reac
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MobileWithdrawFlowProps {
   open: boolean;
@@ -38,6 +39,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
   const [amount, setAmount] = useState<string>('');
   const [showPinVerify, setShowPinVerify] = useState(false);
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
+  const { setProfile, refreshWallet } = useAuth();
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -67,14 +69,23 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
   const handlePinSuccess = async () => {
     setShowPinVerify(false);
     setStep('processing');
+    const numAmount = Number(amount);
+    
+    // Optimistic UI update
+    setProfile(prev => prev ? { ...prev, wallet_balance: (prev.wallet_balance || 0) - numAmount } : prev);
+    
     try {
-      await onWithdrawSubmit(Number(amount));
+      await onWithdrawSubmit(numAmount);
       setWithdrawalSuccess(true);
+      await refreshWallet();
+      
       setTimeout(() => {
         onOpenChange(false);
       }, 2000);
     } catch (error) {
       setStep('review');
+      // Revert optimistic update
+      setProfile(prev => prev ? { ...prev, wallet_balance: (prev.wallet_balance || 0) + numAmount } : prev);
     }
   };
 

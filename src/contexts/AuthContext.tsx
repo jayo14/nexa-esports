@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,8 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<boolean>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
+  refreshWallet: () => Promise<void>;
+  setProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   displayRole: string;
   signInWithGoogle: () => Promise<void>;
 }
@@ -384,6 +386,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const refreshWallet = useCallback(async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (data) {
+      setProfile(prev => prev ? { ...prev, wallet_balance: data.balance } : prev);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`wallet-balance-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'wallets',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newBalance = (payload.new as { balance: number }).balance;
+          setProfile(prev => prev ? { ...prev, wallet_balance: newBalance } : prev);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       console.log("Attempting login for:", email);
@@ -613,6 +648,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     resetPassword,
     updateProfile,
     refreshProfile: fetchProfile,
+    refreshWallet,
+    setProfile,
     displayRole,
     signInWithGoogle,
   };

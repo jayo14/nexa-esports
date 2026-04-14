@@ -56,7 +56,7 @@ const PaymentSuccess: React.FC = () => {
     const [countdown, setCountdown] = useState(5);
     const location = useLocation();
     const navigate = useNavigate();
-    const { updateProfile } = useAuth();
+    const { refreshWallet } = useAuth();
 
     useEffect(() => {
         const reference = extractReference(location.search);
@@ -117,7 +117,7 @@ const PaymentSuccess: React.FC = () => {
                 setStatus('success');
                 setMessage('Deposit received successfully! Your wallet balance has been updated.');
                 setNewBalance(data.newBalance || null);
-                await updateProfile({}); // Refresh profile data
+                await refreshWallet(); // Refresh profile data
 
                 // Store reference so the button can also open the receipt
                 const reference = extractReference(location.search) || referenceNumber;
