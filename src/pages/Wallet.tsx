@@ -438,7 +438,7 @@ const Wallet: React.FC = () => {
                     Total Balance
                   </p>
                   <div className="flex items-baseline gap-2 sm:gap-4 min-w-0 flex-nowrap">
-                    <h3 className="text-[clamp(1.5rem,10.5vw,4.5rem)] leading-none font-black tracking-tighter text-white whitespace-nowrap overflow-hidden text-ellipsis">
+                    <h3 className="text-[clamp(1.5rem,7.5vw,3.5rem)] leading-none font-black tracking-tighter text-white whitespace-nowrap overflow-hidden text-ellipsis">
                       {balanceVisible
                         ? `₦${Math.floor(animatedBalance).toLocaleString()}`
                         : '₦••••••'}

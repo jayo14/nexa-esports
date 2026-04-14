@@ -10,11 +10,23 @@ export const useCountUp = ({ end, duration = 1000, start = 0 }: UseCountUpOption
   const [count, setCount] = useState(start);
   const frameRef = useRef<number>();
   const startTimeRef = useRef<number>();
+  const hasAnimatedRef = useRef(false);
 
   useEffect(() => {
+    // If we have already performed the initial animation round
+    // to the first loaded value, snap to the new value immediately.
+    if (hasAnimatedRef.current) {
+      setCount(end);
+      return;
+    }
+
+    if (end > 0) {
+      hasAnimatedRef.current = true;
+    }
+
     // Reset animation when end value changes
     startTimeRef.current = undefined;
-    
+
     const animate = (timestamp: number) => {
       if (!startTimeRef.current) {
         startTimeRef.current = timestamp;
