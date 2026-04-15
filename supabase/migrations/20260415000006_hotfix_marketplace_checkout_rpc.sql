@@ -1,5 +1,7 @@
--- Ensure marketplace checkout uses wallets table balance source (not profiles.wallet_balance).
--- Also credit seller payout to wallets table for consistency.
+-- Hotfix: marketplace_checkout failed on some deployments because
+-- public.transactions does not have a "description" column.
+-- This replaces checkout/confirm RPCs with versions that rely on
+-- account_transactions + wallets only.
 
 CREATE OR REPLACE FUNCTION public.marketplace_checkout(
   p_listing_id UUID,
@@ -27,22 +29,12 @@ BEGIN
 
   v_seller_id := v_listing.seller_id;
 
-  -- Prefer marketplace wallet, then fallback to latest wallet for compatibility.
   SELECT id, balance INTO v_buyer_wallet_id, v_buyer_balance
   FROM wallets
-  WHERE user_id = p_buyer_id AND wallet_type = 'marketplace'
+  WHERE user_id = p_buyer_id
   ORDER BY updated_at DESC NULLS LAST
   LIMIT 1
   FOR UPDATE;
-
-  IF v_buyer_wallet_id IS NULL THEN
-    SELECT id, balance INTO v_buyer_wallet_id, v_buyer_balance
-    FROM wallets
-    WHERE user_id = p_buyer_id
-    ORDER BY updated_at DESC NULLS LAST
-    LIMIT 1
-    FOR UPDATE;
-  END IF;
 
   IF v_buyer_wallet_id IS NULL OR COALESCE(v_buyer_balance, 0) < p_price THEN
     RETURN jsonb_build_object('success', false, 'error', 'Insufficient wallet balance');
@@ -81,9 +73,6 @@ BEGIN
   SET status = 'reserved', updated_at = NOW()
   WHERE id = p_listing_id;
 
-  -- Note: we intentionally avoid writing to public.transactions here because
-  -- deployments differ on transaction columns/type values.
-
   RETURN jsonb_build_object(
     'success', true,
     'transaction_id', v_transaction_id,
@@ -114,14 +103,14 @@ BEGIN
 
   SELECT id INTO v_seller_wallet_id
   FROM wallets
-  WHERE user_id = v_transaction.seller_id AND wallet_type = 'marketplace'
+  WHERE user_id = v_transaction.seller_id
   ORDER BY updated_at DESC NULLS LAST
   LIMIT 1
   FOR UPDATE;
 
   IF v_seller_wallet_id IS NULL THEN
-    INSERT INTO wallets (user_id, balance, wallet_type)
-    VALUES (v_transaction.seller_id, 0, 'marketplace')
+    INSERT INTO wallets (user_id, balance)
+    VALUES (v_transaction.seller_id, 0)
     RETURNING id INTO v_seller_wallet_id;
   END IF;
 
@@ -141,9 +130,6 @@ BEGIN
   UPDATE account_listings
   SET status = 'sold', sold_at = NOW(), updated_at = NOW()
   WHERE id = v_transaction.listing_id;
-
-  -- Note: we intentionally avoid writing to public.transactions here because
-  -- deployments differ on transaction columns/type values.
 
   RETURN jsonb_build_object('success', true, 'message', 'Purchase confirmed and escrow released');
 END;
