@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,38 +15,38 @@ import { Capacitor } from '@capacitor/core';
  *  - ?data={encoded JSON with paymentDetails.refNo}
  */
 function extractReference(search: string): string | null {
-  const query = new URLSearchParams(search);
-  // Standard params
-  const direct =
-    query.get('referenceNumber') ||
-    query.get('reference') ||
-    query.get('transaction_id');
-  if (direct && direct !== 'null' && direct !== 'undefined') return direct;
+    const query = new URLSearchParams(search);
+    // Standard params
+    const direct =
+        query.get('referenceNumber') ||
+        query.get('reference') ||
+        query.get('transaction_id');
+    if (direct && direct !== 'null' && direct !== 'undefined') return direct;
 
-  // Paga payment-complete ?data= format
-  const rawData = query.get('data');
-  if (rawData) {
-    try {
-      const parsed = JSON.parse(decodeURIComponent(rawData));
-      const refNo =
-        parsed?.paymentDetails?.refNo ||
-        parsed?.paymentDetails?.referenceNumber ||
-        parsed?.refNo;
-      if (refNo && refNo !== 'null') return refNo;
-    } catch {
-      // ignore parse errors
+    // Paga payment-complete ?data= format
+    const rawData = query.get('data');
+    if (rawData) {
+        try {
+            const parsed = JSON.parse(decodeURIComponent(rawData));
+            const refNo =
+                parsed?.paymentDetails?.refNo ||
+                parsed?.paymentDetails?.referenceNumber ||
+                parsed?.refNo;
+            if (refNo && refNo !== 'null') return refNo;
+        } catch {
+            // ignore parse errors
+        }
     }
-  }
-  return null;
+    return null;
 }
 
 const PRIMARY = '#ec131e';
 
 const glassMorphism: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.03)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    border: '1px solid rgba(255,255,255,0.08)',
 };
 
 const PaymentSuccess: React.FC = () => {
@@ -152,7 +153,7 @@ const PaymentSuccess: React.FC = () => {
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500 opacity-5 blur-[120px] rounded-full" />
 
             <div className="w-full max-w-md relative z-10 animate-fade-in">
-                <div 
+                <div
                     className="rounded-[32px] p-8 sm:p-10 text-center flex flex-col items-center space-y-8"
                     style={glassMorphism}
                 >
@@ -202,14 +203,14 @@ const PaymentSuccess: React.FC = () => {
 
                     <div className="w-full pt-4">
                         {status === 'success' ? (
-                            <Button 
+                            <Button
                                 onClick={() => navigate(paymentRef ? `/wallet?showReceipt=${paymentRef}` : '/wallet')}
                                 className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold text-base transition-all scale-100 active:scale-95 flex items-center justify-center gap-2"
                             >
                                 View Receipt <ArrowRight className="w-5 h-5" />
                             </Button>
                         ) : status === 'error' ? (
-                            <Button 
+                            <Button
                                 onClick={() => navigate('/wallet/fund')}
                                 className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-bold text-base transition-all flex items-center justify-center gap-2"
                             >
