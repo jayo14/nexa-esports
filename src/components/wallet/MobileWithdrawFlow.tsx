@@ -20,6 +20,7 @@ interface MobileWithdrawFlowProps {
   onWithdrawSubmit: (amount: number) => Promise<void>;
   isProcessing: boolean;
   cooldown: number;
+  walletType?: 'clan' | 'marketplace';
 }
 
 type Step = 'amount' | 'review' | 'processing';
@@ -34,6 +35,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
   onWithdrawSubmit,
   isProcessing,
   cooldown,
+  walletType = 'clan',
 }) => {
   const [step, setStep] = useState<Step>('amount');
   const [amount, setAmount] = useState<string>('');
@@ -89,8 +91,21 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
     }
   };
 
-  const fee = Number(amount) * 0.04;
-  const youWillReceive = Number(amount) * 0.96;
+  const FEE_RATES = {
+    clan: { rate: 0.035, cap: 5000 },
+    marketplace: { rate: 0.0105, cap: 2000 },
+  } as const;
+
+  const calculateFee = (inputAmount: number, type: 'clan' | 'marketplace') => {
+    const { rate, cap } = FEE_RATES[type];
+    const fee = Math.round(inputAmount * rate * 100) / 100;
+    return Math.min(fee, cap);
+  };
+
+  const amountNumber = Number(amount) || 0;
+  const fee = calculateFee(amountNumber, walletType);
+  const youWillReceive = Math.max(0, Math.round((amountNumber - fee) * 100) / 100);
+  const feeConfig = FEE_RATES[walletType];
 
   return (
     <>
@@ -163,7 +178,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
                   <Coins className="h-5 w-5" />
                   <AlertTitle className="text-base">Transaction Fee</AlertTitle>
                   <AlertDescription className="text-sm mt-1">
-                    A 4% fee will be deducted from your withdrawal.
+                    {feeConfig.rate * 100}% fee applies, capped at ₦{feeConfig.cap.toLocaleString()}.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -218,7 +233,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground items-center">
-                      <span>Fee (4%)</span>
+                      <span>Platform Fee ({feeConfig.rate * 100}%, capped at ₦{feeConfig.cap.toLocaleString()})</span>
                       <span>-₦{fee.toFixed(2)}</span>
                     </div>
                     <div className="h-px bg-border my-1" />

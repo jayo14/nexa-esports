@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Coins, ArrowRight, Shield, Loader2, Check } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { useToast } from '@/hooks/use-toast';
 
 interface FundWalletFlowProps {
@@ -15,6 +15,7 @@ interface FundWalletFlowProps {
   onOpenChange: (open: boolean) => void;
   onPaymentInitiate: (amount: number) => Promise<void>;
   isProcessing: boolean;
+  walletType?: 'clan' | 'marketplace';
 }
 
 export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
@@ -22,11 +23,27 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
   onOpenChange,
   onPaymentInitiate,
   isProcessing,
+  walletType = 'clan',
 }) => {
   const { toast } = useToast();
   const [amount, setAmount] = useState<number>(0);
   const [step, setStep] = useState<1 | 2>(1);
   const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
+
+  const FEE_RATES = {
+    clan: { rate: 0.035, cap: 5000 },
+    marketplace: { rate: 0.0105, cap: 2000 },
+  } as const;
+
+  const calculateFee = (inputAmount: number, type: 'clan' | 'marketplace') => {
+    const { rate, cap } = FEE_RATES[type];
+    const fee = Math.round(inputAmount * rate * 100) / 100;
+    return Math.min(fee, cap);
+  };
+
+  const fee = calculateFee(amount || 0, walletType);
+  const netAmount = Math.max(0, Math.round(((amount || 0) - fee) * 100) / 100);
+  const feeConfig = FEE_RATES[walletType];
 
   useEffect(() => {
     if (open) {
@@ -51,7 +68,7 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
 
     if (result.index < presetAmounts.length) {
       setAmount(presetAmounts[result.index]);
-      await Haptics.notification({ type: ImpactStyle.Light as any });
+      await Haptics.notification({ type: NotificationType.Success });
     }
   };
 
@@ -173,13 +190,15 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
                   <span className="font-bold text-lg text-foreground">₦{amount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center text-red-400">
-                  <span className="text-base">Transaction Fee (4%)</span>
-                  <span className="font-bold">-₦{(amount * 0.04).toFixed(2)}</span>
+                  <span className="text-base">
+                    Platform Fee ({feeConfig.rate * 100}%, capped at ₦{feeConfig.cap.toLocaleString()})
+                  </span>
+                  <span className="font-bold">-₦{fee.toFixed(2)}</span>
                 </div>
                 <div className="h-px bg-border my-2" />
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-lg">Total to Receive</span>
-                  <span className="text-3xl font-black text-green-500">₦{(amount * 0.96).toLocaleString()}</span>
+                  <span className="font-bold text-lg">You Receive</span>
+                  <span className="text-3xl font-black text-green-500">₦{netAmount.toLocaleString()}</span>
                 </div>
               </div>
 
