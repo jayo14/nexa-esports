@@ -121,10 +121,11 @@ export const SellerDashboard: React.FC = () => {
         title: "Order marked delivered",
         description: "Buyer has been notified to confirm receipt.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Please try again.";
       toast({
         title: "Failed to update order",
-        description: error.message || "Please try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {

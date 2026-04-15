@@ -116,7 +116,7 @@ export const PurchaseDetails: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      {transaction.status === 'processing' && !credentials_revealed && (
+      {transaction.status === 'processing' && !transaction.credentials_revealed && (
         <Alert className="border-blue-500/30 bg-blue-500/5">
           <CheckCircle className="h-4 w-4 text-blue-500" />
           <AlertDescription className="font-rajdhani">

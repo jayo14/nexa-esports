@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace, type AccountListing } from '@/hooks/useMarketplace';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -36,6 +37,8 @@ export const Checkout: React.FC = () => {
   const [step, setStep] = useState(1);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [securityAccepted, setSecurityAccepted] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(Number(profile?.wallet_balance ?? 0));
+  const [walletLoading, setWalletLoading] = useState(true);
 
   const listing = listingData as AccountListing | null;
   const listingMediaThumb = listing?.video_url || listing?.images?.[0] || null;
@@ -45,6 +48,52 @@ export const Checkout: React.FC = () => {
       navigate('/marketplace');
     }
   }, [listing, isLoading, navigate]);
+
+  useEffect(() => {
+    const fetchCheckoutWallet = async () => {
+      if (!user?.id) {
+        setWalletLoading(false);
+        return;
+      }
+
+      setWalletLoading(true);
+      try {
+        const { data: marketplaceWallet, error: marketplaceError } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .eq('wallet_type', 'marketplace')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (marketplaceError) throw marketplaceError;
+
+        if (marketplaceWallet?.balance !== undefined && marketplaceWallet?.balance !== null) {
+          setWalletBalance(Number(marketplaceWallet.balance));
+          return;
+        }
+
+        const { data: fallbackWallet, error: fallbackError } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fallbackError) throw fallbackError;
+        setWalletBalance(Number(fallbackWallet?.balance ?? 0));
+      } catch (error) {
+        console.error('Failed to fetch checkout wallet balance:', error);
+        setWalletBalance(Number(profile?.wallet_balance ?? 0));
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+
+    fetchCheckoutWallet();
+  }, [user?.id, profile?.wallet_balance]);
 
   if (isLoading || !listing) {
     return (
@@ -58,14 +107,14 @@ export const Checkout: React.FC = () => {
   const COMMISSION_RATE = 0.05;
   const commissionAmount = listing.price * COMMISSION_RATE;
   const sellerReceives = listing.price - commissionAmount;
-  const walletBalance = profile?.wallet_balance || 0;
-  const hasEnoughBalance = walletBalance >= listing.price;
-  const newBalance = walletBalance - listing.price;
+  const requiredDeduction = Number(listing.price);
+  const hasEnoughBalance = walletBalance >= requiredDeduction;
+  const newBalance = walletBalance - requiredDeduction;
 
-  const canProceedStep2 = termsAccepted && securityAccepted && hasEnoughBalance;
+  const canProceedStep2 = termsAccepted && securityAccepted && hasEnoughBalance && !walletLoading;
 
   const handleFinalConfirm = () => {
-    if (!profile?.id) return;
+    if (!profile?.id || walletLoading || !hasEnoughBalance) return;
     purchaseAccount(
       {
         listingId: listing.id,
@@ -319,10 +368,12 @@ export const Checkout: React.FC = () => {
                     <div className="space-y-4 pt-4 border-t border-white/5">
                       <div className="flex justify-between items-center mb-2">
                          <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Wallet Coverage</h3>
-                         {hasEnoughBalance ? (
-                           <Badge className="bg-green-500/20 text-green-400 border-none">Balance Verified</Badge>
-                         ) : (
-                           <Badge variant="destructive">Refill Required</Badge>
+                         {walletLoading ? (
+                           <Badge className="bg-slate-500/20 text-slate-300 border-none">Checking...</Badge>
+                         ) : hasEnoughBalance ? (
+                            <Badge className="bg-green-500/20 text-green-400 border-none">Balance Verified</Badge>
+                          ) : (
+                            <Badge variant="destructive">Refill Required</Badge>
                          )}
                       </div>
                       <div className={`${glass} p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4`}>
@@ -337,15 +388,15 @@ export const Checkout: React.FC = () => {
                         </div>
                         <div className="text-right hidden md:block">
                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Required Deduction</p>
-                           <p className="text-xl font-bold font-mono text-red-500">- ₦{listing.price.toLocaleString()}</p>
+                           <p className="text-xl font-bold font-mono text-red-500">- ₦{requiredDeduction.toLocaleString()}</p>
                         </div>
                       </div>
 
-                      {!hasEnoughBalance && (
+                      {!walletLoading && !hasEnoughBalance && (
                         <Alert variant="destructive" className="bg-red-950/30 border-red-500/50 rounded-2xl">
                           <AlertCircle className="h-4 w-4" />
                           <AlertDescription className="text-sm">
-                            Insufficient balance. You need ₦{(listing.price - walletBalance).toLocaleString()} more.
+                            Insufficient balance. You need ₦{(requiredDeduction - walletBalance).toLocaleString()} more.
                           </AlertDescription>
                           <Button 
                             variant="outline" 
