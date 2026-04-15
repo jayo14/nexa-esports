@@ -75,6 +75,7 @@ import { AdminAnnouncementsManagement } from '@/pages/admin/AnnouncementsManagem
 import { AdminNotifications } from '@/pages/admin/Notifications';
 import { AdminConfig } from '@/pages/admin/Config';
 import { AdminSeasons } from '@/pages/admin/Seasons';
+import { MatchManagement } from '@/pages/admin/MatchManagement';
 import AdminDashboard from '@/pages/AdminDashboard';
 import { MarketplaceManagement } from '@/pages/admin/MarketplaceManagement';
 import { Feedback } from '@/pages/admin/Feedback';
@@ -264,6 +265,7 @@ function AppRoutes() {
         <Route path="/admin/loadouts" element={<ProtectedRoute><Layout showSidebar><AdminLoadouts /></Layout></ProtectedRoute>} />
         <Route path="/admin/weapon-layouts" element={<ProtectedRoute><Layout showSidebar><AdminWeaponLayouts /></Layout></ProtectedRoute>} />
         <Route path="/admin/scrims" element={<ProtectedRoute><Layout showSidebar><AdminScrimsManagement /></Layout></ProtectedRoute>} />
+        <Route path="/admin/matches" element={<ProtectedRoute><Layout showSidebar><MatchManagement /></Layout></ProtectedRoute>} />
         <Route path="/admin/events" element={<ProtectedRoute><Layout showSidebar><AdminEventsManagement /></Layout></ProtectedRoute>} />
         <Route path="/admin/events/new" element={<ProtectedRoute><Layout showSidebar><EventEditor /></Layout></ProtectedRoute>} />
         <Route path="/admin/events/:eventId/edit" element={<ProtectedRoute><Layout showSidebar><EventEditor /></Layout></ProtectedRoute>} />

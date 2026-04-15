@@ -104,6 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
           {isAdminOrClanMaster && (
             <>
               <SideNavIcon icon={<MdEvent className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
+              <SideNavIcon icon={<MdEmojiEvents className="w-5 h-5" />} onClick={() => navigate('/admin/matches')} active={isActive('/admin/matches')} />
               <SideNavIcon icon={<MdNotifications className="w-5 h-5" />} onClick={() => navigate('/notifications')} active={isActive('/notifications')} />
               <SideNavIcon icon={<MdPayments className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
               <SideNavIcon icon={<MdSettings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />

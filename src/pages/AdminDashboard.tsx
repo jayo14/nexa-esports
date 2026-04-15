@@ -86,6 +86,13 @@ export default function AdminDashboard() {
       path: "/admin/events"
     },
     {
+      title: "Match Management",
+      description: "Manage match days, lobbies, and results",
+      icon: Trophy,
+      color: "from-rose-600 to-red-600",
+      path: "/admin/matches"
+    },
+    {
       title: "Mark Attendance",
       description: "Record player attendance",
       icon: Activity,

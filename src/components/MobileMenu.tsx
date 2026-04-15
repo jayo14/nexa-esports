@@ -92,6 +92,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
     { icon: MdShoppingBag, label: 'Marketplace', path: '/marketplace', primary: true },
     { icon: MdPeople, label: 'Players', path: '/admin/players', primary: false },
     { icon: MdSportsEsports, label: 'Scrims', path: '/admin/scrims', primary: false },
+    { icon: MdEmojiEvents, label: 'Match Management', path: '/admin/matches', primary: false },
     { icon: MdInventory, label: 'Loadouts', path: '/loadouts', primary: false },
     { icon: MdGpsFixed, label: 'Weapon Layouts', path: '/weapon-layouts', primary: false },
     { icon: MdSecurity, label: 'Teams', path: '/teams', primary: false },
@@ -276,4 +277,3 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ open, onOpenChange: setO
     </Sheet>
   );
 };
-
