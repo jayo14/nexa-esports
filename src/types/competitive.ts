@@ -3,6 +3,8 @@ export interface Team {
   name: string;
   tag: string;
   logo_url?: string;
+  invite_code?: string;
+  member_count?: number;
   created_by: string;
   created_at: string;
 }
@@ -13,6 +15,7 @@ export interface TeamMember {
   user_id: string;
   role: 'captain' | 'member';
   joined_at: string;
+  profile_id?: string;
   profile?: {
     username: string;
     ign: string;

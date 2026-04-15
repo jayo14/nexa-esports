@@ -39,6 +39,7 @@ import { WeaponLoadouts } from '@/pages/WeaponLoadouts';
 import { Loadouts } from '@/pages/Loadouts';
 import { Announcements } from '@/pages/Announcements';
 import Statistics from '@/pages/Statistics';
+import { CompetitiveLeaderboard } from '@/pages/CompetitiveLeaderboard';
 import { Marketplace } from '@/pages/Marketplace';
 import { ListAccount } from '@/pages/ListAccount';
 import { ListingDetails } from '@/pages/ListingDetails';
@@ -220,6 +221,7 @@ function AppRoutes() {
         <Route path="/loadouts" element={<ProtectedRoute><Layout showSidebar><Loadouts /></Layout></ProtectedRoute>} />
         <Route path="/announcements" element={<ProtectedRoute><Layout showSidebar><Announcements /></Layout></ProtectedRoute>} />
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
+        <Route path="/leaderboard/competitive" element={<ProtectedRoute><Layout showSidebar><CompetitiveLeaderboard /></Layout></ProtectedRoute>} />
         <Route path="/players" element={<ProtectedRoute><Layout showSidebar><Players /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
         <Route path="/wallet/transfer" element={<ProtectedRoute><Layout showSidebar><Transfer /></Layout></ProtectedRoute>} />

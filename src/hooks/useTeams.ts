@@ -4,6 +4,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Team, TeamMember } from '@/types/competitive';
 
+type TeamWithCount = Team & {
+  team_members?: Array<{ count: number }>;
+};
+
+type MembershipWithTeam = TeamMember & {
+  team?: Team & {
+    team_members?: TeamMember[];
+  };
+};
+
 export function useTeams() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -16,11 +26,15 @@ export function useTeams() {
     try {
       const { data, error } = await supabase
         .from('teams')
-        .select('*')
+        .select('*, team_members(count)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTeams((data as Team[]) || []);
+      const mappedTeams = ((data as TeamWithCount[]) || []).map((team) => ({
+        ...team,
+        member_count: team.team_members?.[0]?.count || 0,
+      }));
+      setTeams(mappedTeams);
     } catch (err) {
       console.error('Error fetching teams:', err);
     }
@@ -31,14 +45,15 @@ export function useTeams() {
     try {
       const { data: membership, error: memErr } = await supabase
         .from('team_members')
-        .select('*, team:teams(*)')
+        .select('*, team:teams(*, team_members(*, profile:profiles(username, ign, avatar_url, tier)))')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (memErr) throw memErr;
       if (membership) {
-        setMyMembership(membership as unknown as TeamMember);
-        setMyTeam((membership as any).team as Team);
+        const typedMembership = membership as unknown as MembershipWithTeam;
+        setMyMembership(typedMembership);
+        setMyTeam(typedMembership.team as Team);
       } else {
         setMyMembership(null);
         setMyTeam(null);
@@ -96,6 +111,24 @@ export function useTeams() {
     return team;
   };
 
+  const joinTeamByCode = async (code: string) => {
+    const trimmed = code.trim().toLowerCase();
+    if (!trimmed) throw new Error('Enter a valid invite code.');
+    if (trimmed.length < 6) throw new Error('Invite code is too short.');
+
+    const { data: team, error: teamErr } = await supabase
+      .from('teams')
+      .select('*')
+      .ilike('invite_code', trimmed)
+      .maybeSingle();
+
+    if (teamErr) throw teamErr;
+    if (!team) throw new Error('No team found for that invite code.');
+
+    await joinTeam(team.id);
+    return team as Team;
+  };
+
   const joinTeam = async (teamId: string) => {
     if (!user?.id) throw new Error('Not authenticated');
     if (myTeam) {
@@ -142,5 +175,15 @@ export function useTeams() {
     await fetchTeams();
   };
 
-  return { teams, myTeam, myMembership, createTeam, joinTeam, leaveTeam, kickMember, isLoading };
+  return {
+    teams,
+    myTeam,
+    myMembership,
+    createTeam,
+    joinTeam,
+    joinTeamByCode,
+    leaveTeam,
+    kickMember,
+    isLoading,
+  };
 }
