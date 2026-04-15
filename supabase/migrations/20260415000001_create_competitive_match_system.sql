@@ -52,11 +52,156 @@ CREATE TABLE IF NOT EXISTS public.lobby_results (
   UNIQUE(lobby_id, user_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_match_days_season ON public.match_days(season_id);
-CREATE INDEX IF NOT EXISTS idx_lobbies_match_day ON public.lobbies(match_day_id);
-CREATE INDEX IF NOT EXISTS idx_lobby_results_lobby ON public.lobby_results(lobby_id);
-CREATE INDEX IF NOT EXISTS idx_lobby_results_team ON public.lobby_results(team_id);
-CREATE INDEX IF NOT EXISTS idx_lobby_results_user ON public.lobby_results(user_id);
+-- Normalize legacy schemas if these tables existed before this migration
+DO $$
+BEGIN
+  -- match_days legacy compatibility
+  ALTER TABLE public.match_days ADD COLUMN IF NOT EXISTS season_id UUID;
+  ALTER TABLE public.match_days ADD COLUMN IF NOT EXISTS name TEXT;
+  ALTER TABLE public.match_days ADD COLUMN IF NOT EXISTS match_date DATE;
+  ALTER TABLE public.match_days ADD COLUMN IF NOT EXISTS is_finalized BOOLEAN NOT NULL DEFAULT FALSE;
+  ALTER TABLE public.match_days ADD COLUMN IF NOT EXISTS created_by UUID;
+  ALTER TABLE public.match_days ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  ALTER TABLE public.match_days ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'match_days'
+      AND column_name = 'date'
+  ) THEN
+    EXECUTE 'UPDATE public.match_days SET match_date = COALESCE(match_date, date)';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'match_days'
+      AND column_name = 'status'
+  ) THEN
+    EXECUTE $sql$
+      UPDATE public.match_days
+      SET is_finalized = CASE
+        WHEN lower(status::text) IN ('completed', 'finalized') THEN TRUE
+        ELSE COALESCE(is_finalized, FALSE)
+      END
+    $sql$;
+  END IF;
+
+  -- lobbies legacy compatibility (older marketplace lobby table)
+  ALTER TABLE public.lobbies ADD COLUMN IF NOT EXISTS match_day_id UUID;
+  ALTER TABLE public.lobbies ADD COLUMN IF NOT EXISTS lobby_number INTEGER;
+  ALTER TABLE public.lobbies ADD COLUMN IF NOT EXISTS recording_url TEXT;
+  ALTER TABLE public.lobbies ADD COLUMN IF NOT EXISTS notes TEXT;
+  ALTER TABLE public.lobbies ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'lobbies'
+      AND column_name = 'room_link'
+  ) THEN
+    EXECUTE 'UPDATE public.lobbies SET recording_url = COALESCE(recording_url, room_link)';
+  END IF;
+
+  -- lobby_results compatibility
+  ALTER TABLE public.lobby_results ADD COLUMN IF NOT EXISTS lobby_id UUID;
+  ALTER TABLE public.lobby_results ADD COLUMN IF NOT EXISTS user_id UUID;
+  ALTER TABLE public.lobby_results ADD COLUMN IF NOT EXISTS team_id UUID;
+  ALTER TABLE public.lobby_results ADD COLUMN IF NOT EXISTS kills INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE public.lobby_results ADD COLUMN IF NOT EXISTS placement INTEGER;
+  ALTER TABLE public.lobby_results ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  ALTER TABLE public.lobby_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+END
+$$;
+
+-- Ensure computed columns exist for scoring
+ALTER TABLE public.lobby_results
+  ADD COLUMN IF NOT EXISTS placement_pts INTEGER GENERATED ALWAYS AS (
+    CASE
+      WHEN placement BETWEEN 1  AND 3  THEN 10
+      WHEN placement BETWEEN 4  AND 7  THEN 7
+      WHEN placement BETWEEN 8  AND 15 THEN 5
+      ELSE 3
+    END
+  ) STORED;
+
+ALTER TABLE public.lobby_results
+  ADD COLUMN IF NOT EXISTS kill_pts INTEGER GENERATED ALWAYS AS (kills * 2) STORED;
+
+ALTER TABLE public.lobby_results
+  ADD COLUMN IF NOT EXISTS total_pts INTEGER GENERATED ALWAYS AS (
+    (kills * 2) + CASE
+      WHEN placement BETWEEN 1  AND 3  THEN 10
+      WHEN placement BETWEEN 4  AND 7  THEN 7
+      WHEN placement BETWEEN 8  AND 15 THEN 5
+      ELSE 3
+    END
+  ) STORED;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'lobbies_match_day_lobby_unique'
+      AND conrelid = 'public.lobbies'::regclass
+  ) THEN
+    ALTER TABLE public.lobbies
+      ADD CONSTRAINT lobbies_match_day_lobby_unique UNIQUE (match_day_id, lobby_number);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'lobby_results_lobby_user_unique'
+      AND conrelid = 'public.lobby_results'::regclass
+  ) THEN
+    ALTER TABLE public.lobby_results
+      ADD CONSTRAINT lobby_results_lobby_user_unique UNIQUE (lobby_id, user_id);
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'match_days' AND column_name = 'season_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_match_days_season ON public.match_days(season_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'lobbies' AND column_name = 'match_day_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_lobbies_match_day ON public.lobbies(match_day_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'lobby_results' AND column_name = 'lobby_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_lobby_results_lobby ON public.lobby_results(lobby_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'lobby_results' AND column_name = 'team_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_lobby_results_team ON public.lobby_results(team_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'lobby_results' AND column_name = 'user_id'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_lobby_results_user ON public.lobby_results(user_id);
+  END IF;
+END
+$$;
 
 ALTER TABLE public.match_days ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lobbies ENABLE ROW LEVEL SECURITY;
