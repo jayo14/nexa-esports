@@ -166,7 +166,7 @@ export const AdminScrimsManagement: React.FC = () => {
           event_participants (
             id,
             player_id,
-            profiles (
+            profiles!event_participants_player_id_fkey (
               ign,
               username
             )

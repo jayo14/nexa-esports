@@ -71,7 +71,7 @@ export const Scrims: React.FC = () => {
         .from('events')
         .select(`
           *,
-          profiles (
+          profiles!events_created_by_fkey (
             username,
             ign,
             role
@@ -81,7 +81,7 @@ export const Scrims: React.FC = () => {
             player_id,
             kills,
             verified,
-            profiles (
+            profiles!event_participants_player_id_fkey (
               username,
               ign
             )
