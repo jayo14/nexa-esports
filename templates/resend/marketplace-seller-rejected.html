@@ -4,13 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="x-apple-disable-message-reformatting" />
+  <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
   <title>Seller Request Update - NeXa</title>
   <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table { border-collapse:separate; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+    a[x-apple-data-detectors] { color:inherit !important; text-decoration:none !important; font-size:inherit !important; font-family:inherit !important; font-weight:inherit !important; line-height:inherit !important; }
     @media only screen and (max-width: 640px) {
       .wrapper { padding: 14px !important; }
+      .card-cell { padding: 0 !important; }
       .card { border-radius: 20px !important; }
+      .logo { width: 108px !important; }
       .content { padding: 28px 20px !important; }
       .hero { font-size: 30px !important; }
+      .copy { font-size: 14px !important; line-height: 1.65 !important; }
       .cta { width: 100% !important; text-align: center !important; }
     }
   </style>
@@ -19,18 +27,18 @@
   <div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">Your seller request update is ready. Review the reason and next steps.</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="wrapper" style="padding:24px;">
     <tr>
-      <td align="center">
+      <td align="center" class="card-cell">
         <table role="presentation" width="640" cellpadding="0" cellspacing="0" class="card" style="max-width:640px;width:100%;background:#101014;border:1px solid #242429;border-radius:26px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.45);">
           <tr>
             <td style="padding:26px 24px;text-align:center;background:linear-gradient(180deg,#15151b 0%,#0f0f14 100%);border-bottom:1px solid #21212a;">
-              <img src="https://nexaesports.com/nexa-logo.jpg" alt="NeXa Logo" width="122" style="display:block;margin:0 auto;border-radius:14px;" />
+              <img src="https://nexaesports.com/nexa-logo.jpg" alt="NeXa Logo" width="122" class="logo" style="display:block;margin:0 auto;border-radius:14px;" />
             </td>
           </tr>
           <tr>
             <td class="content" style="padding:36px 34px 14px;text-align:center;">
               <p style="margin:0 0 12px;color:#fb7185;font-weight:700;letter-spacing:1.2px;font-size:12px;text-transform:uppercase;">Seller Request Review</p>
               <h1 class="hero" style="margin:0;font-size:38px;line-height:1.1;font-weight:800;letter-spacing:-0.4px;">Application Update</h1>
-              <p style="margin:14px auto 0;max-width:520px;color:#b3b3bf;font-size:15px;line-height:1.72;">
+              <p class="copy" style="margin:14px auto 0;max-width:520px;color:#b3b3bf;font-size:15px;line-height:1.72;">
                 Your seller request was not approved at this time. You can continue using all buyer marketplace features.
               </p>
             </td>
@@ -44,7 +52,7 @@
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:0 16px 16px;color:#ececf2;font-size:14px;line-height:1.6;">
+                  <td class="copy" style="padding:0 16px 16px;color:#ececf2;font-size:14px;line-height:1.6;">
                     {{{REASON}}}
                   </td>
                 </tr>
@@ -59,7 +67,7 @@
             </td>
           </tr>
           <tr>
-            <td style="padding:12px 34px 30px;text-align:center;color:#8f8f9a;font-size:12px;line-height:1.6;">
+            <td class="copy" style="padding:12px 34px 30px;text-align:center;color:#8f8f9a;font-size:12px;line-height:1.6;">
               You can re-apply later after profile and trust-signal updates.
             </td>
           </tr>

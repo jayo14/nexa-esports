@@ -4,13 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="x-apple-disable-message-reformatting" />
+  <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
   <title>Event Cancellation - NeXa</title>
   <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table { border-collapse:separate; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+    a[x-apple-data-detectors] { color:inherit !important; text-decoration:none !important; font-size:inherit !important; font-family:inherit !important; font-weight:inherit !important; line-height:inherit !important; }
     @media only screen and (max-width: 640px) {
       .wrapper { padding: 14px !important; }
+      .card-cell { padding: 0 !important; }
       .card { border-radius: 20px !important; }
+      .logo { width: 108px !important; }
       .content { padding: 26px 20px !important; }
       .hero { font-size: 30px !important; }
+      .copy { font-size: 14px !important; line-height: 1.65 !important; }
       .cta { width: 100% !important; text-align: center !important; }
     }
   </style>
@@ -19,11 +27,11 @@
   <div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0;">Important update: {{{MISSION_NAME}}} has been cancelled. View the latest communication channel.</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="wrapper" style="padding:24px;">
     <tr>
-      <td align="center">
+      <td align="center" class="card-cell">
         <table role="presentation" width="640" cellpadding="0" cellspacing="0" class="card" style="max-width:640px;width:100%;background:#101014;border:1px solid #242429;border-radius:26px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.45);">
           <tr>
             <td style="padding:26px 24px;text-align:center;background:linear-gradient(180deg,#15151b 0%,#0f0f14 100%);border-bottom:1px solid #21212a;">
-              <img src="https://nexaesports.com/nexa-logo.jpg" alt="NeXa Logo" width="122" style="display:block;margin:0 auto;border-radius:14px;" />
+              <img src="https://nexaesports.com/nexa-logo.jpg" alt="NeXa Logo" width="122" class="logo" style="display:block;margin:0 auto;border-radius:14px;" />
             </td>
           </tr>
           <tr>
@@ -31,7 +39,7 @@
               <p style="margin:0 0 10px;color:#fb7185;font-weight:700;letter-spacing:1.2px;font-size:12px;text-transform:uppercase;">Mission Status</p>
               <h1 class="hero" style="margin:0;font-size:38px;line-height:1.1;font-weight:800;letter-spacing:-0.4px;">Event Cancelled</h1>
               <p style="margin:12px 0 0;color:#ff8ca2;font-size:16px;font-weight:700;">{{{MISSION_NAME}}}</p>
-              <p style="margin:14px auto 0;max-width:520px;color:#b3b3bf;font-size:15px;line-height:1.72;">
+              <p class="copy" style="margin:14px auto 0;max-width:520px;color:#b3b3bf;font-size:15px;line-height:1.72;">
                 This event scheduled for {{{EVENT_DATE}}} has been cancelled. We will share any replacement schedule as soon as it is confirmed.
               </p>
             </td>
@@ -40,7 +48,7 @@
             <td style="padding:8px 24px 0;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#17171f;border:1px solid #2a2a35;border-radius:16px;">
                 <tr>
-                  <td style="padding:16px;color:#dfdfea;font-size:13px;line-height:1.65;text-align:left;">
+                  <td class="copy" style="padding:16px;color:#dfdfea;font-size:13px;line-height:1.65;text-align:left;">
                     Stay in sync with operational updates and replacement notices through the official NeXa Discord channel.
                   </td>
                 </tr>
@@ -55,7 +63,7 @@
             </td>
           </tr>
           <tr>
-            <td style="padding:12px 32px 30px;color:#8f8f9a;font-size:12px;line-height:1.6;text-align:center;">
+            <td class="copy" style="padding:12px 32px 30px;color:#8f8f9a;font-size:12px;line-height:1.6;text-align:center;">
               Thank you for your flexibility. Your participation remains appreciated.
             </td>
           </tr>
