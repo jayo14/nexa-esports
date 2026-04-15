@@ -34,7 +34,7 @@ import { useSellerStatus } from '@/hooks/useSellerStatus';
 import { MarketplaceCartButton } from '@/components/marketplace/MarketplaceCartButton';
 
 export const BuyerDashboard: React.FC = () => {
-  const { orders, ordersLoading } = useBuyerOrders();
+  const { orders, ordersLoading, refetchOrders } = useBuyerOrders();
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -134,12 +134,12 @@ export const BuyerDashboard: React.FC = () => {
         title: 'Success',
         description: 'Delivery confirmed! Funds released to seller.',
       });
-      // Refresh page or invalidate query
-      window.location.reload();
-    } catch (error: any) {
+      await refetchOrders();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to confirm delivery';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to confirm delivery',
+        description: message,
         variant: 'destructive',
       });
     }
@@ -199,19 +199,29 @@ export const BuyerDashboard: React.FC = () => {
             {order.status === 'funds_held' && (
                 <div className="text-center p-2 bg-blue-500/5 rounded-lg border border-blue-500/10 mb-2">
                     <p className="text-[10px] text-blue-400 font-orbitron uppercase mb-0.5">Escrow Active</p>
-                    <p className="text-[10px] text-muted-foreground font-rajdhani">Funds secure</p>
+                    <p className="text-[10px] text-muted-foreground font-rajdhani">Waiting for seller delivery</p>
                 </div>
             )}
-            {(order.status === 'delivered' || order.status === 'funds_held') && (
+            {order.status === 'delivered' && (
                <Button 
-                 className="w-full font-orbitron bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/10" 
-                 variant="default"
+                  className="w-full font-orbitron bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/10" 
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleConfirmDelivery(order.id)}
+                >
+                  Confirm Receipt
+                </Button>
+             )}
+             {order.status === 'funds_held' && (
+               <Button
+                 className="w-full font-orbitron"
+                 variant="outline"
                  size="sm"
-                 onClick={() => handleConfirmDelivery(order.id)}
+                 disabled
                >
-                 Confirm Receipt
+                 Awaiting Seller Delivery
                </Button>
-            )}
+             )}
              <Button variant="outline" size="sm" className="w-full font-rajdhani hover:bg-primary/5 transition-colors">
               Contact Seller
             </Button>

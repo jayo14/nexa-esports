@@ -67,9 +67,15 @@ export const Checkout: React.FC = () => {
   const handleFinalConfirm = () => {
     if (!profile?.id) return;
     purchaseAccount(
-      { listingId: listing.id, buyerId: profile.id, price: listing.price },
       {
-        onSuccess: (data: any) => {
+        listingId: listing.id,
+        buyerId: profile.id,
+        price: listing.price,
+        sellerId: listing.seller_id,
+        listingTitle: listing.title,
+      },
+      {
+        onSuccess: (data: { transaction_id: string }) => {
           navigate(`/marketplace/purchases/${data.transaction_id}`);
         },
       }

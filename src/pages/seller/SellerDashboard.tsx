@@ -11,14 +11,26 @@ import {
   Package, 
   AlertCircle,
   ChevronRight,
-  Store
+  Store,
+  CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useChat } from "@/hooks/useChat";
 import { MarketplaceCartButton } from '@/components/marketplace/MarketplaceCartButton';
+import { useToast } from "@/hooks/use-toast";
+
+interface SellerOrder {
+  id: string;
+  status: string;
+  price: number;
+  created_at: string;
+  listing: { title: string } | null;
+  buyer: { ign: string | null; username: string | null } | null;
+}
 
 export const SellerDashboard: React.FC = () => {
   const { profile, user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const { conversations } = useChat();
   const [stats, setStats] = useState({
@@ -27,6 +39,8 @@ export const SellerDashboard: React.FC = () => {
     soldCount: 0,
     balance: 0
   });
+  const [activeOrders, setActiveOrders] = useState<SellerOrder[]>([]);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,22 +48,38 @@ export const SellerDashboard: React.FC = () => {
       if (!user?.id) return;
 
       try {
-        // Fetch listings stats
-        const { data: listings, error: listingsError } = await supabase
-          .from("account_listings")
-          .select("status, listing_status")
-          .eq("seller_id", user.id);
+        const [
+          { data: listings, error: listingsError },
+          { data: wallet, error: walletError },
+          { data: orders, error: ordersError },
+        ] = await Promise.all([
+          supabase
+            .from("account_listings")
+            .select("status, listing_status")
+            .eq("seller_id", user.id),
+          supabase
+            .from("wallets")
+            .select("balance")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("account_transactions")
+            .select(`
+              id,
+              status,
+              price,
+              created_at,
+              listing:account_listings!listing_id(title),
+              buyer:profiles!buyer_id(ign, username)
+            `)
+            .eq("seller_id", user.id)
+            .in("status", ["processing", "funds_held", "delivered"])
+            .order("created_at", { ascending: false }),
+        ]);
 
         if (listingsError) throw listingsError;
-
-        // Fetch wallet balance
-        const { data: wallet, error: walletError } = await supabase
-          .from("wallets")
-          .select("balance")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
         if (walletError) throw walletError;
+        if (ordersError) throw ordersError;
 
         setStats({
           totalListings: listings?.length || 0,
@@ -57,6 +87,8 @@ export const SellerDashboard: React.FC = () => {
           soldCount: listings?.filter(l => l.status === 'sold').length || 0,
           balance: wallet?.balance || 0
         });
+
+        setActiveOrders((orders || []) as unknown as SellerOrder[]);
       } catch (error) {
         console.error("Error fetching seller stats:", error);
       } finally {
@@ -67,7 +99,48 @@ export const SellerDashboard: React.FC = () => {
     fetchSellerStats();
   }, [user]);
 
+  const handleMarkDelivered = async (transactionId: string) => {
+    try {
+      setUpdatingOrderId(transactionId);
+      const { data, error } = await supabase.rpc("marketplace_mark_transaction_delivered", {
+        p_transaction_id: transactionId,
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Unable to update order status");
+
+      setActiveOrders((prev) =>
+        prev.map((order) =>
+          order.id === transactionId
+            ? { ...order, status: "delivered" }
+            : order
+        )
+      );
+
+      toast({
+        title: "Order marked delivered",
+        description: "Buyer has been notified to confirm receipt.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to update order",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   const unreadMessages = conversations.reduce((acc, conv) => acc + (conv.unread_count || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <p className="text-sm text-muted-foreground">Loading seller dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -229,6 +302,51 @@ export const SellerDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-card/50 border-primary/10">
+        <CardHeader>
+          <CardTitle className="text-lg font-orbitron">Active Escrow Orders</CardTitle>
+          <CardDescription>Mark an order as delivered once credentials handover is completed in chat.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {activeOrders.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-primary/20 p-4 text-sm text-muted-foreground">
+              No active escrow orders right now.
+            </div>
+          ) : (
+            activeOrders.map((order) => (
+              <div key={order.id} className="rounded-lg border border-primary/10 bg-background/40 p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">{order.listing?.title || "Marketplace Order"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Buyer: {order.buyer?.ign || order.buyer?.username || "Unknown"} • ₦{Number(order.price).toLocaleString()}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wide mt-1">
+                      Status: {order.status.replace("_", " ")}
+                    </p>
+                  </div>
+                  {order.status !== "delivered" ? (
+                    <Button
+                      size="sm"
+                      className="font-orbitron"
+                      disabled={updatingOrderId === order.id}
+                      onClick={() => handleMarkDelivered(order.id)}
+                    >
+                      {updatingOrderId === order.id ? "Updating..." : "Transaction Completed"}
+                    </Button>
+                  ) : (
+                    <div className="inline-flex items-center gap-1 text-green-500 text-sm font-semibold">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Awaiting Buyer Confirmation
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

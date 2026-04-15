@@ -22,7 +22,7 @@ export interface BuyerOrder {
 export const useBuyerOrders = () => {
   const { user } = useAuth();
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+  const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['buyerOrders', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -56,5 +56,6 @@ export const useBuyerOrders = () => {
   return {
     orders,
     ordersLoading,
+    refetchOrders,
   };
 };

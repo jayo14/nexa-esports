@@ -263,7 +263,19 @@ export const useMarketplace = () => {
 
   // Purchase an account using new checkout system
   const checkoutMutation = useMutation({
-    mutationFn: async ({ listingId, buyerId, price }: { listingId: string; buyerId: string; price: number }) => {
+    mutationFn: async ({
+      listingId,
+      buyerId,
+      price,
+      sellerId,
+      listingTitle,
+    }: {
+      listingId: string;
+      buyerId: string;
+      price: number;
+      sellerId: string;
+      listingTitle: string;
+    }) => {
       const { data, error } = await supabase.rpc('marketplace_checkout', {
         p_listing_id: listingId,
         p_buyer_id: buyerId,
@@ -297,6 +309,24 @@ export const useMarketplace = () => {
             url: `/marketplace/purchases/${data.transaction_id}` 
           }
         }]);
+      }
+
+      try {
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            user_id: variables.sellerId,
+            type: 'marketplace_new_order',
+            title: 'New marketplace order received',
+            message: `A buyer purchased "${variables.listingTitle}". Review buyer chat and mark as delivered after account handover.`,
+            data: {
+              transactionId: data.transaction_id,
+              listingId: variables.listingId,
+              listingTitle: variables.listingTitle,
+            },
+          },
+        });
+      } catch (notificationError) {
+        console.error('Failed to send seller order notification:', notificationError);
       }
 
       toast({
