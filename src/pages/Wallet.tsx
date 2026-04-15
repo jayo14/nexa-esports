@@ -166,13 +166,14 @@ const TABS = [
 
 /* ─── Main Wallet Component ─── */
 const Wallet: React.FC = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, refreshWallet } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [walletId, setWalletId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 10;
   const [totalTransactions, setTotalTransactions] = useState(0);
@@ -216,6 +217,7 @@ const Wallet: React.FC = () => {
       const { data: walletIdData } = await supabase
         .from('wallets').select('id').eq('user_id', user?.id).maybeSingle();
       if (!walletIdData) return;
+      setWalletId(walletIdData.id);
 
       const from = (page - 1) * transactionsPerPage;
       const { data: txData, count } = await supabase
@@ -331,6 +333,7 @@ const Wallet: React.FC = () => {
           });
           if (data?.status === 'success' || data?.message === 'Transaction already processed') {
             toast({ title: 'Payment Confirmed', description: 'Your deposit has been verified and credited.' });
+            await refreshWallet();
             fetchWalletData(currentPage);
           }
         } catch (err) {
@@ -389,6 +392,34 @@ const Wallet: React.FC = () => {
       openReceiptByReference();
     }
   }, [location.search, transactions, navigate, handleViewReceipt, fetchWalletData, currentPage, toast]);
+
+  useEffect(() => {
+    if (!walletId) return;
+
+    const channel = supabase
+      .channel(`wallet-transactions-${walletId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `wallet_id=eq.${walletId}`,
+        },
+        (payload) => {
+          const status = (payload.new as { status?: string } | null)?.status;
+          if (status === 'success') {
+            void refreshWallet();
+            void fetchWalletData(currentPage);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [walletId, refreshWallet, currentPage]);
 
   useEffect(() => {
     return () => {
@@ -662,7 +693,10 @@ const Wallet: React.FC = () => {
       <RedeemGiveawayDialog
         open={showRedeemSheet}
         onOpenChange={setShowRedeemSheet}
-        onSuccess={fetchWalletData}
+        onSuccess={async () => {
+          await refreshWallet();
+          await fetchWalletData(currentPage);
+        }}
         redeemCooldown={redeemCooldown}
         onRedeemSuccess={startRedeemCooldown}
       />
