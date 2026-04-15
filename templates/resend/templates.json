@@ -1,0 +1,57 @@
+{
+  "templates": [
+    {
+      "alias": "nexa-marketplace-seller-approved",
+      "name": "NeXa Marketplace Seller Approved",
+      "subject": "✅ Access Granted: You are now a NeXa Seller!",
+      "htmlFile": "marketplace-seller-approved.html",
+      "variables": []
+    },
+    {
+      "alias": "nexa-marketplace-seller-rejected",
+      "name": "NeXa Marketplace Seller Rejected",
+      "subject": "Update regarding your NeXa Seller Request",
+      "htmlFile": "marketplace-seller-rejected.html",
+      "variables": [
+        { "key": "REASON", "type": "string" }
+      ]
+    },
+    {
+      "alias": "nexa-event-notification",
+      "name": "NeXa Event Notification",
+      "subject": "{{{MISSION_NAME}}}",
+      "htmlFile": "event-notification.html",
+      "variables": [
+        { "key": "MISSION_NAME", "type": "string" },
+        { "key": "MISSION_BRIEFING", "type": "string" },
+        { "key": "EVENT_DATE", "type": "string" },
+        { "key": "EVENT_TIME", "type": "string" },
+        { "key": "HOST_NAME", "type": "string" },
+        { "key": "HERO_IMAGE_URL", "type": "string" },
+        { "key": "EVENT_LINK", "type": "string" }
+      ]
+    },
+    {
+      "alias": "nexa-event-cancellation",
+      "name": "NeXa Event Cancellation",
+      "subject": "⚠️ Update: {{{MISSION_NAME}}} has been Cancelled",
+      "htmlFile": "event-cancellation.html",
+      "variables": [
+        { "key": "MISSION_NAME", "type": "string" },
+        { "key": "EVENT_DATE", "type": "string" },
+        { "key": "DISCORD_URL", "type": "string" }
+      ]
+    },
+    {
+      "alias": "nexa-contact-form-submission",
+      "name": "NeXa Contact Form Submission",
+      "subject": "Contact Form Submission from {{{CONTACT_NAME}}}",
+      "htmlFile": "contact-form-submission.html",
+      "variables": [
+        { "key": "CONTACT_NAME", "type": "string" },
+        { "key": "CONTACT_EMAIL", "type": "string" },
+        { "key": "CONTACT_MESSAGE_HTML", "type": "string" }
+      ]
+    }
+  ]
+}
