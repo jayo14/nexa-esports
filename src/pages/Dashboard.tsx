@@ -198,7 +198,7 @@ export const Dashboard: React.FC = () => {
               const thumbnailUrl = (event as { thumbnail_url?: string | null }).thumbnail_url;
 
               return (
-                <div key={event.id} className="min-w-[140px] xs:min-w-[180px] sm:min-w-[300px] h-[140px] xs:h-[180px] sm:h-[360px] glass-card rounded-lg xs:rounded-2xl sm:rounded-[3rem] p-2 xs:p-4 sm:p-6 flex flex-col justify-end relative group cursor-pointer shadow-xl overflow-hidden" onClick={() => navigate(`/events/${event.id}`)}>
+                <div key={event.id} className="min-w-[140px] xs:min-w-[180px] sm:min-w-[300px] h-[140px] xs:h-[180px] sm:h-[360px] glass-card rounded-lg xs:rounded-2xl sm:rounded-[3rem] p-2 xs:p-4 sm:p-6 flex flex-col justify-end relative group cursor-pointer shadow-xl overflow-hidden" onClick={() => navigate(`/event/${event.id}`)}>
                   {thumbnailUrl ? (
                     <img
                       src={thumbnailUrl}

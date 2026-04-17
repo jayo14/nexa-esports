@@ -461,4 +461,72 @@ label {
   .text-hierarchy-subtitle {
     @apply text-lg text-muted-foreground font-medium;
   }
+
+  /* ══════════════════════════════════════════════════════
+     LIQUID GLASS SYSTEM (MANDATORY)
+     ══════════════════════════════════════════════════════ */
+  .liquid-glass {
+    position: relative;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 8px 32px rgba(0, 0, 0, 0.35);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .liquid-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      120deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.15),
+      transparent 80%
+    );
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .liquid-glass:hover {
+    transform: scale(1.02);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 12px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Depth System */
+  .glass-level-1 {
+    @apply liquid-glass;
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+  }
+
+  .glass-level-2 {
+    @apply liquid-glass;
+  }
+
+  .glass-level-3 {
+    @apply liquid-glass;
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 16px 48px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Brand Integration */
+  .brand-border {
+    border-color: rgba(236, 19, 30, 0.25);
+  }
+
+  .brand-glow {
+    box-shadow: 0 0 15px rgba(236, 19, 30, 0.15);
+  }
 }

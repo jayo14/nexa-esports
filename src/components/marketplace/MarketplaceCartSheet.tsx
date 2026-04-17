@@ -59,7 +59,7 @@ export const MarketplaceCartSheet: React.FC = () => {
     }
 
     setIsOpen(false);
-    navigate(`/marketplace/checkout/${targetItem.id}`);
+    navigate(`/market/${targetItem.id}`);
     setIsCheckingOut(false);
   };
 
@@ -123,7 +123,7 @@ export const MarketplaceCartSheet: React.FC = () => {
                         className="h-auto p-0 mt-1 text-xs"
                         onClick={() => {
                           setIsOpen(false);
-                          navigate(`/marketplace/checkout/${item.id}`);
+                          navigate(`/market/${item.id}`);
                         }}
                       >
                         Checkout this account

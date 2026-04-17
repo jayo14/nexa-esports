@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, UserPlus, Shield, Search, ArrowRight, Loader2, UserMinus } from 'lucide-react';
+import { Users, Shield, Search, Loader2, PlayCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const PRIMARY = '#ec131e';
 
 export const TeamAssign: React.FC = () => {
   const { toast } = useToast();
@@ -52,7 +49,6 @@ export const TeamAssign: React.FC = () => {
   // Assign player to team
   const assignMutation = useMutation({
     mutationFn: async ({ userId, teamId }: { userId: string, teamId: string }) => {
-      // First remove from any existing team
       await supabase.from('team_members').delete().eq('user_id', userId);
       
       if (teamId !== 'none') {
@@ -64,7 +60,7 @@ export const TeamAssign: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-players-assign'] });
-      toast({ title: 'Success', description: 'Player team assignment updated.' });
+      toast({ title: 'Roster Updated', description: 'Squad synchronization successful.' });
     },
   });
 
@@ -80,122 +76,131 @@ export const TeamAssign: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-10 animate-in fade-in duration-500">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8">
         <div>
-          <h1 className="text-3xl font-black text-white font-orbitron tracking-tight">TEAM ASSIGNMENT</h1>
-          <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-bold">Squad Logic & Roster Management</p>
+          <h1 className="text-3xl sm:text-4xl font-black text-white font-orbitron tracking-tighter uppercase">
+            ROSTER <span className="text-[#ec131e]">CONTROL</span>
+          </h1>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2">Squad Deployment & Intelligence Logic</p>
         </div>
-        <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-           <div className="text-center px-4 border-r border-white/10">
-              <p className="text-[10px] font-black text-slate-500 uppercase">Total</p>
-              <p className="text-xl font-black text-white">{stats.total}</p>
+
+        <div className="grid grid-cols-3 gap-4 xl:gap-6">
+           <div className="glass-level-2 p-5 rounded-2xl min-w-[120px] text-center border-white/5">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Force</p>
+              <p className="text-2xl font-black text-white font-orbitron">{stats.total}</p>
            </div>
-           <div className="text-center px-4 border-r border-white/10">
-              <p className="text-[10px] font-black text-green-500 uppercase">Deployed</p>
-              <p className="text-xl font-black text-white">{stats.assigned}</p>
+           <div className="glass-level-2 p-5 rounded-2xl min-w-[120px] text-center border-emerald-500/10 scale-105 brand-glow">
+              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Deployed</p>
+              <p className="text-2xl font-black text-white font-orbitron">{stats.assigned}</p>
            </div>
-           <div className="text-center px-4">
-              <p className="text-[10px] font-black text-red-500 uppercase">Reserve</p>
-              <p className="text-xl font-black text-white">{stats.unassigned}</p>
+           <div className="glass-level-2 p-5 rounded-2xl min-w-[120px] text-center border-red-500/10">
+              <p className="text-[10px] font-black text-[#ec131e] uppercase tracking-widest mb-1">Reserves</p>
+              <p className="text-2xl font-black text-white font-orbitron">{stats.unassigned}</p>
            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        <Card className="bg-[#1a0b0d]/50 border-white/10 backdrop-blur-md rounded-[32px] overflow-hidden">
-          <CardHeader className="border-b border-white/5 pb-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <CardTitle className="text-lg font-black text-white uppercase tracking-tight">Operator Roster</CardTitle>
-                <CardDescription className="text-xs">Manage squad deployments across all verified sectors.</CardDescription>
-              </div>
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <Input 
-                  placeholder="Search Operator..." 
-                  className="pl-10 bg-white/5 border-white/10 h-10 text-xs" 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-white/5 bg-white/[0.02]">
-                    <th className="py-4 px-6">Operator</th>
-                    <th className="py-4 px-6">Current Squad</th>
-                    <th className="py-4 px-6">Reassign To</th>
-                    <th className="py-4 px-6 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.03]">
-                  {playersLoading || teamsLoading ? (
-                    <tr><td colSpan={4} className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-red-500" /></td></tr>
-                  ) : filteredPlayers.map((player) => {
-                    const currentTeam = player.team_members?.[0]?.teams;
-                    const isAssigning = assignMutation.isPending && assignMutation.variables?.userId === player.id;
+      <div className="glass-level-2 rounded-[32px] overflow-hidden border-white/10 shadow-2xl">
+        <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <h2 className="text-xl font-black text-white uppercase tracking-tight font-orbitron">Operator Roster</h2>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Personnel Index</p>
+          </div>
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Input 
+              placeholder="Search by IGN or Username..." 
+              className="pl-12 glass-level-3 border-white/10 h-12 text-xs font-bold uppercase tracking-widest rounded-xl focus:ring-[#ec131e] transition-all" 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
 
-                    return (
-                      <tr key={player.id} className="hover:bg-white/[0.01] transition-colors group">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl border border-white/10 overflow-hidden bg-white/5">
-                              {player.avatar_url ? <img src={player.avatar_url} className="w-full h-full object-cover" alt="" /> : <Users className="w-5 h-5 m-2.5 text-slate-700" />}
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-white uppercase tracking-tight">{player.ign || player.username}</p>
-                              <p className="text-[10px] font-bold text-slate-500 uppercase">{player.role}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          {currentTeam ? (
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20">
-                              <Shield className="w-3 h-3 text-red-500" />
-                              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">{currentTeam.name}</span>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Unassigned</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-6">
-                           <div className="flex items-center gap-2">
-                              <Select 
-                                value={currentTeam?.id || 'none'} 
-                                onValueChange={(val) => assignMutation.mutate({ userId: player.id, teamId: val })}
-                                disabled={isAssigning}
-                              >
-                                <SelectTrigger className="w-40 bg-white/5 border-white/10 h-9 text-[10px] font-black uppercase">
-                                  <SelectValue placeholder="Select Squad" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#1a0b0d] border-white/10">
-                                  <SelectItem value="none" className="text-[10px] font-bold uppercase">Leave Squad</SelectItem>
-                                  {teams.map(t => (
-                                    <SelectItem key={t.id} value={t.id} className="text-[10px] font-bold uppercase">{t.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {isAssigning && <Loader2 className="w-4 h-4 animate-spin text-red-500" />}
-                           </div>
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className={cn(
-                            "inline-block w-2 h-2 rounded-full",
-                            player.status === 'online' ? "bg-green-500" : "bg-slate-700"
-                          )} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 bg-white/[0.02] border-b border-white/5">
+                <th className="py-6 px-8">Operator Unit</th>
+                <th className="py-6 px-8">Tactical Role</th>
+                <th className="py-6 px-8">Current Deployment</th>
+                <th className="py-6 px-8">Reassignment Buffer</th>
+                <th className="py-6 px-8 text-right pr-12">Telemetry</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.03]">
+              {playersLoading || teamsLoading ? (
+                <tr><td colSpan={5} className="py-32 text-center text-slate-600 font-bold uppercase"><Loader2 className="w-10 h-10 animate-spin mx-auto text-[#ec131e] opacity-50 mb-4" /> Synchronizing data...</td></tr>
+              ) : filteredPlayers.length === 0 ? (
+                <tr><td colSpan={5} className="py-32 text-center text-slate-600 font-bold uppercase">No operators matching search parameters</td></tr>
+              ) : filteredPlayers.map((player) => {
+                const currentTeam = player.team_members?.[0]?.teams;
+                const isAssigning = assignMutation.isPending && assignMutation.variables?.userId === player.id;
+
+                return (
+                  <tr key={player.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="py-6 px-8">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl border-2 border-white/5 overflow-hidden bg-white/5 glass-level-3 shrink-0 group-hover:scale-110 transition-transform">
+                          {player.avatar_url ? <img src={player.avatar_url} className="w-full h-full object-cover" alt="" /> : <Users className="w-6 h-6 m-3 text-slate-700" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-base font-black text-white uppercase tracking-tight truncate">{player.ign || player.username}</p>
+                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">ID: {player.id.slice(0, 8)}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-6 px-8">
+                       <span className="text-[10px] font-black text-slate-400 border border-white/10 px-3 py-1.5 rounded-lg uppercase tracking-widest bg-white/5">{player.role}</span>
+                    </td>
+                    <td className="py-6 px-8">
+                      {currentTeam ? (
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#ec131e]/10 border border-[#ec131e]/20 group-hover:brand-glow transition-all">
+                          <Shield className="w-3.5 h-3.5 text-[#ec131e]" />
+                          <span className="text-[10px] font-black text-[#ec131e] uppercase tracking-widest">{currentTeam.name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic opacity-50">Stationed at Base</span>
+                      )}
+                    </td>
+                    <td className="py-6 px-8">
+                       <div className="flex items-center gap-3">
+                          <Select 
+                            value={currentTeam?.id || 'none'} 
+                            onValueChange={(val) => assignMutation.mutate({ userId: player.id, teamId: val })}
+                            disabled={isAssigning}
+                          >
+                            <SelectTrigger className="w-48 glass-level-3 border-white/10 h-10 text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-[#ec131e]/50 transition-colors">
+                              <SelectValue placeholder="New Sector" />
+                            </SelectTrigger>
+                            <SelectContent className="glass-level-3 border-white/10 shadow-2xl backdrop-blur-2xl">
+                              <SelectItem value="none" className="text-[10px] font-black uppercase py-3 hover:text-[#ec131e]">Return to Reserves</SelectItem>
+                              {teams.map(t => (
+                                <SelectItem key={t.id} value={t.id} className="text-[10px] font-black uppercase py-3">{t.name} Unit</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {isAssigning && <Loader2 className="w-4 h-4 animate-spin text-[#ec131e]" />}
+                       </div>
+                    </td>
+                    <td className="py-6 px-8 text-right pr-12">
+                      <div className={cn(
+                        "inline-block w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]",
+                        player.status === 'online' ? "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-slate-800"
+                      )} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="p-8 border-t border-white/5 flex justify-between items-center text-slate-600">
+           <p className="text-[10px] font-black uppercase tracking-[0.5em]">NEXA ROSTER SYNC v2.1</p>
+           <PlayCircle className="w-5 h-5 opacity-20" />
+        </div>
       </div>
     </div>
   );

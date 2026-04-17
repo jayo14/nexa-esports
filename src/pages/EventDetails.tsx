@@ -41,50 +41,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-/* ─────────────── Design tokens ─────────────── */
-const C = {
-  primary:  '#ec131e',
-  bgDark:   '#1a0b0d',
-  burgundy: '#411d21',
-  panel:    '#2d1619',
-};
-
-const glass: React.CSSProperties = {
-  background: 'rgba(45,22,25,0.6)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-};
 
 /* ─────────────── BriefingCard ─────────────── */
 const BriefingCard: React.FC<{ iconNode: React.ReactNode; value: string; label: string }> = ({
   iconNode, value, label,
 }) => (
-  <div
-    className="p-4 sm:p-6 shadow-xl relative group overflow-hidden cursor-default rounded-[24px] sm:rounded-[32px]"
-    style={{
-      ...glass,
-      border: '1px solid rgba(255,255,255,0.05)',
-      transform: 'perspective(1000px) rotateY(-5deg) rotateX(2deg)',
-      transition: 'transform 0.3s ease',
-    }}
-    onMouseEnter={(e) => {
-      (e.currentTarget as HTMLDivElement).style.transform =
-        'perspective(1000px) rotateY(0deg) rotateX(0deg)';
-    }}
-    onMouseLeave={(e) => {
-      (e.currentTarget as HTMLDivElement).style.transform =
-        'perspective(1000px) rotateY(-5deg) rotateX(2deg)';
-    }}
-  >
-    <div
-      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-6 sm:mb-12 transition-transform group-hover:scale-110"
-      style={{ background: `${C.primary}33`, color: C.primary }}
-    >
+  <div className="glass-level-2 p-6 flex flex-col items-center text-center transition-all">
+    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 bg-red-600/20 text-[#ec131e] group-hover:scale-110 transition-transform">
       {iconNode}
     </div>
-    <h4 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2 text-white">{value}</h4>
-    <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-widest">{label}</p>
+    <h4 className="text-xl font-black font-orbitron text-white uppercase tracking-tight mb-2">{value}</h4>
+    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
   </div>
 );
 
@@ -392,47 +359,47 @@ export const EventDetails: React.FC = () => {
                   </div>
 
                   <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="p-8 rounded-[32px]" style={glass}>
-                        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-3"><Shield className="w-4 h-4 text-red-500" /> Tactical Access</h3>
-                        <div className="space-y-4">
+                     <div className="glass-level-2 p-8 rounded-[32px]">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-3"><Shield className="w-4 h-4 text-[#ec131e]" /> Tactical Access</h3>
+                        <div className="space-y-4 text-left">
                            {event.room_code && (
                               <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
                                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Room Code</span>
                                  <code className="text-white font-bold tracking-widest">{event.room_code}</code>
                               </div>
                            )}
-                           <Button onClick={() => event.room_link ? window.open(event.room_link, '_blank') : copyToClipboard()} className="w-full h-12 bg-red-600 hover:bg-red-500 font-black uppercase tracking-widest text-xs rounded-2xl">
+                           <Button onClick={() => event.room_link ? window.open(event.room_link, '_blank') : copyToClipboard()} className="w-full h-12 bg-[#ec131e] hover:bg-[#ec131e]/90 font-black uppercase tracking-widest text-xs rounded-2xl">
                               {event.room_link ? "Connect to Server" : "Copy Event Intel"}
                            </Button>
                         </div>
                      </div>
-                     <div className="p-8 rounded-[32px] bg-red-600/5 border border-red-500/10 relative overflow-hidden">
-                        <div className="relative z-10">
-                           <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-3"><ShieldAlert className="w-4 h-4 text-red-500" /> Mission Protocol</h3>
-                           <p className="text-slate-400 text-sm leading-relaxed">{event.compulsory ? "PROTOCOL ALPHA-X: This deployment is mandatory. Absence will result in immediate squad de-ranking." : "High priority mission. Synchronize with your squad to ensure maximal impact."}</p>
+                     <div className="p-8 rounded-[32px] bg-red-600/5 border border-red-500/10 relative overflow-hidden liquid-glass brand-border brand-glow">
+                        <div className="relative z-10 text-left">
+                           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-3"><ShieldAlert className="w-4 h-4 text-[#ec131e]" /> Mission Protocol</h3>
+                           <p className="text-slate-300 text-sm font-medium leading-relaxed">{event.compulsory ? "PROTOCOL ALPHA-X: This deployment is mandatory. Absence will result in immediate squad de-ranking." : "High priority mission. Synchronize with your squad to ensure maximal impact."}</p>
                         </div>
-                        <Flame className="absolute -right-8 -bottom-8 w-32 h-32 text-red-600 opacity-5" />
+                        <Flame className="absolute -right-8 -bottom-8 w-32 h-32 text-[#ec131e] opacity-5" />
                      </div>
                   </section>
                </div>
 
                <div className="w-full xl:w-80 space-y-8 flex-shrink-0">
-                  <section className="p-8 rounded-[32px] text-center" style={glass}>
+                  <section className="glass-level-2 p-8 text-center rounded-[32px]">
                      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Confirmed Force</h3>
                      <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
                         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                            <circle cx="50" cy="50" r="45" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
-                           <circle cx="50" cy="50" r="45" fill="transparent" stroke={C.primary} strokeWidth="8" strokeDasharray={282} strokeDashoffset={282 - (282 * participationRate / 100)} strokeLinecap="round" />
+                           <circle cx="50" cy="50" r="45" fill="transparent" stroke="#ec131e" strokeWidth="8" strokeDasharray={282} strokeDashoffset={282 - (282 * participationRate / 100)} strokeLinecap="round" />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                           <span className="text-4xl font-black text-white">{confirmedCount}</span>
-                           <span className="text-[10px] font-bold text-slate-500">/{maxParticipants}</span>
+                           <span className="text-4xl font-black text-white font-orbitron">{confirmedCount}</span>
+                           <span className="text-[10px] font-black text-slate-500 uppercase">/{maxParticipants}</span>
                         </div>
                      </div>
                      <p className="mt-6 text-[10px] font-black text-green-500 uppercase tracking-widest">Active Ready Rate: {participationRate}%</p>
                   </section>
 
-                  <section className="p-8 rounded-[32px]" style={glass}>
+                  <section className="glass-level-2 p-8 text-left rounded-[32px]">
                      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Force Contacts</h3>
                      <div className="space-y-4">
                         {activeWarriors.map(w => (
@@ -441,8 +408,8 @@ export const EventDetails: React.FC = () => {
                                  {w.img ? <img src={w.img} className="w-full h-full object-cover" alt="" /> : <UserIcon className="w-5 h-5 m-2.5 text-slate-600" />}
                               </div>
                               <div className="min-w-0">
-                                 <p className="text-xs font-black text-white truncate">{w.name}</p>
-                                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{w.status}</p>
+                                 <p className="text-xs font-black text-white uppercase truncate tracking-tight">{w.name}</p>
+                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{w.status}</p>
                               </div>
                            </div>
                         ))}
@@ -454,7 +421,7 @@ export const EventDetails: React.FC = () => {
 
          {/* INTEL TAB */}
          <TabsContent value="intel" className="mt-0 outline-none">
-            <section className="p-10 rounded-[40px] text-center" style={glass}>
+            <section className="glass-level-2 p-10 rounded-[40px] text-center">
                <h2 className="text-3xl font-black font-orbitron text-white uppercase tracking-tighter mb-12">Participant Roster</h2>
                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-8">
                   {participantRecords.map(p => (
@@ -491,7 +458,7 @@ export const EventDetails: React.FC = () => {
                      )}
                   </div>
 
-                  <div className="lg:col-span-8 p-10 rounded-[40px]" style={glass}>
+                  <div className="lg:col-span-8 p-10 rounded-[40px] glass-level-2 text-left">
                      <div className="flex items-center gap-4 mb-8">
                         <div className="w-1.5 h-6 bg-red-600 rounded-full" />
                         <h3 className="text-xl font-black text-white uppercase tracking-tighter font-orbitron">Force Recap</h3>
@@ -505,7 +472,7 @@ export const EventDetails: React.FC = () => {
                         </div>
                         <div>
                            <p className="text-xs font-black text-white uppercase tracking-widest">{event.host?.ign || 'Command'}</p>
-                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authored Review</p>
+                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Authored Review</p>
                         </div>
                      </div>
                   </div>
@@ -610,10 +577,10 @@ export const EventDetails: React.FC = () => {
 
       {/* ADMIN DIALOGS */}
       <Dialog open={mvpDialogOpen} onOpenChange={setMvpDialogOpen}>
-         <DialogContent className="bg-[#1a0b0d] border-white/10 text-white font-rajdhani">
+         <DialogContent className="glass-level-3 border-white/10 text-white font-rajdhani">
             <DialogHeader>
-               <DialogTitle className="font-orbitron text-red-500 uppercase tracking-widest">Post-Event Ops</DialogTitle>
-               <DialogDescription className="text-slate-400">Nominate the mission MVP and synthesize the operational recap.</DialogDescription>
+               <DialogTitle className="font-orbitron font-black text-[#ec131e] uppercase tracking-widest">Post-Event Ops</DialogTitle>
+               <DialogDescription className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Nominate the mission MVP and synthesize the operational recap.</DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
                <div className="space-y-2">
@@ -636,10 +603,10 @@ export const EventDetails: React.FC = () => {
       </Dialog>
 
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-         <DialogContent className="bg-[#1a0b0d] border-white/10 text-white font-rajdhani">
+         <DialogContent className="glass-level-3 border-white/10 text-white font-rajdhani">
             <DialogHeader>
-               <DialogTitle className="font-orbitron text-red-500 uppercase tracking-widest">Transmit Intel</DialogTitle>
-               <DialogDescription className="text-slate-400">Deploy gameplay evidence or provide a secured external data link.</DialogDescription>
+               <DialogTitle className="font-orbitron font-black text-[#ec131e] uppercase tracking-widest">Transmit Intel</DialogTitle>
+               <DialogDescription className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Deploy gameplay evidence or provide a secured external data link.</DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
                 <div className="flex bg-white/5 p-1 rounded-2xl">

@@ -532,7 +532,7 @@ export const ListingDetails: React.FC = () => {
                           {isInCart(listing.id) ? 'Already in Cart' : 'Add to Cart'}
                         </button>
                         <button
-                          onClick={() => navigate(`/marketplace/checkout/${listing.id}`)}
+                          onClick={() => navigate(`/market/${listing.id}`)}
                           className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-60 text-white font-black py-6 rounded-[18px] transition-all flex items-center justify-center gap-3 text-base"
                           style={{ boxShadow: '0 8px 32px rgba(234,42,51,0.3)' }}
                         >

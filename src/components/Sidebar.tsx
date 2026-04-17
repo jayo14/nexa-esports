@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = () => {
             <SideNavIcon label="Chat" icon={<MdChat className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
             <SideNavIcon label="Players" icon={<MdPeople className="w-5 h-5" />} onClick={() => navigate('/players')} active={isActive('/players')} />
             <SideNavIcon label="Teams" icon={<MdSecurity className="w-5 h-5" />} onClick={() => navigate('/teams')} active={isActive('/teams')} />
-            <SideNavIcon label="Leaderboard" icon={<MdEmojiEvents className="w-5 h-5" />} onClick={() => navigate('/leaderboard/competitive')} active={isActive('/leaderboard/competitive')} />
+            <SideNavIcon label="Leaderboard" icon={<MdEmojiEvents className="w-5 h-5" />} onClick={() => navigate('/leaderboard')} active={isActive('/leaderboard')} />
             {isAdminOrClanMaster && (
               <>
                 <SideNavIcon label="Manage Events" icon={<MdEvent className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />

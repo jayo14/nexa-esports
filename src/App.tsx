@@ -198,7 +198,7 @@ function AppRoutes() {
         <Route path="/marketplace-info" element={<MarketplaceInfo />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/events/:eventId" element={<ProtectedRoute><Layout showSidebar pageScroll><EventDetails /></Layout></ProtectedRoute>} />
+        <Route path="/event/:eventId" element={<ProtectedRoute><Layout showSidebar pageScroll><EventDetails /></Layout></ProtectedRoute>} />
 
         {/* Auth routes */}
         <Route path="/auth/login" element={<Login />} />
@@ -222,7 +222,7 @@ function AppRoutes() {
         <Route path="/loadouts" element={<ProtectedRoute><Layout showSidebar><Loadouts /></Layout></ProtectedRoute>} />
         <Route path="/announcements" element={<ProtectedRoute><Layout showSidebar><Announcements /></Layout></ProtectedRoute>} />
         <Route path="/statistics" element={<ProtectedRoute><Layout showSidebar><Statistics /></Layout></ProtectedRoute>} />
-        <Route path="/leaderboard/competitive" element={<ProtectedRoute><Layout showSidebar><CompetitiveLeaderboard /></Layout></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<ProtectedRoute><Layout showSidebar><CompetitiveLeaderboard /></Layout></ProtectedRoute>} />
         <Route path="/players" element={<ProtectedRoute><Layout showSidebar><Players /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout showSidebar><Wallet /></Layout></ProtectedRoute>} />
         <Route path="/wallet/transfer" element={<ProtectedRoute><Layout showSidebar><Transfer /></Layout></ProtectedRoute>} />
@@ -236,7 +236,7 @@ function AppRoutes() {
         <Route path="/marketplace/my-listings" element={<ProtectedRoute><Layout showSidebar><MyListingsScreen /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/list" element={<ProtectedRoute><Layout showSidebar><ListAccount /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/listing/:listingId" element={<ProtectedRoute><Layout showSidebar><ListingDetails /></Layout></ProtectedRoute>} />
-        <Route path="/marketplace/checkout/:listingId" element={<ProtectedRoute><Layout showSidebar><Checkout /></Layout></ProtectedRoute>} />
+        <Route path="/market/:listingId" element={<ProtectedRoute><Layout showSidebar><Checkout /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/purchases" element={<ProtectedRoute><Layout showSidebar><MyPurchases /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/purchases/:transactionId" element={<ProtectedRoute><Layout showSidebar><PurchaseDetails /></Layout></ProtectedRoute>} />
         <Route path="/marketplace/orders" element={<ProtectedRoute><Layout showSidebar><BuyerDashboard /></Layout></ProtectedRoute>} />

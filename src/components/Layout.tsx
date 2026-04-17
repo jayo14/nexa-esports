@@ -192,7 +192,7 @@ export const Layout: React.FC<LayoutProps> = ({
         group: "events" as const,
         title: eventItem.name,
         subtitle: `${eventItem.type} • ${eventItem.status || "unknown"}`,
-        path: `/events/${eventItem.id}`,
+        path: `/event/${eventItem.id}`,
       })),
       ...globalSearchResults.loadouts.map((loadout) => ({
         key: `loadout-${loadout.id}`,
@@ -480,7 +480,7 @@ export const Layout: React.FC<LayoutProps> = ({
                                       key={eventItem.id}
                                       className="w-full text-left px-3 py-2 rounded-xl transition-colors"
                                       style={{ background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-                                      onClick={() => handleSelectGlobalResult(`/events/${eventItem.id}`)}
+                                      onClick={() => handleSelectGlobalResult(`/event/${eventItem.id}`)}
                                       onMouseEnter={() => setHighlightedSearchIndex(itemIndex >= 0 ? itemIndex : 0)}
                                     >
                                       <p className="text-sm text-slate-100 font-semibold">{eventItem.name}</p>

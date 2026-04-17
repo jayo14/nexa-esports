@@ -450,7 +450,7 @@ export const AdminAttendance: React.FC = () => {
                 <tbody style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   {playersLoading ? (
                     <tr>
-                      <td colSpan={4} className="px-8 py-16 text-center">
+                      <td colSpan={5} className="px-8 py-16 text-center">
                         <div className="flex flex-col items-center gap-3">
                           <div
                             className="w-10 h-10 rounded-full border-2 animate-spin"
@@ -462,7 +462,7 @@ export const AdminAttendance: React.FC = () => {
                     </tr>
                   ) : filteredPlayers.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-8 py-16 text-center text-slate-500">
+                      <td colSpan={5} className="px-8 py-16 text-center text-slate-500">
                         No operatives found
                       </td>
                     </tr>
@@ -535,6 +535,8 @@ export const AdminAttendance: React.FC = () => {
                                 onBlur={(e)  => ((e.target as HTMLInputElement).style.boxShadow = 'none')}
                               />
                             </div>
+                          </td>
+
                           {/* Proof */}
                           <td className="px-8 py-5 text-center">
                             {(attendedRecord as any)?.verification_url ? (
@@ -633,13 +635,13 @@ export const AdminAttendance: React.FC = () => {
                 <tbody>
                   {attendanceLoading ? (
                     <tr>
-                      <td colSpan={5} className="px-8 py-12 text-center text-slate-500">
+                      <td colSpan={6} className="px-8 py-12 text-center text-slate-500">
                         Loading records…
                       </td>
                     </tr>
                   ) : filteredRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-8 py-12 text-center text-slate-500">
+                      <td colSpan={6} className="px-8 py-12 text-center text-slate-500">
                         No records found
                       </td>
                     </tr>
