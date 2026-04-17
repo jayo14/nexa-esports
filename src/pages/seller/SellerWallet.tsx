@@ -16,7 +16,8 @@ import {
   Calendar,
   ExternalLink,
   ShieldCheck,
-  Package
+  Package,
+  Info
 } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
