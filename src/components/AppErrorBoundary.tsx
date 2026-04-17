@@ -65,21 +65,23 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
     }
   };
 
-  private isIgnorableServiceWorkerError = (message?: string) => {
+  private isIgnorableError = (message?: string) => {
     if (!message) return false;
     const normalized = message.toLowerCase();
     return (
       normalized.includes('failed to register a serviceworker') ||
       normalized.includes('script resource is behind a redirect') ||
-      normalized.includes('dev-sw.js?dev-sw')
+      normalized.includes('dev-sw.js?dev-sw') ||
+      normalized.includes('resizeobserver loop completed with undelivered notifications') ||
+      normalized.includes('resizeobserver loop limit exceeded')
     );
   };
 
   private handleGlobalError = (event: ErrorEvent) => {
     const message = normalizeErrorMessage(event.error || event.message);
 
-    if (this.isIgnorableServiceWorkerError(message)) {
-      console.warn('Ignored service worker registration error:', message);
+    if (this.isIgnorableError(message)) {
+      console.warn('Ignored benign global error:', message);
       return;
     }
 
@@ -99,8 +101,8 @@ export class AppErrorBoundary extends React.Component<React.PropsWithChildren, A
     const reason = event.reason;
     const message = normalizeErrorMessage(reason);
 
-    if (this.isIgnorableServiceWorkerError(message)) {
-      console.warn('Ignored service worker registration rejection:', message);
+    if (this.isIgnorableError(message)) {
+      console.warn('Ignored benign promise rejection:', message);
       return;
     }
 
