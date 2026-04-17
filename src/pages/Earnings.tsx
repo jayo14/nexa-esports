@@ -345,24 +345,24 @@ const Earnings = () => {
           />
           <MetricCard
             label="Withdrawal Fees"
-            value={`₦${(earningsBySource['withdrawal_fee'] || 0).toLocaleString()}`}
-            sub="4% commission rate"
+            value={`₦${((earningsBySource['clan_withdrawal_fee'] || 0) + (earningsBySource['marketplace_withdrawal_fee'] || 0) + (earningsBySource['withdrawal_fee'] || 0)).toLocaleString()}`}
+            sub="Platform commissions"
             icon={<ArrowDownToLine className="w-4 h-4" />}
             iconBg={`${C.primary}1a`}
             iconColor={C.primary}
           />
           <MetricCard
             label="Deposit Fees"
-            value={`₦${(earningsBySource['deposit_fee'] || 0).toLocaleString()}`}
-            sub="4% commission rate"
+            value={`₦${((earningsBySource['clan_deposit_fee'] || 0) + (earningsBySource['marketplace_deposit_fee'] || 0) + (earningsBySource['deposit_fee'] || 0)).toLocaleString()}`}
+            sub="Platform commissions"
             icon={<Download className="w-4 h-4" />}
             iconBg={`${C.primary}1a`}
             iconColor={C.primary}
           />
           <MetricCard
-            label="Transfer & Tax"
-            value={`₦${((earningsBySource['transfer_fee'] || 0) + (earningsBySource['tax_fee'] || 0)).toLocaleString()}`}
-            sub="Combined platform revenue"
+            label="Marketplace & Transfers"
+            value={`₦${((earningsBySource['marketplace_commission'] || 0) + (earningsBySource['clan_transfer_fee'] || 0) + (earningsBySource['transfer_fee'] || 0) + (earningsBySource['tax_fee'] || 0)).toLocaleString()}`}
+            sub="Marketplace & Clan revenue"
             icon={<BarChart2 className="w-4 h-4" />}
             iconBg="rgba(245,158,11,0.1)"
             iconColor="#f59e0b"

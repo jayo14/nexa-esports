@@ -443,6 +443,7 @@ export const AdminAttendance: React.FC = () => {
                     <th className="px-8 py-6 text-left">Player Username</th>
                     <th className="px-8 py-6 text-center">Attendance %</th>
                     <th className="px-8 py-6 text-center">Kill Records</th>
+                    <th className="px-8 py-6 text-center">Proof</th>
                     <th className="px-8 py-6 text-right">Status Control</th>
                   </tr>
                 </thead>
@@ -534,6 +535,18 @@ export const AdminAttendance: React.FC = () => {
                                 onBlur={(e)  => ((e.target as HTMLInputElement).style.boxShadow = 'none')}
                               />
                             </div>
+                          {/* Proof */}
+                          <td className="px-8 py-5 text-center">
+                            {(attendedRecord as any)?.verification_url ? (
+                              <button
+                                onClick={() => window.open((attendedRecord as any).verification_url, '_blank')}
+                                className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-all"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-slate-600 font-bold uppercase">No Proof</span>
+                            )}
                           </td>
 
                           {/* Present / Absent toggle */}
@@ -612,6 +625,7 @@ export const AdminAttendance: React.FC = () => {
                     <th className="px-8 py-4">Player</th>
                     <th className="px-8 py-4">Event Details</th>
                     <th className="px-8 py-4 text-center">Date</th>
+                    <th className="px-8 py-4 text-center">Proof</th>
                     <th className="px-8 py-4 text-center">Status</th>
                     <th className="px-8 py-4 text-right">Actions</th>
                   </tr>
@@ -669,6 +683,13 @@ export const AdminAttendance: React.FC = () => {
                         {/* Date */}
                         <td className="px-8 py-4 text-center text-sm text-slate-500">
                           {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+
+                        {/* Proof */}
+                        <td className="px-8 py-4 text-center">
+                          {(record as any).verification_url && (
+                             <Download className="w-4 h-4 text-slate-500 mx-auto cursor-pointer" onClick={() => window.open((record as any).verification_url, '_blank')} />
+                          )}
                         </td>
 
                         {/* Status */}

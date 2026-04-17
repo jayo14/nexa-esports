@@ -32,6 +32,8 @@ interface UserProfile {
   ban_reason?: string;
   ban_expires_at?: string;
   wallet_balance?: number;
+  clan_wallet_balance?: number;
+  marketplace_wallet_balance?: number;
 }
 
 interface AuthContextType {
@@ -388,13 +390,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const refreshWallet = useCallback(async () => {
     if (!user?.id) return;
-    const { data } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (data) {
-      setProfile(prev => prev ? { ...prev, wallet_balance: data.balance } : prev);
+    try {
+      const { data } = await supabase
+        .from('wallets')
+        .select('balance, wallet_type')
+        .eq('user_id', user.id);
+      
+      if (data) {
+        const clanWallet = data.find(w => w.wallet_type === 'clan');
+        const marketplaceWallet = data.find(w => w.wallet_type === 'marketplace');
+        
+        setProfile(prev => prev ? { 
+          ...prev, 
+          wallet_balance: clanWallet?.balance ?? prev.wallet_balance ?? 0,
+          clan_wallet_balance: clanWallet?.balance ?? prev.clan_wallet_balance ?? 0,
+          marketplace_wallet_balance: marketplaceWallet?.balance ?? prev.marketplace_wallet_balance ?? 0 
+        } : prev);
+      }
+    } catch (error) {
+      console.error("Error refreshing wallet:", error);
     }
   }, [user?.id]);
 
@@ -405,14 +419,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'wallets',
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const newBalance = (payload.new as { balance: number }).balance;
-          setProfile(prev => prev ? { ...prev, wallet_balance: newBalance } : prev);
+          const newData = payload.new as { balance: number; wallet_type: string };
+          if (!newData) return;
+          
+          setProfile(prev => {
+            if (!prev) return prev;
+            if (newData.wallet_type === 'clan') {
+              return { ...prev, wallet_balance: newData.balance, clan_wallet_balance: newData.balance };
+            } else if (newData.wallet_type === 'marketplace') {
+              return { ...prev, marketplace_wallet_balance: newData.balance };
+            }
+            return prev;
+          });
         }
       )
       .subscribe();

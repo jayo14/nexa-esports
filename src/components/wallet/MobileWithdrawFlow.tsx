@@ -176,7 +176,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
 
                 <Alert className="p-4">
                   <Coins className="h-5 w-5" />
-                  <AlertTitle className="text-base">Transaction Fee</AlertTitle>
+                  <AlertTitle className="text-base">Service Fee</AlertTitle>
                   <AlertDescription className="text-sm mt-1">
                     {feeConfig.rate * 100}% fee applies, capped at ₦{feeConfig.cap.toLocaleString()}.
                   </AlertDescription>
@@ -233,7 +233,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground items-center">
-                      <span>Platform Fee ({feeConfig.rate * 100}%, capped at ₦{feeConfig.cap.toLocaleString()})</span>
+                      <span>Service Fee ({feeConfig.rate * 100}%, capped at ₦{feeConfig.cap.toLocaleString()})</span>
                       <span>-₦{fee.toFixed(2)}</span>
                     </div>
                     <div className="h-px bg-border my-1" />

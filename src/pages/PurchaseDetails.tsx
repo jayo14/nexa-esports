@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PurchaseReceipt } from '@/components/marketplace/PurchaseReceipt';
-import { ArrowLeft, CheckCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Loader2, AlertTriangle, MessageSquare } from 'lucide-react';
+import { useChat } from '@/hooks/useChat';
 import { useToast } from '@/hooks/use-toast';
 import CryptoJS from 'crypto-js';
 
@@ -112,6 +113,21 @@ export const PurchaseDetails: React.FC = () => {
         <Button variant="ghost" onClick={() => navigate('/marketplace/purchases')} className="font-rajdhani">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to My Purchases
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="font-orbitron text-[10px] border-primary/20 bg-primary/5 hover:bg-primary/10"
+          onClick={async () => {
+            const conversationId = await useChat().getOrCreateConversation({
+              listingId: transaction.listing_id,
+              sellerId: transaction.seller_id,
+            });
+            navigate(`/chat/${conversationId}`);
+          }}
+        >
+          <MessageSquare className="mr-2 h-4 w-4" />
+          Chat with Seller
         </Button>
       </div>
 

@@ -21,7 +21,8 @@ interface MobileTransferFlowProps {
 
 type Step = 'recipient' | 'amount' | 'review' | 'processing';
 
-const TRANSFER_FEE = 50;
+const FEE_RATE = 0.035; // 3.5%
+const FEE_CAP = 5000;
 
 export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
   open,
@@ -57,6 +58,12 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
 
   const selectedPlayer = players?.find(p => p.ign === recipient);
 
+  const calculateFee = (val: number) => {
+    return Math.min(Math.round(val * FEE_RATE * 100) / 100, FEE_CAP);
+  };
+
+  const transferFee = calculateFee(Number(amount) || 0);
+
   const handleRecipientNext = async () => {
     if (!recipient) return;
     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
@@ -65,7 +72,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
 
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
-    const totalDeduction = amountNum + TRANSFER_FEE;
+    const totalDeduction = amountNum + transferFee;
     
     // Check if wallet balance is sufficient for amount + fee
     if (amountNum <= 0 || totalDeduction > walletBalance) {
@@ -257,11 +264,11 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                   ))}
                 </div>
 
-                <Alert className="p-3">
-                  <Coins className="h-4 w-4" />
-                  <AlertTitle className="text-sm">Transaction Fee</AlertTitle>
-                  <AlertDescription className="text-xs mt-0.5">
-                    A flat fee of ₦{TRANSFER_FEE} will be charged on top of the transfer amount.
+                <Alert className="p-4 bg-orange-500/5 border-orange-500/20">
+                  <Coins className="h-4 w-4 text-orange-500" />
+                  <AlertTitle className="text-sm font-bold text-orange-500">Service Fee</AlertTitle>
+                  <AlertDescription className="text-xs mt-0.5 text-orange-500/80">
+                    A service fee of {FEE_RATE * 100}% (capped at ₦{FEE_CAP.toLocaleString()}) applies to clan transfers.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -277,7 +284,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                 </Button>
                 <Button
                   onClick={handleAmountNext}
-                  disabled={!amount || Number(amount) <= 0 || (Number(amount) + TRANSFER_FEE) > walletBalance}
+                  disabled={!amount || Number(amount) <= 0 || (Number(amount) + transferFee) > walletBalance}
                   className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
@@ -323,13 +330,13 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-orange-500">
-                      <span>Transfer Fee</span>
-                      <span>+₦{TRANSFER_FEE}</span>
+                      <span>Service Fee ({FEE_RATE * 100}%)</span>
+                      <span>+₦{transferFee.toLocaleString()}</span>
                     </div>
                     <div className="h-px bg-border my-1" />
                     <div className="flex justify-between text-base items-center">
                       <span className="font-semibold">Deducted from Your Wallet</span>
-                      <span className="font-bold text-destructive">₦{(Number(amount) + TRANSFER_FEE).toLocaleString()}</span>
+                      <span className="font-bold text-destructive">₦{(Number(amount) + transferFee).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm text-green-500 items-center mt-2">
                       <span className="font-semibold">Recipient Receives</span>

@@ -258,6 +258,7 @@ function AppRoutes() {
           <Route path="post-account" element={<SellerPostAccount />} />
           <Route path="wallet" element={<SellerWallet />} />
           <Route path="settings" element={<SellerSettings />} />
+          <Route path="edit-listing/:listingId" element={<ListAccount />} />
         </Route>
 
         {/* Admin routes */}

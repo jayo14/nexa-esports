@@ -63,9 +63,10 @@ const REGIONS = [
 ];
 
 export const ListAccount: React.FC = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { createListing, isCreating } = useMarketplace();
+  const { listingId } = useParams();
+  const isEditMode = !!listingId;
+  const { createListing, isCreating, updateListing, isUpdating, useListingDetails } = useMarketplace();
+  const { data: listingToEdit, isLoading: isFetchingListing } = useListingDetails(listingId);
   
   const videoInputRef = useRef<HTMLInputElement>(null);
   
@@ -87,6 +88,29 @@ export const ListAccount: React.FC = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+
+  // Load listing data if in edit mode
+  React.useEffect(() => {
+    if (isEditMode && listingToEdit) {
+      setFormData({
+        title: listingToEdit.title || '',
+        account_uid: listingToEdit.account_uid || '',
+        description: listingToEdit.description || '',
+        price: String(listingToEdit.price || ''),
+        is_negotiable: listingToEdit.is_negotiable || false,
+        region: listingToEdit.region || '',
+        refund_policy: listingToEdit.refund_policy || false,
+        other_login: listingToEdit.login_methods?.other || '',
+        account_credentials: '', // Keep empty for security unless we explicitly decrypt it for editing
+        security_notes: listingToEdit.security_notes || '',
+      });
+      setSelectedAssets(listingToEdit.assets || {});
+      const logins: Record<string, boolean> = {};
+      listingToEdit.login_methods?.methods?.forEach((m: string) => logins[m] = true);
+      setSelectedLogins(logins);
+      if (listingToEdit.video_url) setVideoPreview(listingToEdit.video_url);
+    }
+  }, [isEditMode, listingToEdit]);
 
   const handleAssetChange = (id: string, checked: boolean) => {
     setSelectedAssets(prev => {
@@ -256,11 +280,19 @@ export const ListAccount: React.FC = () => {
       security_notes: formData.security_notes,
     };
 
-    createListing(listingPayload, {
-      onSuccess: () => {
-        navigate('/marketplace');
-      }
-    });
+    if (isEditMode) {
+      updateListing({ id: listingId!, updates: listingPayload }, {
+        onSuccess: () => {
+          navigate('/marketplace');
+        }
+      });
+    } else {
+      createListing(listingPayload, {
+        onSuccess: () => {
+          navigate('/marketplace');
+        }
+      });
+    }
   };
 
   return (
@@ -275,8 +307,12 @@ export const ListAccount: React.FC = () => {
           <ArrowLeft className="h-6 w-6" />
         </Button>
         <div>
-          <h1 className="text-2xl md:text-3xl font-orbitron font-bold">List Your Account</h1>
-          <p className="text-muted-foreground font-rajdhani">Showcase your achievement to the Nexa community</p>
+          <h1 className="text-2xl md:text-3xl font-orbitron font-bold">
+            {isEditMode ? 'Update Your Listing' : 'List Your Account'}
+          </h1>
+          <p className="text-muted-foreground font-rajdhani">
+            {isEditMode ? 'Modify your account details' : 'Showcase your achievement to the Nexa community'}
+          </p>
         </div>
       </div>
 
@@ -662,13 +698,13 @@ export const ListAccount: React.FC = () => {
             type="submit"
             disabled={isCreating || isUploadingVideo}
           >
-            {isCreating || isUploadingVideo ? (
+            {isCreating || isUpdating || isUploadingVideo ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 border-2 border-background border-t-transparent animate-spin rounded-full" />
                 Processing...
               </span>
             ) : (
-              'Post Listing'
+              isEditMode ? 'Update Listing' : 'Post Listing'
             )}
           </Button>
         </div>

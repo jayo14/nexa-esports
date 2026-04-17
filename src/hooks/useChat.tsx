@@ -213,17 +213,26 @@ export const useChat = (conversationId?: string) => {
     },
   });
 
-  // Create or get conversation
   const getOrCreateConversation = useMutation({
-    mutationFn: async ({ listingId, sellerId }: { listingId: string; sellerId: string }) => {
+    mutationFn: async ({ 
+      listingId, 
+      sellerId, 
+      buyerId 
+    }: { 
+      listingId: string; 
+      sellerId: string; 
+      buyerId?: string;
+    }) => {
       if (!user) throw new Error('Not authenticated');
+      
+      const resolvedBuyerId = buyerId || user.id;
 
       // Check if exists
       const { data: existing, error: fetchError } = await supabase
         .from('conversations')
         .select('id')
         .eq('listing_id', listingId)
-        .eq('buyer_id', user.id)
+        .eq('buyer_id', resolvedBuyerId)
         .eq('seller_id', sellerId)
         .maybeSingle();
 
@@ -232,7 +241,11 @@ export const useChat = (conversationId?: string) => {
       // Create new
       const { data: created, error: createError } = await supabase
         .from('conversations')
-        .insert([{ listing_id: listingId, buyer_id: user.id, seller_id: sellerId }])
+        .insert([{ 
+          listing_id: listingId, 
+          buyer_id: resolvedBuyerId, 
+          seller_id: sellerId 
+        }])
         .select('id')
         .single();
 

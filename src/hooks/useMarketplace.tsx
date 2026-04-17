@@ -279,7 +279,8 @@ export const useMarketplace = () => {
       const { data, error } = await supabase.rpc('marketplace_checkout', {
         p_listing_id: listingId,
         p_buyer_id: buyerId,
-        p_price: price
+        p_price: price,
+        p_buyer_role: (variables as any).buyerRole || 'buyer'
       });
 
       if (error) throw error;

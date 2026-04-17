@@ -191,7 +191,7 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
                 </div>
                 <div className="flex justify-between items-center text-red-400">
                   <span className="text-base">
-                    Platform Fee ({feeConfig.rate * 100}%, capped at ₦{feeConfig.cap.toLocaleString()})
+                    Service Fee ({feeConfig.rate * 100}%, capped at ₦{feeConfig.cap.toLocaleString()})
                   </span>
                   <span className="font-bold">-₦{fee.toFixed(2)}</span>
                 </div>

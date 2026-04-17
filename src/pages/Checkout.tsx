@@ -37,8 +37,11 @@ export const Checkout: React.FC = () => {
   const [step, setStep] = useState(1);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [securityAccepted, setSecurityAccepted] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number>(Number(profile?.wallet_balance ?? 0));
+  const [walletBalance, setWalletBalance] = useState<number>(0);
   const [walletLoading, setWalletLoading] = useState(true);
+
+  const isClanMember = profile?.role === 'clan_master' || profile?.role === 'player' || profile?.role === 'admin' || profile?.role === 'moderator';
+  const displayRole = profile?.role || 'buyer';
 
   const listing = listingData as AccountListing | null;
   const listingMediaThumb = listing?.video_url || listing?.images?.[0] || null;
@@ -58,42 +61,42 @@ export const Checkout: React.FC = () => {
 
       setWalletLoading(true);
       try {
-        const { data: marketplaceWallet, error: marketplaceError } = await supabase
+        const targetWalletType = isClanMember ? 'clan' : 'marketplace';
+        
+        const { data: targetWallet, error: targetError } = await supabase
           .from('wallets')
           .select('balance')
           .eq('user_id', user.id)
-          .eq('wallet_type', 'marketplace')
-          .order('updated_at', { ascending: false })
-          .limit(1)
+          .eq('wallet_type', targetWalletType)
           .maybeSingle();
 
-        if (marketplaceError) throw marketplaceError;
+        if (targetError) throw targetError;
 
-        if (marketplaceWallet?.balance !== undefined && marketplaceWallet?.balance !== null) {
-          setWalletBalance(Number(marketplaceWallet.balance));
-          return;
+        if (targetWallet) {
+          setWalletBalance(Number(targetWallet.balance));
+        } else {
+          // Fallback
+          const { data: fallbackWallet, error: fallbackError } = await supabase
+            .from('wallets')
+            .select('balance')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (fallbackError) throw fallbackError;
+          setWalletBalance(Number(fallbackWallet?.balance ?? 0));
         }
-
-        const { data: fallbackWallet, error: fallbackError } = await supabase
-          .from('wallets')
-          .select('balance')
-          .eq('user_id', user.id)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (fallbackError) throw fallbackError;
-        setWalletBalance(Number(fallbackWallet?.balance ?? 0));
       } catch (error) {
         console.error('Failed to fetch checkout wallet balance:', error);
-        setWalletBalance(Number(profile?.wallet_balance ?? 0));
+        setWalletBalance(isClanMember ? Number(profile?.clan_wallet_balance ?? 0) : Number(profile?.marketplace_wallet_balance ?? 0));
       } finally {
         setWalletLoading(false);
       }
     };
 
     fetchCheckoutWallet();
-  }, [user?.id, profile?.wallet_balance]);
+  }, [user?.id, profile?.clan_wallet_balance, profile?.marketplace_wallet_balance, isClanMember]);
 
   if (isLoading || !listing) {
     return (
@@ -122,7 +125,8 @@ export const Checkout: React.FC = () => {
         price: listing.price,
         sellerId: listing.seller_id,
         listingTitle: listing.title,
-      },
+        buyerRole: displayRole,
+      } as any,
       {
         onSuccess: (data: { transaction_id: string }) => {
           navigate(`/marketplace/purchases/${data.transaction_id}`);
@@ -153,9 +157,16 @@ export const Checkout: React.FC = () => {
             <h1 className="text-3xl md:text-4xl font-black font-orbitron tracking-tight mb-2">
               SECURE CHECKOUT
             </h1>
-            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
-              Nexa Escrow Guaranteed {listing.account_uid && `#${listing.account_uid.slice(-4)}`}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
+                Nexa Escrow Guaranteed {listing.account_uid && `#${listing.account_uid.slice(-4)}`}
+              </p>
+              {isClanMember && (
+                <Badge className="bg-red-600/20 text-red-500 border-red-500/30 font-black animate-pulse">
+                   CLAN MEMBER PRICING
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -382,7 +393,7 @@ export const Checkout: React.FC = () => {
                             <Wallet className="w-5 h-5 text-slate-400" />
                           </div>
                           <div>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Current NEXA Wallet</p>
+                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{isClanMember ? 'Clan Wallet' : 'Marketplace Wallet'}</p>
                             <p className="text-xl font-bold font-mono">₦{walletBalance.toLocaleString()}</p>
                           </div>
                         </div>

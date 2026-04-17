@@ -548,10 +548,11 @@ export const ListingDetails: React.FC = () => {
                       </>
                     ) : (
                       <button
-                        disabled
-                        className="w-full bg-white/5 text-slate-400 font-black py-5 rounded-[18px] border border-white/10 cursor-not-allowed"
+                        onClick={() => navigate(`/seller/edit-listing/${listing.id}`)}
+                        className="w-full bg-primary/20 hover:bg-primary/30 text-primary font-black py-5 rounded-[18px] border border-primary/20 transition-all flex items-center justify-center gap-3"
                       >
-                        Manage My Listing
+                        <RefreshCw className="w-4 h-4" />
+                        Edit Listing Details
                       </button>
                     )}
                   </div>

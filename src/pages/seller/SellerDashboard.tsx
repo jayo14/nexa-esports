@@ -66,6 +66,8 @@ export const SellerDashboard: React.FC = () => {
             .from("account_transactions")
             .select(`
               id,
+              listing_id,
+              buyer_id,
               status,
               price,
               created_at,
@@ -327,21 +329,39 @@ export const SellerDashboard: React.FC = () => {
                       Status: {order.status.replace("_", " ")}
                     </p>
                   </div>
-                  {order.status !== "delivered" ? (
+                  <div className="flex items-center gap-2">
                     <Button
+                      variant="outline"
                       size="sm"
-                      className="font-orbitron"
-                      disabled={updatingOrderId === order.id}
-                      onClick={() => handleMarkDelivered(order.id)}
+                      className="h-8 text-[10px]"
+                      onClick={async () => {
+                        const conversationId = await getOrCreateConversation({
+                          listingId: (order as any).listing_id,
+                          buyerId: (order as any).buyer_id,
+                          sellerId: user?.id || "",
+                        });
+                        navigate(`/chat/${conversationId}`);
+                      }}
                     >
-                      {updatingOrderId === order.id ? "Updating..." : "Transaction Completed"}
+                      <MessageSquare className="mr-1 h-3 w-3" />
+                      Contact Buyer
                     </Button>
-                  ) : (
-                    <div className="inline-flex items-center gap-1 text-green-500 text-sm font-semibold">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Awaiting Buyer Confirmation
-                    </div>
-                  )}
+                    {order.status !== "delivered" ? (
+                      <Button
+                        size="sm"
+                        className="h-8 font-orbitron text-[10px]"
+                        disabled={updatingOrderId === order.id}
+                        onClick={() => handleMarkDelivered(order.id)}
+                      >
+                        {updatingOrderId === order.id ? "Updating..." : "Mark Delivered"}
+                      </Button>
+                    ) : (
+                      <div className="inline-flex items-center gap-1 text-green-500 text-[10px] font-semibold bg-green-500/10 px-3 py-1 rounded-full">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Awaiting Confirmation
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
