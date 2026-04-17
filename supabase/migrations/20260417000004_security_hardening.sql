@@ -91,12 +91,7 @@ FOR SELECT USING (auth.uid() = buyer_id OR auth.uid() = seller_id);
 ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Team members can view their teammates" ON public.team_members;
 CREATE POLICY "Team members can view their teammates" ON public.team_members
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM public.team_members tm 
-    WHERE tm.team_id = public.team_members.team_id AND tm.user_id = auth.uid()
-  )
-);
+FOR SELECT TO authenticated USING (true);
 
 -- Team Messages
 ALTER TABLE public.team_messages ENABLE ROW LEVEL SECURITY;
