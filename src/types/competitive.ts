@@ -82,6 +82,8 @@ export interface SeasonTeamLeaderboard {
   logo_url?: string;
   season_points: number;
   season_kills: number;
+  season_kill_pts: number;
+  season_placement_pts: number;
   match_days_played: number;
   rank: number;
 }

@@ -27,9 +27,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ hidden = fal
   // Mobile dock links
   const majorPages: BottomNavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
-    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
-    { icon: MessageSquare, label: 'Chat', path: '/chat' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
+    { icon: Users, label: 'Teams', path: '/teams' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 

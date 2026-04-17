@@ -75,6 +75,7 @@ import { AdminAttendance } from '@/pages/admin/Attendance';
 import { AdminAnnouncementsManagement } from '@/pages/admin/AnnouncementsManagement';
 import { AdminNotifications } from '@/pages/admin/Notifications';
 import { AdminConfig } from '@/pages/admin/Config';
+import { TeamAssign } from '@/pages/admin/TeamAssign';
 import { AdminSeasons } from '@/pages/admin/Seasons';
 import { MatchManagement } from '@/pages/admin/MatchManagement';
 import AdminDashboard from '@/pages/AdminDashboard';
@@ -282,6 +283,7 @@ function AppRoutes() {
         <Route path="/admin/feedback" element={<ProtectedRoute><Layout showSidebar><Feedback /></Layout></ProtectedRoute>} />
         <Route path="/admin/earnings" element={<ProtectedRoute><Layout showSidebar><Earnings /></Layout></ProtectedRoute>} />
         <Route path="/admin/seasons" element={<ProtectedRoute><Layout showSidebar><AdminSeasons /></Layout></ProtectedRoute>} />
+        <Route path="/admin/team-assign" element={<ProtectedRoute><Layout showSidebar><TeamAssign /></Layout></ProtectedRoute>} />
         <Route path="/health" element={<ProtectedRoute allowedRoles={['clan_master']}><Layout showSidebar><Health /></Layout></ProtectedRoute>} />
 
         {/* 404 */}

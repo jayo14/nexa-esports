@@ -120,12 +120,14 @@ export const Sidebar: React.FC<SidebarProps> = () => {
             <SideNavIcon label="Chat" icon={<MdChat className="w-5 h-5" />} onClick={() => navigate('/chat')} active={isActive('/chat')} />
             <SideNavIcon label="Players" icon={<MdPeople className="w-5 h-5" />} onClick={() => navigate('/players')} active={isActive('/players')} />
             <SideNavIcon label="Teams" icon={<MdSecurity className="w-5 h-5" />} onClick={() => navigate('/teams')} active={isActive('/teams')} />
+            <SideNavIcon label="Leaderboard" icon={<MdEmojiEvents className="w-5 h-5" />} onClick={() => navigate('/leaderboard/competitive')} active={isActive('/leaderboard/competitive')} />
             {isAdminOrClanMaster && (
               <>
                 <SideNavIcon label="Manage Events" icon={<MdEvent className="w-5 h-5" />} onClick={() => navigate('/admin/events')} active={isActive('/admin/events')} />
                 <SideNavIcon label="Match Management" icon={<MdEmojiEvents className="w-5 h-5" />} onClick={() => navigate('/admin/matches')} active={isActive('/admin/matches')} />
                 <SideNavIcon label="Notifications" icon={<MdNotifications className="w-5 h-5" />} onClick={() => navigate('/notifications')} active={isActive('/notifications')} />
                 <SideNavIcon label="Earnings" icon={<MdPayments className="w-5 h-5" />} onClick={() => navigate('/admin/earnings')} active={isActive('/admin/earnings')} />
+                <SideNavIcon label="Team Assign" icon={<MdPeople className="w-5 h-5" />} onClick={() => navigate('/admin/team-assign')} active={isActive('/admin/team-assign')} />
                 <SideNavIcon label="Configuration" icon={<MdSettings className="w-5 h-5" />} onClick={() => navigate('/admin/config')} active={isActive('/admin/config')} />
                 <SideNavIcon label="Loadouts" icon={<MdInventory className="w-5 h-5" />} onClick={() => navigate('/admin/loadouts')} active={isActive('/admin/loadouts')} />
                 <SideNavIcon label="Weapon Layouts" icon={<MdGpsFixed className="w-5 h-5" />} onClick={() => navigate('/admin/weapon-layouts')} active={isActive('/admin/weapon-layouts')} />
