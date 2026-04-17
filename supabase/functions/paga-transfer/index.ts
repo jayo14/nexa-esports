@@ -518,6 +518,9 @@ serve(async (req) => {
       if (String(userSafeMessage).toLowerCase().includes("begin 0, end 2, length 0")) {
           userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
       }
+      if (String(userSafeMessage).toLowerCase().includes("parameter names could not be found")) {
+          userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
+      }
 
       return new Response(
         JSON.stringify({

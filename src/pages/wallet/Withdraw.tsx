@@ -79,6 +79,20 @@ const Withdraw = () => {
 
   const fee = Number(amount) * 0.04;
   const youWillReceive = Number(amount) * 0.96;
+  const normalizeWithdrawalErrorMessage = (rawMessage?: string) => {
+    const fallbackMessage = 'Withdrawal failed';
+    const message = (rawMessage || fallbackMessage).trim();
+    const lowerMessage = message.toLowerCase();
+
+    if (
+      lowerMessage.includes('parameter names could not be found') ||
+      lowerMessage.includes('begin 0, end 2, length 0')
+    ) {
+      return 'This bank is currently unavailable for withdrawal. Please try another bank account.';
+    }
+
+    return message;
+  };
 
   useEffect(() => {
     fetchWalletBalance();
@@ -189,7 +203,7 @@ const Withdraw = () => {
       }
 
       const errorCode = transferErrorPayload?.error;
-      let message = transferErrorPayload?.message || transferError?.message || 'Withdrawal failed';
+      let message = normalizeWithdrawalErrorMessage(transferErrorPayload?.message || transferError?.message);
       if (errorCode === 'withdrawals_disabled_today') {
         message = 'Withdrawals are not allowed on Sundays in your region.';
       }
@@ -200,7 +214,7 @@ const Withdraw = () => {
 
     if (!transferData?.status) {
       const errorCode = transferData?.error;
-      let message = transferData?.message || 'Withdrawal failed';
+      let message = normalizeWithdrawalErrorMessage(transferData?.message);
       if (errorCode === 'withdrawals_disabled_today') {
         message = 'Withdrawals are not allowed on Sundays in your region.';
       }
