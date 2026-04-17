@@ -176,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         .from('wallets')
         .select('balance')
         .eq('user_id', userId)
+        .eq('wallet_type', 'clan')
         .maybeSingle();
 
       setProfile({
