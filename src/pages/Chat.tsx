@@ -618,6 +618,7 @@ export const Chat: React.FC = () => {
                     placeholder="Transmit intel..."
                     className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 py-2"
                     disabled={isDraftConversation && !canComposeDraft}
+                    maxLength={1000}
                   />
 
                   <button

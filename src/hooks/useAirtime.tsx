@@ -50,6 +50,7 @@ export const useAirtime = () => {
       amount: number;
       network_provider: 'MTN' | 'GLO' | 'AIRTEL' | '9MOBILE';
     }) => {
+      await supabase.auth.refreshSession();
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {

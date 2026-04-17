@@ -24,6 +24,7 @@ import {
   Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 
 const glass = 'bg-white/[0.03] backdrop-blur-xl border border-white/10';
 const cardRadius = 'rounded-[28px]';
@@ -37,8 +38,9 @@ export const Checkout: React.FC = () => {
   const [step, setStep] = useState(1);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [securityAccepted, setSecurityAccepted] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
   const [walletLoading, setWalletLoading] = useState(true);
+  const [showPinVerify, setShowPinVerify] = useState(false);
+  const [submitCooldown, setSubmitCooldown] = useState(false);
 
   const isClanMember = profile?.role === 'clan_master' || profile?.role === 'player' || profile?.role === 'admin' || profile?.role === 'moderator';
   const displayRole = profile?.role || 'buyer';
@@ -118,6 +120,13 @@ export const Checkout: React.FC = () => {
 
   const handleFinalConfirm = () => {
     if (!profile?.id || walletLoading || !hasEnoughBalance) return;
+    setShowPinVerify(true);
+  };
+
+  const handlePinSuccess = () => {
+    setShowPinVerify(false);
+    setSubmitCooldown(true);
+    
     purchaseAccount(
       {
         listingId: listing.id,
@@ -130,7 +139,11 @@ export const Checkout: React.FC = () => {
       {
         onSuccess: (data: { transaction_id: string }) => {
           navigate(`/marketplace/purchases/${data.transaction_id}`);
+          setSubmitCooldown(false);
         },
+        onError: () => {
+          setSubmitCooldown(false);
+        }
       }
     );
   };
@@ -479,13 +492,13 @@ export const Checkout: React.FC = () => {
                      <div className="space-y-4 pt-4 relative z-10">
                         <Button
                           onClick={handleFinalConfirm}
-                          disabled={isPurchasing}
-                          className="w-full max-w-sm py-8 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-base shadow-[0_10px_30px_rgba(234,42,51,0.3)]"
+                          disabled={isPurchasing || submitCooldown}
+                          className="w-full max-w-sm py-8 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-base shadow-[0_10px_30px_rgba(234,42,51,0.3)] disabled:opacity-50"
                         >
-                          {isPurchasing ? (
+                          {isPurchasing || submitCooldown ? (
                             <div className="flex items-center gap-3">
                               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              PROCESSING...
+                              {submitCooldown ? "COOLING DOWN..." : "PROCESSING..."}
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
@@ -542,6 +555,15 @@ export const Checkout: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <VerifyPinDialog
+        open={showPinVerify}
+        onOpenChange={setShowPinVerify}
+        onSuccess={handlePinSuccess}
+        title="Verify Marketplace Purchase"
+        description="Enter your transaction PIN to authorize this escrow payment."
+        actionLabel="purchase"
+      />
     </div>
   );
 };

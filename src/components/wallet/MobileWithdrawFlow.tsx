@@ -41,6 +41,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
   const [amount, setAmount] = useState<string>('');
   const [showPinVerify, setShowPinVerify] = useState(false);
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
+  const [submitCooldown, setSubmitCooldown] = useState(false);
   const { setProfile, refreshWallet } = useAuth();
 
   // Reset state when dialog opens
@@ -71,6 +72,7 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
   const handlePinSuccess = async () => {
     setShowPinVerify(false);
     setStep('processing');
+    setSubmitCooldown(true);
     const numAmount = Number(amount);
     
     // Optimistic UI update
@@ -83,9 +85,11 @@ export const MobileWithdrawFlow: React.FC<MobileWithdrawFlowProps> = ({
       
       setTimeout(() => {
         onOpenChange(false);
-      }, 2000);
+        setSubmitCooldown(false);
+      }, 3000);
     } catch (error) {
       setStep('review');
+      setSubmitCooldown(false);
       // Revert optimistic update
       setProfile(prev => prev ? { ...prev, wallet_balance: (prev.wallet_balance || 0) + numAmount } : prev);
     }

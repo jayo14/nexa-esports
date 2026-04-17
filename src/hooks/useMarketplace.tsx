@@ -313,6 +313,7 @@ export const useMarketplace = () => {
       }
 
       try {
+        await supabase.auth.refreshSession();
         await supabase.functions.invoke('send-notification', {
           body: {
             user_id: variables.sellerId,

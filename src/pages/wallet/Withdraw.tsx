@@ -168,6 +168,7 @@ const Withdraw = () => {
         narration: 'Wallet withdrawal',
     };
     
+    await supabase.auth.refreshSession();
     const { data: { session } } = await supabase.auth.getSession();
     const { data: transferData, error: transferError } = await supabase.functions.invoke('paga-transfer', {
         headers: { 'Authorization': `Bearer ${session?.access_token}` },

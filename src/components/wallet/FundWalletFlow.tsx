@@ -9,6 +9,8 @@ import { Capacitor } from '@capacitor/core';
 import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { useToast } from '@/hooks/use-toast';
+import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FundWalletFlowProps {
   open: boolean;
@@ -26,8 +28,9 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
   walletType = 'clan',
 }) => {
   const { toast } = useToast();
-  const [amount, setAmount] = useState<number>(0);
   const [step, setStep] = useState<1 | 2>(1);
+  const [showPinVerify, setShowPinVerify] = useState(false);
+  const [submitCooldown, setSubmitCooldown] = useState(false);
   const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
 
   const FEE_RATES = {
@@ -100,7 +103,18 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
     if (Capacitor.isNativePlatform()) {
       await Haptics.impact({ style: ImpactStyle.Medium });
     }
+    setShowPinVerify(true);
+  };
+
+  const handlePinSuccess = async () => {
+    setShowPinVerify(false);
+    setSubmitCooldown(true);
     await onPaymentInitiate(amount);
+    
+    // 3 second cooldown to prevent double taps
+    setTimeout(() => {
+      setSubmitCooldown(false);
+    }, 3000);
   };
 
   return (
@@ -236,7 +250,7 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
               step === 1 ? "bg-primary hover:bg-primary/90" : "bg-green-600 hover:bg-green-700"
             }`}
             onClick={step === 1 ? validateAndNext : handlePayment}
-            disabled={amount < 500 || isProcessing}
+            disabled={amount < 500 || isProcessing || submitCooldown}
           >
             {isProcessing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
             {step === 1 ? (
@@ -244,9 +258,17 @@ export const FundWalletFlow: React.FC<FundWalletFlowProps> = ({
                 Continue
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
-            ) : isProcessing ? "Processing..." : `Pay ₦${amount.toLocaleString()}`}
+            ) : isProcessing ? "Processing..." : submitCooldown ? "Please Wait..." : `Pay ₦${amount.toLocaleString()}`}
           </Button>
         </div>
+
+        <VerifyPinDialog
+          open={showPinVerify}
+          onOpenChange={setShowPinVerify}
+          onSuccess={handlePinSuccess}
+          title="Verify PIN"
+          description="Enter your transaction PIN to proceed with the deposit."
+        />
       </SheetContent>
     </Sheet>
   );

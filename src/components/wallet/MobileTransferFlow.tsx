@@ -38,6 +38,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showPinVerify, setShowPinVerify] = useState(false);
   const [transferSuccess, setTransferSuccess] = useState(false);
+  const [submitCooldown, setSubmitCooldown] = useState(false);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -91,14 +92,17 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
   const handlePinSuccess = async () => {
     setShowPinVerify(false);
     setStep('processing');
+    setSubmitCooldown(true);
     try {
       await onTransferSubmit(recipient, Number(amount));
       setTransferSuccess(true);
       setTimeout(() => {
         onOpenChange(false);
-      }, 2000);
+        setSubmitCooldown(false);
+      }, 3000);
     } catch (error) {
       setStep('review');
+      setSubmitCooldown(false);
     }
   };
 

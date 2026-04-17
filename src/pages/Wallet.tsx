@@ -328,6 +328,7 @@ const Wallet: React.FC = () => {
       const verifyPayment = async () => {
         setIsVerifying(true);
         try {
+          await supabase.auth.refreshSession();
           const { data } = await supabase.functions.invoke('paga-verify-payment', {
             body: { referenceNumber, tx_ref: referenceNumber }
           });

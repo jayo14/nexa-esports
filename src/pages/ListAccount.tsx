@@ -161,7 +161,7 @@ export const ListAccount: React.FC = () => {
     if (!formData.title.trim() || formData.title.trim().length < 5) {
       toast({
         title: "Invalid Title",
-        description: "Listing title must be at least 5 characters long",
+        description: "Listing title must be between 5 and 60 characters",
         variant: "destructive"
       });
       return;
@@ -170,7 +170,7 @@ export const ListAccount: React.FC = () => {
     if (!formData.description.trim() || formData.description.trim().length < 20) {
       toast({
         title: "Description too short",
-        description: "Please provide more details (at least 20 characters)",
+        description: "Please provide more details (at least 20 characters, max 1000)",
         variant: "destructive"
       });
       return;
@@ -262,22 +262,22 @@ export const ListAccount: React.FC = () => {
     ).toString();
 
     const listingPayload = {
-      title: formData.title,
-      account_uid: formData.account_uid,
-      description: formData.description,
+      title: formData.title.trim().substring(0, 60),
+      account_uid: formData.account_uid.trim().substring(0, 50),
+      description: formData.description.trim().substring(0, 1000),
       price: parseFloat(formData.price),
       is_negotiable: formData.is_negotiable,
       assets: selectedAssets,
       login_methods: {
         methods: Object.keys(selectedLogins).filter(k => selectedLogins[k]),
-        other: formData.other_login
+        other: formData.other_login.trim().substring(0, 50)
       },
       region: formData.region,
       refund_policy: formData.refund_policy,
       video_url: videoUrl,
       game: 'Call Of Duty Mobile',
       account_credentials: encryptedCredentials,
-      security_notes: formData.security_notes,
+      security_notes: formData.security_notes.trim().substring(0, 200),
     };
 
     if (isEditMode) {
@@ -329,6 +329,7 @@ export const ListAccount: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g., Level 150 Legendary | 5 Mythics"
                 className="font-rajdhani h-11"
+                maxLength={60}
               />
             </div>
 
@@ -342,6 +343,7 @@ export const ListAccount: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, account_uid: e.target.value })}
                 placeholder="Enter CODM UID"
                 className="font-rajdhani h-11"
+                maxLength={50}
               />
             </div>
           </CardContent>
@@ -610,6 +612,7 @@ export const ListAccount: React.FC = () => {
                 className="font-rajdhani"
                 value={formData.security_notes}
                 onChange={(e) => setFormData({ ...formData, security_notes: e.target.value })}
+                maxLength={200}
               />
             </div>
           </CardContent>
@@ -628,6 +631,7 @@ export const ListAccount: React.FC = () => {
                 className="min-h-[200px] font-rajdhani leading-relaxed"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                maxLength={1000}
               />
             </CardContent>
           </Card>

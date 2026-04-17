@@ -260,6 +260,7 @@ export const Settings: React.FC = () => {
         if (formData.banking_info.account_number?.length === 10 && formData.banking_info.bank_code) {
             setVerificationStatus('verifying');
             try {
+                await supabase.auth.refreshSession();
                 const { data, error } = await supabase.functions.invoke('paga-verify-bank-account', {
                     body: {
                         bank_code: formData.banking_info.bank_code,
@@ -336,14 +337,14 @@ export const Settings: React.FC = () => {
       }
 
       const payload = {
-        ign: formData.ign,
-        player_uid: formData.player_uid,
-        tiktok_handle: formData.tiktok_handle || null,
+        ign: formData.ign.trim().substring(0, 50),
+        player_uid: formData.player_uid.trim().substring(0, 50),
+        tiktok_handle: formData.tiktok_handle.trim().substring(0, 50) || null,
         preferred_mode: formData.preferred_mode || null,
         device: formData.device || null,
         br_class: formData.br_class || null,
         mp_class: formData.mp_class || null,
-        best_gun: formData.best_gun || null,
+        best_gun: formData.best_gun.trim().substring(0, 50) || null,
         social_links:
           Object.keys(formData.social_links).length > 0
             ? formData.social_links
@@ -591,6 +592,7 @@ export const Settings: React.FC = () => {
                     }
                     placeholder="Your in-game name"
                     className="bg-background/50 border-border text-white"
+                    maxLength={50}
                   />
                 </div>
 
@@ -612,6 +614,7 @@ export const Settings: React.FC = () => {
                       }
                       placeholder="Your CODM UID"
                       className="bg-background/50 border-border text-white"
+                      maxLength={50}
                     />
                   </div>
                 </div>
@@ -632,6 +635,7 @@ export const Settings: React.FC = () => {
                     }
                     placeholder="@yourtiktok"
                     className="bg-background/50 border-border text-white"
+                    maxLength={50}
                   />
                 </div>
               </div>

@@ -94,6 +94,7 @@ const FundWallet = () => {
     setIsProcessing(true);
     
     try {
+        await supabase.auth.refreshSession();
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session || !session.access_token) {
