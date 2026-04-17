@@ -43,6 +43,7 @@ export const SellerWallet: React.FC = () => {
             .from('wallets')
             .select('balance')
             .eq('user_id', user.id)
+            .eq('wallet_type', 'marketplace')
             .maybeSingle(),
           supabase
             .from('account_transactions')

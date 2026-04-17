@@ -211,11 +211,11 @@ const Wallet: React.FC = () => {
     if (!user?.id) return;
     try {
       const { data: walletData } = await supabase
-        .from('wallets').select('balance').eq('user_id', user?.id).maybeSingle();
+        .from('wallets').select('balance').eq('user_id', user?.id).eq('wallet_type', 'clan').maybeSingle();
       if (walletData) setWalletBalance(Number(walletData.balance) || 0);
 
       const { data: walletIdData } = await supabase
-        .from('wallets').select('id').eq('user_id', user?.id).maybeSingle();
+        .from('wallets').select('id').eq('user_id', user?.id).eq('wallet_type', 'clan').maybeSingle();
       if (!walletIdData) return;
       setWalletId(walletIdData.id);
 

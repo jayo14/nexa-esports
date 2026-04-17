@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ type Step = 'amount' | 'review' | 'processing';
 
 const Withdraw = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
@@ -32,7 +33,7 @@ const Withdraw = () => {
   const withdrawalInProgressRef = useRef(false);
 
   // Get wallet type from navigation state (default to 'clan')
-  const walletType = (navigate.state as any)?.walletType || 'clan';
+  const walletType = (location.state as any)?.walletType || 'clan';
 
   // Banking info from profile
   const accountName = profile?.banking_info?.account_name || '';
