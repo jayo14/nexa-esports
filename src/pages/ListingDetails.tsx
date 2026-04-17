@@ -179,7 +179,8 @@ export const ListingDetails: React.FC = () => {
         listingId: listing.id,
         sellerId: listing.seller_id,
       });
-      navigate(`/chat/${conversationId}`);
+      const message = `Hi, I'm interested in your listing: ${listing.title}`;
+      navigate(`/chat/${conversationId}`, { state: { initialMessage: message } });
     } catch (error) {
       console.error('Error starting chat:', error);
     }

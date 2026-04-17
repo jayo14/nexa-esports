@@ -1,90 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '@/hooks/useMarketplace';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PurchaseReceipt } from '@/components/marketplace/PurchaseReceipt';
-import { ArrowLeft, CheckCircle, Loader2, AlertTriangle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, MessageSquare, ShieldCheck } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
-import { useToast } from '@/hooks/use-toast';
-import CryptoJS from 'crypto-js';
-
-const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'nexa-esports-default-secure-key-2026';
 
 export const PurchaseDetails: React.FC = () => {
   const { transactionId } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
-  const { toast } = useToast();
-  const { useBuyerPurchases, revealCredentials, confirmPurchase, isRevealingCredentials, isConfirmingPurchase } = useMarketplace();
+  const { useBuyerPurchases } = useMarketplace();
+  const { getOrCreateConversation } = useChat();
   const { data: purchases = [], isLoading } = useBuyerPurchases();
   
-  const [credentials, setCredentials] = useState<any>(null);
-
   const transaction = purchases.find((p: any) => p.transaction_id === transactionId);
-
-  const handleRevealCredentials = async () => {
-    if (!profile?.id || !transactionId) return;
-
-    revealCredentials(
-      {
-        transactionId,
-        userId: profile.id,
-      },
-      {
-        onSuccess: (data: any) => {
-          if (data.success && data.credentials) {
-            try {
-              const decryptedBytes = CryptoJS.AES.decrypt(data.credentials, ENCRYPTION_KEY);
-              const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
-              
-              if (!decryptedText) throw new Error('Decryption failed - possibly incorrect key');
-
-              setCredentials({
-                full_credentials: decryptedText,
-                notes: data.security_notes,
-                account_uid: data.account_uid
-              });
-            } catch (error) {
-              console.error('Decryption error:', error);
-              toast({
-                title: 'Security Error',
-                description: 'Failed to decrypt credentials. Please contact support.',
-                variant: 'destructive',
-              });
-            }
-          }
-        },
-      }
-    );
-  };
-
-  const handleConfirmPurchase = async () => {
-    if (!profile?.id || !transactionId) return;
-
-    confirmPurchase(
-      {
-        transactionId,
-        buyerId: profile.id,
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: 'Purchase Confirmed',
-            description: 'Thank you! The seller has been paid.',
-          });
-        },
-      }
-    );
-  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
-          <Loader2 className="animate-spin h-12 w-12 text-primary mx-auto" />
-          <p className="font-rajdhani text-muted-foreground">Loading purchase details...</p>
+          <Loader2 className="animate-spin h-10 w-10 text-red-500 mx-auto" />
+          <p className="font-rajdhani text-slate-500 uppercase tracking-widest text-[10px] font-black">Syncing Ledger...</p>
         </div>
       </div>
     );
@@ -92,84 +28,89 @@ export const PurchaseDetails: React.FC = () => {
 
   if (!transaction) {
     return (
-      <div className="container mx-auto p-6 text-center space-y-4">
-        <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto" />
-        <h1 className="text-2xl font-orbitron font-bold">Purchase Not Found</h1>
-        <p className="text-muted-foreground font-rajdhani">
-          This purchase doesn't exist or you don't have permission to view it.
-        </p>
-        <Button onClick={() => navigate('/marketplace/purchases')} className="font-rajdhani">
+      <div className="container mx-auto p-12 text-center space-y-6">
+        <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
+           <AlertTriangle className="h-8 w-8 text-amber-500" />
+        </div>
+        <div className="space-y-1">
+           <h1 className="text-2xl font-orbitron font-black uppercase text-white">Record Not Found</h1>
+           <p className="text-slate-500 font-rajdhani">
+             This transaction record is unavailable or unauthorized.
+           </p>
+        </div>
+        <Button onClick={() => navigate('/buyer/dashboard')} className="font-orbitron text-xs h-12 px-8 uppercase bg-white text-black hover:bg-slate-200">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to My Purchases
+          Dashboard
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-8 max-w-5xl space-y-6">
+    <div className="container mx-auto p-4 md:p-8 max-w-4xl space-y-10 animate-fade-in font-rajdhani">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate('/marketplace/purchases')} className="font-rajdhani">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to My Purchases
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="font-orbitron text-[10px] border-primary/20 bg-primary/5 hover:bg-primary/10"
-          onClick={async () => {
-            const conversationId = await useChat().getOrCreateConversation({
-              listingId: transaction.listing_id,
-              sellerId: transaction.seller_id,
-            });
-            navigate(`/chat/${conversationId}`);
-          }}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <button 
+          onClick={() => navigate('/buyer/dashboard')} 
+          className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-black uppercase tracking-widest"
         >
-          <MessageSquare className="mr-2 h-4 w-4" />
-          Chat with Seller
-        </Button>
+          <ArrowLeft className="w-4 h-4" />
+          Hub
+        </button>
+        <div className="flex items-center gap-3">
+           <div className="flex items-center gap-2 text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
+              <ShieldCheck className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Order Finalized</span>
+           </div>
+           <Button 
+             variant="outline" 
+             size="sm"
+             className="font-orbitron text-[10px] font-black uppercase tracking-widest h-10 border-white/10 hover:bg-white/5"
+             onClick={async () => {
+               const conversationId = await getOrCreateConversation({
+                 listingId: transaction.listing_id,
+                 sellerId: transaction.seller_id,
+               });
+               navigate(`/chat/${conversationId}`);
+             }}
+           >
+             <MessageSquare className="mr-2 h-4 w-4" />
+             Transmitting Creds
+           </Button>
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      {transaction.status === 'processing' && !transaction.credentials_revealed && (
-        <Alert className="border-blue-500/30 bg-blue-500/5">
-          <CheckCircle className="h-4 w-4 text-blue-500" />
-          <AlertDescription className="font-rajdhani">
-            <div className="flex items-center justify-between">
-              <div>
-                <strong className="font-bold">Action Required:</strong> Once you've verified the account credentials,
-                confirm the purchase to release payment to the seller.
-              </div>
-              <Button
-                onClick={handleConfirmPurchase}
-                disabled={isConfirmingPurchase || !credentials}
-                className="ml-4 bg-green-600 hover:bg-green-700 font-rajdhani"
-              >
-                {isConfirmingPurchase ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Confirming...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Confirm Purchase
-                  </>
-                )}
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Receipt */}
-      <PurchaseReceipt
-        transaction={transaction}
-        credentials={credentials}
-        onRevealCredentials={handleRevealCredentials}
-        isRevealing={isRevealingCredentials}
-      />
+      <div className="space-y-6">
+        <div className="space-y-1">
+           <h2 className="text-3xl font-black font-orbitron text-white uppercase tracking-tight">Purchase Details</h2>
+           <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Transaction ID: {transaction.transaction_id}</p>
+        </div>
+        
+        {/* Simplified Receipt - Credentials are in Chat now */}
+        <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[32px] overflow-hidden">
+           <PurchaseReceipt
+             transaction={transaction}
+             // We pass null for credentials because they are now in chat, 
+             // but we'll let the user see the chat for them
+             credentials={null}
+             onRevealCredentials={() => {
+                // Redirect to chat
+                navigate('/chat');
+             }}
+           />
+        </div>
+        
+        <div className="p-6 rounded-[24px] bg-red-600/5 border border-red-600/10 flex items-start gap-4">
+           <ShieldCheck className="w-6 h-6 text-red-500 shrink-0 mt-1" />
+           <div>
+              <h4 className="font-bold text-white text-sm uppercase">Secure Handover Protocol</h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                 The seller has been credited. You can now access your account credentials via the <span className="text-white font-bold">Secure Chat</span>. 
+                 Never share these details with unauthorized operators.
+              </p>
+           </div>
+        </div>
+      </div>
     </div>
   );
 };

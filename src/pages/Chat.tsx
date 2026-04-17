@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -34,7 +34,13 @@ import {
   Map,
   Check,
   CheckCheck,
+  Key,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 /* ─── Design tokens ─── */
 const BG_DARK = '#0a0a0b';
@@ -49,10 +55,10 @@ const glassPanel: React.CSSProperties = {
   border: '1px solid rgba(234, 42, 51, 0.15)',
 };
 
-/* ─── Main Component ─── */
 export const Chat: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
   const {
@@ -64,15 +70,34 @@ export const Chat: React.FC = () => {
     isSending,
     isLoadingConversations,
     isLoadingMessages,
+    getOrCreateConversation
   } = useChat(conversationId);
   const [newMessage, setNewMessage] = useState('');
   const [pendingImage, setPendingImage] = useState<{ dataUrl: string; name: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [loginDetails, setLoginDetails] = useState({
+    gameId: '',
+    password: '',
+    email: '',
+    note: ''
+  });
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Handle initial message from navigation state
+  useEffect(() => {
+    const initialMessage = location.state?.initialMessage;
+    if (initialMessage && conversationId && messages.length === 0 && !isLoadingMessages && !isSending && conversations.length > 0) {
+      sendMessageAsync({ content: initialMessage, conversationId });
+      // Clear state to avoid re-sending
+      window.history.replaceState({}, document.title);
+    }
+  }, [conversationId, messages.length, isLoadingMessages, location.state, isSending, sendMessageAsync, conversations.length]);
 
   const activeConversation = conversations.find((c) => c.id === conversationId);
   const isDraftConversation = !!conversationId && !activeConversation && !isLoadingConversations;
@@ -128,12 +153,10 @@ export const Chat: React.FC = () => {
     const file = e.target.files?.[0];
     e.currentTarget.value = '';
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast({ title: 'Invalid file', description: 'Please choose an image file.' });
       return;
     }
-
     try {
       const dataUrl = await compressImageToDataUrl(file);
       setPendingImage({ dataUrl, name: file.name });
@@ -193,6 +216,23 @@ export const Chat: React.FC = () => {
     }
   };
 
+  const handleSendCredentials = async () => {
+    if (!loginDetails.gameId || !loginDetails.password) {
+      toast({ title: 'Missing Info', description: 'Game ID and Password are required.' });
+      return;
+    }
+
+    const content = `__credentials__:${JSON.stringify(loginDetails)}`;
+    try {
+      await sendMessageAsync({ content });
+      setShowCredentialsModal(false);
+      setLoginDetails({ gameId: '', password: '', email: '', note: '' });
+      toast({ title: 'Success', description: 'Login details delivered securely.' });
+    } catch (err) {
+      toast({ title: 'Failed', description: 'Could not send credentials.', variant: 'destructive' });
+    }
+  };
+
   const openImagePicker = () => {
     fileInputRef.current?.click();
   };
@@ -216,8 +256,6 @@ export const Chat: React.FC = () => {
         background: `radial-gradient(circle at top right, #3d1416, ${BG_DARK} 20%)`,
       }}
     >
-    
-
       {/* ── Chat List ── */}
       <section
         className={cn(
@@ -226,15 +264,13 @@ export const Chat: React.FC = () => {
         )}
         style={glassPanel}
       >
-        {/* Search */}
         <div className="p-4 max-[359px]:p-3 sm:p-5 md:p-6">
           <div className="relative">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-              style={{ color: '#64748b' }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"
             />
             <input
-              className="w-full rounded-lg py-2 max-[359px]:py-1.5 pl-10 pr-4 text-sm max-[359px]:text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 transition-all"
+              className="w-full rounded-lg py-2 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 transition-all"
               style={{
                 background: `${PRIMARY}0d`,
                 border: `1px solid ${PRIMARY}1a`,
@@ -244,10 +280,7 @@ export const Chat: React.FC = () => {
           </div>
         </div>
 
-        {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto px-2 max-[359px]:px-1.5 sm:px-3 space-y-1 custom-scrollbar"
-          style={{ scrollbarWidth: 'thin', scrollbarColor: `${BURGUNDY} transparent` }}
-        >
+        <div className="flex-1 overflow-y-auto px-2 sm:px-3 space-y-1 custom-scrollbar">
           {isLoadingConversations ? (
             <p className="text-center text-slate-500 py-8 text-sm">Loading intel...</p>
           ) : conversations.length === 0 ? (
@@ -260,7 +293,7 @@ export const Chat: React.FC = () => {
                 <div
                   key={conv.id}
                   onClick={() => navigate(`/chat/${conv.id}`)}
-                  className="flex items-center gap-3 max-[359px]:gap-2 sm:gap-4 p-3 max-[359px]:p-2.5 rounded-xl cursor-pointer transition-all"
+                  className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all"
                   style={
                     isActive
                       ? {
@@ -269,20 +302,9 @@ export const Chat: React.FC = () => {
                         }
                       : { border: '1px solid transparent' }
                   }
-                  onMouseEnter={(e) => {
-                    if (!isActive)
-                      (e.currentTarget as HTMLDivElement).style.background = `${PRIMARY}0d`;
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive)
-                      (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-                  }}
                 >
-                  {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 max-[359px]:w-10 max-[359px]:h-10 rounded-xl bg-slate-800 overflow-hidden border"
-                      style={{ borderColor: `${PRIMARY}33` }}
-                    >
+                    <div className="w-12 h-12 rounded-xl bg-slate-800 overflow-hidden border border-white/5">
                       {other?.avatar_url ? (
                         <img src={other.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -291,56 +313,38 @@ export const Chat: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {isActive && (
-                      <span
-                        className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
-                        style={{
-                          background: PRIMARY,
-                          border: `2px solid ${BG_DARK}`,
-                          boxShadow: `0 0 8px ${PRIMARY}cc`,
-                        }}
-                      />
-                    )}
                   </div>
-
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-sm max-[359px]:text-xs truncate text-slate-100">
-                          {other?.ign || other?.username || 'Unknown Operator'}
-                        </h3>
-                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                          <span className="text-[10px] text-slate-500">
-                            {format(new Date(conv.updated_at), 'HH:mm')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-end mt-1">
-                        <p className="text-xs max-[359px]:text-[11px] text-slate-500 truncate mr-2">
-                          {conv.last_message_content || conv.listing?.title || 'No messages yet'}
-                        </p>
-                        {!isActive && (conv.unread_count || 0) > 0 && (
-                          <span
-                            className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-black shrink-0"
-                            style={{
-                              background: PRIMARY,
-                              color: '#fff',
-                              boxShadow: `0 0 12px ${PRIMARY}80`,
-                            }}
-                          >
-                            {conv.unread_count}
-                          </span>
-                        )}
-                      </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold text-sm truncate text-slate-100">
+                        {other?.ign || other?.username || 'Unknown Operator'}
+                      </h3>
+                      <span className="text-[10px] text-slate-500 shrink-0 ml-2">
+                        {format(new Date(conv.updated_at), 'HH:mm')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end mt-1">
+                      <p className="text-xs text-slate-500 truncate mr-2">
+                        {conv.last_message_content || conv.listing?.title || 'No messages yet'}
+                      </p>
+                      {!isActive && (conv.unread_count || 0) > 0 && (
+                        <span
+                          className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-black shrink-0 bg-red-600 text-white shadow-[0_0_12px_rgba(234,42,51,0.5)]"
+                        >
+                          {conv.unread_count}
+                        </span>
+                      )}
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
-        </section>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
 
       {/* ── Main Chat Window ── */}
-      <main className={cn('flex-1 flex flex-col p-3 sm:p-4 md:p-6 overflow-hidden', !conversationId && 'hidden md:flex')}>
+      <main className={cn('flex-1 flex flex-col p-3 md:p-6 overflow-hidden', !conversationId && 'hidden md:flex')}>
         <div
           className="flex-1 flex flex-col rounded-xl overflow-hidden shadow-2xl"
           style={glassPanel}
@@ -349,336 +353,215 @@ export const Chat: React.FC = () => {
             <>
               {/* Chat Header */}
               <header
-                className="px-3 py-3 sm:px-4 sm:py-4 md:p-5 flex items-center justify-between flex-shrink-0 gap-2"
-                style={{
-                  borderBottom: `1px solid ${PRIMARY}1a`,
-                  background: `${PRIMARY}0d`,
-                }}
+                className="px-3 py-3 md:p-5 flex items-center justify-between flex-shrink-0 gap-2 border-b border-white/5"
+                style={{ background: `${PRIMARY}0d` }}
               >
                 <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                  {/* Back (mobile) */}
                   <button
-                    className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors"
+                    className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-slate-400"
                     onClick={() => navigate('/chat')}
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
 
-                  {/* Avatar */}
                   <div className="relative">
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-800">
                       {activeTarget?.avatar_url ? (
-                        <img
-                          src={activeTarget.avatar_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={activeTarget.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">
-                          {(
-                            activeTarget?.ign ||
-                            activeTarget?.username ||
-                            '?'
-                          )[0].toUpperCase()}
+                          {(activeTarget?.ign || activeTarget?.username || '?')[0].toUpperCase()}
                         </div>
                       )}
                     </div>
-                    <span
-                      className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-green-500"
-                      style={{ border: `2px solid ${BG_DARK}` }}
-                    />
                   </div>
 
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-bold text-base sm:text-lg text-slate-100 truncate">
-                        {activeTarget?.ign ||
-                          activeTarget?.username ||
-                          'Unavailable User'}
-                      </h2>
-                      <Shield className="w-4 h-4" style={{ color: PRIMARY }} />
-                    </div>
+                    <h2 className="font-bold text-sm sm:text-base text-slate-100 truncate">
+                      {activeTarget?.ign || activeTarget?.username || 'Unavailable User'}
+                    </h2>
                     {activeConversation?.listing_id ? (
                       <p
-                        className="text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:underline truncate"
-                        style={{ color: `${PRIMARY}b3` }}
+                        className="text-[11px] font-medium text-red-500/80 flex items-center gap-1 cursor-pointer hover:underline truncate"
                         onClick={() => navigate(`/marketplace/${activeConversation.listing_id}`)}
                       >
                         <ShoppingBag className="w-3 h-3" />
                         {activeConversation.listing?.title || 'View Listing'}
                       </p>
                     ) : (
-                      <p className="text-[11px] font-medium" style={{ color: `${PRIMARY}b3` }}>
-                        New conversation
-                      </p>
+                      <p className="text-[11px] font-medium text-slate-500">New Direct Chat</p>
                     )}
                   </div>
                 </div>
 
-                {/* Header actions */}
-                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                  {[Phone, Video].map((Icon, i) => (
-                    <button
-                      key={i}
-                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 transition-all hover:text-red-400"
-                      style={{ transition: 'all 0.2s' }}
-                      onMouseEnter={(e) =>
-                        ((e.currentTarget as HTMLButtonElement).style.background =
-                          `${PRIMARY}1a`)
-                      }
-                      onMouseLeave={(e) =>
-                        ((e.currentTarget as HTMLButtonElement).style.background =
-                          'transparent')
-                      }
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  {activeConversation?.listing_id && activeConversation?.seller_id === user?.id && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => setShowCredentialsModal(true)}
+                      className="h-8 px-3 bg-red-600 hover:bg-red-500 text-[10px] font-black uppercase tracking-widest hidden sm:flex items-center gap-2"
                     >
-                      <Icon className="w-5 h-5" />
-                    </button>
-                  ))}
-
+                      <Key className="w-3.5 h-3.5" />
+                      Send Login Details
+                    </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button
-                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 transition-all hover:text-red-400"
-                        onMouseEnter={(e) =>
-                          ((e.currentTarget as HTMLButtonElement).style.background =
-                            `${PRIMARY}1a`)
-                        }
-                        onMouseLeave={(e) =>
-                          ((e.currentTarget as HTMLButtonElement).style.background =
-                            'transparent')
-                        }
-                      >
+                      <button className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-all">
                         <MoreVertical className="w-5 h-5" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-[#1a0b0d]/95 backdrop-blur-md border border-white/10 text-slate-200">
+                      {activeConversation?.listing_id && activeConversation?.seller_id === user?.id && (
+                        <DropdownMenuItem onClick={() => setShowCredentialsModal(true)} className="sm:hidden">
+                           <Key className="w-4 h-4 mr-2" /> Send Login Details
+                        </DropdownMenuItem>
+                      )}
                       {activeTarget?.id && (
                         <DropdownMenuItem onClick={() => navigate(`/profile/${activeTarget.id}`)}>
                           View profile
                         </DropdownMenuItem>
                       )}
-                      {activeConversation?.id && (
-                        <DropdownMenuItem onClick={handleCopyConversationId}>
-                          Copy conversation ID
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onClick={() => setPendingImage(null)}>
-                        Clear attachment
+                      <DropdownMenuItem onClick={handleCopyConversationId}>
+                        Copy conversation ID
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </header>
 
-              {/* Messages */}
-              <div
-                className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6"
-                style={{ scrollbarWidth: 'thin', scrollbarColor: `${BURGUNDY} transparent` }}
-              >
-                {activeConversation && messages.length > 0 && (
-                  <div className="flex justify-center">
-                    <span
-                      className="px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-slate-800/50 text-slate-500 border border-slate-700/50"
-                    >
-                      SECURE CHANNEL ESTABLISHED — {format(new Date(messages[0].created_at), 'MMM dd, yyyy')}
-                    </span>
-                  </div>
-                )}
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+                {messages.map((msg) => {
+                  const isMe = msg.sender_id === user?.id;
+                  const isImageMessage = msg.content.startsWith('__image__:');
+                  const isCredentials = msg.content.startsWith('__credentials__:');
+                  
+                  let credentialsData = null;
+                  if (isCredentials) {
+                    try { credentialsData = JSON.parse(msg.content.replace('__credentials__:', '')); } 
+                    catch (e) { console.error(e); }
+                  }
 
-                {activeConversation && isLoadingMessages ? (
-                  <p className="text-center text-slate-500 py-8 text-sm">
-                    Decrypting messages...
-                  </p>
-                ) : activeConversation ? (
-                  messages.map((msg) => {
-                    const isMe = msg.sender_id === user?.id;
-                    const isImageMessage = msg.content.startsWith('__image__:');
-                    const imageUrl = isImageMessage ? msg.content.replace('__image__:', '') : null;
-
-                    return (
-                      <div
-                        key={msg.id}
-                        className={cn(
-                          'flex flex-col',
-                          isMe ? 'items-end ml-auto max-w-[88%] sm:max-w-[80%]' : 'items-start max-w-[88%] sm:max-w-[80%]'
-                        )}
-                      >
-                        {isImageMessage && imageUrl ? (
-                          <div
-                            className="p-2 rounded-xl"
-                            style={
-                              isMe
-                                ? {
-                                    background: `${PRIMARY}26`,
-                                    border: `1px solid ${PRIMARY}4d`,
-                                    boxShadow: `0 0 15px ${PRIMARY}1a`,
-                                    borderBottomRightRadius: '4px',
-                                  }
-                                : {
-                                    background: 'rgba(71,36,38,0.9)',
-                                    borderLeft: `3px solid ${PRIMARY}`,
-                                    borderBottomLeftRadius: '4px',
-                                  }
-                            }
-                          >
-                            <img
-                              src={imageUrl}
-                              alt="Shared"
-                              className="max-w-[190px] sm:max-w-[220px] max-h-[260px] sm:max-h-[280px] rounded-lg object-cover"
-                            />
+                  return (
+                    <div key={msg.id} className={cn('flex flex-col', isMe ? 'items-end ml-auto max-w-[85%]' : 'items-start max-w-[85%]')}>
+                      {isImageMessage ? (
+                         <div className="p-2 bg-white/5 rounded-xl border border-white/10">
+                            <img src={msg.content.replace('__image__:', '')} className="max-w-full rounded-lg h-auto" alt="" />
+                         </div>
+                      ) : isCredentials && credentialsData ? (
+                        <div 
+                          className="p-5 rounded-2xl w-full max-w-sm space-y-4 shadow-xl"
+                          style={{
+                            background: isMe ? `linear-gradient(135deg, ${BURGUNDY}, ${BG_DARK})` : `linear-gradient(135deg, #1e293b, ${BG_DARK})`,
+                            border: isMe ? `1px solid ${PRIMARY}50` : `1px solid rgba(255,255,255,0.1)`,
+                            borderLeft: isMe ? `1px solid ${PRIMARY}50` : `4px solid ${PRIMARY}`
+                          }}
+                        >
+                          <div className="flex items-center gap-2 pb-2 border-b border-white/10">
+                             <Key className="w-4 h-4 text-red-500" />
+                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Login Credentials</span>
                           </div>
-                        ) : (
-                          <div
-                            className="p-4 rounded-xl text-sm leading-relaxed text-slate-100"
-                            style={
-                              isMe
-                                ? {
-                                    background: `${PRIMARY}26`,
-                                    border: `1px solid ${PRIMARY}4d`,
-                                    boxShadow: `0 0 15px ${PRIMARY}1a`,
-                                    borderBottomRightRadius: '4px',
-                                  }
-                                : {
-                                    background: 'rgba(71,36,38,0.9)',
-                                    borderLeft: `3px solid ${PRIMARY}`,
-                                    borderBottomLeftRadius: '4px',
-                                  }
-                            }
-                          >
-                            {msg.content}
+                          <div className="space-y-3">
+                             <div>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Game ID / Username</p>
+                                <p className="text-sm font-bold text-white select-all">{credentialsData.gameId}</p>
+                             </div>
+                             <div>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Password</p>
+                                <p className="text-sm font-bold text-red-500 select-all">{credentialsData.password}</p>
+                             </div>
+                             {credentialsData.email && (
+                               <div>
+                                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Associated Email</p>
+                                  <p className="text-sm font-medium text-slate-300">{credentialsData.email}</p>
+                               </div>
+                             )}
                           </div>
-                        )}
-                        <div className="flex items-center gap-1.5 px-1 mt-1">
-                          <span className="text-[10px] text-slate-500">
-                            {format(new Date(msg.created_at), 'HH:mm')}
-                          </span>
-                          {isMe && (
-                            msg.is_read ? (
-                              <CheckCheck className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
-                            ) : (
-                              <Check className="w-3.5 h-3.5 text-slate-500" />
-                            )
-                          )}
                         </div>
+                      ) : (
+                        <div 
+                          className={cn('p-4 rounded-xl text-sm leading-relaxed', isMe ? 'bg-red-600/20 border border-red-600/30' : 'bg-slate-800/80 border border-white/5')}
+                        >
+                          {msg.content}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 px-1 mt-1 text-[10px] text-slate-500 font-mono">
+                         {format(new Date(msg.created_at), 'HH:mm')}
+                         {isMe && (msg.is_read ? <CheckCheck className="w-3 h-3 text-red-500" /> : <Check className="w-3 h-3" />)}
                       </div>
-                    );
-                  })
-                ) : canComposeDraft ? (
-                  <div className="text-center text-slate-500 py-8 text-sm">
-                    First message will start this conversation.
-                  </div>
-                ) : (
-                  <div className="text-center text-slate-500 py-8 text-sm">
-                    User unavailable for direct messaging.
-                  </div>
-                )}
+                    </div>
+                  );
+                })}
                 <div ref={scrollRef} />
               </div>
 
-              {/* Input footer */}
-              <footer
-                className="px-3 py-3 sm:px-4 sm:py-4 md:p-5 flex-shrink-0"
-                style={{
-                  borderTop: `1px solid ${PRIMARY}1a`,
-                  background: `${PRIMARY}0d`,
-                }}
-              >
-                <form
-                  onSubmit={handleSendMessage}
-                  className="flex items-center gap-1.5 sm:gap-3 p-2 rounded-xl"
-                  style={{
-                    ...glassPanel,
-                    outline: `1px solid ${PRIMARY}33`,
-                    opacity: isDraftConversation && !canComposeDraft ? 0.6 : 1,
-                  }}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImagePick}
-                    className="hidden"
-                  />
-
-                  {[Paperclip, ImageIcon].map((Icon, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
-                      onClick={openImagePicker}
-                      disabled={isDraftConversation && !canComposeDraft}
-                    >
-                      <Icon className="w-5 h-5" />
+              {/* Chat Input */}
+              <footer className="p-4 border-t border-white/5 bg-black/20">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                  <div className="flex-1 flex items-center bg-white/5 rounded-xl px-4 border border-white/10 focus-within:border-red-500/50 transition-colors">
+                    <button type="button" onClick={openImagePicker} className="text-slate-500 hover:text-red-500 p-2">
+                       <ImageIcon className="w-5 h-5" />
                     </button>
-                  ))}
-
-                  <input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Transmit intel..."
-                    className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 py-2"
-                    disabled={isDraftConversation && !canComposeDraft}
-                    maxLength={1000}
-                  />
-
-                  <button
-                    type="button"
-                    className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
-                    disabled={isDraftConversation && !canComposeDraft}
-                  >
-                    <Smile className="w-5 h-5" />
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={(!newMessage.trim() && !pendingImage) || isSending}
-                    className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-white flex-shrink-0 transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
-                    style={{
-                      background: PRIMARY,
-                      boxShadow: `0 0 15px ${PRIMARY}80`,
-                    }}
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </form>
-
-                {pendingImage && (
-                  <div className="mt-3 p-2 rounded-lg flex items-center gap-3" style={{ background: `${PRIMARY}0d`, border: `1px solid ${PRIMARY}33` }}>
-                    <img src={pendingImage.dataUrl} alt="Attachment preview" className="w-12 h-12 rounded-md object-cover" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-300 truncate">{pendingImage.name}</p>
-                      <p className="text-[10px] text-slate-500">Ready to send</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setPendingImage(null)}
-                      className="text-xs text-slate-400 hover:text-white"
-                    >
-                      Remove
+                    <input 
+                       value={newMessage}
+                       onChange={e => setNewMessage(e.target.value)}
+                       placeholder="Transmit message..."
+                       className="flex-1 bg-transparent border-none py-3 text-sm focus:outline-none text-slate-100"
+                    />
+                    <button type="submit" disabled={!newMessage.trim() && !pendingImage} className="bg-red-600 hover:bg-red-500 p-2 rounded-lg text-white disabled:opacity-40">
+                       <Send className="w-4 h-4" />
                     </button>
                   </div>
+                </form>
+                {pendingImage && (
+                  <div className="mt-2 text-[10px] text-red-500 font-bold flex items-center justify-between bg-red-600/10 p-2 rounded-lg">
+                    <span>Attachment: {pendingImage.name}</span>
+                    <button onClick={() => setPendingImage(null)}>Remove</button>
+                  </div>
                 )}
+                <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleImagePick} />
               </footer>
             </>
           ) : (
-            /* Empty state */
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-6">
-              <div
-                className="w-20 h-20 flex items-center justify-center rounded-2xl"
-                style={{ background: `${PRIMARY}1a`, border: `1px solid ${PRIMARY}33` }}
-              >
-                <MessageSquare className="w-10 h-10" style={{ color: `${PRIMARY}66` }} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-100">Command Center</h3>
-                <p className="text-sm text-slate-500 mt-2 max-w-[220px] leading-relaxed">
-                  Select a conversation to begin transmitting intel.
-                </p>
-              </div>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4 opacity-40">
+              <MessageSquare className="w-16 h-16 text-slate-700" />
+              <p className="text-sm font-bold uppercase tracking-widest text-slate-500">Select intel to begin transmit</p>
             </div>
           )}
         </div>
       </main>
+
+      <Dialog open={showCredentialsModal} onOpenChange={setShowCredentialsModal}>
+        <DialogContent className="bg-[#121214] border-white/10 text-white font-rajdhani">
+          <DialogHeader className="font-orbitron">
+            <DialogTitle className="uppercase text-red-500">Secure Account Handover</DialogTitle>
+            <DialogDescription className="text-slate-500 text-xs">Transmit sensitive login details. These are only visible to the buyer.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+             <div className="space-y-1.5">
+               <Label className="text-[10px] font-black uppercase text-slate-500">Game ID / UID</Label>
+               <Input value={loginDetails.gameId} onChange={e => setLoginDetails({...loginDetails, gameId: e.target.value})} className="bg-white/5 border-white/10" placeholder="Username" />
+             </div>
+             <div className="space-y-1.5">
+               <Label className="text-[10px] font-black uppercase text-slate-500">Password</Label>
+               <Input value={loginDetails.password} onChange={e => setLoginDetails({...loginDetails, password: e.target.value})} className="bg-white/5 border-white/10" placeholder="Required" />
+             </div>
+             <div className="space-y-1.5">
+               <Label className="text-[10px] font-black uppercase text-slate-500">Account Email</Label>
+               <Input value={loginDetails.email} onChange={e => setLoginDetails({...loginDetails, email: e.target.value})} className="bg-white/5 border-white/10" placeholder="Optional" />
+             </div>
+             <div className="space-y-1.5">
+               <Label className="text-[10px] font-black uppercase text-slate-500">Security Note</Label>
+               <Textarea value={loginDetails.note} onChange={e => setLoginDetails({...loginDetails, note: e.target.value})} className="bg-white/5 border-white/10 min-h-[60px]" placeholder="Special instructions..." />
+             </div>
+          </div>
+          <DialogFooter className="pt-4 font-orbitron">
+             <Button variant="ghost" className="text-xs uppercase" onClick={() => setShowCredentialsModal(false)}>Cancel</Button>
+             <Button className="bg-red-600 hover:bg-red-500 text-xs uppercase" onClick={handleSendCredentials}>Send Securely</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

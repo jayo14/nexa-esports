@@ -304,7 +304,7 @@ export const useMarketplace = () => {
           user_id: user.id,
           type: 'marketplace_purchase',
           title: 'Purchase Successful',
-          message: `Your purchase has been completed. Funds are held in escrow. View your receipt to access account credentials.`,
+          message: `Your purchase has been completed. Check your My Orders page to access your account credentials.`,
           data: { 
             transaction_id: data.transaction_id,
             url: `/marketplace/purchases/${data.transaction_id}` 
@@ -333,7 +333,7 @@ export const useMarketplace = () => {
 
       toast({
         title: 'Purchase Successful!',
-        description: 'Your funds are in escrow. Access your account credentials in My Purchases.',
+        description: 'Check "My Orders" to access your account credentials.',
       });
     },
     onError: (error: any) => {
