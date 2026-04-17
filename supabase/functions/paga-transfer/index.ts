@@ -42,7 +42,7 @@ serve(async (req) => {
       });
     }
 
-    const { endpoint, account_bank, account_number, amount, narration, beneficiary_name } = await req.json();
+    const { endpoint, account_bank, account_number, amount, narration, beneficiary_name, wallet_type } = await req.json();
 
     // Check withdrawal availability
     if (endpoint === "check-withdrawal-availability") {
@@ -107,7 +107,7 @@ serve(async (req) => {
     }
 
     // --- Initiate Transfer ---
-    console.log(`Initiating Paga transfer for user ${user.id}, amount ${amount}`);
+    console.log(`Initiating Paga transfer for user ${user.id}, amount ${amount}, wallet ${wallet_type || 'clan'}`);
 
     // Check withdrawals enabled
     const { data: withdrawalSetting } = await supabaseAdmin
@@ -187,6 +187,7 @@ serve(async (req) => {
         p_reference: referenceNumber,
         p_currency:  "NGN",
         p_metadata:  { fee, netAmount: expectedNetAmount, account_number, account_bank, beneficiary_name },
+        p_type:      wallet_type || "clan"
       }
     );
 

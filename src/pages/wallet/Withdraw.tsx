@@ -21,7 +21,7 @@ const Withdraw = () => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
-  
+
   const [walletBalance, setWalletBalance] = useState(0);
   const [step, setStep] = useState<Step>('amount');
   const [amount, setAmount] = useState<string>('');
@@ -30,7 +30,10 @@ const Withdraw = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const withdrawalInProgressRef = useRef(false);
-  
+
+  // Get wallet type from navigation state (default to 'clan')
+  const walletType = (navigate.state as any)?.walletType || 'clan';
+
   // Banking info from profile
   const accountName = profile?.banking_info?.account_name || '';
   const accountNumber = profile?.banking_info?.account_number || '';
@@ -44,8 +47,9 @@ const Withdraw = () => {
         .from('wallets')
         .select('balance')
         .eq('user_id', user.id)
+        .eq('wallet_type', walletType)
         .maybeSingle();
-      
+
       if (error) throw error;
       if (data) setWalletBalance(Number(data.balance));
     } catch (error) {
@@ -78,10 +82,10 @@ const Withdraw = () => {
   useEffect(() => {
     fetchWalletBalance();
     checkCooldowns();
-    
+
     // Timer for cooldown
     const interval = setInterval(() => {
-        checkCooldowns();
+      checkCooldowns();
     }, 1000);
     return () => clearInterval(interval);
   }, [user]);
@@ -105,28 +109,28 @@ const Withdraw = () => {
 
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
-    
+
     if (amountNum < 500) {
-         toast({ title: "Minimum Withdrawal", description: "Minimum withdrawal amount is ₦500", variant: "destructive" });
-         return;
+      toast({ title: "Minimum Withdrawal", description: "Minimum withdrawal amount is ₦500", variant: "destructive" });
+      return;
     }
     if (amountNum > 30000) {
-        toast({ title: "Maximum Withdrawal", description: "Maximum withdrawal amount is ₦30,000", variant: "destructive" });
-        return;
+      toast({ title: "Maximum Withdrawal", description: "Maximum withdrawal amount is ₦30,000", variant: "destructive" });
+      return;
     }
     if (amountNum > walletBalance) {
-        toast({ title: "Insufficient Funds", description: "You cannot withdraw more than your balance.", variant: "destructive" });
-        return;
+      toast({ title: "Insufficient Funds", description: "You cannot withdraw more than your balance.", variant: "destructive" });
+      return;
     }
     if (cooldown > 0) {
-        toast({ title: "Cooldown Active", description: "Please wait before withdrawing again.", variant: "destructive" });
-        return;
+      toast({ title: "Cooldown Active", description: "Please wait before withdrawing again.", variant: "destructive" });
+      return;
     }
     if (!accountNumber || !bankCode) {
-        toast({ title: "No Bank Account", description: "Please set up your bank account in Settings first.", variant: "destructive" });
-        return;
+      toast({ title: "No Bank Account", description: "Please set up your bank account in Settings first.", variant: "destructive" });
+      return;
     }
-    
+
     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     setStep('review');
   };
@@ -139,7 +143,7 @@ const Withdraw = () => {
   const handlePinSuccess = async () => {
     setShowPinVerify(false);
     setStep('processing');
-    
+
     if (withdrawalInProgressRef.current) return;
     withdrawalInProgressRef.current = true;
     setIsProcessing(true);
@@ -153,73 +157,74 @@ const Withdraw = () => {
       console.error(error);
       setStep('review'); // Go back to review on error
     } finally {
-        withdrawalInProgressRef.current = false;
-        setIsProcessing(false);
+      withdrawalInProgressRef.current = false;
+      setIsProcessing(false);
     }
   };
 
   const performWithdrawal = async (withdrawAmount: number) => {
     const transferPayload = {
-        endpoint: 'initiate-transfer',
-        amount: withdrawAmount,
-        account_bank: bankCode,
-        account_number: accountNumber,
-        beneficiary_name: accountName,
-        narration: 'Wallet withdrawal',
+      endpoint: 'initiate-transfer',
+      amount: withdrawAmount,
+      account_bank: bankCode,
+      account_number: accountNumber,
+      beneficiary_name: accountName,
+      narration: 'Wallet withdrawal',
+      wallet_type: walletType,
     };
-    
+
     await supabase.auth.refreshSession();
     const { data: { session } } = await supabase.auth.getSession();
     const { data: transferData, error: transferError } = await supabase.functions.invoke('paga-transfer', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` },
-        body: transferPayload,
+      headers: { 'Authorization': `Bearer ${session?.access_token}` },
+      body: transferPayload,
     });
-    
+
     if (transferError) {
-        let transferErrorPayload: any = null;
-        const errorContext = (transferError as any)?.context;
-        if (errorContext?.json) {
-            transferErrorPayload = await errorContext.json().catch(() => null);
-        }
+      let transferErrorPayload: any = null;
+      const errorContext = (transferError as any)?.context;
+      if (errorContext?.json) {
+        transferErrorPayload = await errorContext.json().catch(() => null);
+      }
 
-        const errorCode = transferErrorPayload?.error;
-        let message = transferErrorPayload?.message || transferError?.message || 'Withdrawal failed';
-        if (errorCode === 'withdrawals_disabled_today') {
-            message = 'Withdrawals are not allowed on Sundays in your region.';
-        }
+      const errorCode = transferErrorPayload?.error;
+      let message = transferErrorPayload?.message || transferError?.message || 'Withdrawal failed';
+      if (errorCode === 'withdrawals_disabled_today') {
+        message = 'Withdrawals are not allowed on Sundays in your region.';
+      }
 
-        toast({ title: "Withdrawal Failed", description: message, variant: "destructive" });
-        throw new Error(message);
+      toast({ title: "Withdrawal Failed", description: message, variant: "destructive" });
+      throw new Error(message);
     }
 
     if (!transferData?.status) {
-        const errorCode = transferData?.error;
-        let message = transferData?.message || 'Withdrawal failed';
-        if (errorCode === 'withdrawals_disabled_today') {
-            message = 'Withdrawals are not allowed on Sundays in your region.';
-        }
+      const errorCode = transferData?.error;
+      let message = transferData?.message || 'Withdrawal failed';
+      if (errorCode === 'withdrawals_disabled_today') {
+        message = 'Withdrawals are not allowed on Sundays in your region.';
+      }
 
-        toast({ title: "Withdrawal Failed", description: message, variant: "destructive" });
-        throw new Error(message);
+      toast({ title: "Withdrawal Failed", description: message, variant: "destructive" });
+      throw new Error(message);
     }
-    
+
     toast({
-        title: "Withdrawal Submitted",
-        description: `Your request to withdraw ₦${withdrawAmount.toLocaleString()} has been submitted.`,
+      title: "Withdrawal Submitted",
+      description: `Your request to withdraw ₦${withdrawAmount.toLocaleString()} has been submitted.`,
     });
   };
 
   return (
     <div className="container max-w-lg mx-auto py-6 space-y-6 animate-fade-in">
-        <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/wallet')}>
-                <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-2xl font-bold">Withdraw Funds</h1>
-        </div>
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/wallet')}>
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+        <h1 className="text-2xl font-bold">Withdraw Funds</h1>
+      </div>
 
-        <Card className="border-none shadow-none bg-transparent">
-            <CardContent className="p-0">
+      <Card className="border-none shadow-none bg-transparent">
+        <CardContent className="p-0">
           {/* Progress Bar */}
           <div className="flex gap-2 mb-6">
             <div className={`h-1.5 flex-1 rounded-full transition-all ${['amount', 'review', 'processing'].includes(step) ? 'bg-primary' : 'bg-muted'}`} />
@@ -227,8 +232,8 @@ const Withdraw = () => {
             <div className={`h-1.5 flex-1 rounded-full transition-all ${step === 'processing' ? 'bg-primary' : 'bg-muted'}`} />
           </div>
 
-            {/* Step 1: Enter Amount */}
-            {step === 'amount' && (
+          {/* Step 1: Enter Amount */}
+          {step === 'amount' && (
             <div className="space-y-8">
               <div className="space-y-6">
                 <div className="text-center py-8 px-4 bg-card rounded-lg border border-border">
@@ -379,12 +384,12 @@ const Withdraw = () => {
                       Your withdrawal request has been submitted successfully. Funds will be sent to your account shortly.
                     </p>
                   </div>
-                  <Button 
-                    className="w-full h-14 text-lg font-bold mt-4" 
+                  <Button
+                    className="w-full h-14 text-lg font-bold mt-4"
                     onClick={() => navigate('/wallet')}
-                   >
+                  >
                     Back to Wallet
-                   </Button>
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -401,8 +406,8 @@ const Withdraw = () => {
               )}
             </div>
           )}
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
 
       {/* PIN Verification Dialog */}
       <VerifyPinDialog
