@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBuyerOrders, BuyerOrder } from '@/hooks/useBuyerOrders';
 import { format } from 'date-fns';
 import { 
+  Calendar,
   ShoppingBag, 
   CheckCircle, 
   Clock, 

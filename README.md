@@ -32,10 +32,16 @@
 - 📊 **Activity Logging** - Comprehensive activity tracking and audit logs
 - ⚙️ **Configuration** - System-wide settings including wallet and tax configurations
 
+### Marketplace & Commerce
+- 🛒 **Marketplace** - Buy and sell gaming accounts and assets
+- 🏪 **Seller Dashboard** - Dedicated interface for sellers to manage listings and earnings
+- 💳 **Secure Checkout** - Multi-step checkout flow with wallet integration
+- 💬 **Buyer-Seller Communication** - Real-time chat for negotiations and asset delivery
+
 ### Push Notifications 🔔
 - 📲 **Real-time Push Notifications** - Users receive instant notifications on their devices
 - 🎮 **Event Notifications** - Automatic push notifications when events are created or updated
-- 📢 **Announcement Notifications** - Push notifications for new announcements
+- 🏪 **Marketplace Alerts** - Notifications for sales, new listings, and chat messages
 - 🎁 **Giveaway Alerts** - Instant notifications for new giveaways
 - ⚙️ **Notification Settings** - Users can enable/disable push notifications in settings
 
@@ -52,13 +58,13 @@
 
 ## 🧱 Tech Stack
 
-- **Frontend**: React 18 + Vite + TypeScript
-- **Styling**: Tailwind CSS + ShadCN UI + Framer Motion
+- **Frontend**: React 19 + Vite + TypeScript
+- **Styling**: Tailwind CSS + ShadCN UI + Framer Motion (NeXa Liquid Glass System)
 - **Backend**: Supabase (Auth, Database, Storage, Edge Functions)
-- **Payments**: Paystack Integration
-- **Push Notifications**: Web Push API + Service Workers
+- **Payments**: Paga Integration (Nigerian Payment Gateway)
+- **Push Notifications**: Web Push API + Capacitor Push Notifications
 - **PWA**: VitePWA with Workbox
-- **Routing**: React Router DOM v6
+- **Routing**: React Router DOM v6 (Clean URL structure)
 - **State Management**: TanStack React Query + Custom React Hooks & Context
 - **Deployment**: Vercel (via `vercel.json`)
 
@@ -210,8 +216,9 @@ The platform includes a comprehensive push notification system that automaticall
 |------|-------------|--------------|
 | **Clan Master** | Platform owner with full access | All features + system config |
 | **Admin** | Clan administrators | Player management, events, announcements |
+| **Sellers** | Verified marketplace sellers | Listing management, earnings |
 | **Moderator** | Event and content moderators | Limited admin features |
-| **Player** | Regular clan members | Personal features, wallet, events |
+| **Player / Buyer** | Regular members | Personal features, wallet, marketplace access |
 
 ---
 
