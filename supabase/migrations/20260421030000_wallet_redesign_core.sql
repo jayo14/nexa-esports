@@ -288,7 +288,7 @@ RETURNS TEXT
 LANGUAGE sql
 IMMUTABLE
 AS $$
-  SELECT encode(digest(COALESCE(p_value::text, ''), 'sha256'), 'hex')
+  SELECT encode(extensions.digest(convert_to(COALESCE(p_value::text, ''), 'UTF8'), 'sha256'), 'hex')
 $$;
 
 CREATE OR REPLACE FUNCTION public.wallet_generate_reference(p_prefix TEXT)
@@ -387,7 +387,7 @@ BEGIN
     RAISE EXCEPTION 'invalid_amount';
   END IF;
 
-  v_request_hash := encode(digest((p_user_id::text || '|' || p_amount::text || '|' || COALESCE(p_wallet_type, 'clan') || '|' || COALESCE(p_client_reference, '')), 'sha256'), 'hex');
+  v_request_hash := encode(extensions.digest(convert_to((p_user_id::text || '|' || p_amount::text || '|' || COALESCE(p_wallet_type, 'clan') || '|' || COALESCE(p_client_reference, '')), 'UTF8'), 'sha256'), 'hex');
 
   IF p_idempotency_key IS NOT NULL AND LENGTH(TRIM(p_idempotency_key)) > 0 THEN
     v_existing_tx := public.wallet_require_idempotency(
@@ -511,7 +511,7 @@ BEGIN
     RAISE EXCEPTION 'invalid_amount';
   END IF;
 
-  v_request_hash := encode(digest((p_user_id::text || '|' || p_amount::text || '|' || COALESCE(p_wallet_type, 'clan') || '|' || COALESCE(p_client_reference, '')), 'sha256'), 'hex');
+  v_request_hash := encode(extensions.digest(convert_to((p_user_id::text || '|' || p_amount::text || '|' || COALESCE(p_wallet_type, 'clan') || '|' || COALESCE(p_client_reference, '')), 'UTF8'), 'sha256'), 'hex');
 
   IF p_idempotency_key IS NOT NULL AND LENGTH(TRIM(p_idempotency_key)) > 0 THEN
     v_existing_tx := public.wallet_require_idempotency(
