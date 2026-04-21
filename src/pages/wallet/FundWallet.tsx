@@ -113,9 +113,10 @@ const FundWallet = () => {
             },
             body: {
                 amount: amount,
+            idempotency_key: crypto.randomUUID(),
                 customer: {
                     email: user?.email || '',
-                    phone: profile?.phone || '',
+              phone: (profile as any)?.phone || '',
                     name: profile?.username || profile?.ign || '',
                 },
                 redirect_url: `${window.location.origin}/payment-success`,

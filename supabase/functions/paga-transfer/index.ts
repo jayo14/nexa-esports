@@ -65,7 +65,7 @@ serve(async (req) => {
       });
     }
 
-    const { endpoint, account_bank, account_number, amount, narration, beneficiary_name, wallet_type } = await req.json();
+    const { endpoint, account_bank, account_number, amount, narration, beneficiary_name, wallet_type, idempotency_key } = await req.json();
 
     // Check withdrawal availability
     if (endpoint === "check-withdrawal-availability") {
@@ -195,42 +195,40 @@ serve(async (req) => {
       });
     }
 
-    const referenceNumber = generateReferenceNumber("NX_WD");
     const fee = Number((amount * 0.04).toFixed(2));
     const expectedNetAmount = Number((amount - fee).toFixed(2));
 
-    // ── Atomic debit: reserves funds and pre-logs transaction ──────────
-    // Using the debit_wallet RPC prevents race conditions and ensures
-    // the transaction record has wallet_id set from the start.
-    const { data: debitResult, error: debitError } = await supabaseAdmin.rpc(
-      "debit_wallet",
+    const { data: withdrawalIntent, error: intentError } = await supabaseAdmin.rpc(
+      "wallet_create_withdrawal_intent",
       {
-        p_user_id:   user.id,
-        p_amount:    amount,
-        p_reference: referenceNumber,
-        p_currency:  "NGN",
-        p_metadata:  { fee, netAmount: expectedNetAmount, account_number, account_bank, beneficiary_name },
-        p_type:      wallet_type || "clan"
+        p_user_id: user.id,
+        p_amount: amount,
+        p_currency: "NGN",
+        p_wallet_type: wallet_type || "clan",
+        p_idempotency_key: idempotency_key || null,
+        p_client_reference: null,
+        p_metadata: { fee, netAmount: expectedNetAmount, account_number, account_bank, beneficiary_name },
       }
     );
 
-    if (debitError || !debitResult?.success) {
-      const errMsg = debitResult?.error || debitError?.message || "Failed to process withdrawal";
+    if (intentError || !withdrawalIntent?.success || !withdrawalIntent?.transaction_id || !withdrawalIntent?.reference) {
+      const errMsg = withdrawalIntent?.error || intentError?.message || "Failed to process withdrawal";
       if (errMsg === "insufficient_balance") {
         return new Response(
           JSON.stringify({ status: false, error: "Insufficient wallet balance", message: "Insufficient wallet balance" }),
           { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
         );
       }
-      console.error("debit_wallet error:", debitError || debitResult);
+      console.error("wallet_create_withdrawal_intent error:", intentError || withdrawalIntent);
       return new Response(
         JSON.stringify({ error: "Failed to process withdrawal" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
       );
     }
 
-    const newBalance = debitResult.new_balance;
-    const netAmount  = Number(debitResult.net_amount ?? expectedNetAmount);
+    const referenceNumber = String(withdrawalIntent.reference);
+    const transactionId = String(withdrawalIntent.transaction_id);
+    const netAmount = Number(withdrawalIntent.net_amount ?? expectedNetAmount);
 
     // Fetch banks to resolve the bank code from the UUID if possible
     // This helps avoid Paga internal errors when only UUID is provided
@@ -510,92 +508,80 @@ serve(async (req) => {
     }
 
     if (!pagaResponse || !pagaData) {
-        // Rollback the pending debit atomically
-        await supabaseAdmin.rpc("rollback_wallet_debit", { p_reference: referenceNumber });
-        return new Response(
-            JSON.stringify({ status: false, error: "Failed to communicate with transfer provider", message: "Failed to communicate with transfer provider" }),
-            { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
-        );
+      await supabaseAdmin.rpc("wallet_record_provider_operation", {
+        p_transaction_id: transactionId,
+        p_operation_type: "transfer_request",
+        p_operation_key: `transfer:${referenceNumber}:transport_error`,
+        p_provider_request: { amount, account_bank, account_number, beneficiary_name },
+        p_provider_response: { error: "No provider response" },
+        p_provider_status_code: "NO_RESPONSE",
+        p_signature_valid: null,
+      });
+
+      await supabaseAdmin.rpc("wallet_enqueue_settlement", {
+        p_transaction_id: transactionId,
+        p_provider_reference: referenceNumber,
+        p_decision_hint: "processing",
+        p_evidence: { source: "transfer_request", error: "provider_no_response" },
+        p_source: "paga_transfer",
+        p_delay_seconds: 30,
+      });
+
+      return new Response(
+        JSON.stringify({ status: true, state: "processing", message: "Withdrawal queued for asynchronous confirmation.", referenceNumber }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
+      );
     }
 
     console.log("Paga depositToBank response:", JSON.stringify(pagaData));
 
     const providerState = mapProviderState(pagaData);
 
-    if (providerState === "failed") {
-      // Explicit provider failure: rollback reserved debit.
-      await supabaseAdmin.rpc("rollback_wallet_debit", { p_reference: referenceNumber });
-
-      let userSafeMessage = pagaData.errorMessage || pagaData.message || pagaData.responseMessage || "Transfer failed";
-
-      // Mask internal merchant balance errors (Code 139 is insufficient merchant balance)
-      if (pagaData.responseCode === 139 || String(pagaData.responseCode) === "139") {
-        userSafeMessage = "Withdrawal service is currently unavailable. Please try again later.";
-      }
-      if (String(userSafeMessage).toLowerCase().includes("begin 0, end 2, length 0")) {
-        userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
-      }
-      if (String(userSafeMessage).toLowerCase().includes("parameter names could not be found")) {
-        userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
-      }
-
-      return new Response(
-        JSON.stringify({
-          status: false,
-          state: "failed",
-          error: userSafeMessage,
-          message: userSafeMessage,
-          details: pagaData,
-        }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    if (providerState === "processing") {
-      // Do not rollback funds here; keep debit reserved until webhook/reconciliation settles it.
-      await supabaseAdmin
-        .from("transactions")
-        .update({
-          status: "processing",
-          metadata: { fee, netAmount, account_number, account_bank, paga_response: pagaData },
-          paga_reference: referenceNumber,
-          paga_status: "processing",
-          paga_raw_response: pagaData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("reference", referenceNumber)
-        .in("status", ["pending", "processing"]);
-
-      return new Response(
-        JSON.stringify({
-          status: true,
-          state: "processing",
-          message: "Withdrawal is processing. Your balance is reserved and will be reconciled automatically.",
-          referenceNumber,
-          netAmount,
-        }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    // Provider confirmed success: finalize withdrawal atomically.
-    await supabaseAdmin.rpc("finalize_wallet_debit", {
-      p_reference: referenceNumber,
-      p_metadata: { fee, netAmount, account_number, account_bank, paga_response: pagaData },
+    await supabaseAdmin.rpc("wallet_record_provider_operation", {
+      p_transaction_id: transactionId,
+      p_operation_type: "transfer_request",
+      p_operation_key: `transfer:${referenceNumber}:${Date.now()}`,
+      p_provider_request: { amount, account_bank, account_number, beneficiary_name },
+      p_provider_response: pagaData,
+      p_provider_status_code: String(pagaData?.responseCode ?? ""),
+      p_signature_valid: null,
     });
 
     await supabaseAdmin
       .from("transactions")
       .update({
+        wallet_state: providerState === "processing" ? "processing" : "pending",
+        status: providerState === "processing" ? "processing" : "pending",
         paga_reference: referenceNumber,
-        paga_status: "success",
+        paga_status: providerState,
         paga_raw_response: pagaData,
         updated_at: new Date().toISOString(),
       })
-      .eq("reference", referenceNumber);
+      .eq("id", transactionId)
+      .in("wallet_state", ["pending", "processing"]);
+
+    await supabaseAdmin.rpc("wallet_enqueue_settlement", {
+      p_transaction_id: transactionId,
+      p_provider_reference: referenceNumber,
+      p_decision_hint: providerState,
+      p_evidence: { source: "transfer_request", response: pagaData },
+      p_source: "paga_transfer",
+      p_delay_seconds: providerState === "processing" ? 20 : 0,
+    });
+
+    await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 5 });
 
     return new Response(
-      JSON.stringify({ status: true, state: "success", message: "Withdrawal successful", referenceNumber, netAmount }),
+      JSON.stringify({
+        status: providerState !== "failed",
+        state: providerState === "success" ? "processing" : providerState,
+        message:
+          providerState === "failed"
+            ? "Provider reported failure. Settlement is queued."
+            : "Withdrawal accepted and queued for settlement.",
+        referenceNumber,
+        netAmount,
+      }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {

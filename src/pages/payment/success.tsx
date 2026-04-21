@@ -106,7 +106,7 @@ const PaymentSuccess: React.FC = () => {
                 return;
             }
 
-            if (!data || (!data.data && data.status !== 'success' && data.status !== 'processing' && data.message !== 'Transaction already processed')) {
+            if (!data || (!data.data && !['success', 'processing', 'failed', 'reversed', 'expired'].includes(data.status) && data.message !== 'Transaction already processed')) {
                 console.error('Invalid response from verification function:', data);
                 setStatus('error');
                 setMessage(data?.error || 'Invalid response from verification service.');
@@ -148,6 +148,11 @@ const PaymentSuccess: React.FC = () => {
                     }
                 }, 1000);
             } else {
+                if (data.status === 'failed' || data.status === 'reversed' || data.status === 'expired') {
+                    setStatus('error');
+                    setMessage('Payment was not completed successfully. If you were debited, support can reconcile using your payment reference.');
+                    return;
+                }
                 setStatus('error');
                 setMessage(data.error || 'Payment verification failed.');
             }

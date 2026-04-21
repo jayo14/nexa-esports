@@ -181,6 +181,7 @@ const Withdraw = () => {
     const transferPayload = {
       endpoint: 'initiate-transfer',
       amount: withdrawAmount,
+      idempotency_key: crypto.randomUUID(),
       account_bank: bankCode,
       account_number: accountNumber,
       beneficiary_name: accountName,

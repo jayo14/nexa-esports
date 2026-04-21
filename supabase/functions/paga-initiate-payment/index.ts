@@ -2,7 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { generateReferenceNumber } from "../_shared/pagaAuth.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -22,13 +21,16 @@ serve(async (req) => {
       );
     }
 
-    // Authenticate user
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
-    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
@@ -36,7 +38,6 @@ serve(async (req) => {
       });
     }
 
-    // Check deposits enabled
     const { data: depositSetting } = await supabaseAdmin
       .from("clan_settings")
       .select("value")
@@ -50,7 +51,7 @@ serve(async (req) => {
       );
     }
 
-    const { amount, customer, redirect_url, wallet_type } = await req.json();
+    const { amount, customer, redirect_url, wallet_type, idempotency_key, client_reference } = await req.json();
     const walletType = wallet_type === "marketplace" ? "marketplace" : "clan";
 
     if (!amount || amount < 500) {
@@ -59,12 +60,14 @@ serve(async (req) => {
         status: 400,
       });
     }
+
     if (amount > 50000) {
       return new Response(JSON.stringify({ error: "Maximum amount is ₦50,000" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });
     }
+
     if (!customer?.email) {
       return new Response(JSON.stringify({ error: "Customer email is required" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
@@ -72,15 +75,27 @@ serve(async (req) => {
       });
     }
 
-    const referenceNumber = generateReferenceNumber("NX");
+    const { data: depositIntent, error: intentError } = await supabaseAdmin.rpc("wallet_create_deposit_intent", {
+      p_user_id: user.id,
+      p_amount: amount,
+      p_currency: "NGN",
+      p_wallet_type: walletType,
+      p_idempotency_key: idempotency_key || null,
+      p_client_reference: client_reference || null,
+      p_metadata: { source: "paga", email: customer.email },
+    });
 
-    // ── Resolve the browser redirect URL ────────────────────────────────────
-    // Priority:
-    //  1. client-supplied redirect_url (current app origin + /payment-success)
-    //  2. PAGA_FRONTEND_URL env var
-    //  3. PAGA_CALLBACK_URL env var (legacy fallback)
-    //
-    // We always normalize to an HTTPS app URL and prefer /payment-success path.
+    if (intentError || !depositIntent?.transaction_id || !depositIntent?.reference) {
+      console.error("Failed to create deposit intent:", intentError || depositIntent);
+      return new Response(
+        JSON.stringify({ error: "Unable to create payment intent" }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+      );
+    }
+
+    const transactionId = String(depositIntent.transaction_id);
+    const referenceNumber = String(depositIntent.reference);
+
     const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
     const normalizeRedirectUrl = (candidate?: string | null): string | null => {
       if (!candidate || !candidate.startsWith("https://")) return null;
@@ -112,10 +127,7 @@ serve(async (req) => {
       );
     }
 
-    // Use Paga hosted checkout URL for wallet collection.
-    const CHECKOUT_BASE = PAGA_IS_SANDBOX
-      ? "https://beta-checkout.paga.com"
-      : "https://checkout.paga.com";
+    const CHECKOUT_BASE = PAGA_IS_SANDBOX ? "https://beta-checkout.paga.com" : "https://checkout.paga.com";
 
     const nameParts = (customer.name || "Nexa User").split(" ");
     const params = new URLSearchParams({
@@ -129,60 +141,41 @@ serve(async (req) => {
       email: customer.email,
       description: "Wallet Funding",
       display_name: "NeXa Esports",
-      // Default to bank transfer; other methods (card, USSD, Paga account) remain available
       payment_method: "bank_transfer",
     });
+
     if (nameParts[0]) params.set("first_name", nameParts[0]);
     if (nameParts.slice(1).join(" ")) params.set("last_name", nameParts.slice(1).join(" "));
     if (customer.phone) params.set("phoneNumber", customer.phone);
 
     const checkoutUrl = `${CHECKOUT_BASE}?${params.toString()}`;
 
-    // ── Pre-log pending transaction ───────────────────────────────────────────
-    // We MUST include wallet_id because the transactions table has a NOT NULL
-    // constraint on that column. Look up (or auto-create) the wallet first.
-    let walletId: string | null = null;
-    const { data: existingWallet } = await supabaseAdmin
-      .from("wallets")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("wallet_type", walletType)
-      .maybeSingle();
+    await supabaseAdmin
+      .from("transactions")
+      .update({
+        wallet_state: "processing",
+        status: "processing",
+        paga_status: "processing",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", transactionId)
+      .in("wallet_state", ["pending", "processing"]);
 
-    if (existingWallet?.id) {
-      walletId = existingWallet.id;
-    } else {
-      // Auto-create wallet for new users
-      const { data: newWallet, error: walletCreateError } = await supabaseAdmin
-        .from("wallets")
-        .insert({ user_id: user.id, balance: 0, wallet_type: walletType })
-        .select("id")
-        .maybeSingle();
-      if (walletCreateError) {
-        console.warn("Could not create wallet:", walletCreateError.message);
-      } else {
-        walletId = newWallet?.id ?? null;
-      }
-    }
-
-    if (walletId) {
-      const { error: txError } = await supabaseAdmin.from("transactions").insert({
-        wallet_id: walletId,
-        user_id: user.id,
-        type: "deposit",
-        status: "pending",
+    await supabaseAdmin.rpc("wallet_record_provider_operation", {
+      p_transaction_id: transactionId,
+      p_operation_type: "initiate",
+      p_operation_key: `checkout:${referenceNumber}`,
+      p_provider_request: {
         amount,
-        reference: referenceNumber,
-        metadata: { userId: user.id, email: customer.email, source: "paga", walletType },
-        paga_reference: referenceNumber,
-        paga_status: "pending",
-      });
-      if (txError) console.warn("Could not pre-log pending transaction:", txError.message);
-    } else {
-      console.warn("No wallet_id available — pending transaction NOT pre-logged for ref:", referenceNumber);
-    }
-
-    console.log("Paga checkout URL generated:", checkoutUrl);
+        currency: "NGN",
+        customer,
+        callbackUrl,
+        walletType,
+      },
+      p_provider_response: { checkoutUrl },
+      p_provider_status_code: "INITIATED",
+      p_signature_valid: null,
+    });
 
     return new Response(
       JSON.stringify({

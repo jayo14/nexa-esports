@@ -22,22 +22,16 @@ function mapProviderState(payload: Record<string, unknown> | undefined): Provide
   const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
   if (failedSignals.some((signal) => statusText.includes(signal))) return "failed";
 
-  const processingSignals = ["PENDING", "PROCESS", "IN_PROGRESS", "QUEUED", "ACCEPTED", "INITIATED"];
-  if (processingSignals.some((signal) => statusText.includes(signal))) return "processing";
-
   return "processing";
 }
 
-/**
- * Attempts Paga's transactionStatus API.
- */
 async function checkPagaTransactionStatus(
   reference: string,
   baseUrl: string,
   publicKey: string,
   apiPassword: string,
   hashKey: string
-): Promise<{ state: ProviderState; amount?: number; raw?: Record<string, unknown> }> {
+): Promise<{ state: ProviderState; raw?: Record<string, unknown> }> {
   try {
     const hash = await generatePagaBusinessHash([reference], hashKey);
     const response = await fetch(`${baseUrl}/transactionStatus`, {
@@ -48,18 +42,13 @@ async function checkPagaTransactionStatus(
 
     const text = await response.text();
     let data: Record<string, unknown>;
-    try { data = JSON.parse(text); } catch { return { state: "processing" }; }
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return { state: "processing" };
+    }
 
-    console.log("Paga transactionStatus raw:", JSON.stringify(data));
-
-    const state = mapProviderState(data);
-
-    const amount =
-      (data.amount as number) ||
-      (data.transactionAmount as number) ||
-      undefined;
-
-    return { state, amount, raw: data };
+    return { state: mapProviderState(data), raw: data };
   } catch (err) {
     console.error("Paga transactionStatus error:", err);
     return { state: "processing" };
@@ -72,11 +61,11 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const PAGA_PUBLIC_KEY  = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
+  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
   const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
-  const PAGA_HASH_KEY    = Deno.env.get("PAGA_HASH_KEY")?.trim();
-  const PAGA_IS_SANDBOX  = Deno.env.get("PAGA_IS_SANDBOX") === "true";
-  const PAGA_BASE_URL    = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
+  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
+  const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
+  const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   const respond = (body: object, status = 200) =>
     new Response(JSON.stringify(body), {
@@ -89,177 +78,81 @@ serve(async (req) => {
       return respond({ error: "Payment service not configured: Paga credentials missing" }, 500);
     }
 
-    const { referenceNumber, tx_ref, pagaData: clientPagaData } = await req.json();
+    const { referenceNumber, tx_ref } = await req.json();
     const reference = referenceNumber || tx_ref;
-
     if (!reference) {
       return respond({ error: "referenceNumber or tx_ref is required" }, 400);
     }
 
-    // ── Step 1: Idempotency check ─────────────────────────────────────────────
-    // If our DB already shows success (webhook fired), return immediately.
-    const { data: existingTx, error: txLookupErr } = await supabaseAdmin
+    const { data: tx } = await supabaseAdmin
       .from("transactions")
-      .select("id, status, amount, user_id, wallet_id, metadata")
+      .select("id, wallet_state, status, reference")
       .eq("reference", reference)
       .maybeSingle();
 
-    if (txLookupErr) console.warn("Transaction lookup error:", txLookupErr.message);
-
-    if (existingTx?.status === "success") {
-      // Fetch updated wallet balance to return to client
-      let newBalance: number | null = null;
-      const walletQuery = existingTx.user_id
-        ? supabaseAdmin.from("wallets").select("balance").eq("user_id", existingTx.user_id).maybeSingle()
-        : existingTx.wallet_id
-        ? supabaseAdmin.from("wallets").select("balance").eq("id", existingTx.wallet_id).maybeSingle()
-        : Promise.resolve({ data: null });
-
-      const { data: wallet } = await walletQuery;
-      newBalance = wallet ? Number((wallet as any).balance) : null;
-      console.log("Transaction already processed (idempotent):", reference);
-      return respond({ message: "Transaction already processed", status: "success", newBalance });
+    if (!tx) {
+      return respond({ status: "processing", message: "Transaction not found yet. Retry shortly.", reference });
     }
 
-    // ── Step 2: Try Paga transactionStatus API ────────────────────────────────
-    const pagaCheck = await checkPagaTransactionStatus(
+    if (["success", "failed", "reversed", "expired"].includes(tx.wallet_state || tx.status)) {
+      return respond({
+        status: tx.wallet_state || tx.status,
+        message: "Transaction already finalized",
+        reference,
+      });
+    }
+
+    const providerCheck = await checkPagaTransactionStatus(
       reference,
       PAGA_BASE_URL,
-      PAGA_PUBLIC_KEY!,
-      PAGA_API_PASSWORD!,
-      PAGA_HASH_KEY!
+      PAGA_PUBLIC_KEY,
+      PAGA_API_PASSWORD,
+      PAGA_HASH_KEY
     );
 
-    // ── Step 3: Determine amount to credit ───────────────────────────────────
-    // Prefer Paga's verified amount → DB pre-logged amount → client-sent Paga data amount
-    const clientAmount =
-      clientPagaData?.paymentDetails?.amount ||
-      clientPagaData?.paymentDetails?.total;
+    const decision = providerCheck.state;
 
-    const amountToCredit =
-      pagaCheck.amount ||
-      (existingTx?.amount ? Number(existingTx.amount) : null) ||
-      (clientAmount ? Number(clientAmount) : null);
-
-    if (pagaCheck.state === "success" && !amountToCredit) {
-      console.error("No amount available for reference:", reference);
-      return respond({ error: "Cannot determine payment amount. Contact support." }, 400);
-    }
-
-    // ── Step 4: Resolve user_id ───────────────────────────────────────────────
-    // Primary: from pre-logged transaction.
-    // Fallback: from the authenticated user's JWT (user must still be logged in
-    // when /payment-success calls this function).
-    let userId: string | null = existingTx?.user_id ?? null;
-
-    if (!userId) {
-      // Try authenticating via the Authorization header from the success page
-      const authHeader = req.headers.get("Authorization");
-      if (authHeader) {
-        try {
-          const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-          const anonClient = createClient(
-            Deno.env.get("SUPABASE_URL") ?? "",
-            Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-            { global: { headers: { Authorization: authHeader } } }
-          );
-          const { data: { user: authUser } } = await anonClient.auth.getUser();
-          if (authUser?.id) {
-            userId = authUser.id;
-            console.log("Resolved user_id from JWT fallback:", userId);
-          }
-        } catch (authErr) {
-          console.warn("JWT auth fallback failed:", authErr);
-        }
-      }
-    }
-
-    if (!userId) {
-      console.error("user_id not found for reference:", reference);
-      return respond({ error: "Session expired. Please log into the NeXa app and check your wallet — your payment may already be credited." }, 400);
-    }
-
-    if (pagaCheck.state === "processing") {
-      // Keep as processing and let webhook settle it. Never credit on uncertain state.
-      await supabaseAdmin
-        .from("transactions")
-        .update({
-          status: "processing",
-          paga_reference: reference,
-          paga_status: "processing",
-          paga_raw_response: pagaCheck.raw ?? null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("reference", reference)
-        .in("status", ["pending", "processing"]);
-
-      return respond({
-        status: "processing",
-        message: "Payment is still processing. Wallet will update automatically once confirmed.",
-        reference,
-      });
-    }
-
-    if (pagaCheck.state === "failed") {
-      await supabaseAdmin
-        .from("transactions")
-        .update({
-          status: "failed",
-          paga_reference: reference,
-          paga_status: "failed",
-          paga_raw_response: pagaCheck.raw ?? null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("reference", reference)
-        .in("status", ["pending", "processing"]);
-
-      return respond({
-        status: "failed",
-        error: "Payment was not successful.",
-        reference,
-      });
-    }
-
-    console.log("Paga confirmed payment. Crediting wallet for user:", userId);
-
-    // ── Step 5: Credit wallet via RPC (idempotent) ────────────────────────────
-    const walletType = (existingTx as any)?.metadata?.walletType || "clan";
-    const { data: newBalance, error: creditError } = await supabaseAdmin.rpc("credit_wallet", {
-      p_user_id:   userId,
-      p_amount:    amountToCredit,
-      p_reference: reference,
-      p_currency:  "NGN",
-      p_wallet_type: walletType,
+    await supabaseAdmin.rpc("wallet_record_provider_operation", {
+      p_transaction_id: tx.id,
+      p_operation_type: "status_check",
+      p_operation_key: `verify:${reference}:${Date.now()}`,
+      p_provider_request: { referenceNumber: reference },
+      p_provider_response: providerCheck.raw ?? {},
+      p_provider_status_code: String((providerCheck.raw as any)?.responseCode ?? ""),
+      p_signature_valid: null,
     });
 
-    if (creditError) {
-      console.error("Error crediting wallet:", creditError);
-      return respond({ error: "Error crediting wallet", details: creditError.message }, 500);
-    }
+    await supabaseAdmin.rpc("wallet_enqueue_settlement", {
+      p_transaction_id: tx.id,
+      p_provider_reference: reference,
+      p_decision_hint: decision,
+      p_evidence: { source: "verify", provider: providerCheck.raw ?? {} },
+      p_source: "verify_endpoint",
+      p_delay_seconds: 0,
+    });
 
-    await supabaseAdmin
+    await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 5 });
+
+    const { data: refreshed } = await supabaseAdmin
       .from("transactions")
-      .update({
-        paga_reference: reference,
-        paga_status: "success",
-        paga_raw_response: pagaCheck.raw ?? null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("reference", reference);
+      .select("wallet_state, status")
+      .eq("id", tx.id)
+      .maybeSingle();
 
-    console.log("Wallet credited successfully:", { reference, userId, amountToCredit, newBalance });
+    const currentState = (refreshed?.wallet_state || refreshed?.status || "processing") as string;
+
     return respond({
-      status: "success",
-      message: "Payment verified and wallet credited",
-      newBalance: Number(newBalance),
+      status: currentState,
+      message:
+        currentState === "success"
+          ? "Payment settled successfully."
+          : currentState === "failed" || currentState === "reversed" || currentState === "expired"
+          ? "Payment finalized with non-success status."
+          : "Transaction is still processing.",
+      reference,
     });
-
-
   } catch (error) {
     console.error("Error in paga-verify-payment:", error);
-    return respond(
-      { error: error instanceof Error ? error.message : String(error) },
-      500
-    );
+    return respond({ error: error instanceof Error ? error.message : String(error) }, 500);
   }
 });
