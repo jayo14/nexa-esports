@@ -2,8 +2,27 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { generatePagaBusinessHash } from "../_shared/pagaAuth.ts";
 
+type ProviderState = "success" | "failed" | "processing";
+
+function mapProviderState(payload: Record<string, unknown>): ProviderState {
+  const responseCode = payload.responseCode;
+  const statusText = String(
+    payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
+  ).toUpperCase();
+
+  if (responseCode === 0 || responseCode === "0") return "success";
+  if (statusText.includes("SUCCESS")) return "success";
+
+  const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
+  if (failedSignals.some((signal) => statusText.includes(signal))) return "failed";
+
+  const processingSignals = ["PENDING", "PROCESS", "IN_PROGRESS", "QUEUED", "ACCEPTED", "INITIATED"];
+  if (processingSignals.some((signal) => statusText.includes(signal))) return "processing";
+
+  return "processing";
+}
+
 serve(async (req) => {
-  // Paga webhooks are POST requests with JSON body
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -17,7 +36,7 @@ serve(async (req) => {
   }
 
   const body = await req.text();
-  let event: any;
+  let event: Record<string, unknown>;
   try {
     event = JSON.parse(body);
   } catch {
@@ -26,24 +45,13 @@ serve(async (req) => {
 
   console.log("Paga webhook received:", JSON.stringify(event));
 
-  // Validate webhook signature using HMAC-SHA-512
-  // Paga signs webhooks with: hash(referenceNumber + amount + statusCode + hashKey)
-  const referenceNumber = event.referenceNumber || event.transactionId || "";
+  const referenceNumber = String(event.referenceNumber || event.transactionId || "");
   const amount = event.amount ? Number(event.amount).toFixed(2) : "";
   const statusCode = String(event.statusCode || event.responseCode || "");
 
-  const expectedHash = await generatePagaBusinessHash(
-    [referenceNumber, amount, statusCode],
-    PAGA_HASH_KEY
-  );
+  const expectedHash = await generatePagaBusinessHash([referenceNumber, amount, statusCode], PAGA_HASH_KEY);
+  const receivedHash = req.headers.get("hash") || req.headers.get("x-paga-hash") || String(event.hash || "");
 
-  const receivedHash =
-    req.headers.get("hash") ||
-    req.headers.get("x-paga-hash") ||
-    event.hash ||
-    "";
-
-  // Enforce signature check in production; allow unsigned in sandbox/development
   const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
   if (!IS_SANDBOX || receivedHash) {
     if (!receivedHash || receivedHash !== expectedHash) {
@@ -52,113 +60,110 @@ serve(async (req) => {
     }
   }
 
-  const isSuccess =
-    event.statusCode === "0" ||
-    event.statusCode === 0 ||
-    event.responseCode === 0 ||
-    event.responseCode === "0" ||
-    event.status === "SUCCESS" ||
-    event.transactionStatus === "SUCCESS";
-
-  if (!isSuccess) {
-    console.log("Non-success webhook, status:", event.statusCode || event.status);
-
-    // Mark any pending transaction as failed
-    if (referenceNumber) {
-      await supabaseAdmin
-        .from("transactions")
-        .update({ status: "failed" })
-        .eq("reference", referenceNumber)
-        .eq("status", "pending");
-    }
-    return new Response(JSON.stringify({ received: true }), { status: 200 });
+  if (!referenceNumber) {
+    return new Response("Missing reference", { status: 400 });
   }
 
-  // Idempotency: check if already processed
-  const { data: existingTx } = await supabaseAdmin
+  const providerState = mapProviderState(event);
+
+  const { data: tx } = await supabaseAdmin
     .from("transactions")
-    .select("id, status, user_id, amount")
+    .select("id, status, type, amount, user_id, metadata")
     .eq("reference", referenceNumber)
     .maybeSingle();
 
-  if (existingTx && existingTx.status === "success") {
-    console.log("Transaction already processed:", referenceNumber);
-    return new Response(JSON.stringify({ received: true }), { status: 200 });
-  }
+  const txType = tx?.type || (referenceNumber.startsWith("NX_WD") ? "withdrawal" : "deposit");
 
-  let userId = existingTx?.user_id || event.metadata?.userId;
-  const txAmount = Number(amount) || existingTx?.amount;
+  await supabaseAdmin
+    .from("transactions")
+    .update({
+      paga_reference: referenceNumber,
+      paga_status: providerState,
+      paga_raw_response: event,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("reference", referenceNumber);
 
-  // Fallback: try to find user by email
-  if (!userId && event.email) {
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("email", event.email)
-      .maybeSingle();
-    if (profile) userId = profile.id;
-  }
-
-  if (!userId) {
-    console.error("User not found for webhook:", { referenceNumber, email: event.email });
-    return new Response("User not found", { status: 404 });
-  }
-
-  // Get or create wallet
-  let { data: wallet, error: walletError } = await supabaseAdmin
-    .from("wallets")
-    .select("id, balance")
-    .eq("user_id", userId)
-    .single();
-
-  if (walletError?.code === "PGRST116") {
-    const { data: newWallet, error: newWalletError } = await supabaseAdmin
-      .from("wallets")
-      .insert({ user_id: userId, balance: 0 })
-      .select("id, balance")
-      .single();
-    if (newWalletError) {
-      console.error("Error creating wallet:", newWalletError);
-      return new Response("Error creating wallet", { status: 500 });
-    }
-    wallet = newWallet;
-  } else if (walletError) {
-    console.error("Error getting wallet:", walletError);
-    return new Response("Error getting wallet", { status: 500 });
-  }
-
-  // 4% platform fee
-  const fee = Number((txAmount * 0.04).toFixed(2));
-  const netAmount = Number((txAmount - fee).toFixed(2));
-  const newBalance = Number((Number(wallet!.balance) + netAmount).toFixed(2));
-
-  // Update wallet and create transaction atomically
-  const { data: transactionId, error: transactionError } = await supabaseAdmin.rpc(
-    "update_wallet_and_create_transaction",
-    {
-      p_wallet_id: wallet!.id,
-      p_new_balance: newBalance,
-      p_transaction_amount: netAmount,
-      p_transaction_type: "deposit",
-      p_transaction_status: "success",
-      p_transaction_reference: referenceNumber,
-    }
-  );
-
-  if (transactionError) {
-    console.error("Error processing webhook transaction:", transactionError);
-    return new Response(JSON.stringify({ error: "Failed to process transaction" }), { status: 500 });
-  }
-
-  // Log platform fee as earnings
-  try {
+  if (providerState === "processing") {
     await supabaseAdmin
-      .from("earnings")
-      .insert({ transaction_id: transactionId || null, amount: fee, source: "deposit_fee" });
-  } catch (err) {
-    console.error("Error logging deposit fee:", err);
+      .from("transactions")
+      .update({ status: "processing", updated_at: new Date().toISOString() })
+      .eq("reference", referenceNumber)
+      .in("status", ["pending", "processing"]);
+
+    return new Response(JSON.stringify({ received: true, state: "processing" }), { status: 200 });
   }
 
-  console.log("Webhook processed successfully:", { referenceNumber, userId, netAmount, newBalance });
-  return new Response(JSON.stringify({ success: true, credited: netAmount, fee }), { status: 200 });
+  if (txType === "withdrawal") {
+    if (providerState === "success") {
+      await supabaseAdmin.rpc("finalize_wallet_debit", {
+        p_reference: referenceNumber,
+        p_metadata: { paga_webhook: event },
+      });
+      await supabaseAdmin
+        .from("transactions")
+        .update({ status: "success", updated_at: new Date().toISOString() })
+        .eq("reference", referenceNumber)
+        .in("status", ["pending", "processing"]);
+
+      return new Response(JSON.stringify({ received: true, state: "success" }), { status: 200 });
+    }
+
+    const { data: rolledBack } = await supabaseAdmin.rpc("rollback_wallet_debit", {
+      p_reference: referenceNumber,
+    });
+
+    if (!rolledBack) {
+      await supabaseAdmin
+        .from("transactions")
+        .update({ status: "reversed", updated_at: new Date().toISOString() })
+        .eq("reference", referenceNumber)
+        .neq("status", "success");
+    }
+
+    return new Response(JSON.stringify({ received: true, state: "failed" }), { status: 200 });
+  }
+
+  if (providerState === "failed") {
+    await supabaseAdmin
+      .from("transactions")
+      .update({ status: "failed", updated_at: new Date().toISOString() })
+      .eq("reference", referenceNumber)
+      .in("status", ["pending", "processing"]);
+
+    return new Response(JSON.stringify({ received: true, state: "failed" }), { status: 200 });
+  }
+
+  if (tx?.status === "success") {
+    return new Response(JSON.stringify({ received: true, state: "success", idempotent: true }), { status: 200 });
+  }
+
+  const userId = tx?.user_id || (tx?.metadata as Record<string, unknown> | null)?.userId;
+  const walletType = (tx?.metadata as Record<string, unknown> | null)?.walletType || "clan";
+  const txAmount = Number(amount) || Number(tx?.amount || 0);
+
+  if (!userId || !txAmount) {
+    console.error("Cannot reconcile deposit webhook", { referenceNumber, userId, txAmount });
+    return new Response(JSON.stringify({ received: true, state: "processing" }), { status: 200 });
+  }
+
+  const { error: creditError } = await supabaseAdmin.rpc("credit_wallet", {
+    p_user_id: userId,
+    p_amount: txAmount,
+    p_reference: referenceNumber,
+    p_currency: "NGN",
+    p_wallet_type: walletType,
+  });
+
+  if (creditError) {
+    console.error("Error crediting deposit from webhook:", creditError);
+    return new Response(JSON.stringify({ received: true, state: "processing" }), { status: 200 });
+  }
+
+  await supabaseAdmin
+    .from("transactions")
+    .update({ status: "success", updated_at: new Date().toISOString() })
+    .eq("reference", referenceNumber);
+
+  return new Response(JSON.stringify({ received: true, state: "success" }), { status: 200 });
 });

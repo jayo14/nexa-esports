@@ -6,9 +6,30 @@ import { generatePagaBusinessHash, pagaHeaders } from "../_shared/pagaAuth.ts";
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
 
+type ProviderState = "success" | "failed" | "processing";
+
+function mapProviderState(payload: Record<string, unknown> | undefined): ProviderState {
+  if (!payload) return "processing";
+
+  const responseCode = payload.responseCode;
+  const statusText = String(
+    payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
+  ).toUpperCase();
+
+  if (responseCode === 0 || responseCode === "0") return "success";
+  if (statusText.includes("SUCCESS")) return "success";
+
+  const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
+  if (failedSignals.some((signal) => statusText.includes(signal))) return "failed";
+
+  const processingSignals = ["PENDING", "PROCESS", "IN_PROGRESS", "QUEUED", "ACCEPTED", "INITIATED"];
+  if (processingSignals.some((signal) => statusText.includes(signal))) return "processing";
+
+  return "processing";
+}
+
 /**
  * Attempts Paga's transactionStatus API.
- * Returns { success: boolean, amount?: number }.
  */
 async function checkPagaTransactionStatus(
   reference: string,
@@ -16,7 +37,7 @@ async function checkPagaTransactionStatus(
   publicKey: string,
   apiPassword: string,
   hashKey: string
-): Promise<{ success: boolean; amount?: number; raw?: unknown }> {
+): Promise<{ state: ProviderState; amount?: number; raw?: Record<string, unknown> }> {
   try {
     const hash = await generatePagaBusinessHash([reference], hashKey);
     const response = await fetch(`${baseUrl}/transactionStatus`, {
@@ -27,27 +48,21 @@ async function checkPagaTransactionStatus(
 
     const text = await response.text();
     let data: Record<string, unknown>;
-    try { data = JSON.parse(text); } catch { return { success: false }; }
+    try { data = JSON.parse(text); } catch { return { state: "processing" }; }
 
     console.log("Paga transactionStatus raw:", JSON.stringify(data));
 
-    const success =
-      data.responseCode === 0 ||
-      data.responseCode === "0" ||
-      data.status === "SUCCESSFUL" ||
-      data.transactionStatus === "SUCCESSFUL" ||
-      data.status === "SUCCESS" ||
-      data.transactionStatus === "SUCCESS";
+    const state = mapProviderState(data);
 
     const amount =
       (data.amount as number) ||
       (data.transactionAmount as number) ||
       undefined;
 
-    return { success, amount, raw: data };
+    return { state, amount, raw: data };
   } catch (err) {
     console.error("Paga transactionStatus error:", err);
-    return { success: false };
+    return { state: "processing" };
   }
 }
 
@@ -85,7 +100,7 @@ serve(async (req) => {
     // If our DB already shows success (webhook fired), return immediately.
     const { data: existingTx, error: txLookupErr } = await supabaseAdmin
       .from("transactions")
-      .select("id, status, amount, user_id, wallet_id")
+      .select("id, status, amount, user_id, wallet_id, metadata")
       .eq("reference", reference)
       .maybeSingle();
 
@@ -126,7 +141,7 @@ serve(async (req) => {
       (existingTx?.amount ? Number(existingTx.amount) : null) ||
       (clientAmount ? Number(clientAmount) : null);
 
-    if (!amountToCredit) {
+    if (pagaCheck.state === "success" && !amountToCredit) {
       console.error("No amount available for reference:", reference);
       return respond({ error: "Cannot determine payment amount. Contact support." }, 400);
     }
@@ -164,27 +179,73 @@ serve(async (req) => {
       return respond({ error: "Session expired. Please log into the NeXa app and check your wallet — your payment may already be credited." }, 400);
     }
 
-    if (pagaCheck.success) {
-      console.log("Paga confirmed payment. Crediting wallet for user:", userId);
-    } else {
-      console.log(
-        "Paga API did not confirm — crediting via pending transaction trust model. Ref:", reference,
-        "Paga raw:", JSON.stringify(pagaCheck.raw)
-      );
+    if (pagaCheck.state === "processing") {
+      // Keep as processing and let webhook settle it. Never credit on uncertain state.
+      await supabaseAdmin
+        .from("transactions")
+        .update({
+          status: "processing",
+          paga_reference: reference,
+          paga_status: "processing",
+          paga_raw_response: pagaCheck.raw ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("reference", reference)
+        .in("status", ["pending", "processing"]);
+
+      return respond({
+        status: "processing",
+        message: "Payment is still processing. Wallet will update automatically once confirmed.",
+        reference,
+      });
     }
 
+    if (pagaCheck.state === "failed") {
+      await supabaseAdmin
+        .from("transactions")
+        .update({
+          status: "failed",
+          paga_reference: reference,
+          paga_status: "failed",
+          paga_raw_response: pagaCheck.raw ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("reference", reference)
+        .in("status", ["pending", "processing"]);
+
+      return respond({
+        status: "failed",
+        error: "Payment was not successful.",
+        reference,
+      });
+    }
+
+    console.log("Paga confirmed payment. Crediting wallet for user:", userId);
+
     // ── Step 5: Credit wallet via RPC (idempotent) ────────────────────────────
+    const walletType = (existingTx as any)?.metadata?.walletType || "clan";
     const { data: newBalance, error: creditError } = await supabaseAdmin.rpc("credit_wallet", {
       p_user_id:   userId,
       p_amount:    amountToCredit,
       p_reference: reference,
       p_currency:  "NGN",
+      p_wallet_type: walletType,
     });
 
     if (creditError) {
       console.error("Error crediting wallet:", creditError);
       return respond({ error: "Error crediting wallet", details: creditError.message }, 500);
     }
+
+    await supabaseAdmin
+      .from("transactions")
+      .update({
+        paga_reference: reference,
+        paga_status: "success",
+        paga_raw_response: pagaCheck.raw ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("reference", reference);
 
     console.log("Wallet credited successfully:", { reference, userId, amountToCredit, newBalance });
     return respond({

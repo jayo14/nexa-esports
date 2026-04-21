@@ -99,11 +99,27 @@ const getStatusBadge = (status: string) => {
       </span>
     );
   }
+  if (status === 'processing') {
+    return (
+      <span className="px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-widest"
+        style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa' }}>
+        Processing
+      </span>
+    );
+  }
   if (status === 'failed') {
     return (
       <span className="px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-widest"
         style={{ background: `${PRIMARY}1a`, color: PRIMARY }}>
         Failed
+      </span>
+    );
+  }
+  if (status === 'reversed') {
+    return (
+      <span className="px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-widest"
+        style={{ background: 'rgba(107,114,128,0.15)', color: '#9ca3af' }}>
+        Reversed
       </span>
     );
   }
@@ -261,7 +277,9 @@ const Wallet: React.FC = () => {
       setTotalTransactions(count || 0);
 
       // Check for pending transactions to auto-refresh
-      const hasPending = enriched.some(t => t.status === 'pending' && t.raw_type === 'deposit');
+      const hasPending = enriched.some(
+        t => (t.status === 'pending' || t.status === 'processing') && t.raw_type === 'deposit'
+      );
       if (hasPending && !refreshInterval.current) {
         refreshInterval.current = setInterval(() => fetchWalletData(currentPage), 5000);
       } else if (!hasPending && refreshInterval.current) {
@@ -329,7 +347,9 @@ const Wallet: React.FC = () => {
         setIsVerifying(true);
         try {
           await supabase.auth.refreshSession();
+          const { data: { session } } = await supabase.auth.getSession();
           const { data } = await supabase.functions.invoke('paga-verify-payment', {
+            headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
             body: { referenceNumber, tx_ref: referenceNumber }
           });
           if (data?.status === 'success' || data?.message === 'Transaction already processed') {

@@ -7,6 +7,29 @@ import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
 
+type ProviderState = "success" | "failed" | "processing";
+
+function mapProviderState(payload: Record<string, unknown> | null | undefined): ProviderState {
+  if (!payload) return "processing";
+
+  const responseCode = payload.responseCode;
+  const statusText = String(
+    payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
+  ).toUpperCase();
+
+  if (responseCode === 0 || responseCode === "0") return "success";
+  if (statusText.includes("SUCCESS")) return "success";
+
+  const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
+  if (failedSignals.some((signal) => statusText.includes(signal))) return "failed";
+
+  const processingSignals = ["PENDING", "PROCESS", "IN_PROGRESS", "QUEUED", "ACCEPTED", "INITIATED"];
+  if (processingSignals.some((signal) => statusText.includes(signal))) return "processing";
+
+  // Unknown non-zero responses are treated as processing and left for webhook reconciliation.
+  return "processing";
+}
+
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
   if (req.method === "OPTIONS") {
@@ -497,34 +520,29 @@ serve(async (req) => {
 
     console.log("Paga depositToBank response:", JSON.stringify(pagaData));
 
-    const isSuccess =
-      pagaData.responseCode === 0 ||
-      pagaData.responseCode === "0" ||
-      pagaData.status === "SUCCESS" ||
-      pagaData.status === "SUCCESSFUL" ||
-      pagaData.transactionStatus === "SUCCESS" ||
-      pagaData.transactionStatus === "SUCCESSFUL";
+    const providerState = mapProviderState(pagaData);
 
-    if (!isSuccess) {
-      // Rollback wallet debit atomically
+    if (providerState === "failed") {
+      // Explicit provider failure: rollback reserved debit.
       await supabaseAdmin.rpc("rollback_wallet_debit", { p_reference: referenceNumber });
 
       let userSafeMessage = pagaData.errorMessage || pagaData.message || pagaData.responseMessage || "Transfer failed";
-      
+
       // Mask internal merchant balance errors (Code 139 is insufficient merchant balance)
       if (pagaData.responseCode === 139 || String(pagaData.responseCode) === "139") {
-          userSafeMessage = "Withdrawal service is currently unavailable. Please try again later.";
+        userSafeMessage = "Withdrawal service is currently unavailable. Please try again later.";
       }
       if (String(userSafeMessage).toLowerCase().includes("begin 0, end 2, length 0")) {
-          userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
+        userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
       }
       if (String(userSafeMessage).toLowerCase().includes("parameter names could not be found")) {
-          userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
+        userSafeMessage = "This bank is currently unavailable for withdrawal. Please try another bank account.";
       }
 
       return new Response(
         JSON.stringify({
           status: false,
+          state: "failed",
           error: userSafeMessage,
           message: userSafeMessage,
           details: pagaData,
@@ -533,14 +551,51 @@ serve(async (req) => {
       );
     }
 
-    // Finalize withdrawal atomically (mark success + log fee)
+    if (providerState === "processing") {
+      // Do not rollback funds here; keep debit reserved until webhook/reconciliation settles it.
+      await supabaseAdmin
+        .from("transactions")
+        .update({
+          status: "processing",
+          metadata: { fee, netAmount, account_number, account_bank, paga_response: pagaData },
+          paga_reference: referenceNumber,
+          paga_status: "processing",
+          paga_raw_response: pagaData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("reference", referenceNumber)
+        .in("status", ["pending", "processing"]);
+
+      return new Response(
+        JSON.stringify({
+          status: true,
+          state: "processing",
+          message: "Withdrawal is processing. Your balance is reserved and will be reconciled automatically.",
+          referenceNumber,
+          netAmount,
+        }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Provider confirmed success: finalize withdrawal atomically.
     await supabaseAdmin.rpc("finalize_wallet_debit", {
       p_reference: referenceNumber,
       p_metadata: { fee, netAmount, account_number, account_bank, paga_response: pagaData },
     });
 
+    await supabaseAdmin
+      .from("transactions")
+      .update({
+        paga_reference: referenceNumber,
+        paga_status: "success",
+        paga_raw_response: pagaData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("reference", referenceNumber);
+
     return new Response(
-      JSON.stringify({ status: true, message: "Withdrawal successful", referenceNumber, netAmount }),
+      JSON.stringify({ status: true, state: "success", message: "Withdrawal successful", referenceNumber, netAmount }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {

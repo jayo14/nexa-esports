@@ -50,7 +50,8 @@ serve(async (req) => {
       );
     }
 
-    const { amount, customer, redirect_url } = await req.json();
+    const { amount, customer, redirect_url, wallet_type } = await req.json();
+    const walletType = wallet_type === "marketplace" ? "marketplace" : "clan";
 
     if (!amount || amount < 500) {
       return new Response(JSON.stringify({ error: "Minimum amount is ₦500" }), {
@@ -145,6 +146,7 @@ serve(async (req) => {
       .from("wallets")
       .select("id")
       .eq("user_id", user.id)
+      .eq("wallet_type", walletType)
       .maybeSingle();
 
     if (existingWallet?.id) {
@@ -153,7 +155,7 @@ serve(async (req) => {
       // Auto-create wallet for new users
       const { data: newWallet, error: walletCreateError } = await supabaseAdmin
         .from("wallets")
-        .insert({ user_id: user.id, balance: 0 })
+        .insert({ user_id: user.id, balance: 0, wallet_type: walletType })
         .select("id")
         .maybeSingle();
       if (walletCreateError) {
@@ -171,7 +173,9 @@ serve(async (req) => {
         status: "pending",
         amount,
         reference: referenceNumber,
-        metadata: { userId: user.id, email: customer.email, source: "paga" },
+        metadata: { userId: user.id, email: customer.email, source: "paga", walletType },
+        paga_reference: referenceNumber,
+        paga_status: "pending",
       });
       if (txError) console.warn("Could not pre-log pending transaction:", txError.message);
     } else {

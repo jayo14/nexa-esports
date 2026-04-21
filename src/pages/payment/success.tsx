@@ -49,6 +49,8 @@ const glassMorphism: React.CSSProperties = {
     border: '1px solid rgba(255,255,255,0.08)',
 };
 
+const MAX_VERIFY_RETRIES = 5;
+
 const PaymentSuccess: React.FC = () => {
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
     const [message, setMessage] = useState('Verifying your payment secure transaction...');
@@ -71,7 +73,7 @@ const PaymentSuccess: React.FC = () => {
         }
     }, [location]);
 
-    const verifyPayment = async (referenceNumber: string) => {
+    const verifyPayment = async (referenceNumber: string, attempt = 0) => {
         try {
             // Parse Paga's ?data= payload (if present) and send it along so the
             // edge function can extract the amount even if the DB pre-log failed.
@@ -104,10 +106,20 @@ const PaymentSuccess: React.FC = () => {
                 return;
             }
 
-            if (!data || (!data.data && data.status !== 'success' && data.message !== 'Transaction already processed')) {
+            if (!data || (!data.data && data.status !== 'success' && data.status !== 'processing' && data.message !== 'Transaction already processed')) {
                 console.error('Invalid response from verification function:', data);
                 setStatus('error');
                 setMessage(data?.error || 'Invalid response from verification service.');
+                return;
+            }
+
+            if (data.status === 'processing') {
+                setStatus('verifying');
+                setMessage('Payment is still processing. We will update your wallet automatically once confirmed.');
+
+                if (attempt < MAX_VERIFY_RETRIES) {
+                    setTimeout(() => verifyPayment(referenceNumber, attempt + 1), 3000);
+                }
                 return;
             }
 
