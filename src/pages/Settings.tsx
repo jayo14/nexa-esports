@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeToPushNotifications } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -213,6 +213,7 @@ export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [banks, setBanks] = useState<any[]>([]);
   const [bankComboboxOpen, setBankComboboxOpen] = useState(false);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
     const fetchBanks = async () => {
@@ -224,9 +225,9 @@ export const Settings: React.FC = () => {
     fetchBanks();
   }, []);
 
-  // Initialize form data when profile loads
+  // Initialize form data when profile loads (only on first mount)
   useEffect(() => {
-    if (profile) {
+    if (profile && !isInitializedRef.current) {
       setFormData({
         ign: profile.ign || "",
         player_uid: profile.player_uid || "",
@@ -247,8 +248,9 @@ export const Settings: React.FC = () => {
         banking_info: profile.banking_info || {},
         avatar_file: null,
       });
+      isInitializedRef.current = true;
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   useEffect(() => {
     if (!formData.banking_info.account_number || !formData.banking_info.bank_code) {
