@@ -135,11 +135,22 @@ serve(async (req) => {
 
     const { data: refreshed } = await supabaseAdmin
       .from("transactions")
-      .select("wallet_state, status")
+      .select("wallet_state, status, wallet_id")
       .eq("id", tx.id)
       .maybeSingle();
 
     const currentState = (refreshed?.wallet_state || refreshed?.status || "processing") as string;
+
+    // Fetch updated wallet balance for display
+    let newBalance: number | null = null;
+    if (refreshed?.wallet_id && (currentState === "success")) {
+      const { data: wallet } = await supabaseAdmin
+        .from("wallets")
+        .select("balance")
+        .eq("id", refreshed.wallet_id)
+        .maybeSingle();
+      newBalance = wallet?.balance ?? null;
+    }
 
     return respond({
       status: currentState,
@@ -150,6 +161,7 @@ serve(async (req) => {
           ? "Payment finalized with non-success status."
           : "Transaction is still processing.",
       reference,
+      newBalance,
     });
   } catch (error) {
     console.error("Error in paga-verify-payment:", error);

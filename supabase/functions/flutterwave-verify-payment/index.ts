@@ -225,7 +225,13 @@ serve(async (req) => {
 
   
 
-      return new Response(JSON.stringify(flutterwaveData), {
+      return new Response(JSON.stringify({
+        status: 'success',
+        message: 'Payment verified and wallet credited',
+        newBalance,
+        reference: tx_ref,
+        flutterwaveData,
+      }), {
 
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
 

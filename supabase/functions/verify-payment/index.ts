@@ -81,7 +81,13 @@ serve(async (req) => {
 
     console.log('New balance:', newBalance);
 
-    return new Response(JSON.stringify(paystackData), {
+    return new Response(JSON.stringify({
+      status: 'success',
+      message: 'Payment verified and wallet credited',
+      newBalance,
+      reference,
+      paystackData,
+    }), {
       headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
     });
 
