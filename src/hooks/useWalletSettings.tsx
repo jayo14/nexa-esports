@@ -5,12 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 export interface WalletSettings {
     withdrawals_enabled: boolean;
     deposits_enabled: boolean;
+    disable_withdrawal_cooldown?: boolean;
 }
 
 // Default settings object - used as source of truth for valid keys
 const DEFAULT_WALLET_SETTINGS: WalletSettings = {
     withdrawals_enabled: true,
     deposits_enabled: true,
+    disable_withdrawal_cooldown: false,
 };
 
 type WalletSettingKey = keyof WalletSettings;
@@ -88,7 +90,13 @@ export const useWalletSettings = () => {
 
             toast({
                 title: "Success",
-                description: `${key === 'withdrawals_enabled' ? 'Withdrawals' : 'Deposits'} ${value ? 'enabled' : 'disabled'} successfully.`,
+                description: `${
+                    key === 'withdrawals_enabled' ? 'Withdrawals' : 
+                    key === 'deposits_enabled' ? 'Deposits' :
+                    'Withdrawal cooldown'
+                } ${
+                    key === 'disable_withdrawal_cooldown' ? (value ? 'disabled' : 'enabled') : (value ? 'enabled' : 'disabled')
+                } successfully.`,
             });
         } catch (error) {
             console.error('Error updating wallet setting:', error);

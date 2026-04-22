@@ -71,6 +71,11 @@ const Withdraw = () => {
   };
 
   const startWithdrawCooldown = () => {
+    // Check if cooldown is disabled
+    if (walletSettings.disable_withdrawal_cooldown) {
+      console.log('Withdrawal cooldown is disabled by clan settings');
+      return;
+    }
     const WITHDRAW_COOLDOWN_SECONDS = 43200; // 12 hours
     const cooldownEnd = Date.now() + (WITHDRAW_COOLDOWN_SECONDS * 1000);
     localStorage.setItem('withdrawCooldownEnd', cooldownEnd.toString());

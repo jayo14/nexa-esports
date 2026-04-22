@@ -55,7 +55,14 @@ serve(async (req) => {
   const signatureValid = IS_SANDBOX && !receivedHash ? true : Boolean(receivedHash && receivedHash === expectedHash);
 
   if (!signatureValid) {
-    console.error("Invalid webhook signature", { referenceNumber });
+    const logDetails = {
+      referenceNumber,
+      receivedHash,
+      expectedHash,
+      timestamp: new Date().toISOString(),
+      isSandbox: IS_SANDBOX,
+    };
+    console.error("Invalid webhook signature", logDetails);
     return new Response("Invalid signature", { status: 401 });
   }
 
@@ -97,7 +104,15 @@ serve(async (req) => {
     p_delay_seconds: 0,
   });
 
-  await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 10 });
+  const settlementResult = await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 10 });
+  
+  console.log("Webhook processed successfully", {
+    referenceNumber,
+    status: mapProviderState(payload),
+    transactionId: tx?.id,
+    settlementResult,
+    timestamp: new Date().toISOString(),
+  });
 
   return new Response(JSON.stringify({ received: true }), { status: 200 });
 });

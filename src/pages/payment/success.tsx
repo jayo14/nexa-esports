@@ -130,7 +130,14 @@ const PaymentSuccess: React.FC = () => {
                 setStatus('success');
                 setMessage('Deposit received successfully! Your wallet balance has been updated.');
                 setNewBalance(data.newBalance || null);
-                await refreshWallet(); // Refresh profile data
+                
+                // Refresh profile data and wallet balance immediately
+                try {
+                    await refreshWallet();
+                    console.log('Wallet refreshed successfully');
+                } catch (refreshErr) {
+                    console.error('Error refreshing wallet:', refreshErr);
+                }
 
                 // Store reference so the button can also open the receipt
                 const reference = extractReference(location.search) || referenceNumber;
@@ -151,13 +158,23 @@ const PaymentSuccess: React.FC = () => {
                 if (data.status === 'failed' || data.status === 'reversed' || data.status === 'expired') {
                     setStatus('error');
                     setMessage('Payment was not completed successfully. If you were debited, support can reconcile using your payment reference.');
+                    console.log('Payment failed or reversed', {
+                        reference: referenceNumber,
+                        status: data.status,
+                        timestamp: new Date().toISOString(),
+                    });
                     return;
                 }
                 setStatus('error');
                 setMessage(data.error || 'Payment verification failed.');
             }
         } catch (err) {
-            console.error('Unexpected error during verification:', err);
+            const errorDetails = {
+                error: err instanceof Error ? err.message : String(err),
+                reference: referenceNumber,
+                timestamp: new Date().toISOString(),
+            };
+            console.error('Unexpected error during verification:', errorDetails);
             setStatus('error');
             setMessage('An unexpected error occurred. Please check your wallet history.');
         }

@@ -334,6 +334,16 @@ export const AdminConfig: React.FC = () => {
                     </div>
                     <Switch id="deposits-toggle" checked={settings.deposits_enabled} onCheckedChange={(c) => updateSetting('deposits_enabled', c)} disabled={isUpdating} />
                   </div>
+                  <div className="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-orange-500/20"><Loader2 className="h-5 w-5 text-orange-400" /></div>
+                      <div>
+                        <Label htmlFor="withdrawal-cooldown-toggle" className="font-semibold text-foreground">Disable Withdrawal Cooldown</Label>
+                        <p className="text-sm text-muted-foreground">Allow users to withdraw again immediately after a withdrawal (normally 12 hours).</p>
+                      </div>
+                    </div>
+                    <Switch id="withdrawal-cooldown-toggle" checked={settings.disable_withdrawal_cooldown || false} onCheckedChange={(c) => updateSetting('disable_withdrawal_cooldown', c)} disabled={isUpdating} />
+                  </div>
                 </>
               )}
             </CardContent>

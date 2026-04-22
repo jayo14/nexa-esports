@@ -38,11 +38,23 @@ serve(async (req) => {
   });
 
   if (error) {
+    const errorDetails = {
+      error: error.message,
+      batchSize,
+      timestamp: new Date().toISOString(),
+    };
+    console.error("Settlement worker error", errorDetails);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { "Content-Type": "application/json" },
       status: 500,
     });
   }
+
+  console.log("Settlement worker completed", {
+    batchSize,
+    result: data,
+    timestamp: new Date().toISOString(),
+  });
 
   return new Response(JSON.stringify({ ok: true, result: data }), {
     headers: { "Content-Type": "application/json" },

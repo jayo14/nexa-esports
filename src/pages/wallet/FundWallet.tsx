@@ -106,6 +106,12 @@ const FundWallet = () => {
             return;
         }
 
+        // Show loading toast
+        toast({
+            title: 'Initiating Payment',
+            description: 'Please wait while we prepare your payment...',
+        });
+
         // Call the edge function to initiate payment
         const { data, error } = await supabase.functions.invoke('paga-initiate-payment', {
             headers: {
@@ -145,9 +151,17 @@ const FundWallet = () => {
 
         // Redirect to Paga's hosted payment page
         console.log('Redirecting to payment link:', data.data.link);
+        toast({
+            title: 'Redirecting',
+            description: 'You will be redirected to Paga to complete your payment.',
+        });
         window.location.href = data.data.link;
     } catch (error: any) {
-        console.error('Error initiating payment:', error);
+        console.error('Error initiating payment:', {
+            message: error?.message,
+            code: error?.code,
+            timestamp: new Date().toISOString(),
+        });
         
         // Try to extract a friendly message
         let message = error?.message || 'An unexpected error occurred.';

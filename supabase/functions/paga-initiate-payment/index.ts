@@ -86,7 +86,13 @@ serve(async (req) => {
     });
 
     if (intentError || !depositIntent?.transaction_id || !depositIntent?.reference) {
-      console.error("Failed to create deposit intent:", intentError || depositIntent);
+      const errorDetails = {
+        intentError,
+        depositIntent,
+        timestamp: new Date().toISOString(),
+        userId: user.id,
+      };
+      console.error("Failed to create deposit intent:", errorDetails);
       return new Response(
         JSON.stringify({ error: "Unable to create payment intent" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
@@ -185,7 +191,13 @@ serve(async (req) => {
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
-    console.error("Error initiating Paga payment:", error);
+    const errorDetails = {
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+      path: '/paga-initiate-payment',
+      userAgent: req.headers.get('user-agent'),
+    };
+    console.error("Error initiating Paga payment:", errorDetails);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }

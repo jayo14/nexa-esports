@@ -75,12 +75,21 @@ serve(async (req) => {
 
   try {
     if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
+      console.error("Payment service not configured", {
+        hasPagaPublicKey: !!PAGA_PUBLIC_KEY,
+        hasPagaHashKey: !!PAGA_HASH_KEY,
+        hasPagaApiPassword: !!PAGA_API_PASSWORD,
+        timestamp: new Date().toISOString(),
+      });
       return respond({ error: "Payment service not configured: Paga credentials missing" }, 500);
     }
 
     const { referenceNumber, tx_ref } = await req.json();
     const reference = referenceNumber || tx_ref;
     if (!reference) {
+      console.warn("Payment verification called without reference", {
+        timestamp: new Date().toISOString(),
+      });
       return respond({ error: "referenceNumber or tx_ref is required" }, 400);
     }
 
@@ -111,6 +120,13 @@ serve(async (req) => {
     );
 
     const decision = providerCheck.state;
+
+    console.log("Payment verification completed", {
+      reference,
+      decision,
+      hasTransaction: !!tx,
+      timestamp: new Date().toISOString(),
+    });
 
     await supabaseAdmin.rpc("wallet_record_provider_operation", {
       p_transaction_id: tx.id,
@@ -164,7 +180,12 @@ serve(async (req) => {
       newBalance,
     });
   } catch (error) {
-    console.error("Error in paga-verify-payment:", error);
+    const errorDetails = {
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+      path: '/paga-verify-payment',
+    };
+    console.error("Error in paga-verify-payment:", errorDetails);
     return respond({ error: error instanceof Error ? error.message : String(error) }, 500);
   }
 });

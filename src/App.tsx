@@ -100,6 +100,7 @@ import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { EventEditor } from '@/pages/admin/EventEditor';
 import { EventDetails } from '@/pages/EventDetails';
 import { Health } from '@/pages/Health';
+import WalletTransactions from '@/pages/admin/WalletTransactions';
 
 import { SnowEffect } from '@/components/effects/SnowEffect';
 import { FestiveLights } from '@/components/effects/FestiveLights';
@@ -284,6 +285,7 @@ function AppRoutes() {
         <Route path="/admin/earnings" element={<ProtectedRoute><Layout showSidebar><Earnings /></Layout></ProtectedRoute>} />
         <Route path="/admin/seasons" element={<ProtectedRoute><Layout showSidebar><AdminSeasons /></Layout></ProtectedRoute>} />
         <Route path="/admin/team-assign" element={<ProtectedRoute><Layout showSidebar><TeamAssign /></Layout></ProtectedRoute>} />
+        <Route path="/admin/wallet-transactions" element={<ProtectedRoute><Layout showSidebar><WalletTransactions /></Layout></ProtectedRoute>} />
         <Route path="/health" element={<ProtectedRoute allowedRoles={['clan_master']}><Layout showSidebar><Health /></Layout></ProtectedRoute>} />
 
         {/* 404 */}
