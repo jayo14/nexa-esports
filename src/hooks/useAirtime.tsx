@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AirtimeTransaction {
   id: string;
@@ -25,6 +26,7 @@ export interface AirtimeTransaction {
 export const useAirtime = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { refreshWallet } = useAuth();
 
   // Fetch user's airtime transactions
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
@@ -77,9 +79,10 @@ export const useAirtime = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['airtimeTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      void refreshWallet();
       toast({
         title: 'Success',
-        description: `Airtime purchased successfully! New balance: ₦${data.transaction.new_balance.toFixed(2)}`,
+        description: `Airtime purchase submitted successfully${data?.reference ? ` • Ref ${data.reference}` : ''}.`,
       });
     },
     onError: (error: Error) => {

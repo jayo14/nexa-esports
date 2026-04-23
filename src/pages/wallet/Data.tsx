@@ -7,17 +7,21 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useData } from '@/hooks/useData';
 import { detectNetworkProvider, getNetworkDetails, formatPhoneNumber, validatePhoneNumber, NetworkProvider } from '@/lib/networkProviders';
-import { Wifi, CheckCircle2, ChevronRight, ChevronLeft, Loader2, Wallet, RefreshCw, XCircle, Info, ShieldCheck, Zap, Smartphone, ArrowLeft } from 'lucide-react';
+import { Wifi, CheckCircle2, ChevronRight, ChevronLeft, Loader2, Wallet, RefreshCw, XCircle, Info, ShieldCheck, Zap, Smartphone, ArrowLeft, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Dialog } from '@capacitor/dialog';
 import { Card, CardContent } from '@/components/ui/card';
+
+type DataBundle = { id: string; name: string; price: number; validity: string; volume?: string };
 
 enum STEPS {
   PHONE = 1,
@@ -58,6 +62,7 @@ const DATA_PLANS: Record<NetworkProvider, { id: string; name: string; price: num
 const Data = () => {
   const { purchaseData, isPurchasing } = useData();
   const navigate = useNavigate();
+  const { refreshWallet } = useAuth();
   
   const [step, setStep] = useState<STEPS>(STEPS.PHONE);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -66,6 +71,10 @@ const Data = () => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState('');
   const [showPinVerify, setShowPinVerify] = useState(false);
+  const [availableBundles, setAvailableBundles] = useState<DataBundle[]>([]);
+  const [isLoadingBundles, setIsLoadingBundles] = useState(false);
+  const [bundleError, setBundleError] = useState('');
+  const [purchaseReceipt, setPurchaseReceipt] = useState<{ reference?: string; pagaTransactionId?: string } | null>(null);
 
   // Network Detection
   useEffect(() => {
@@ -93,12 +102,56 @@ const Data = () => {
     }
   }, [phoneNumber]);
 
+  useEffect(() => {
+    if (!detectedProvider) {
+      setAvailableBundles([]);
+      setBundleError('');
+      return;
+    }
+
+    let cancelled = false;
+    setSelectedPlanId('');
+    setIsLoadingBundles(true);
+    setBundleError('');
+
+    const loadBundles = async () => {
+      const { data, error } = await supabase.functions.invoke('paga-get-data-bundles', {
+        body: { network_provider: detectedProvider },
+      });
+
+      if (cancelled) return;
+
+      if (error || data?.error) {
+        setAvailableBundles([]);
+        setBundleError(data?.error || error?.message || 'Failed to load bundles');
+      } else {
+        setAvailableBundles((data?.bundles || []).map((bundle: { id: string; name: string; amount: number; validity: string; volume?: string }) => ({
+          id: bundle.id,
+          name: bundle.name,
+          price: Number(bundle.amount) || 0,
+          validity: bundle.validity,
+          volume: bundle.volume,
+        })));
+      }
+
+      setIsLoadingBundles(false);
+    };
+
+    loadBundles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detectedProvider]);
+
   const showNativePlanSheet = async () => {
     if (!Capacitor.isNativePlatform() || !detectedProvider) return;
 
     await Haptics.impact({ style: ImpactStyle.Medium });
 
-    const plans = DATA_PLANS[detectedProvider];
+    const plans = availableBundles.length
+      ? availableBundles
+      : DATA_PLANS[detectedProvider];
     const result = await ActionSheet.showActions({
       title: `Select ${detectedProvider} Data Plan`,
       message: 'Choose a bundle to purchase',
@@ -111,7 +164,7 @@ const Data = () => {
     if (result.index < plans.length) {
       setSelectedPlanId(plans[result.index].id);
       setError('');
-      await Haptics.notification({ type: ImpactStyle.Light as any });
+      await Haptics.notification({ type: NotificationType.Success });
     }
   };
 
@@ -152,12 +205,17 @@ const Data = () => {
     purchaseData(
       {
         phone_number: phoneNumber,
-        variation_code: selectedPlanId,
+        service_id: selectedPlanId,
         network_provider: detectedProvider,
         amount: selectedPlan.price,
       },
       {
-        onSuccess: () => {
+        onSuccess: async (data) => {
+          await refreshWallet();
+          setPurchaseReceipt({
+            reference: data?.reference,
+            pagaTransactionId: data?.paga_transaction_id,
+          });
           setStep(STEPS.SUCCESS);
           confetti({
             particleCount: 150,
@@ -165,6 +223,7 @@ const Data = () => {
             origin: { y: 0.6 },
             colors: ['#C1B66D', '#002368', '#ffffff']
           });
+          setError('');
         },
         onError: (err) => {
           setError(err.message || 'Transaction failed. Please try again.');
@@ -174,7 +233,11 @@ const Data = () => {
   };
 
   const providerDetails = detectedProvider ? getNetworkDetails(detectedProvider) : null;
-  const availablePlans = detectedProvider ? DATA_PLANS[detectedProvider] : [];
+  const availablePlans = detectedProvider
+    ? (availableBundles.length
+      ? availableBundles
+      : DATA_PLANS[detectedProvider])
+    : [];
   const selectedPlan = availablePlans.find(p => p.id === selectedPlanId);
 
   const renderStepIcon = (currentStep: STEPS) => {
@@ -345,6 +408,20 @@ const Data = () => {
                       </div>
                       
                       <div className="grid grid-cols-1 gap-3">
+                        {isLoadingBundles && (
+                          <div className="p-4 rounded-2xl border border-border/50 bg-muted/20 flex items-center gap-3">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                            <span className="text-sm text-muted-foreground">Loading bundles...</span>
+                          </div>
+                        )}
+
+                        {bundleError && (
+                          <Alert variant="destructive" className="rounded-2xl border-2">
+                            <AlertTitle>Bundle Error</AlertTitle>
+                            <AlertDescription className="text-xs">{bundleError}</AlertDescription>
+                          </Alert>
+                        )}
+
                         {availablePlans.map((plan) => (
                           <div
                             key={plan.id}
@@ -448,6 +525,18 @@ const Data = () => {
                           <span className="text-xs font-bold font-orbitron">Success</span>
                         </div>
                       </div>
+
+                      {purchaseReceipt && (
+                        <div className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 text-left space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Receipt</p>
+                          {purchaseReceipt.reference && (
+                            <p className="text-sm font-medium">Reference: {purchaseReceipt.reference}</p>
+                          )}
+                          {purchaseReceipt.pagaTransactionId && (
+                            <p className="text-sm font-medium">Paga Transaction ID: {purchaseReceipt.pagaTransactionId}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 

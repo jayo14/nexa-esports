@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { useToast } from '@/hooks/use-toast';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { useAuth } from '@/contexts/AuthContext';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Dialog } from '@capacitor/dialog';
@@ -30,6 +31,7 @@ const Airtime = () => {
   const { purchaseAirtime, isPurchasing, airtimeLimits } = useAirtime();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { refreshWallet } = useAuth();
   
   const [step, setStep] = useState<STEPS>(STEPS.PHONE);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -38,6 +40,7 @@ const Airtime = () => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState('');
   const [showPinVerify, setShowPinVerify] = useState(false);
+  const [purchaseReceipt, setPurchaseReceipt] = useState<{ reference?: string; pagaTransactionId?: string } | null>(null);
 
   // Network detection logic
   useEffect(() => {
@@ -84,7 +87,7 @@ const Airtime = () => {
     if (result.index < quickAmounts.length) {
       setAmount(quickAmounts[result.index].toString());
       setError('');
-      await Haptics.notification({ type: ImpactStyle.Light as any });
+      await Haptics.notification({ type: NotificationType.Success });
     }
   };
 
@@ -130,7 +133,12 @@ const Airtime = () => {
         network_provider: detectedProvider!,
       },
       {
-        onSuccess: () => {
+        onSuccess: async (data) => {
+          await refreshWallet();
+          setPurchaseReceipt({
+            reference: data?.reference,
+            pagaTransactionId: data?.paga_transaction_id,
+          });
           setStep(STEPS.SUCCESS);
           confetti({
             particleCount: 150,
@@ -138,6 +146,7 @@ const Airtime = () => {
             origin: { y: 0.6 },
             colors: ['#C1B66D', '#002368', '#ffffff']
           });
+          setError('');
         },
         onError: (err) => {
           setError(err.message || 'Transaction failed. Please try again.');
@@ -416,6 +425,18 @@ const Airtime = () => {
                           <span className="text-xs font-bold font-orbitron">Completed</span>
                         </div>
                       </div>
+
+                      {purchaseReceipt && (
+                        <div className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 text-left space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Receipt</p>
+                          {purchaseReceipt.reference && (
+                            <p className="text-sm font-medium">Reference: {purchaseReceipt.reference}</p>
+                          )}
+                          {purchaseReceipt.pagaTransactionId && (
+                            <p className="text-sm font-medium">Paga Transaction ID: {purchaseReceipt.pagaTransactionId}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 

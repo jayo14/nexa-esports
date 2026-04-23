@@ -16,6 +16,7 @@ import { useTransactionPin } from '@/hooks/useTransactionPin';
 import { SetupPinDialog } from '@/components/SetupPinDialog';
 import { RedeemGiveawayDialog } from '@/components/wallet/RedeemGiveawayDialog';
 import { PagaPaymentHistory } from '@/components/wallet/PagaPaymentHistory';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -126,8 +127,28 @@ const getStatusBadge = (status: string) => {
   return null;
 };
 
+type WalletTransaction = {
+  id: string;
+  description: string;
+  date: string;
+  amount: number;
+  type: string;
+  raw_type: string;
+  status: string;
+  reference?: string | null;
+  created_at: string;
+  currency: string;
+};
+
+type TransferInfo = {
+  recipient?: string;
+  recipientPlayerType?: string;
+  sender?: string;
+  senderPlayerType?: string;
+};
+
 /* ─── Transaction Item ─── */
-const TransactionItem: React.FC<{ transaction: any; onViewReceipt: (t: any) => void }> = ({
+const TransactionItem: React.FC<{ transaction: WalletTransaction; onViewReceipt: (t: WalletTransaction) => void }> = ({
   transaction, onViewReceipt,
 }) => (
   <div
@@ -188,14 +209,14 @@ const Wallet: React.FC = () => {
   const { toast } = useToast();
 
   const [walletBalance, setWalletBalance] = useState(0);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [walletId, setWalletId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 10;
   const [totalTransactions, setTotalTransactions] = useState(0);
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
-  const [transferInfo, setTransferInfo] = useState<any>(null);
+  const [transferInfo, setTransferInfo] = useState<TransferInfo | null>(null);
   const receiptShownRef = useRef<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
@@ -204,6 +225,7 @@ const Wallet: React.FC = () => {
   const [showRedeemSheet, setShowRedeemSheet] = useState(false);
   const [withdrawCooldown, setWithdrawCooldown] = useState(0);
   const [redeemCooldown, setRedeemCooldown] = useState(0);
+  const [paymentInProgress, setPaymentInProgress] = useState(false);
 
   const animatedBalance = useCountUp({ end: walletBalance, duration: 1500, start: 0 });
   const { checkPinExists } = useTransactionPin();
@@ -297,7 +319,7 @@ const Wallet: React.FC = () => {
     setRedeemCooldown(REDEEM_COOLDOWN_SECONDS);
   };
 
-  const getTransferInfo = useCallback(async (transaction: any) => {
+  const getTransferInfo = useCallback(async (transaction: WalletTransaction) => {
     if (!transaction?.reference) return null;
     const ref = transaction.reference;
     const type = transaction.raw_type;
@@ -320,7 +342,7 @@ const Wallet: React.FC = () => {
     return null;
   }, []);
 
-  const handleViewReceipt = useCallback(async (transaction: any) => {
+  const handleViewReceipt = useCallback(async (transaction: WalletTransaction) => {
     setSelectedTransaction(transaction);
     const info = await getTransferInfo(transaction);
     setTransferInfo(info);
@@ -443,6 +465,11 @@ const Wallet: React.FC = () => {
   }, [walletId, refreshWallet, currentPage]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setPaymentInProgress(sessionStorage.getItem('payment_in_progress') === 'true');
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (refreshInterval.current) clearInterval(refreshInterval.current);
     };
@@ -471,6 +498,14 @@ const Wallet: React.FC = () => {
         style={{ scrollbarWidth: 'none' }}
       >
         <div className="px-3 sm:px-6 lg:px-10 pt-4 sm:pt-6 pb-12 space-y-6 sm:space-y-10">
+          {paymentInProgress && (
+            <Alert className="border-yellow-500/20 bg-yellow-500/10 text-yellow-100">
+              <AlertDescription className="text-sm font-medium">
+                A wallet payment is still being verified. Your balance will update automatically once Paga confirms it.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* ── Balance Hero ── */}
           <section className="relative">
             <div className="absolute inset-0 rounded-2xl sm:rounded-[32px]"

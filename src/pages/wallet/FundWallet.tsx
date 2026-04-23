@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Coins, ArrowRight, Shield, Loader2, Check, ArrowLeft } from 'lucide-react';
+import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { Capacitor } from '@capacitor/core';
 import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,8 +24,18 @@ const FundWallet = () => {
   const [amount, setAmount] = useState<number>(0);
   const [step, setStep] = useState<1 | 2>(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPinVerify, setShowPinVerify] = useState(false);
   
   const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
+  const fee = Math.min(amount * 0.035, 5000);
+  const netAmount = Math.max(0, amount - fee);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem('payment_in_progress') === 'true') {
+      sessionStorage.setItem('payment_in_progress', 'true');
+    }
+  }, []);
 
   if (!settingsLoading && !walletSettings.deposits_enabled) {
     return (
@@ -59,7 +70,7 @@ const FundWallet = () => {
 
     if (result.index < presetAmounts.length) {
       setAmount(presetAmounts[result.index]);
-      await Haptics.notification({ type: ImpactStyle.Light as any });
+      await Haptics.notification({ type: NotificationType.Success });
     }
   };
 
@@ -94,6 +105,7 @@ const FundWallet = () => {
     setIsProcessing(true);
     
     try {
+        sessionStorage.setItem('payment_in_progress', 'true');
         await supabase.auth.refreshSession();
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -122,7 +134,7 @@ const FundWallet = () => {
             idempotency_key: crypto.randomUUID(),
                 customer: {
                     email: user?.email || '',
-              phone: (profile as any)?.phone || '',
+              phone: typeof profile?.banking_info?.phone === 'string' ? profile.banking_info.phone : '',
                     name: profile?.username || profile?.ign || '',
                 },
                 redirect_url: `${window.location.origin}/payment-success`,
@@ -130,44 +142,37 @@ const FundWallet = () => {
         });
 
         if (error) {
-            console.error('Payment initiation error:', error);
             toast({
                 title: 'Payment Unavailable',
                 description: error.message || 'Failed to initiate payment. Please try again.',
                 variant: 'destructive',
             });
+            sessionStorage.removeItem('payment_in_progress');
             return;
         }
 
         if (!data || data.status !== 'success') {
-            console.error('Payment initiation failed:', data);
             toast({
                 title: 'Payment Failed',
                 description: data?.error || 'Failed to initiate payment. Please try again.',
                 variant: 'destructive',
             });
+            sessionStorage.removeItem('payment_in_progress');
             return;
         }
 
-        // Redirect to Paga's hosted payment page
-        console.log('Redirecting to payment link:', data.data.link);
         toast({
             title: 'Redirecting',
             description: 'You will be redirected to Paga to complete your payment.',
         });
         window.location.href = data.data.link;
-    } catch (error: any) {
-        console.error('Error initiating payment:', {
-            message: error?.message,
-            code: error?.code,
-            timestamp: new Date().toISOString(),
-        });
-        
+    } catch (error: unknown) {
         // Try to extract a friendly message
-        let message = error?.message || 'An unexpected error occurred.';
+        let message = error instanceof Error ? error.message : 'An unexpected error occurred.';
         if (message.includes('Minimum amount')) message = 'The minimum deposit amount is ₦500.';
         if (message.includes('Maximum amount')) message = 'The maximum deposit amount is ₦50,000.';
         if (message.includes('network') || message.includes('fetch')) message = 'Network error. Please check your internet connection.';
+        sessionStorage.removeItem('payment_in_progress');
 
         toast({
             title: 'Payment Failed',
@@ -177,6 +182,11 @@ const FundWallet = () => {
     } finally {
         setIsProcessing(false);
     }
+  };
+
+  const handlePinSuccess = async () => {
+    setShowPinVerify(false);
+    await handlePayment();
   };
 
   return (
@@ -266,15 +276,15 @@ const FundWallet = () => {
                   <span className="text-base">Deposit Amount</span>
                   <span className="font-bold text-lg text-foreground">₦{amount.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center text-red-400">
-                  <span className="text-base">Transaction Fee (4%)</span>
-                  <span className="font-bold">-₦{(amount * 0.04).toFixed(2)}</span>
-                </div>
-                <div className="h-px bg-border my-2" />
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-lg">Total to Receive</span>
-                  <span className="text-3xl font-black text-green-500">₦{(amount * 0.96).toLocaleString()}</span>
-                </div>
+                 <div className="flex justify-between items-center text-red-400">
+                   <span className="text-base">Transaction Fee (3.5%)</span>
+                   <span className="font-bold">-₦{fee.toFixed(2)}</span>
+                 </div>
+                 <div className="h-px bg-border my-2" />
+                 <div className="flex justify-between items-center">
+                   <span className="font-bold text-lg">Total to Receive</span>
+                   <span className="text-3xl font-black text-green-500">₦{netAmount.toLocaleString()}</span>
+                 </div>
               </div>
 
               <div className="bg-muted/30 p-5 rounded-2xl space-y-3">
@@ -303,7 +313,7 @@ const FundWallet = () => {
                 </Button>
                 <Button 
                     className="flex-[2] h-16 rounded-2xl font-bold text-lg bg-green-600 hover:bg-green-700"
-                    onClick={handlePayment}
+                    onClick={() => setShowPinVerify(true)}
                     disabled={isProcessing}
                 >
                     {isProcessing ? (
@@ -317,8 +327,17 @@ const FundWallet = () => {
               </div>
             </div>
           )}
-          </CardContent>
+      </CardContent>
         </Card>
+      <VerifyPinDialog
+        open={showPinVerify}
+        onOpenChange={setShowPinVerify}
+        onSuccess={handlePinSuccess}
+        onCancel={() => setShowPinVerify(false)}
+        title="Verify PIN for Funding"
+        description="Enter your 4-digit PIN to authorize this deposit."
+        actionLabel="deposit"
+      />
     </div>
   );
 };

@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Dialog } from '@capacitor/dialog';
@@ -128,7 +128,7 @@ export const AirtimePurchaseFlow: React.FC<AirtimePurchaseFlowProps> = ({
     if (result.index < quickAmounts.length) {
       setAmount(quickAmounts[result.index].toString());
       setError('');
-      await Haptics.notification({ type: ImpactStyle.Light as any });
+      await Haptics.notification({ type: NotificationType.Success });
     }
   };
 

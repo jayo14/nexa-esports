@@ -14,7 +14,14 @@ interface MobileTransferFlowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   walletBalance: number;
-  players: any[];
+  players: {
+    id: string;
+    ign: string;
+    username?: string | null;
+    avatar_url?: string | null;
+    status?: string | null;
+    is_banned?: boolean | null;
+  }[];
   onTransferSubmit: (recipient: string, amount: number) => Promise<void>;
   isProcessing: boolean;
 }

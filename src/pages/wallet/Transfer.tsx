@@ -17,7 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 type Step = 'recipient' | 'amount' | 'review' | 'processing';
 
-const TRANSFER_FEE = 50;
+const TRANSFER_FEE_RATE = 0.035;
+const TRANSFER_FEE_CAP = 5000;
 
 type TransferRecipient = Pick<
   Database['public']['Tables']['profiles']['Row'],
@@ -27,7 +28,7 @@ type TransferRecipient = Pick<
 const Transfer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, refreshWallet } = useAuth();
 
   const { data: players = [] } = useQuery<TransferRecipient[]>({
     queryKey: ['transfer-recipients', user?.id],
@@ -52,6 +53,7 @@ const Transfer = () => {
   const [showPinVerify, setShowPinVerify] = useState(false);
   const [transferSuccess, setTransferSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [transferReference, setTransferReference] = useState('');
 
   useEffect(() => {
     fetchWalletBalance();
@@ -64,6 +66,7 @@ const Transfer = () => {
         .from('wallets')
         .select('balance')
         .eq('user_id', user.id)
+        .eq('wallet_type', 'clan')
         .maybeSingle();
       
       if (error) throw error;
@@ -89,7 +92,8 @@ const Transfer = () => {
 
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
-    const totalDeduction = amountNum + TRANSFER_FEE;
+    const fee = Math.min(amountNum * TRANSFER_FEE_RATE, TRANSFER_FEE_CAP);
+    const totalDeduction = amountNum + fee;
 
     if (amountNum <= 0) {
       toast({
@@ -103,7 +107,7 @@ const Transfer = () => {
     if (totalDeduction > walletBalance) {
       toast({
         title: "Insufficient Funds",
-        description: `Your balance must cover ₦${totalDeduction.toLocaleString()} (amount + ₦${TRANSFER_FEE} fee).`,
+        description: `Your balance must cover ₦${totalDeduction.toLocaleString()} (amount + fee).`,
         variant: "destructive",
       });
       return;
@@ -118,44 +122,45 @@ const Transfer = () => {
     setShowPinVerify(true);
   };
 
-  const performTransfer = async (recipientIgn: string, transferAmount: number) => {
-    if (!user?.id) {
-      throw new Error('You must be logged in to transfer funds.');
-    }
-
-    const { error } = await supabase.rpc('execute_user_transfer', {
-      sender_id: user.id,
-      recipient_ign: recipientIgn,
-      amount: transferAmount,
-    });
-
-    if (error) {
-      throw new Error(error.message || 'Unable to complete transfer.');
-    }
-
-    const totalDeducted = transferAmount + TRANSFER_FEE;
-    toast({
-      title: 'Transfer Successful!',
-      description: `Transferred ₦${transferAmount.toLocaleString()} to recipient. ₦${TRANSFER_FEE} fee charged (total debited: ₦${totalDeducted.toLocaleString()}).`,
-    });
-  };
-
   const handlePinSuccess = async () => {
     setShowPinVerify(false);
     setStep('processing');
     setIsProcessing(true);
     try {
-      await performTransfer(recipient, Number(amount));
+      if (!user?.id) {
+        throw new Error('You must be logged in to transfer funds.');
+      }
+
+      const { data, error } = await supabase.rpc('execute_user_transfer', {
+        sender_id: user.id,
+        recipient_ign: recipient,
+        amount: Number(amount),
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Unable to complete transfer.');
+      }
+
+      setTransferReference(data?.reference || '');
       setTransferSuccess(true);
-      fetchWalletBalance(); // Update balance
+      await refreshWallet();
+      await fetchWalletBalance();
     } catch (error) {
       console.error('Transfer error:', error);
       const message = error instanceof Error ? error.message : 'Unable to complete transfer.';
-      toast({
-        title: 'Transfer Failed',
-        description: message,
-        variant: 'destructive',
-      });
+      if (message.toLowerCase().includes('insufficient')) {
+        toast({
+          title: 'Transfer Failed',
+          description: 'You do not have enough balance to complete this transfer.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Transfer Failed',
+          description: message,
+          variant: 'destructive',
+        });
+      }
       setStep('review');
     } finally {
       setIsProcessing(false);
@@ -163,7 +168,8 @@ const Transfer = () => {
   };
 
   const recipientReceives = Math.max(0, Number(amount));
-  const totalDeductedFromSender = Number(amount) + TRANSFER_FEE;
+  const transferFee = Math.min(Number(amount) * TRANSFER_FEE_RATE, TRANSFER_FEE_CAP);
+  const totalDeductedFromSender = Number(amount) + transferFee;
 
   return (
     <div className="container max-w-lg mx-auto py-6 space-y-6 animate-fade-in">
@@ -321,7 +327,7 @@ const Transfer = () => {
                   <Coins className="h-4 w-4" />
                   <AlertTitle className="text-sm">Transaction Fee</AlertTitle>
                   <AlertDescription className="text-xs mt-0.5">
-                    A flat fee of ₦{TRANSFER_FEE} will be charged on top of the transfer amount.
+                    A 3.5% fee, capped at ₦5,000, will be charged on top of the transfer amount.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -337,7 +343,7 @@ const Transfer = () => {
                 </Button>
                 <Button
                   onClick={handleAmountNext}
-                  disabled={!amount || Number(amount) <= 0 || (Number(amount) + TRANSFER_FEE) > walletBalance}
+                  disabled={!amount || Number(amount) <= 0 || totalDeductedFromSender > walletBalance}
                   className="h-14 flex-1 text-base font-bold"
                   size="lg"
                 >
@@ -377,15 +383,15 @@ const Transfer = () => {
 
                 <div className="border border-border p-4 rounded-lg space-y-3 bg-card">
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Transaction Summary</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span>Sending Amount</span>
-                      <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-red-500">
-                      <span>Transfer Fee (added to amount)</span>
-                      <span>+₦{TRANSFER_FEE}</span>
-                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span>Sending Amount</span>
+                        <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-red-500">
+                        <span>Transfer Fee (3.5%, capped)</span>
+                        <span>+₦{transferFee.toLocaleString()}</span>
+                      </div>
                     <div className="h-px bg-border my-1" />
                     <div className="flex justify-between text-base items-center">
                       <span className="font-semibold">Total Deducted from Your Wallet</span>
@@ -439,6 +445,11 @@ const Transfer = () => {
                     <p className="text-lg text-muted-foreground px-4">
                       ₦{Number(amount).toLocaleString()} has been sent to {recipient}
                     </p>
+                    {transferReference && (
+                      <p className="text-sm text-muted-foreground px-4">
+                        Reference: {transferReference}
+                      </p>
+                    )}
                   </div>
                    <Button 
                     className="w-full h-14 text-lg font-bold mt-4" 

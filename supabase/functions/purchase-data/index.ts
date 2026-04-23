@@ -208,6 +208,7 @@ serve(async (req) => {
           success: true,
           message: "Data purchase initiated. Please wait for confirmation.",
           reference: referenceNumber,
+          paga_transaction_id: pagaData.transactionReference || null,
         }, 200);
       } else {
         // FAILURE: reverse the debit

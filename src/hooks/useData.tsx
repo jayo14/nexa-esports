@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface DataTransaction {
   id: string;
@@ -24,6 +25,7 @@ export interface DataTransaction {
 export const useData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { refreshWallet } = useAuth();
 
   // Fetch user's data transactions
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
@@ -46,7 +48,7 @@ export const useData = () => {
   const purchaseDataMutation = useMutation({
     mutationFn: async (purchaseData: {
       phone_number: string;
-      variation_code: string;
+      service_id: string;
       network_provider: 'MTN' | 'GLO' | 'AIRTEL' | '9MOBILE';
       amount: number;
     }) => {
@@ -76,11 +78,10 @@ export const useData = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['dataTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      const newBalance = data?.transaction?.new_balance;
-      const balanceText = typeof newBalance === 'number' ? newBalance.toFixed(2) : '0.00';
+      void refreshWallet();
       toast({
         title: 'Success',
-        description: `Data purchased successfully! New balance: ₦${balanceText}`,
+        description: `Data purchase submitted successfully${data?.reference ? ` • Ref ${data.reference}` : ''}.`,
       });
     },
     onError: (error: Error) => {

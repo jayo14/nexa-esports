@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle2, XCircle, Loader2, Wallet, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Haptics, NotificationType } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 
 /** Parse a reference number from ALL URL formats Paga may produce:
@@ -59,7 +59,13 @@ const PaymentSuccess: React.FC = () => {
     const [countdown, setCountdown] = useState(5);
     const location = useLocation();
     const navigate = useNavigate();
-    const { refreshWallet } = useAuth();
+  const { refreshWallet } = useAuth();
+
+  const clearPaymentFlag = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('payment_in_progress');
+    }
+  };
 
     useEffect(() => {
         const reference = extractReference(location.search);
@@ -67,9 +73,9 @@ const PaymentSuccess: React.FC = () => {
         if (reference) {
             verifyPayment(reference);
         } else {
-            console.error('No reference number found in URL:', location.search);
             setStatus('error');
             setMessage('No payment reference found. Please contact support if you were debited.');
+            clearPaymentFlag();
         }
     }, [location]);
 
@@ -100,16 +106,16 @@ const PaymentSuccess: React.FC = () => {
 
 
             if (error) {
-                console.error('Payment verification error:', error);
                 setStatus('error');
                 setMessage('Error verifying payment. Please contact support.');
+                clearPaymentFlag();
                 return;
             }
 
             if (!data || (!data.data && !['success', 'processing', 'failed', 'reversed', 'expired'].includes(data.status) && data.message !== 'Transaction already processed')) {
-                console.error('Invalid response from verification function:', data);
                 setStatus('error');
                 setMessage(data?.error || 'Invalid response from verification service.');
+                clearPaymentFlag();
                 return;
             }
 
@@ -125,7 +131,7 @@ const PaymentSuccess: React.FC = () => {
 
             if (data.status === 'success' || data.message === 'Transaction already processed') {
                 if (Capacitor.isNativePlatform()) {
-                    await Haptics.notification({ type: ImpactStyle.Heavy as any });
+                    await Haptics.notification({ type: NotificationType.Success });
                 }
                 setStatus('success');
                 setMessage('Deposit received successfully! Your wallet balance has been updated.');
@@ -134,7 +140,6 @@ const PaymentSuccess: React.FC = () => {
                 // Refresh profile data and wallet balance immediately
                 try {
                     await refreshWallet();
-                    console.log('Wallet refreshed successfully');
                 } catch (refreshErr) {
                     console.error('Error refreshing wallet:', refreshErr);
                 }
@@ -151,6 +156,7 @@ const PaymentSuccess: React.FC = () => {
                     setCountdown(secs);
                     if (secs <= 0) {
                         clearInterval(timer);
+                        clearPaymentFlag();
                         navigate(`/wallet?showReceipt=${reference}`);
                     }
                 }, 1000);
@@ -158,25 +164,18 @@ const PaymentSuccess: React.FC = () => {
                 if (data.status === 'failed' || data.status === 'reversed' || data.status === 'expired') {
                     setStatus('error');
                     setMessage('Payment was not completed successfully. If you were debited, support can reconcile using your payment reference.');
-                    console.log('Payment failed or reversed', {
-                        reference: referenceNumber,
-                        status: data.status,
-                        timestamp: new Date().toISOString(),
-                    });
+                    clearPaymentFlag();
                     return;
                 }
                 setStatus('error');
                 setMessage(data.error || 'Payment verification failed.');
+                clearPaymentFlag();
             }
-        } catch (err) {
-            const errorDetails = {
-                error: err instanceof Error ? err.message : String(err),
-                reference: referenceNumber,
-                timestamp: new Date().toISOString(),
-            };
-            console.error('Unexpected error during verification:', errorDetails);
+        } catch (err: unknown) {
+            console.error('Unexpected error during verification:', err);
             setStatus('error');
             setMessage('An unexpected error occurred. Please check your wallet history.');
+            clearPaymentFlag();
         }
     };
 
@@ -237,8 +236,11 @@ const PaymentSuccess: React.FC = () => {
 
                     <div className="w-full pt-4">
                         {status === 'success' ? (
-                            <Button
-                                onClick={() => navigate(paymentRef ? `/wallet?showReceipt=${paymentRef}` : '/wallet')}
+                        <Button
+                                onClick={() => {
+                                    clearPaymentFlag();
+                                    navigate(paymentRef ? `/wallet?showReceipt=${paymentRef}` : '/wallet');
+                                }}
                                 className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold text-base transition-all scale-100 active:scale-95 flex items-center justify-center gap-2"
                             >
                                 View Receipt <ArrowRight className="w-5 h-5" />

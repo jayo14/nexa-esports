@@ -86,48 +86,7 @@ serve(async (req) => {
     }
 
     console.log("Giveaway fetched successfully with", giveaway?.giveaway_codes?.length, "codes");
-
-    // Deduct from wallet and create transaction
-    const totalCost = code_value * total_codes;
-    
-    // Get user's wallet
-    const { data: wallet, error: walletError } = await supabaseClient
-      .from('wallets')
-      .select('id, balance')
-      .eq('user_id', user.id)
-      .single();
-
-    if (walletError || !wallet) {
-      console.error("Error fetching wallet:", walletError);
-    } else {
-      // Update wallet balance
-      const { error: updateError } = await supabaseClient
-        .from('wallets')
-        .update({ balance: wallet.balance - totalCost })
-        .eq('id', wallet.id);
-
-      if (updateError) {
-        console.error("Error updating wallet:", updateError);
-      } else {
-        // Create transaction record
-        const { error: txError } = await supabaseClient
-          .from('transactions')
-          .insert({
-            wallet_id: wallet.id,
-            type: 'giveaway_created',
-            amount: totalCost,
-            status: 'success',
-            reference: `giveaway_${giveawayId}_${Date.now()}`,
-            currency: 'NGN',
-          });
-
-        if (txError) {
-          console.error("Error creating transaction:", txError);
-        } else {
-          console.log("Giveaway transaction recorded");
-        }
-      }
-    }
+    const giveawayCodes = (giveaway?.giveaway_codes as Array<{ code: string }> | undefined)?.map((codeRow) => codeRow.code) || [];
 
     // Send notification to all clan members only if not private
     if (!is_private) {
@@ -142,13 +101,13 @@ serve(async (req) => {
           title: '🎁 New Giveaway Available!',
           message: `${title} - Be the first to claim your share!`,
           user_id: profile.id,
-          data: {
-            giveaway_id: giveawayId,
-            code_value: code_value,
-            total_codes: total_codes,
-            codes: giveaway?.giveaway_codes?.map((c: any) => c.code) || [],
-          },
-        }));
+            data: {
+              giveaway_id: giveawayId,
+              code_value: code_value,
+              total_codes: total_codes,
+              codes: giveawayCodes,
+            },
+          }));
 
         await supabaseAdmin.from('notifications').insert(notifications);
       }
@@ -161,14 +120,14 @@ serve(async (req) => {
             notification: {
               title: '🎁 New Giveaway Available!',
               message: `${title} - Be the first to claim your share!`,
-              data: {
-                giveaway_id: giveawayId,
-                code_value: code_value,
-                total_codes: total_codes,
-                codes: giveaway?.giveaway_codes?.map((c: any) => c.code) || [],
+                data: {
+                  giveaway_id: giveawayId,
+                  code_value: code_value,
+                  total_codes: total_codes,
+                  codes: giveawayCodes,
+                },
               },
             },
-          },
         });
       } catch (pushError) {
         console.error("Error sending push notification:", pushError);

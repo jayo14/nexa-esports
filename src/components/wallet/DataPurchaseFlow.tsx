@@ -15,7 +15,7 @@ import confetti from 'canvas-confetti';
 import { VerifyPinDialog } from '@/components/VerifyPinDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { ActionSheet, ActionSheetButtonStyle } from '@capacitor/action-sheet';
 import { Dialog } from '@capacitor/dialog';
@@ -157,7 +157,7 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
     if (result.index < plans.length) {
       setSelectedPlanId(plans[result.index].id);
       setError('');
-      await Haptics.notification({ type: ImpactStyle.Light as any });
+      await Haptics.notification({ type: NotificationType.Success });
     }
   };
 
@@ -198,7 +198,7 @@ export const DataPurchaseFlow: React.FC<DataPurchaseFlowProps> = ({
     purchaseData(
       {
         phone_number: phoneNumber,
-        variation_code: selectedPlanId,
+        service_id: selectedPlanId,
         network_provider: detectedProvider,
         amount: selectedPlan.price,
       },

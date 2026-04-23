@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,11 +29,14 @@ const Withdraw = () => {
   const [showPinVerify, setShowPinVerify] = useState(false);
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-  const withdrawalInProgressRef = useRef(false);
+  const [isBankVerified, setIsBankVerified] = useState(false);
+  const [isVerifyingBank, setIsVerifyingBank] = useState(false);
 
   // Get wallet type from navigation state (default to 'clan')
-  const walletType = (location.state as any)?.walletType || 'clan';
+  const walletType = (() => {
+    const state = location.state as { walletType?: 'clan' | 'marketplace' } | null;
+    return state?.walletType || 'clan';
+  })();
 
   // Banking info from profile
   const accountName = profile?.banking_info?.account_name || '';
@@ -58,30 +61,6 @@ const Withdraw = () => {
     }
   };
 
-  const checkCooldowns = () => {
-    const withdrawCooldownEnd = localStorage.getItem('withdrawCooldownEnd');
-    if (withdrawCooldownEnd) {
-      const remaining = Math.floor((parseInt(withdrawCooldownEnd) - Date.now()) / 1000);
-      if (remaining > 0) {
-        setCooldown(remaining);
-      } else {
-        setCooldown(0);
-      }
-    }
-  };
-
-  const startWithdrawCooldown = () => {
-    // Check if cooldown is disabled
-    if (walletSettings.disable_withdrawal_cooldown) {
-      console.log('Withdrawal cooldown is disabled by clan settings');
-      return;
-    }
-    const WITHDRAW_COOLDOWN_SECONDS = 43200; // 12 hours
-    const cooldownEnd = Date.now() + (WITHDRAW_COOLDOWN_SECONDS * 1000);
-    localStorage.setItem('withdrawCooldownEnd', cooldownEnd.toString());
-    setCooldown(WITHDRAW_COOLDOWN_SECONDS);
-  };
-
   const fee = Number(amount) * 0.04;
   const youWillReceive = Number(amount) * 0.96;
   const normalizeWithdrawalErrorMessage = (rawMessage?: string) => {
@@ -96,18 +75,20 @@ const Withdraw = () => {
       return 'This bank is currently unavailable for withdrawal. Please try another bank account.';
     }
 
+    if (lowerMessage.includes('temporarily unavailable')) {
+      return 'This bank is temporarily unavailable. Please try again later or use a different bank.';
+    }
+
+    if (lowerMessage.includes('insufficient balance')) {
+      return 'Paga could not complete the transfer because the available balance was insufficient.';
+    }
+
     return message;
   };
 
   useEffect(() => {
     fetchWalletBalance();
-    checkCooldowns();
-
-    // Timer for cooldown
-    const interval = setInterval(() => {
-      checkCooldowns();
-    }, 1000);
-    return () => clearInterval(interval);
+    setIsBankVerified(false);
   }, [user]);
 
   if (!settingsLoading && !walletSettings.withdrawals_enabled) {
@@ -142,13 +123,45 @@ const Withdraw = () => {
       toast({ title: "Insufficient Funds", description: "You cannot withdraw more than your balance.", variant: "destructive" });
       return;
     }
-    if (cooldown > 0) {
-      toast({ title: "Cooldown Active", description: "Please wait before withdrawing again.", variant: "destructive" });
-      return;
-    }
     if (!accountNumber || !bankCode) {
       toast({ title: "No Bank Account", description: "Please set up your bank account in Settings first.", variant: "destructive" });
       return;
+    }
+
+    if (!isBankVerified) {
+      setIsVerifyingBank(true);
+      try {
+        await supabase.auth.refreshSession();
+        const { data: { session } } = await supabase.auth.getSession();
+        const { data, error } = await supabase.functions.invoke('paga-verify-bank-account', {
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+          body: {
+            account_number: accountNumber,
+            bank_code: bankCode,
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (!data || data.error) {
+          throw new Error(data?.error || 'Bank account verification failed.');
+        }
+
+        setIsBankVerified(true);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Bank account verification failed.';
+        toast({
+          title: "Bank Verification Failed",
+          description: message,
+          variant: "destructive",
+        });
+        setIsVerifyingBank(false);
+        return;
+      } finally {
+        setIsVerifyingBank(false);
+      }
     }
 
     if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
@@ -163,21 +176,16 @@ const Withdraw = () => {
   const handlePinSuccess = async () => {
     setShowPinVerify(false);
     setStep('processing');
-
-    if (withdrawalInProgressRef.current) return;
-    withdrawalInProgressRef.current = true;
     setIsProcessing(true);
 
     try {
       await performWithdrawal(Number(amount));
       setWithdrawalSuccess(true);
-      startWithdrawCooldown();
-      fetchWalletBalance();
+      await fetchWalletBalance();
     } catch (error) {
       console.error(error);
       setStep('review'); // Go back to review on error
     } finally {
-      withdrawalInProgressRef.current = false;
       setIsProcessing(false);
     }
   };
@@ -202,10 +210,10 @@ const Withdraw = () => {
     });
 
     if (transferError) {
-      let transferErrorPayload: any = null;
-      const errorContext = (transferError as any)?.context;
+      let transferErrorPayload: { error?: string; message?: string } | null = null;
+      const errorContext = (transferError as { context?: { json?: () => Promise<unknown> } }).context;
       if (errorContext?.json) {
-        transferErrorPayload = await errorContext.json().catch(() => null);
+        transferErrorPayload = await errorContext.json().catch(() => null) as { error?: string; message?: string } | null;
       }
 
       const errorCode = transferErrorPayload?.error;
@@ -305,12 +313,12 @@ const Withdraw = () => {
 
               <Button
                 onClick={handleAmountNext}
-                disabled={!amount || Number(amount) < 500 || Number(amount) > 30000 || Number(amount) > walletBalance || cooldown > 0}
+                disabled={!amount || Number(amount) < 500 || Number(amount) > 30000 || Number(amount) > walletBalance || isVerifyingBank}
                 className="w-full h-14 text-base font-bold"
                 size="lg"
               >
-                {cooldown > 0 ? (
-                  `Wait ${Math.floor(cooldown / 3600)}h ${Math.floor((cooldown % 3600) / 60)}m`
+                {isVerifyingBank ? (
+                  'Verifying Bank...'
                 ) : (
                   <>
                     Next
