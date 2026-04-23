@@ -613,32 +613,7 @@ BEGIN
   INSERT INTO public.wallet_reservations(transaction_id, wallet_id, amount, state)
   VALUES (v_transaction_id, v_wallet_id, p_amount, 'open');
 
-  UPDATE public.wallets
-  SET balance = ROUND(balance - p_amount, 2),
-      updated_at = NOW()
-  WHERE id = v_wallet_id;
-
-  INSERT INTO public.wallet_ledger_entries(
-    transaction_id,
-    wallet_id,
-    entry_type,
-    amount,
-    direction,
-    currency,
-    unique_key,
-    metadata,
-    created_by
-  ) VALUES (
-    v_transaction_id,
-    v_wallet_id,
-    'reserve_debit',
-    p_amount,
-    'debit',
-    p_currency,
-    v_transaction_id::TEXT || ':reserve_debit',
-    jsonb_build_object('fee', v_fee, 'net', v_net),
-    'wallet_command'
-  );
+  PERFORM public.wallet_debit(v_transaction_id, v_wallet_id, p_amount);
 
   IF p_idempotency_key IS NOT NULL AND LENGTH(TRIM(p_idempotency_key)) > 0 THEN
     UPDATE public.wallet_idempotency_keys
@@ -826,38 +801,14 @@ BEGIN
       v_fee := ROUND(v_tx.amount * 0.04, 2);
       v_net := ROUND(v_tx.amount - v_fee, 2);
 
-      UPDATE public.wallets
-      SET balance = ROUND(balance + v_net, 2),
-          updated_at = NOW()
-      WHERE id = v_tx.wallet_id;
-
-      INSERT INTO public.wallet_ledger_entries(
-        transaction_id, wallet_id, entry_type, amount, direction, currency, unique_key, metadata, created_by
-      ) VALUES (
+      PERFORM public.wallet_credit(
         p_transaction_id,
         v_tx.wallet_id,
-        'credit_final',
         v_net,
-        'credit',
-        COALESCE(v_tx.currency, 'NGN'),
-        p_transaction_id::TEXT || ':credit_final',
-        jsonb_build_object('gross', v_tx.amount, 'fee', v_fee, 'source', p_source),
-        'wallet_settlement'
-      ) ON CONFLICT (unique_key) DO NOTHING;
-
-      INSERT INTO public.wallet_ledger_entries(
-        transaction_id, wallet_id, entry_type, amount, direction, currency, unique_key, metadata, created_by
-      ) VALUES (
-        p_transaction_id,
-        v_tx.wallet_id,
-        'fee_credit',
-        v_fee,
-        'credit',
-        COALESCE(v_tx.currency, 'NGN'),
-        p_transaction_id::TEXT || ':fee_credit',
-        jsonb_build_object('source', p_source),
-        'wallet_settlement'
-      ) ON CONFLICT (unique_key) DO NOTHING;
+        v_tx.paga_reference,
+        'completed',
+        'success'
+      );
 
       UPDATE public.transactions
       SET wallet_state = 'success',
@@ -901,20 +852,6 @@ BEGIN
           consumed_at = NOW(),
           updated_at = NOW()
       WHERE transaction_id = p_transaction_id;
-
-      INSERT INTO public.wallet_ledger_entries(
-        transaction_id, wallet_id, entry_type, amount, direction, currency, unique_key, metadata, created_by
-      ) VALUES (
-        p_transaction_id,
-        v_tx.wallet_id,
-        'debit_final',
-        v_res.amount,
-        'debit',
-        COALESCE(v_tx.currency, 'NGN'),
-        p_transaction_id::TEXT || ':debit_final',
-        jsonb_build_object('source', p_source),
-        'wallet_settlement'
-      ) ON CONFLICT (unique_key) DO NOTHING;
     END IF;
 
     UPDATE public.transactions
@@ -929,30 +866,20 @@ BEGIN
 
   IF p_decision IN ('failed', 'reversed', 'expired') THEN
     IF v_res.state = 'open' THEN
-      UPDATE public.wallets
-      SET balance = ROUND(balance + v_res.amount, 2),
-          updated_at = NOW()
-      WHERE id = v_tx.wallet_id;
+      PERFORM public.wallet_credit(
+        p_transaction_id,
+        v_tx.wallet_id,
+        v_res.amount,
+        v_tx.paga_reference,
+        'reversed',
+        'reversed'
+      );
 
       UPDATE public.wallet_reservations
       SET state = 'released',
           released_at = NOW(),
           updated_at = NOW()
       WHERE transaction_id = p_transaction_id;
-
-      INSERT INTO public.wallet_ledger_entries(
-        transaction_id, wallet_id, entry_type, amount, direction, currency, unique_key, metadata, created_by
-      ) VALUES (
-        p_transaction_id,
-        v_tx.wallet_id,
-        'reserve_release',
-        v_res.amount,
-        'credit',
-        COALESCE(v_tx.currency, 'NGN'),
-        p_transaction_id::TEXT || ':reserve_release',
-        jsonb_build_object('source', p_source, 'decision', p_decision::TEXT),
-        'wallet_settlement'
-      ) ON CONFLICT (unique_key) DO NOTHING;
     END IF;
 
     UPDATE public.transactions

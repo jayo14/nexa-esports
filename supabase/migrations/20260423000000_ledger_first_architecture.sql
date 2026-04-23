@@ -138,7 +138,9 @@ CREATE OR REPLACE FUNCTION public.wallet_credit(
   p_transaction_id UUID,
   p_wallet_id UUID,
   p_amount NUMERIC,
-  p_paga_reference TEXT DEFAULT NULL
+  p_paga_reference TEXT DEFAULT NULL,
+  p_final_status TEXT DEFAULT 'completed',
+  p_wallet_state TEXT DEFAULT 'credited'
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -150,22 +152,22 @@ DECLARE
   v_state TEXT;
 BEGIN
   -- Idempotency: skip if already credited
-  SELECT wallet_state INTO v_state FROM public.transactions 
+  SELECT wallet_state INTO v_state FROM public.transactions
   WHERE id = p_transaction_id FOR UPDATE;
-  
-  IF v_state = 'credited' OR v_state = 'success' THEN 
-    RETURN; 
+
+  IF v_state IN (p_wallet_state, p_final_status) THEN
+    RETURN;
   END IF;
 
   -- Lock wallet row
-  SELECT balance INTO v_current_balance FROM public.wallets 
+  SELECT balance INTO v_current_balance FROM public.wallets
   WHERE id = p_wallet_id FOR UPDATE;
-  
+
   v_new_balance := v_current_balance + p_amount;
 
   -- Update wallet balance
-  UPDATE public.wallets 
-    SET balance = v_new_balance, updated_at = NOW() 
+  UPDATE public.wallets
+    SET balance = v_new_balance, updated_at = NOW()
   WHERE id = p_wallet_id;
 
   -- Write ledger entry (append-only)
@@ -173,9 +175,9 @@ BEGIN
   VALUES (p_wallet_id, p_transaction_id, 'credit', p_amount, v_current_balance, v_new_balance);
 
   -- Mark transaction as credited
-  UPDATE public.transactions 
-    SET wallet_state = 'credited', 
-        status = 'completed',
+  UPDATE public.transactions
+    SET wallet_state = p_wallet_state,
+        status = p_final_status,
         paga_reference = COALESCE(p_paga_reference, paga_reference),
         updated_at = NOW()
   WHERE id = p_transaction_id;

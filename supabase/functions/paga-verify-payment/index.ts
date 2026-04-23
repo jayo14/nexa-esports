@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { generatePagaBusinessHash, pagaHeaders } from "../_shared/pagaAuth.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
@@ -84,6 +85,17 @@ serve(async (req) => {
       return respond({ error: "Payment service not configured: Paga credentials missing" }, 500);
     }
 
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+    );
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      return respond({ error: "Unauthorized" }, 401);
+    }
+
     const { referenceNumber, tx_ref } = await req.json();
     const reference = referenceNumber || tx_ref;
     if (!reference) {
@@ -95,8 +107,9 @@ serve(async (req) => {
 
     const { data: tx } = await supabaseAdmin
       .from("transactions")
-      .select("id, wallet_state, status, reference")
+      .select("id, wallet_state, status, reference, wallet_id, amount, user_id")
       .eq("reference", reference)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!tx) {
@@ -134,7 +147,7 @@ serve(async (req) => {
       p_operation_key: `verify:${reference}:${Date.now()}`,
       p_provider_request: { referenceNumber: reference },
       p_provider_response: providerCheck.raw ?? {},
-      p_provider_status_code: String((providerCheck.raw as any)?.responseCode ?? ""),
+      p_provider_status_code: String(providerCheck.raw?.responseCode ?? ""),
       p_signature_valid: null,
     });
 

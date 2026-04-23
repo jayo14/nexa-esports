@@ -1,16 +1,24 @@
 // Helper for Paga API authentication
 
-/**
- * Generates a SHA-512 hash by concatenating fields and appending the salt (Hash Key).
- * This is the standard for Paga Business REST API.
- */
-export async function generatePagaBusinessHash(fields: string[], hashKey: string): Promise<string> {
-  const hashInput = fields.filter(f => f !== undefined && f !== null).join('') + hashKey;
+export async function generatePagaBusinessHash(
+  params: string[],
+  hashKey: string
+): Promise<string> {
+  const message = params.join('') + hashKey;
   const encoder = new TextEncoder();
-  const data = encoder.encode(hashInput);
-  const hashBuffer = await crypto.subtle.digest('SHA-512', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const keyData = encoder.encode(hashKey);
+  const msgData = encoder.encode(message);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-512' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /**
@@ -36,7 +44,6 @@ export async function generatePagaHMAC(fields: string[], hmacKey: string): Promi
 export function pagaHeaders(principal: string, credentials: string, hash: string): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
     'principal': principal,
     'credentials': credentials,
     'hash': hash,
@@ -44,5 +51,5 @@ export function pagaHeaders(principal: string, credentials: string, hash: string
 }
 
 export function generateReferenceNumber(prefix = 'NX'): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  return `NEX_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 }

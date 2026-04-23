@@ -195,6 +195,69 @@ serve(async (req) => {
       });
     }
 
+    const walletType = wallet_type || "clan";
+
+    const { data: cooldownSetting } = await supabaseAdmin
+      .from("clan_settings")
+      .select("value")
+      .eq("key", "disable_withdrawal_cooldown")
+      .maybeSingle();
+
+    const cooldownDisabled = String(cooldownSetting?.value).toLowerCase() === "true";
+    if (!cooldownDisabled) {
+      const { data: recentWithdrawal } = await supabaseAdmin
+        .from("transactions")
+        .select("created_at")
+        .eq("user_id", user.id)
+        .eq("type", "withdrawal")
+        .eq("wallet_type", walletType)
+        .in("status", ["pending", "processing", "completed"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (recentWithdrawal?.created_at) {
+        const lastWithdrawalAt = new Date(recentWithdrawal.created_at).getTime();
+        const twelveHours = 12 * 60 * 60 * 1000;
+        if (Date.now() - lastWithdrawalAt < twelveHours) {
+          return new Response(
+            JSON.stringify({ error: "withdrawal_cooldown_active", message: "Please wait before requesting another withdrawal." }),
+            { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 429 }
+          );
+        }
+      }
+    }
+
+    const { data: dailyLimitSetting } = await supabaseAdmin
+      .from("clan_settings")
+      .select("value")
+      .eq("key", "daily_withdrawal_limit")
+      .maybeSingle();
+
+    const dailyWithdrawalLimit = Number(dailyLimitSetting?.value || 0);
+    if (dailyWithdrawalLimit > 0) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentWithdrawals } = await supabaseAdmin
+        .from("transactions")
+        .select("amount")
+        .eq("user_id", user.id)
+        .eq("type", "withdrawal")
+        .eq("wallet_type", walletType)
+        .gte("created_at", since)
+        .in("status", ["pending", "processing", "completed"]);
+
+      const withdrawnToday = (recentWithdrawals || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      if (withdrawnToday + amount > dailyWithdrawalLimit) {
+        return new Response(
+          JSON.stringify({
+            error: "daily_withdrawal_limit_exceeded",
+            message: "You have reached your daily withdrawal limit.",
+          }),
+          { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 429 }
+        );
+      }
+    }
+
     const fee = Number((amount * 0.04).toFixed(2));
     const expectedNetAmount = Number((amount - fee).toFixed(2));
 
@@ -204,7 +267,7 @@ serve(async (req) => {
         p_user_id: user.id,
         p_amount: amount,
         p_currency: "NGN",
-        p_wallet_type: wallet_type || "clan",
+        p_wallet_type: walletType,
         p_idempotency_key: idempotency_key || null,
         p_client_reference: null,
         p_metadata: { fee, netAmount: expectedNetAmount, account_number, account_bank, beneficiary_name },

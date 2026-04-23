@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { generateReferenceNumber } from "../_shared/pagaAuth.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 serve(async (req) => {
@@ -75,32 +76,88 @@ serve(async (req) => {
       });
     }
 
-    const { data: depositIntent, error: intentError } = await supabaseAdmin.rpc("wallet_create_deposit_intent", {
-      p_user_id: user.id,
-      p_amount: amount,
-      p_currency: "NGN",
-      p_wallet_type: walletType,
-      p_idempotency_key: idempotency_key || null,
-      p_client_reference: client_reference || null,
-      p_metadata: { source: "paga", email: customer.email },
-    });
+    const referenceNumber = generateReferenceNumber();
 
-    if (intentError || !depositIntent?.transaction_id || !depositIntent?.reference) {
-      const errorDetails = {
-        intentError,
-        depositIntent,
-        timestamp: new Date().toISOString(),
-        userId: user.id,
-      };
-      console.error("Failed to create deposit intent:", errorDetails);
-      return new Response(
-        JSON.stringify({ error: "Unable to create payment intent" }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
-      );
+    let existingIntent: { id: string; reference: string | null } | null = null;
+    if (idempotency_key) {
+      const { data } = await supabaseAdmin
+        .from("transactions")
+        .select("id, reference")
+        .eq("user_id", user.id)
+        .eq("idempotency_key", idempotency_key)
+        .maybeSingle();
+      existingIntent = data ?? null;
     }
 
-    const transactionId = String(depositIntent.transaction_id);
-    const referenceNumber = String(depositIntent.reference);
+    let transactionId: string;
+    let existingReference = referenceNumber;
+
+    if (existingIntent?.id) {
+      transactionId = String(existingIntent.id);
+      existingReference = String(existingIntent.reference || referenceNumber);
+    } else {
+      let { data: wallet } = await supabaseAdmin
+        .from("wallets")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("wallet_type", walletType)
+        .maybeSingle();
+
+      if (!wallet) {
+        const { data: newWallet, error: walletError } = await supabaseAdmin
+          .from("wallets")
+          .insert({ user_id: user.id, wallet_type: walletType })
+          .select("id")
+          .single();
+
+        if (walletError || !newWallet) {
+          console.error("Failed to create wallet:", walletError);
+          return new Response(
+            JSON.stringify({ error: "Unable to create wallet" }),
+            { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+          );
+        }
+
+        wallet = newWallet;
+      }
+
+      const { data: createdTx, error: txError } = await supabaseAdmin
+        .from("transactions")
+        .insert({
+          wallet_id: wallet.id,
+          user_id: user.id,
+          wallet_type: walletType,
+          type: "deposit",
+          amount,
+          status: "pending",
+          wallet_state: "pending",
+          reference: referenceNumber,
+          paga_reference: referenceNumber,
+          paga_status: "pending",
+          idempotency_key: idempotency_key || null,
+          client_reference: client_reference || null,
+          metadata: { source: "paga", email: customer.email },
+          provider: "paga",
+        })
+        .select("id, reference")
+        .single();
+
+      if (txError || !createdTx?.id) {
+        const errorDetails = {
+          txError,
+          timestamp: new Date().toISOString(),
+          userId: user.id,
+        };
+        console.error("Failed to create deposit transaction:", errorDetails);
+        return new Response(
+          JSON.stringify({ error: "Unable to create payment intent" }),
+          { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+
+      transactionId = String(createdTx.id);
+      existingReference = String(createdTx.reference || referenceNumber);
+    }
 
     const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
     const normalizeRedirectUrl = (candidate?: string | null): string | null => {
@@ -138,7 +195,7 @@ serve(async (req) => {
     const nameParts = (customer.name || "Nexa User").split(" ");
     const params = new URLSearchParams({
       public_key: PAGA_PUBLIC_KEY,
-      payment_reference: referenceNumber,
+      payment_reference: existingReference,
       amount: String(amount),
       currency: "NGN",
       callback_url: callbackUrl,
@@ -147,6 +204,7 @@ serve(async (req) => {
       email: customer.email,
       description: "Wallet Funding",
       display_name: "NeXa Esports",
+      funding_sources: "CARD,TRANSFER,PAGA,USSD",
       payment_method: "bank_transfer",
     });
 
@@ -171,22 +229,22 @@ serve(async (req) => {
       p_transaction_id: transactionId,
       p_operation_type: "initiate",
       p_operation_key: `checkout:${referenceNumber}`,
-      p_provider_request: {
-        amount,
-        currency: "NGN",
-        customer,
-        callbackUrl,
-        walletType,
-      },
-      p_provider_response: { checkoutUrl },
-      p_provider_status_code: "INITIATED",
-      p_signature_valid: null,
-    });
+        p_provider_request: {
+          amount,
+          currency: "NGN",
+          customer,
+          callbackUrl,
+          walletType,
+        },
+        p_provider_response: { checkoutUrl },
+        p_provider_status_code: "INITIATED",
+        p_signature_valid: null,
+      });
 
     return new Response(
       JSON.stringify({
         status: "success",
-        data: { link: checkoutUrl, tx_ref: referenceNumber, referenceNumber },
+        data: { link: checkoutUrl, referenceNumber: existingReference },
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );
