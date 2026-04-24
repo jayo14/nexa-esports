@@ -50,6 +50,7 @@ const glassMorphism: React.CSSProperties = {
 };
 
 const MAX_VERIFY_RETRIES = 5;
+const PAYMENT_EVENT_KEY = 'nexa:wallet-payment-event';
 
 const PaymentSuccess: React.FC = () => {
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
@@ -63,9 +64,39 @@ const PaymentSuccess: React.FC = () => {
 
   const clearPaymentFlag = () => {
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('payment_in_progress');
+            sessionStorage.removeItem('payment_in_progress');
     }
   };
+
+    const publishPaymentEvent = (payload: {
+        status: 'success' | 'error';
+        reference?: string;
+        message?: string;
+        newBalance?: number | null;
+    }) => {
+        if (typeof window === 'undefined') return;
+
+        try {
+            localStorage.setItem(
+                PAYMENT_EVENT_KEY,
+                JSON.stringify({ ...payload, ts: Date.now() })
+            );
+        } catch (error) {
+            console.error('Failed to publish payment event:', error);
+        }
+    };
+
+    const closePaymentWindow = () => {
+        if (typeof window === 'undefined') return;
+
+        setTimeout(() => {
+            try {
+                window.close();
+            } catch {
+                // If the browser refuses to close the tab, keep the fallback UI usable.
+            }
+        }, 1200);
+    };
 
     useEffect(() => {
         const reference = extractReference(location.search);
@@ -136,6 +167,11 @@ const PaymentSuccess: React.FC = () => {
                 setStatus('success');
                 setMessage('Deposit received successfully! Your wallet balance has been updated.');
                 setNewBalance(data.newBalance || null);
+                publishPaymentEvent({
+                    status: 'success',
+                    reference: extractReference(location.search) || referenceNumber,
+                    newBalance: data.newBalance || null,
+                });
                 
                 // Refresh profile data and wallet balance immediately
                 try {
@@ -148,8 +184,8 @@ const PaymentSuccess: React.FC = () => {
                 const reference = extractReference(location.search) || referenceNumber;
                 setPaymentRef(reference);
 
-                // Countdown then auto-redirect
-                let secs = 5;
+                // Countdown then close the popup; the opener handles the wallet refresh.
+                let secs = 3;
                 setCountdown(secs);
                 const timer = setInterval(() => {
                     secs -= 1;
@@ -157,22 +193,38 @@ const PaymentSuccess: React.FC = () => {
                     if (secs <= 0) {
                         clearInterval(timer);
                         clearPaymentFlag();
+                        closePaymentWindow();
                         navigate(`/wallet?showReceipt=${reference}`);
                     }
                 }, 1000);
             } else {
                 if (data.status === 'failed' || data.status === 'reversed' || data.status === 'expired') {
+                    publishPaymentEvent({
+                        status: 'error',
+                        reference: extractReference(location.search) || referenceNumber,
+                        message: 'Payment was not completed successfully.',
+                    });
                     setStatus('error');
                     setMessage('Payment was not completed successfully. If you were debited, support can reconcile using your payment reference.');
                     clearPaymentFlag();
                     return;
                 }
+                publishPaymentEvent({
+                    status: 'error',
+                    reference: extractReference(location.search) || referenceNumber,
+                    message: data.error || 'Payment verification failed.',
+                });
                 setStatus('error');
                 setMessage(data.error || 'Payment verification failed.');
                 clearPaymentFlag();
             }
         } catch (err: unknown) {
             console.error('Unexpected error during verification:', err);
+            publishPaymentEvent({
+                status: 'error',
+                reference: extractReference(location.search) || referenceNumber,
+                message: 'An unexpected error occurred during verification.',
+            });
             setStatus('error');
             setMessage('An unexpected error occurred. Please check your wallet history.');
             clearPaymentFlag();
@@ -230,7 +282,7 @@ const PaymentSuccess: React.FC = () => {
 
                     {status === 'success' && countdown > 0 && (
                         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                            Redirecting in {countdown}s…
+                            Closing in {countdown}s…
                         </p>
                     )}
 

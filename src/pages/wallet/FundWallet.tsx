@@ -15,10 +15,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWalletSettings } from '@/hooks/useWalletSettings';
 
+const PAYMENT_EVENT_KEY = 'nexa:wallet-payment-event';
+const PAYMENT_IN_PROGRESS_KEY = 'payment_in_progress';
+
 const FundWallet = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshWallet } = useAuth();
   const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
   
   const [amount, setAmount] = useState<number>(0);
@@ -32,10 +35,50 @@ const FundWallet = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (sessionStorage.getItem('payment_in_progress') === 'true') {
-      sessionStorage.setItem('payment_in_progress', 'true');
+    if (sessionStorage.getItem(PAYMENT_IN_PROGRESS_KEY) === 'true') {
+      sessionStorage.setItem(PAYMENT_IN_PROGRESS_KEY, 'true');
     }
   }, []);
+
+  useEffect(() => {
+    const handlePaymentEvent = (event: StorageEvent) => {
+      if (event.key !== PAYMENT_EVENT_KEY || !event.newValue) return;
+
+      try {
+        const payload = JSON.parse(event.newValue) as {
+          status?: 'success' | 'error';
+          reference?: string;
+          message?: string;
+        };
+
+        if (payload.status === 'success') {
+          sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+          void refreshWallet();
+          toast({
+            title: 'Payment Confirmed',
+            description: 'Your wallet has been credited and updated.',
+          });
+          if (payload.reference) {
+            navigate(`/wallet?showReceipt=${payload.reference}`);
+          } else {
+            navigate('/wallet');
+          }
+        } else if (payload.status === 'error') {
+          sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+          toast({
+            title: 'Payment Not Completed',
+            description: payload.message || 'The payment window was closed before completion.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to parse payment event:', error);
+      }
+    };
+
+    window.addEventListener('storage', handlePaymentEvent);
+    return () => window.removeEventListener('storage', handlePaymentEvent);
+  }, [navigate, refreshWallet, toast]);
 
   if (!settingsLoading && !walletSettings.deposits_enabled) {
     return (
@@ -103,9 +146,22 @@ const FundWallet = () => {
       await Haptics.impact({ style: ImpactStyle.Medium });
     }
     setIsProcessing(true);
+    let paymentWindow: Window | null = null;
     
     try {
-        sessionStorage.setItem('payment_in_progress', 'true');
+        sessionStorage.setItem(PAYMENT_IN_PROGRESS_KEY, 'true');
+        paymentWindow = window.open('', '_blank');
+        if (!paymentWindow) {
+          throw new Error('Popup blocked. Please allow popups and try again.');
+        }
+
+        paymentWindow.document.title = 'Preparing payment...';
+        paymentWindow.document.body.innerHTML = `
+          <div style="display:flex;min-height:100vh;align-items:center;justify-content:center;font-family:sans-serif;background:#0a0505;color:#fff;">
+            Preparing your Paga checkout...
+          </div>
+        `;
+
         await supabase.auth.refreshSession();
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -157,22 +213,29 @@ const FundWallet = () => {
                 description: data?.error || 'Failed to initiate payment. Please try again.',
                 variant: 'destructive',
             });
-            sessionStorage.removeItem('payment_in_progress');
+          sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+          paymentWindow?.close();
             return;
         }
 
         toast({
-            title: 'Redirecting',
-            description: 'You will be redirected to Paga to complete your payment.',
+          title: 'Opening Paga',
+          description: 'Complete your payment in the new tab that opened.',
         });
-        window.location.href = data.data.link;
+        if (paymentWindow) {
+          paymentWindow.location.href = data.data.link;
+          paymentWindow.focus();
+        } else {
+          window.location.href = data.data.link;
+        }
     } catch (error: unknown) {
         // Try to extract a friendly message
         let message = error instanceof Error ? error.message : 'An unexpected error occurred.';
         if (message.includes('Minimum amount')) message = 'The minimum deposit amount is ₦500.';
         if (message.includes('Maximum amount')) message = 'The maximum deposit amount is ₦50,000.';
         if (message.includes('network') || message.includes('fetch')) message = 'Network error. Please check your internet connection.';
-        sessionStorage.removeItem('payment_in_progress');
+        sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+        paymentWindow?.close();
 
         toast({
             title: 'Payment Failed',
