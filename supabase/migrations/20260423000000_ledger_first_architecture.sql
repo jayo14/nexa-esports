@@ -61,9 +61,9 @@ ALTER TABLE public.transactions
 -- Idempotency constraint
 ALTER TABLE public.transactions
   DROP CONSTRAINT IF EXISTS transactions_idempotency_key_key;
-ALTER TABLE public.transactions
-  ADD CONSTRAINT transactions_idempotency_key_key
-  UNIQUE (idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS transactions_idempotency_key_key
+  ON public.transactions (idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
 
 -- ================================================
 -- 5. Create wallet_ledger table (append-only)
@@ -244,6 +244,8 @@ $$;
 -- Atomic: sender debit + receiver credit in ONE transaction
 -- Includes fee calculation (3.5%, max ₦5000)
 -- ================================================
+DROP FUNCTION IF EXISTS public.execute_user_transfer(uuid, text, numeric);
+
 CREATE OR REPLACE FUNCTION public.execute_user_transfer(
   sender_id UUID,
   recipient_ign TEXT,
@@ -348,6 +350,9 @@ BEGIN
   );
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.execute_user_transfer(uuid, text, numeric)
+TO authenticated;
 
 -- ================================================
 -- 11. Row Level Security Policies
