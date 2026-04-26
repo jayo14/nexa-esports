@@ -371,14 +371,16 @@ serve(async (req) => {
       Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== ""));
 
     const baseHashVariants = [
-      [referenceNumber, String(amountNumber), bankCode || bankUuid || account_bank || "", account_number || ""],
-      [referenceNumber, amountFixed, bankCode || bankUuid || account_bank || "", account_number || ""],
-      [referenceNumber, String(amountNumber), account_number || ""],
-      [referenceNumber, amountFixed, account_number || ""],
-      [referenceNumber, String(amountNumber)],
-      [referenceNumber],
+      [referenceNumber, amountFixed, bankUuid, account_number],
+      [referenceNumber, amountFixed, bankCode, account_number],
+      [referenceNumber, String(amountNumber), bankUuid, account_number],
+      [referenceNumber, String(amountNumber), bankCode, account_number],
+      [referenceNumber, amountFixed, bankUuid || bankCode || account_bank, account_number],
+      [referenceNumber, String(amountNumber), bankUuid || bankCode || account_bank, account_number],
+      [referenceNumber, amountFixed, account_number],
+      [referenceNumber, String(amountNumber), account_number],
+      [referenceNumber]
     ];
-
     const requestAttempts: Array<{ endpoint: string; payloadVariants: Array<Record<string, unknown>> }> = [
       {
         endpoint: "depositToBank",
@@ -388,7 +390,7 @@ serve(async (req) => {
             referenceNumber,
             amount: amountFixed,
             currency: "NGN",
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationBankAccountNumber: account_number,
             recipientName,
             recipientMobileNumber: phoneLocal,
@@ -398,7 +400,7 @@ serve(async (req) => {
           cleanPayload({
             referenceNumber,
             amount: amountFixed,
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationAccountNumber: account_number,
             recipientName,
             recipientPhoneNumber: phoneLocal,
@@ -408,7 +410,7 @@ serve(async (req) => {
           cleanPayload({
             referenceNumber,
             amount: amountNumber,
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationBankAccountNumber: account_number,
             recipientName,
           }),
@@ -421,7 +423,7 @@ serve(async (req) => {
           cleanPayload({
             referenceNumber,
             amount: amountFixed,
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationBankAccountNumber: account_number,
             destinationBankAccountName: recipientName,
             currency: "NGN",
@@ -429,7 +431,7 @@ serve(async (req) => {
           cleanPayload({
             referenceNumber,
             amount: amountNumber,
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationAccountNumber: account_number,
             destinationAccountName: recipientName,
             currency: "NGN",
@@ -437,7 +439,7 @@ serve(async (req) => {
           cleanPayload({
             referenceNumber,
             amount: amountNumber,
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationBankAccountNumber: account_number,
             destinationAccountHolderNameAtBank: recipientName,
             currency: "NGN",
@@ -451,7 +453,7 @@ serve(async (req) => {
           cleanPayload({
             referenceNumber,
             amount: amountFixed,
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationBankAccountNumber: account_number,
             destinationAccountHolderNameAtBank: recipientName,
             currency: "NGN",
@@ -460,7 +462,7 @@ serve(async (req) => {
           cleanPayload({
             referenceNumber,
             amount: amountFixed,
-            destinationBankCode: bankCode || undefined,
+            destinationBankUUID: bankUuid || bankCode || undefined,
             destinationBankAccountNumber: account_number,
             destinationBankAccountName: recipientName,
             currency: "NGN",
