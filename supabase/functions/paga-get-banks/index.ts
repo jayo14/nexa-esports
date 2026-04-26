@@ -36,9 +36,11 @@ serve(async (req) => {
       );
     }
 
-    // Paga getBanks hash: Typically referenceNumber + salt
+    // Paga getBanks hash: referenceNumber + hashKey
     const referenceNumber = generateReferenceNumber("GB");
     const hash = await generatePagaBusinessHash([referenceNumber], PAGA_HASH_KEY);
+
+    console.log(`Fetching Paga banks. Ref: ${referenceNumber}, BaseURL: ${PAGA_BASE_URL}`);
 
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
       method: "POST",
@@ -51,8 +53,9 @@ serve(async (req) => {
     try {
       pagaData = JSON.parse(responseText);
     } catch {
+      console.error("Failed to parse Paga response:", responseText);
       return new Response(
-        JSON.stringify({ error: "Invalid response from Paga" }),
+        JSON.stringify({ error: "Invalid response from Paga", raw: responseText }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
       );
     }
@@ -60,7 +63,11 @@ serve(async (req) => {
     if (!pagaResponse.ok || (pagaData.responseCode !== 0 && pagaData.responseCode !== "0")) {
       console.error("Paga getBanks error:", JSON.stringify(pagaData));
       return new Response(
-        JSON.stringify({ error: "Failed to fetch banks", details: pagaData.responseMessage, paga_response: pagaData }),
+        JSON.stringify({
+          error: "Failed to fetch banks",
+          details: pagaData.responseMessage || pagaData.message || pagaData.errorMessage,
+          paga_response: pagaData
+        }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
       );
     }

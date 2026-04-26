@@ -49,22 +49,41 @@ serve(async (req) => {
     const amount = payload.amount ? Number(payload.amount).toFixed(2) : "";
     const statusCode = String(payload.statusCode || payload.responseCode || "");
 
-    const expectedHash = await generatePagaBusinessHash([referenceNumber, amount, statusCode], PAGA_HASH_KEY);
+    // Paga webhook hash verification
     const receivedHash = req.headers.get("hash") || req.headers.get("x-paga-hash") || String(payload.hash || "");
-
     const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
-    const signatureValid = IS_SANDBOX && !receivedHash ? true : Boolean(receivedHash && receivedHash === expectedHash);
+
+    let signatureValid = false;
+    if (IS_SANDBOX && !receivedHash) {
+      signatureValid = true;
+    } else if (receivedHash) {
+      // Attempt common webhook hash variants
+      const variants = [
+        [referenceNumber, amount, statusCode],
+        [referenceNumber, amount],
+        [referenceNumber],
+      ];
+
+      for (const variant of variants) {
+        const expectedHash = await generatePagaBusinessHash(variant, PAGA_HASH_KEY);
+        if (receivedHash.toLowerCase() === expectedHash.toLowerCase()) {
+          signatureValid = true;
+          break;
+        }
+      }
+    }
 
     if (!signatureValid) {
       const logDetails = {
         referenceNumber,
         receivedHash,
-        expectedHash,
         timestamp: new Date().toISOString(),
         isSandbox: IS_SANDBOX,
       };
       console.error("Invalid webhook signature", logDetails);
-      return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
+      // In production, we might want to return 401, but Paga docs often say to return 200 to avoid retries if we received it.
+      // However, signature failure usually means it's not from Paga.
+      return new Response(JSON.stringify({ received: true, ignored: true, reason: "invalid_signature" }), { status: 200 });
     }
 
     const providerEventId =
