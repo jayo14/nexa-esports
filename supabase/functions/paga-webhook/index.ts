@@ -5,13 +5,13 @@ import { generatePagaBusinessHash } from "../_shared/pagaAuth.ts";
 type ProviderState = "success" | "failed" | "processing";
 
 function mapProviderState(payload: Record<string, unknown>): ProviderState {
-  const responseCode = payload.responseCode;
+  const responseCode = payload.responseCode ?? payload.statusCode;
   const statusText = String(
     payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
   ).toUpperCase();
 
-  if (responseCode === 0 || responseCode === "0") return "success";
-  if (statusText.includes("SUCCESS")) return "success";
+  if (responseCode === 0 || responseCode === "0" || responseCode === "SUCCESS") return "success";
+  if (statusText.includes("SUCCESS") || statusText === "COMPLETED" || statusText === "APPROVED") return "success";
 
   const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
   if (failedSignals.some((signal) => statusText.includes(signal))) return "failed";
@@ -41,8 +41,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
     }
 
-    const referenceNumber = String(payload.referenceNumber || payload.transactionId || "");
+    const referenceNumber = String(payload.referenceNumber || payload.transactionId || payload.paymentReference || "");
     if (!referenceNumber) {
+      console.error("No reference number found in payload:", payload);
       return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
     }
 
@@ -74,20 +75,11 @@ serve(async (req) => {
     }
 
     if (!signatureValid) {
-      const logDetails = {
-        referenceNumber,
-        receivedHash,
-        timestamp: new Date().toISOString(),
-        isSandbox: IS_SANDBOX,
-      };
-      console.error("Invalid webhook signature", logDetails);
-      // In production, we might want to return 401, but Paga docs often say to return 200 to avoid retries if we received it.
-      // However, signature failure usually means it's not from Paga.
+      console.error("Invalid webhook signature", { referenceNumber, receivedHash, isSandbox: IS_SANDBOX });
       return new Response(JSON.stringify({ received: true, ignored: true, reason: "invalid_signature" }), { status: 200 });
     }
 
-    const providerEventId =
-      String(payload.eventId || payload.id || payload.notificationId || "") || null;
+    const providerEventId = String(payload.eventId || payload.id || payload.notificationId || "") || null;
 
     const { data: existingEvent } = await supabaseAdmin
       .from("wallet_webhook_events")
@@ -108,10 +100,11 @@ serve(async (req) => {
       p_payload: payload,
     });
 
+    // Lookup transaction by reference OR paga_reference
     const { data: tx } = await supabaseAdmin
       .from("transactions")
       .select("id")
-      .eq("reference", referenceNumber)
+      .or(`reference.eq.${referenceNumber},paga_reference.eq.${referenceNumber}`)
       .maybeSingle();
 
     if (tx?.id) {
@@ -142,7 +135,6 @@ serve(async (req) => {
       status: mapProviderState(payload),
       transactionId: tx?.id,
       settlementResult,
-      timestamp: new Date().toISOString(),
     });
 
     return new Response(JSON.stringify({ received: true, settled: true }), { status: 200 });

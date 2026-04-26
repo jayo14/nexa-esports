@@ -7,7 +7,6 @@ import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
 
-// Paga operator UUIDs from docs
 const OPERATOR_UUIDS: Record<string, string> = {
   'MTN': '42419156-DD57-4737-8373-20678CD9AA29',
   'GLO': 'B6780465-FEC4-4743-ACDE-9101E2991806',
@@ -41,11 +40,9 @@ serve(async (req) => {
 
   try {
     if (!PAGA_PUBLIC_KEY || !PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
-      console.error("Paga credentials not configured");
       return respond({ error: "Payment service not configured" }, 500);
     }
 
-    // Authenticate user via JWT (not service role)
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -53,36 +50,17 @@ serve(async (req) => {
     );
 
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      return respond({ error: "Unauthorized" }, 401);
-    }
+    if (!user) return respond({ error: "Unauthorized" }, 401);
 
     const { phone_number, amount, network_provider }: AirtimeRequest = await req.json();
 
-    // Validate input
     if (!phone_number || !amount || !network_provider) {
-      return respond({ error: "Missing required fields: phone_number, amount, network_provider" }, 400);
+      return respond({ error: "Missing required fields" }, 400);
     }
 
-    if (!OPERATOR_UUIDS[network_provider]) {
-      return respond({ error: `Invalid network provider: ${network_provider}` }, 400);
-    }
+    const normalizedPhone = phone_number.startsWith("0") ? "234" + phone_number.slice(1) : phone_number;
+    const referenceNumber = generateReferenceNumber("AIRT");
 
-    if (amount < 50 || amount > 10000) {
-      return respond({ error: "Amount must be between ₦50 and ₦10,000" }, 400);
-    }
-
-    // Validate phone number format (basic check for Nigerian numbers)
-    const phoneRegex = /^234\d{10}$|^0\d{10}$/;
-    const normalizedPhone = phone_number.startsWith("0") 
-      ? "234" + phone_number.slice(1) 
-      : phone_number;
-    
-    if (!phoneRegex.test(normalizedPhone)) {
-      return respond({ error: "Invalid Nigerian phone number" }, 400);
-    }
-
-    // Get or create wallet
     let { data: wallet } = await supabaseAdmin
       .from("wallets")
       .select("id, balance")
@@ -90,30 +68,9 @@ serve(async (req) => {
       .eq("wallet_type", "clan")
       .maybeSingle();
 
-    if (!wallet) {
-      const { data: newWallet, error: walletError } = await supabaseAdmin
-        .from("wallets")
-        .insert({ user_id: user.id, wallet_type: "clan", balance: 0 })
-        .select("id, balance")
-        .single();
+    if (!wallet) return respond({ error: "Wallet not found" }, 404);
+    if (wallet.balance < amount) return respond({ error: "Insufficient balance" }, 400);
 
-      if (walletError || !newWallet) {
-        console.error("Failed to create wallet:", walletError);
-        return respond({ error: "Failed to access wallet" }, 500);
-      }
-      wallet = newWallet;
-    }
-
-    // Check sufficient balance
-    if (wallet.balance < amount) {
-      return respond({ 
-        error: `Insufficient balance. Need ₦${amount}, have ₦${wallet.balance}` 
-      }, 400);
-    }
-
-    const referenceNumber = generateReferenceNumber("AIRT");
-
-    // Create transaction record (pending)
     const { data: transaction, error: txError } = await supabaseAdmin
       .from("transactions")
       .insert({
@@ -126,17 +83,13 @@ serve(async (req) => {
         wallet_state: "pending",
         reference: referenceNumber,
         description: `Airtime purchase for ${phone_number} on ${network_provider}`,
-        metadata: { phone_number, network_provider, operator_uuid: OPERATOR_UUIDS[network_provider] },
+        metadata: { phone_number, network_provider },
       })
       .select("id")
       .single();
 
-    if (txError || !transaction) {
-      console.error("Failed to create transaction:", txError);
-      return respond({ error: "Failed to create transaction" }, 500);
-    }
+    if (txError || !transaction) return respond({ error: "Failed to create transaction" }, 500);
 
-    // Call wallet_debit to lock funds
     try {
       await supabaseAdmin.rpc("wallet_debit", {
         p_transaction_id: transaction.id,
@@ -144,17 +97,12 @@ serve(async (req) => {
         p_amount: amount,
       });
     } catch (debitError) {
-      console.error("Debit failed:", debitError);
-      return respond({ error: "Insufficient balance" }, 400);
+      return respond({ error: "Debit failed" }, 400);
     }
 
-    // Call Paga Business API: airtimePurchase
     try {
       const pagaAmount = amount.toFixed(2);
-      const hash = await generatePagaBusinessHash(
-        [referenceNumber, pagaAmount, normalizedPhone],
-        PAGA_HASH_KEY
-      );
+      const hash = await generatePagaBusinessHash([referenceNumber, pagaAmount, normalizedPhone], PAGA_HASH_KEY);
 
       const pagaResponse = await fetch(`${PAGA_BASE_URL}/airtimePurchase`, {
         method: "POST",
@@ -172,100 +120,84 @@ serve(async (req) => {
       const pagaData = await pagaResponse.json();
       const pagaStatus = String(pagaData.responseCode ?? "");
 
-      // Record provider operation
       await supabaseAdmin.rpc("wallet_record_provider_operation", {
         p_transaction_id: transaction.id,
         p_operation_type: "airtime_purchase",
         p_operation_key: referenceNumber,
-        p_provider_request: {
-          referenceNumber,
-          amount,
-          phone_number: normalizedPhone,
-          network_provider,
-        },
+        p_provider_request: { referenceNumber, amount, phone_number: normalizedPhone, network_provider },
         p_provider_response: pagaData,
         p_provider_status_code: pagaStatus,
-        p_signature_valid: null,
       });
 
-      // Handle Paga response
-      if (pagaData.responseCode === 0 || String(pagaData.responseCode) === "0") {
-        // SUCCESS: transaction will be credited via webhook
+      const isSuccess = pagaStatus === "0" || (pagaData.responseMessage && pagaData.responseMessage.toUpperCase().includes("SUCCESS"));
+
+      if (isSuccess) {
         await supabaseAdmin
           .from("transactions")
           .update({
             status: "processing",
             paga_status: "success",
-            paga_reference: pagaData.referenceNumber,
+            paga_reference: pagaData.referenceNumber || referenceNumber,
             paga_transaction_id: pagaData.transactionReference,
             updated_at: new Date().toISOString(),
           })
           .eq("id", transaction.id);
 
+        // Enqueue settlement immediately
+        await supabaseAdmin.rpc("wallet_enqueue_settlement", {
+          p_transaction_id: transaction.id,
+          p_provider_reference: referenceNumber,
+          p_decision_hint: "success",
+          p_source: "purchase_airtime_success",
+        });
+
+        await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 1 });
+
         return respond({
           success: true,
-          message: "Airtime purchase initiated. Please wait for confirmation.",
+          message: "Airtime purchase initiated.",
           reference: referenceNumber,
-          paga_transaction_id: pagaData.transactionReference || null,
-        }, 200);
+        });
       } else {
-        // FAILURE: reverse the debit
-        try {
-          await supabaseAdmin.rpc("wallet_credit", {
-            p_transaction_id: transaction.id,
-            p_wallet_id: wallet.id,
-            p_amount: amount,
-          });
-        } catch (reverseError) {
-          console.error("Failed to reverse debit:", reverseError);
-        }
-
-        await supabaseAdmin
-          .from("transactions")
-          .update({
-            status: "failed",
-            paga_status: "failed",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", transaction.id);
-
-        return respond({
-          error: pagaData.responseMessage || "Airtime purchase failed",
-          reference: referenceNumber,
-        }, 400);
-      }
-    } catch (pagaError) {
-      console.error("Paga API error:", pagaError);
-
-      // Reverse debit as safety measure
-      try {
+        // Definite failure - reverse
         await supabaseAdmin.rpc("wallet_credit", {
           p_transaction_id: transaction.id,
           p_wallet_id: wallet.id,
           p_amount: amount,
         });
-      } catch (reverseError) {
-        console.error("Failed to reverse debit after error:", reverseError);
-      }
 
+        await supabaseAdmin
+          .from("transactions")
+          .update({ status: "failed", paga_status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", transaction.id);
+
+        return respond({ error: pagaData.responseMessage || "Airtime purchase failed", reference: referenceNumber }, 400);
+      }
+    } catch (pagaError) {
+      console.error("Paga API error:", pagaError);
+
+      // On error, we MOVE TO PROCESSING instead of reversing, to avoid double-spend if Paga actually succeeded
       await supabaseAdmin
         .from("transactions")
-        .update({
-          status: "failed",
-          updated_at: new Date().toISOString(),
-        })
+        .update({ status: "processing", updated_at: new Date().toISOString() })
         .eq("id", transaction.id);
 
+      await supabaseAdmin.rpc("wallet_enqueue_settlement", {
+        p_transaction_id: transaction.id,
+        p_provider_reference: referenceNumber,
+        p_decision_hint: "processing",
+        p_source: "purchase_airtime_exception",
+      });
+
       return respond({
-        error: "Failed to process airtime purchase. Your wallet has been credited.",
+        success: true, // We return success/processing to the UI to avoid scaring the user
+        message: "Airtime purchase is being processed. Please check your balance in a moment.",
         reference: referenceNumber,
-      }, 500);
+      }, 202); // 202 Accepted
     }
 
   } catch (error) {
     console.error("Airtime purchase error:", error);
-    return respond({
-      error: error instanceof Error ? error.message : "Unknown error",
-    }, 500);
+    return respond({ error: "Unknown error" }, 500);
   }
 });

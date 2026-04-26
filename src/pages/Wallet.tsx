@@ -270,10 +270,10 @@ const Wallet: React.FC = () => {
         deposit: 'Deposit', withdrawal: 'Withdrawal',
         transfer_in: 'Transfer In', transfer_out: 'Transfer Out',
         giveaway_created: 'Giveaway Created', giveaway_redeemed: 'Giveaway Redeemed',
-        giveaway_refund: 'Giveaway Refund', tax_deduction: 'Monthly Tax',
+        giveaway_refund: 'Giveaway Refund', tax_deduction: 'Monthly Tax', airtime_purchase: 'Airtime', data_purchase: 'Data Bundle', marketplace_purchase: 'Marketplace', marketplace_sale: 'Sale', refund: 'Refund', reversal: 'Reversal', fee: 'Fee', bonus: 'Bonus',
       };
       const enriched = await Promise.all(txData.map(async (tx) => {
-        const isDebit = ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction'].includes(tx.type);
+        const isDebit = ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction', 'airtime_purchase', 'data_purchase', 'marketplace_purchase', 'fee'].includes(tx.type);
         let displayName = '';
         if (tx.type === 'transfer_in' || tx.type === 'transfer_out') {
           const match = tx.reference.match(/transfer_(from|to)_(.+)_\d/);
@@ -411,7 +411,7 @@ const Wallet: React.FC = () => {
               description: directTx.type,
               date: new Date(directTx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
                 ' • ' + new Date(directTx.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-              amount: ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction'].includes(directTx.type) ? -Number(directTx.amount) : Number(directTx.amount),
+              amount: ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction', 'airtime_purchase', 'data_purchase', 'marketplace_purchase', 'fee'].includes(directTx.type) ? -Number(directTx.amount) : Number(directTx.amount),
               type: directTx.type,
               raw_type: directTx.type,
               status: directTx.status,
