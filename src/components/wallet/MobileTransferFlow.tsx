@@ -28,8 +28,8 @@ interface MobileTransferFlowProps {
 
 type Step = 'recipient' | 'amount' | 'review' | 'processing';
 
-const FEE_RATE = 0.035; // 3.5%
-const FEE_CAP = 5000;
+const TRANSFER_FEE = 50; // 3.5%
+
 
 export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
   open,
@@ -279,7 +279,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                   <Coins className="h-4 w-4 text-orange-500" />
                   <AlertTitle className="text-sm font-bold text-orange-500">Service Fee</AlertTitle>
                   <AlertDescription className="text-xs mt-0.5 text-orange-500/80">
-                    A service fee of {FEE_RATE * 100}% (capped at ₦{FEE_CAP.toLocaleString()}) applies to clan transfers.
+                    A flat ₦50 fee will be charged on top of the transfer amount.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -341,7 +341,7 @@ export const MobileTransferFlow: React.FC<MobileTransferFlowProps> = ({
                       <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-orange-500">
-                      <span>Service Fee ({FEE_RATE * 100}%)</span>
+                      <span>Transfer Fee (Flat)</span>
                       <span>+₦{transferFee.toLocaleString()}</span>
                     </div>
                     <div className="h-px bg-border my-1" />

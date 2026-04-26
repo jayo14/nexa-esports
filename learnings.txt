@@ -1,0 +1,5 @@
+- Centralizing API logic in shared folders (e.g., `_shared/pagaClient.ts`) improves robustness and maintainability for Supabase Edge Functions.
+- Avoid internal HTTP calls between sibling edge functions when direct library imports are possible.
+- In PostgreSQL, use `INSERT ... ON CONFLICT DO NOTHING` for idempotent wallet creation.
+- Ensure consistency between frontend fee displays and backend RPC fee calculations.
+- Always trim user-inputted strings (like IGNs) before performing database lookups to prevent silent failures.

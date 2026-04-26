@@ -1,0 +1,18 @@
+I have implemented the following fixes for the wallet transaction issues:
+
+1.  **Robust Bank Verification**:
+    - Created a shared `PagaClient` in `supabase/functions/_shared/pagaClient.ts` to centralize Paga API logic.
+    - Updated `paga-verify-bank-account` and `paga-get-banks` to use this shared client, eliminating unreliable internal HTTP calls.
+    - Added a check in `paga-verify-bank-account` to prevent trying fallbacks (Flutterwave/Paystack) if the bank name is still a UUID, which was a major cause of 400 errors.
+
+2.  **Wallet Transfer Fixes**:
+    - Created a new migration `20260426074400_fix_transfer_flow.sql` that:
+        - Re-enables auto-creation of 'clan' wallets for recipients in `execute_user_transfer`.
+        - Changes the user-to-user transfer fee to a flat ₦50 as requested.
+        - Trims whitespace from the recipient IGN during lookup.
+    - Updated `src/pages/wallet/Transfer.tsx`:
+        - Updated fee calculation and UI labels to reflect the flat ₦50 fee.
+        - Added trimming to the recipient search.
+        - Kept the explicit `wallet_type='clan'` filter for safety.
+
+Please review these changes for correctness and adherence to the requested behavior.
