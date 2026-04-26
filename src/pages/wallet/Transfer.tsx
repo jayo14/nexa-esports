@@ -17,8 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 type Step = 'recipient' | 'amount' | 'review' | 'processing';
 
-const TRANSFER_FEE_RATE = 0.035;
-const TRANSFER_FEE_CAP = 5000;
+const TRANSFER_FEE = 50;
+
 
 type TransferRecipient = Pick<
   Database['public']['Tables']['profiles']['Row'],
@@ -82,7 +82,7 @@ const Transfer = () => {
      p.username?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const selectedPlayer = players.find(p => p.ign === recipient);
+  const selectedPlayer = players.find(p => p.ign.trim() === recipient.trim());
 
   const handleRecipientNext = async () => {
     if (!recipient) return;
@@ -92,7 +92,7 @@ const Transfer = () => {
 
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
-    const fee = Math.min(amountNum * TRANSFER_FEE_RATE, TRANSFER_FEE_CAP);
+    const fee = TRANSFER_FEE;
     const totalDeduction = amountNum + fee;
 
     if (amountNum <= 0) {
@@ -168,7 +168,7 @@ const Transfer = () => {
   };
 
   const recipientReceives = Math.max(0, Number(amount));
-  const transferFee = Math.min(Number(amount) * TRANSFER_FEE_RATE, TRANSFER_FEE_CAP);
+  const transferFee = TRANSFER_FEE;
   const totalDeductedFromSender = Number(amount) + transferFee;
 
   return (
@@ -327,7 +327,7 @@ const Transfer = () => {
                   <Coins className="h-4 w-4" />
                   <AlertTitle className="text-sm">Transaction Fee</AlertTitle>
                   <AlertDescription className="text-xs mt-0.5">
-                    A 3.5% fee, capped at ₦5,000, will be charged on top of the transfer amount.
+                    A flat ₦50 fee will be charged on top of the transfer amount.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -389,7 +389,7 @@ const Transfer = () => {
                         <span className="font-bold">₦{Number(amount).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center text-red-500">
-                        <span>Transfer Fee (3.5%, capped)</span>
+                        <span>Transfer Fee (Flat)</span>
                         <span>+₦{transferFee.toLocaleString()}</span>
                       </div>
                     <div className="h-px bg-border my-1" />

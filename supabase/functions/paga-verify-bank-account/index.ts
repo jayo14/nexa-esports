@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
-
-const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
-const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
+import { PagaClient } from "../_shared/pagaClient.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -11,14 +8,8 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
-  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
-  const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
   const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY")?.trim();
   const FLW_SECRET_KEY = Deno.env.get("FLW_SECRET_KEY")?.trim();
-
-  const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
     const { account_number, bank_code } = await req.json();
@@ -30,15 +21,11 @@ serve(async (req) => {
       );
     }
 
-    const PAGA_BANKS_ENDPOINT = req.url.replace("paga-verify-bank-account", "paga-get-banks");
+    const pagaClient = new PagaClient();
     let bankDetails: { uuid?: string; code?: string; name: string } | null = null;
 
     try {
-      const banksResponse = await fetch(PAGA_BANKS_ENDPOINT, {
-        headers: { Authorization: req.headers.get("Authorization") || "" },
-      });
-      const banksJson = await banksResponse.json();
-      const banks = banksJson.data || [];
+      const banks = await pagaClient.getBanks();
       const bank = banks.find((b: any) => b.uuid === bank_code || b.code === bank_code || b.name === bank_code);
       if (bank) {
         bankDetails = { uuid: bank.uuid, code: bank.code, name: bank.name };
@@ -51,8 +38,10 @@ serve(async (req) => {
       bankDetails = { name: bank_code };
     }
 
-    // Attempt fallbacks first if bankDetails name is available
-    if (bankDetails.name) {
+    // Attempt fallbacks first if bankDetails name is available and not just a UUID
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bankDetails.name);
+
+    if (bankDetails.name && !isUuid) {
       const normalize = (value: string) =>
         value
           .toLowerCase()
@@ -106,52 +95,24 @@ serve(async (req) => {
       }
     }
 
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
-      return new Response(
-        JSON.stringify({ error: "Account verification unavailable: Paga credentials not configured." }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-
     let pagaData: any = null;
     let lastResponseStatus = 400;
 
-    // Paga validateDepositToBank requirement: referenceNumber + amount + destinationBankUUID + destinationBankAccountNumber + hashKey
     if (bankDetails.uuid) {
-      const referenceNumber = generateReferenceNumber("VBA");
-      const amount = ""; // Optional but part of hash if present in order
-      const hash = await generatePagaBusinessHash(
-        [referenceNumber, amount, bankDetails.uuid, account_number],
-        PAGA_HASH_KEY
-      );
-
-      const pagaResponse = await fetch(`${PAGA_BASE_URL}/validateDepositToBank`, {
-        method: "POST",
-        headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-        body: JSON.stringify({
-          referenceNumber,
-          amount,
-          destinationBankUUID: bankDetails.uuid,
-          destinationBankAccountNumber: account_number,
-        }),
-      });
-
-      const responseText = await pagaResponse.text();
       try {
-        pagaData = JSON.parse(responseText);
-      } catch {
-        pagaData = { responseCode: -1, responseMessage: "Invalid JSON response from Paga", raw: responseText };
+        pagaData = await pagaClient.validateDepositToBank(bankDetails.uuid, account_number);
+        console.log(`Paga validateDepositToBank response:`, JSON.stringify(pagaData));
+      } catch (pagaError) {
+        console.error("Paga validation call failed:", pagaError);
+        pagaData = { responseCode: -1, responseMessage: pagaError instanceof Error ? pagaError.message : "Paga call failed" };
       }
-
-      console.log(`Paga validateDepositToBank response:`, JSON.stringify(pagaData));
-      lastResponseStatus = pagaResponse.status;
     }
 
     const isSuccess = pagaData?.responseCode === 0 || pagaData?.responseCode === "0";
 
     if (!isSuccess) {
       // Try Paystack fallback
-      if (PAYSTACK_SECRET_KEY && bankDetails.name) {
+      if (PAYSTACK_SECRET_KEY && bankDetails.name && !isUuid) {
         const normalize = (value: string) =>
           value
             .toLowerCase()
@@ -207,7 +168,7 @@ serve(async (req) => {
             resolved_bank_name: bankDetails.name,
           },
         }),
-        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: lastResponseStatus || 400 }
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
       );
     }
 

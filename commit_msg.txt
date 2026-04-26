@@ -1,0 +1,6 @@
+fix: resolve wallet transaction failures and unify fee structure
+
+- Refactor `paga-verify-bank-account` and `paga-get-banks` to use a shared `PagaClient`, fixing bank resolution errors.
+- Update `execute_user_transfer` RPC to auto-create recipient wallets and implement a flat ₦50 fee for user-to-user transfers.
+- Sync frontend fee calculations in `Transfer.tsx` and `MobileTransferFlow.tsx` with the new flat fee.
+- Add whitespace trimming for recipient IGN lookups in both frontend and database.
