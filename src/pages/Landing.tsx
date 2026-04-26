@@ -801,7 +801,7 @@ const LandingPage: React.FC = () => {
             {/* Slider Container */}
             <div className="overflow-hidden px-4">
               <div
-                className="flex transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                className="flex transition-transform duration-700 ease-[transition-timing-function:cubic-bezier(0.25,1,0.5,1)]"
                 style={{ transform: `translateX(-${activeLoadout * (100 / itemsToShow)}%)` }}
               >
                 {(sourceLoadouts || FALLBACK_LOADOUTS).map((rawItem, idx) => {
