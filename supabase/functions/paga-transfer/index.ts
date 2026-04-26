@@ -69,13 +69,13 @@ serve(async (req) => {
 
     // Check withdrawal availability
     if (endpoint === "check-withdrawal-availability") {
-      const { data: withdrawalSetting } = await supabaseAdmin
+      const { data: settings } = await supabaseAdmin
         .from("clan_settings")
-        .select("value")
-        .eq("key", "withdrawals_enabled")
-        .maybeSingle();
+        .select("key, value")
+        .in("key", ["withdrawals_enabled", "allow_sunday_withdrawals"]);
 
-      const globalAllowed = withdrawalSetting ? withdrawalSetting.value !== false : true;
+      const globalAllowed = settings?.find(s => s.key === "withdrawals_enabled")?.value !== false;
+      const allowSundays = settings?.find(s => s.key === "allow_sunday_withdrawals")?.value === true;
 
       const { data: profileData } = await supabaseAdmin
         .from("profiles")
@@ -104,7 +104,7 @@ serve(async (req) => {
       }
 
       const isSunday = weekday === "Sunday";
-      const allowed = globalAllowed && !isSunday;
+      const allowed = globalAllowed && (allowSundays || !isSunday);
 
       return new Response(
         JSON.stringify({
@@ -114,7 +114,7 @@ serve(async (req) => {
           global_enabled: globalAllowed,
           reason: !globalAllowed
             ? "Withdrawals are currently disabled by the clan master."
-            : isSunday
+            : (isSunday && !allowSundays)
             ? "Withdrawals are not allowed on Sundays."
             : null,
         }),
@@ -147,6 +147,13 @@ serve(async (req) => {
     }
 
     // Check day-of-week restriction
+    const { data: sundaySetting } = await supabaseAdmin
+      .from("clan_settings")
+      .select("value")
+      .eq("key", "allow_sunday_withdrawals")
+      .maybeSingle();
+    const allowSundays = sundaySetting?.value === true;
+
     const { data: profileData } = await supabaseAdmin
       .from("profiles")
       .select("id, timezone, country, phone")
@@ -174,7 +181,7 @@ serve(async (req) => {
       weekday = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(new Date());
     }
 
-    if (weekday === "Sunday") {
+    if (weekday === "Sunday" && !allowSundays) {
       return new Response(
         JSON.stringify({ error: "withdrawals_disabled_today", message: "Withdrawals are not allowed on Sundays in your region." }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 403 }

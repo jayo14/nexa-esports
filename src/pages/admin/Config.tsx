@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useWalletSettings } from '@/hooks/useWalletSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Wallet, ArrowDownToLine, ArrowUpFromLine, Loader2, Settings, Palette, Trash2, History, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wallet, ArrowDownToLine, ArrowUpFromLine, Calendar, Loader2, Settings, Palette, Trash2, History, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme, SeasonalTheme } from '@/contexts/ThemeContext';
 import { logKillReset, logAttendanceReset } from "@/lib/activityLogger";
 import { cn } from '@/lib/utils';
@@ -343,6 +343,16 @@ export const AdminConfig: React.FC = () => {
                       </div>
                     </div>
                     <Switch id="withdrawal-cooldown-toggle" checked={settings.disable_withdrawal_cooldown || false} onCheckedChange={(c) => updateSetting('disable_withdrawal_cooldown', c)} disabled={isUpdating} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-blue-500/20"><Calendar className="h-5 w-5 text-blue-400" /></div>
+                      <div>
+                        <Label htmlFor="sunday-withdrawals-toggle" className="font-semibold text-foreground">Allow Sunday Withdrawals</Label>
+                        <p className="text-sm text-muted-foreground">Allow users to withdraw on Sundays.</p>
+                      </div>
+                    </div>
+                    <Switch id="sunday-withdrawals-toggle" checked={settings.allow_sunday_withdrawals || false} onCheckedChange={(c) => updateSetting('allow_sunday_withdrawals', c)} disabled={isUpdating} />
                   </div>
                 </>
               )}

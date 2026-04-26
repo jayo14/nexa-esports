@@ -144,7 +144,7 @@ const Transfer = () => {
       setTransferReference(data?.reference || '');
       setTransferSuccess(true);
       await refreshWallet();
-      await fetchWalletBalance();
+
     } catch (error) {
       console.error('Transfer error:', error);
       const message = error instanceof Error ? error.message : 'Unable to complete transfer.';
