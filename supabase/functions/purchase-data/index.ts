@@ -124,6 +124,7 @@ serve(async (req) => {
         type: "data_purchase",
         amount,
         status: "pending",
+        wallet_state: "pending",
         reference: referenceNumber,
         description: `Data purchase for ${phone_number} on ${network_provider}`,
         metadata: { phone_number, network_provider, service_id, operator_uuid: OPERATOR_UUIDS[network_provider] },

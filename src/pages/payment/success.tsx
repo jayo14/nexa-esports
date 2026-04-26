@@ -184,19 +184,14 @@ const PaymentSuccess: React.FC = () => {
                 const reference = extractReference(location.search) || referenceNumber;
                 setPaymentRef(reference);
 
-                // Countdown then close the popup; the opener handles the wallet refresh.
-                let secs = 3;
-                setCountdown(secs);
-                const timer = setInterval(() => {
-                    secs -= 1;
-                    setCountdown(secs);
-                    if (secs <= 0) {
-                        clearInterval(timer);
-                        clearPaymentFlag();
-                        closePaymentWindow();
-                        navigate(`/wallet?showReceipt=${reference}`);
-                    }
-                }, 1000);
+                // Close the popup immediately; the opener handles the wallet refresh.
+                setCountdown(0);
+                clearPaymentFlag();
+                closePaymentWindow();
+                // Fallback if window doesn't close
+                setTimeout(() => {
+                    navigate(`/wallet?showReceipt=${reference}`);
+                }, 2000);
             } else {
                 if (data.status === 'failed' || data.status === 'reversed' || data.status === 'expired') {
                     publishPaymentEvent({

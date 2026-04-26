@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface WalletSettings {
     withdrawals_enabled: boolean;
     deposits_enabled: boolean;
+    allow_sunday_withdrawals: boolean;
     disable_withdrawal_cooldown?: boolean;
 }
 
@@ -12,6 +13,7 @@ export interface WalletSettings {
 const DEFAULT_WALLET_SETTINGS: WalletSettings = {
     withdrawals_enabled: true,
     deposits_enabled: true,
+    allow_sunday_withdrawals: false,
     disable_withdrawal_cooldown: false,
 };
 
@@ -93,6 +95,7 @@ export const useWalletSettings = () => {
                 description: `${
                     key === 'withdrawals_enabled' ? 'Withdrawals' : 
                     key === 'deposits_enabled' ? 'Deposits' :
+                    key === 'allow_sunday_withdrawals' ? 'Sunday withdrawals' :
                     'Withdrawal cooldown'
                 } ${
                     key === 'disable_withdrawal_cooldown' ? (value ? 'disabled' : 'enabled') : (value ? 'enabled' : 'disabled')

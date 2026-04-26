@@ -20,7 +20,7 @@ const Withdraw = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshWallet } = useAuth();
   const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
 
   const [walletBalance, setWalletBalance] = useState(0);
@@ -181,7 +181,7 @@ const Withdraw = () => {
     try {
       await performWithdrawal(Number(amount));
       setWithdrawalSuccess(true);
-      await fetchWalletBalance();
+      await refreshWallet();
     } catch (error) {
       console.error(error);
       setStep('review'); // Go back to review on error

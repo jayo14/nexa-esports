@@ -123,6 +123,7 @@ serve(async (req) => {
         type: "airtime_purchase",
         amount,
         status: "pending",
+        wallet_state: "pending",
         reference: referenceNumber,
         description: `Airtime purchase for ${phone_number} on ${network_provider}`,
         metadata: { phone_number, network_provider, operator_uuid: OPERATOR_UUIDS[network_provider] },
