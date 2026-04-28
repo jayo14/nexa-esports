@@ -96,7 +96,7 @@ BEGIN
     'giveaway_created',
     v_total_amount,
     'pending',
-    'pending',
+    'pending'::public.wallet_tx_state,
     'giveaway_' || gen_random_uuid()::text,
     p_title,
     jsonb_build_object('message', p_message, 'is_private', p_is_private)
@@ -151,7 +151,7 @@ BEGIN
 
   UPDATE transactions
   SET status = 'completed',
-      wallet_state = 'debited',
+      wallet_state = 'debited'::public.wallet_tx_state,
       updated_at = NOW()
   WHERE id = v_transaction_id;
 
@@ -229,7 +229,7 @@ BEGIN
     'giveaway_redeemed',
     v_code_record.value,
     'pending',
-    'pending',
+    'pending'::public.wallet_tx_state,
     'redeem_' || p_code,
     'Giveaway redemption'
   )

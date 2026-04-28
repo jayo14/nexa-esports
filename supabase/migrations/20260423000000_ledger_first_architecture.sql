@@ -176,7 +176,7 @@ BEGIN
 
   -- Mark transaction as credited
   UPDATE public.transactions
-    SET wallet_state = p_wallet_state,
+    SET wallet_state = p_wallet_state::public.wallet_tx_state,
         status = p_final_status,
         paga_reference = COALESCE(p_paga_reference, paga_reference),
         updated_at = NOW()
@@ -232,7 +232,7 @@ BEGIN
 
   -- Mark transaction as debited
   UPDATE public.transactions 
-    SET wallet_state = 'debited', 
+    SET wallet_state = 'debited'::public.wallet_tx_state,
         status = 'processing', 
         updated_at = NOW()
   WHERE id = p_transaction_id;

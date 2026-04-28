@@ -782,13 +782,13 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'transaction_not_found');
   END IF;
 
-  IF v_tx.wallet_state IN ('success', 'failed', 'reversed', 'expired') THEN
+  IF v_tx.wallet_state IN ('success'::public.wallet_tx_state, 'failed'::public.wallet_tx_state, 'reversed'::public.wallet_tx_state, 'expired'::public.wallet_tx_state) THEN
     RETURN jsonb_build_object('success', true, 'idempotent', true, 'state', v_tx.wallet_state::TEXT);
   END IF;
 
   IF p_decision = 'processing' THEN
     UPDATE public.transactions
-    SET wallet_state = 'processing',
+    SET wallet_state = 'processing'::public.wallet_tx_state,
         settlement_source = p_source,
         metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('lastSettlementEvidence', COALESCE(p_evidence, '{}'::jsonb))
     WHERE id = p_transaction_id;
@@ -811,7 +811,7 @@ BEGIN
       );
 
       UPDATE public.transactions
-      SET wallet_state = 'success',
+      SET wallet_state = 'success'::public.wallet_tx_state,
           settled_at = NOW(),
           settlement_source = p_source,
           amount = v_net,
@@ -823,7 +823,7 @@ BEGIN
 
     IF p_decision IN ('failed', 'expired', 'reversed') THEN
       UPDATE public.transactions
-      SET wallet_state = p_decision,
+      SET wallet_state = p_decision::public.wallet_tx_state,
           settled_at = NOW(),
           settlement_source = p_source,
           metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('lastSettlementEvidence', COALESCE(p_evidence, '{}'::jsonb))
@@ -855,7 +855,7 @@ BEGIN
     END IF;
 
     UPDATE public.transactions
-    SET wallet_state = 'success',
+    SET wallet_state = 'success'::public.wallet_tx_state,
         settled_at = NOW(),
         settlement_source = p_source,
         metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('lastSettlementEvidence', COALESCE(p_evidence, '{}'::jsonb))
@@ -883,7 +883,7 @@ BEGIN
     END IF;
 
     UPDATE public.transactions
-    SET wallet_state = p_decision,
+    SET wallet_state = p_decision::public.wallet_tx_state,
         settled_at = NOW(),
         settlement_source = p_source,
         metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('lastSettlementEvidence', COALESCE(p_evidence, '{}'::jsonb))
@@ -996,7 +996,7 @@ BEGIN
   FOR v_tx IN
     SELECT id, reference
     FROM public.transactions
-    WHERE wallet_state IN ('pending', 'processing')
+    WHERE wallet_state IN ('pending'::public.wallet_tx_state, 'processing'::public.wallet_tx_state)
       AND expires_at IS NOT NULL
       AND expires_at <= NOW()
     ORDER BY expires_at
