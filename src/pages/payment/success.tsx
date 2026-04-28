@@ -77,10 +77,17 @@ const PaymentSuccess: React.FC = () => {
         if (typeof window === 'undefined') return;
 
         try {
-            localStorage.setItem(
-                PAYMENT_EVENT_KEY,
-                JSON.stringify({ ...payload, ts: Date.now() })
-            );
+            const eventData = JSON.stringify({ ...payload, ts: Date.now() });
+            localStorage.setItem(PAYMENT_EVENT_KEY, eventData);
+
+            // Also try to notify the opener directly if available
+            if (window.opener && !window.opener.closed) {
+                try {
+                    window.opener.postMessage({ type: 'PAYMENT_COMPLETE', ...payload }, window.location.origin);
+                } catch (e) {
+                    console.error('Failed to postMessage to opener:', e);
+                }
+            }
         } catch (error) {
             console.error('Failed to publish payment event:', error);
         }
@@ -283,15 +290,28 @@ const PaymentSuccess: React.FC = () => {
 
                     <div className="w-full pt-4">
                         {status === 'success' ? (
-                        <Button
-                                onClick={() => {
-                                    clearPaymentFlag();
-                                    navigate(paymentRef ? `/wallet?showReceipt=${paymentRef}` : '/wallet');
-                                }}
-                                className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold text-base transition-all scale-100 active:scale-95 flex items-center justify-center gap-2"
-                            >
-                                View Receipt <ArrowRight className="w-5 h-5" />
-                            </Button>
+                            <div className="space-y-3">
+                                <Button
+                                    onClick={() => {
+                                        clearPaymentFlag();
+                                        navigate(paymentRef ? `/wallet?showReceipt=${paymentRef}` : '/wallet');
+                                    }}
+                                    className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold text-base transition-all scale-100 active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    View Receipt <ArrowRight className="w-5 h-5" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        clearPaymentFlag();
+                                        try { window.close(); } catch(e) {}
+                                        setTimeout(() => navigate('/wallet'), 500);
+                                    }}
+                                    className="w-full h-14 rounded-2xl border-2 font-bold text-base"
+                                >
+                                    Return to App
+                                </Button>
+                            </div>
                         ) : status === 'error' ? (
                             <Button
                                 onClick={() => navigate('/wallet/fund')}

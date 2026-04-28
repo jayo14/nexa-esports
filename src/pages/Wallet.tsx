@@ -451,7 +451,8 @@ const Wallet: React.FC = () => {
         },
         (payload) => {
           const status = (payload.new as { status?: string } | null)?.status;
-          if (status === 'success') {
+          const walletState = (payload.new as { wallet_state?: string } | null)?.wallet_state;
+          if (status === 'success' || status === 'completed' || walletState === 'success') {
             void refreshWallet();
             void fetchWalletData(currentPage);
           }
@@ -467,7 +468,20 @@ const Wallet: React.FC = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setPaymentInProgress(sessionStorage.getItem('payment_in_progress') === 'true');
-  }, []);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshWallet();
+        fetchWalletData(currentPage);
+        setPaymentInProgress(sessionStorage.getItem('payment_in_progress') === 'true');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshWallet, currentPage]);
 
   useEffect(() => {
     return () => {

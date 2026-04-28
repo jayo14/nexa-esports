@@ -1,0 +1,18 @@
+<<<<<<< SEARCH
+        (payload) => {
+          const status = (payload.new as { status?: string } | null)?.status;
+          if (status === 'success') {
+            void refreshWallet();
+            void fetchWalletData(currentPage);
+          }
+        }
+=======
+        (payload) => {
+          const status = (payload.new as { status?: string } | null)?.status;
+          const walletState = (payload.new as { wallet_state?: string } | null)?.wallet_state;
+          if (status === 'success' || status === 'completed' || walletState === 'success') {
+            void refreshWallet();
+            void fetchWalletData(currentPage);
+          }
+        }
+>>>>>>> REPLACE

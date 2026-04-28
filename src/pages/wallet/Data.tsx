@@ -211,7 +211,17 @@ const Data = () => {
       },
       {
         onSuccess: async (data) => {
-          await refreshWallet();
+          // Poll for a few seconds to ensure balance update is reflected
+          let attempts = 0;
+          const pollBalance = async () => {
+            await refreshWallet();
+            if (attempts < 5) {
+              attempts++;
+              setTimeout(pollBalance, 2000);
+            }
+          };
+          void pollBalance();
+
           setPurchaseReceipt({
             reference: data?.reference,
             pagaTransactionId: data?.paga_transaction_id,
