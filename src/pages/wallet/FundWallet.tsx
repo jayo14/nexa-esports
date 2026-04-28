@@ -41,43 +41,52 @@ const FundWallet = () => {
   }, []);
 
   useEffect(() => {
-    const handlePaymentEvent = (event: StorageEvent) => {
-      if (event.key !== PAYMENT_EVENT_KEY || !event.newValue) return;
-
-      try {
-        const payload = JSON.parse(event.newValue) as {
-          status?: 'success' | 'error';
-          reference?: string;
-          message?: string;
-        };
-
-        if (payload.status === 'success') {
-          sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
-          void refreshWallet();
-          toast({
-            title: 'Payment Confirmed',
-            description: 'Your wallet has been credited and updated.',
-          });
-          if (payload.reference) {
-            navigate(`/wallet?showReceipt=${payload.reference}`);
-          } else {
-            navigate('/wallet');
-          }
-        } else if (payload.status === 'error') {
-          sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
-          toast({
-            title: 'Payment Not Completed',
-            description: payload.message || 'The payment window was closed before completion.',
-            variant: 'destructive',
-          });
+    const handleSuccess = (payload: { status?: string; reference?: string; message?: string }) => {
+      if (payload.status === 'success') {
+        sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+        void refreshWallet();
+        toast({
+          title: 'Payment Confirmed',
+          description: 'Your wallet has been credited and updated.',
+        });
+        if (payload.reference) {
+          navigate(`/wallet?showReceipt=${payload.reference}`);
+        } else {
+          navigate('/wallet');
         }
+      } else if (payload.status === 'error') {
+        sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+        toast({
+          title: 'Payment Not Completed',
+          description: payload.message || 'The payment window was closed before completion.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    const handleStorageEvent = (event: StorageEvent) => {
+      if (event.key !== PAYMENT_EVENT_KEY || !event.newValue) return;
+      try {
+        const payload = JSON.parse(event.newValue);
+        handleSuccess(payload);
       } catch (error) {
         console.error('Failed to parse payment event:', error);
       }
     };
 
-    window.addEventListener('storage', handlePaymentEvent);
-    return () => window.removeEventListener('storage', handlePaymentEvent);
+    const handleMessageEvent = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'PAYMENT_COMPLETE') {
+        handleSuccess(event.data);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+    window.addEventListener('message', handleMessageEvent);
+    return () => {
+      window.removeEventListener('storage', handleStorageEvent);
+      window.removeEventListener('message', handleMessageEvent);
+    };
   }, [navigate, refreshWallet, toast]);
 
   if (!settingsLoading && !walletSettings.deposits_enabled) {
