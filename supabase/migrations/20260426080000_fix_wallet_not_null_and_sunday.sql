@@ -76,7 +76,7 @@ BEGIN
   )
   VALUES(
     v_sender_wallet_id, v_sender_user_id, 'clan', 'transfer_out'::transaction_type,
-    amount, v_fee, 'processing', 'pending', v_ref, 'Transfer to ' || recipient_ign, NOW()
+    amount, v_fee, 'processing', 'pending'::public.wallet_tx_state, v_ref, 'Transfer to ' || recipient_ign, NOW()
   )
   RETURNING id INTO v_sender_tx_id;
 
@@ -87,7 +87,7 @@ BEGIN
   )
   VALUES(
     v_receiver_wallet_id, v_recipient_id, 'clan', 'transfer_in'::transaction_type,
-    amount, 0, 'processing', 'pending', v_ref, 'Transfer from ' || (SELECT ign FROM public.profiles WHERE id = sender_id), NOW()
+    amount, 0, 'processing', 'pending'::public.wallet_tx_state, v_ref, 'Transfer from ' || (SELECT ign FROM public.profiles WHERE id = sender_id), NOW()
   )
   RETURNING id INTO v_receiver_tx_id;
 

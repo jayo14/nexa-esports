@@ -23,14 +23,14 @@ BEGIN
   END IF;
 
   -- Idempotency
-  IF v_tx.wallet_state IN ('success', 'failed', 'reversed', 'expired') THEN
+  IF v_tx.wallet_state IN ('success'::public.wallet_tx_state, 'failed'::public.wallet_tx_state, 'reversed'::public.wallet_tx_state, 'expired'::public.wallet_tx_state) THEN
     RETURN jsonb_build_object('success', true, 'idempotent', true, 'state', v_tx.wallet_state::TEXT);
   END IF;
 
   -- Update to processing if requested
   IF p_decision = 'processing' THEN
     UPDATE public.transactions
-    SET wallet_state = 'processing',
+    SET wallet_state = 'processing'::public.wallet_tx_state,
         settlement_source = p_source,
         metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('lastSettlementEvidence', COALESCE(p_evidence, '{}'::jsonb))
     WHERE id = p_transaction_id;
@@ -55,7 +55,7 @@ BEGIN
       );
 
       UPDATE public.transactions
-      SET wallet_state = 'success',
+      SET wallet_state = 'success'::public.wallet_tx_state,
           settled_at = NOW(),
           settlement_source = p_source,
           amount = v_net,
@@ -71,7 +71,7 @@ BEGIN
 
     IF p_decision IN ('failed', 'expired', 'reversed') THEN
       UPDATE public.transactions
-      SET wallet_state = p_decision,
+      SET wallet_state = p_decision::public.wallet_tx_state,
           settled_at = NOW(),
           settlement_source = p_source,
           metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('lastSettlementEvidence', COALESCE(p_evidence, '{}'::jsonb))
@@ -96,7 +96,7 @@ BEGIN
   ) THEN
     IF p_decision = 'success' THEN
       UPDATE public.transactions
-      SET wallet_state = 'success',
+      SET wallet_state = 'success'::public.wallet_tx_state,
           status = 'completed',
           settled_at = NOW(),
           settlement_source = p_source,
@@ -108,7 +108,7 @@ BEGIN
 
     IF p_decision IN ('failed', 'reversed', 'expired') THEN
       -- Reverse the debit if it was actually taken
-      IF v_tx.wallet_state = 'debited' OR v_tx.wallet_state = 'processing' THEN
+      IF v_tx.wallet_state = 'debited'::public.wallet_tx_state OR v_tx.wallet_state = 'processing'::public.wallet_tx_state THEN
         PERFORM public.wallet_credit(
           p_transaction_id,
           v_tx.wallet_id,
@@ -120,7 +120,7 @@ BEGIN
       END IF;
 
       UPDATE public.transactions
-      SET wallet_state = p_decision,
+      SET wallet_state = p_decision::public.wallet_tx_state,
           status = 'failed',
           settled_at = NOW(),
           settlement_source = p_source,
@@ -155,7 +155,7 @@ BEGIN
       END IF;
 
       UPDATE public.transactions
-      SET wallet_state = 'success',
+      SET wallet_state = 'success'::public.wallet_tx_state,
           status = 'completed',
           settled_at = NOW(),
           settlement_source = p_source,
@@ -184,7 +184,7 @@ BEGIN
       END IF;
 
       UPDATE public.transactions
-      SET wallet_state = p_decision,
+      SET wallet_state = p_decision::public.wallet_tx_state,
           status = 'failed',
           settled_at = NOW(),
           settlement_source = p_source,
