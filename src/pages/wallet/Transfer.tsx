@@ -14,6 +14,7 @@ import { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { TransactionReceipt } from '@/components/TransactionReceipt';
 
 type Step = 'recipient' | 'amount' | 'review' | 'processing';
 
@@ -54,6 +55,8 @@ const Transfer = () => {
   const [transferSuccess, setTransferSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transferReference, setTransferReference] = useState('');
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [transactionData, setTransactionData] = useState<any>(null);
 
   useEffect(() => {
     fetchWalletBalance();
@@ -142,6 +145,21 @@ const Transfer = () => {
       }
 
       setTransferReference(data?.reference || '');
+      
+      // Fetch the full transaction data for the receipt
+      if (data?.sender_transaction_id) {
+        const { data: tx } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('id', data.sender_transaction_id)
+          .single();
+        
+        if (tx) {
+          setTransactionData(tx);
+          setReceiptOpen(true);
+        }
+      }
+
       setTransferSuccess(true);
       await refreshWallet();
 
@@ -451,12 +469,21 @@ const Transfer = () => {
                       </p>
                     )}
                   </div>
-                   <Button 
-                    className="w-full h-14 text-lg font-bold mt-4" 
-                    onClick={() => navigate('/wallet')}
-                   >
-                    Back to Wallet
-                   </Button>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="w-full h-14 text-lg font-bold mt-4"
+                      onClick={() => setReceiptOpen(true)}
+                    >
+                      View Receipt
+                    </Button>
+                    <Button 
+                      className="w-full h-14 text-lg font-bold mt-4" 
+                      onClick={() => navigate('/wallet')}
+                    >
+                      Back to Wallet
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -486,6 +513,32 @@ const Transfer = () => {
         description="Enter your 4-digit PIN to authorize this transfer."
         actionLabel="transfer"
       />
+
+      {transactionData && (
+        <TransactionReceipt
+          open={receiptOpen}
+          onOpenChange={setReceiptOpen}
+          transaction={{
+            id: transactionData.id,
+            type: transactionData.type,
+            amount: transactionData.amount,
+            status: transactionData.status,
+            reference: transactionData.reference,
+            created_at: transactionData.created_at,
+            currency: transactionData.currency,
+          }}
+          userInfo={{
+            ign: user?.id === transactionData.user_id ? (players.find(p => p.id === user?.id)?.ign || '') : '',
+            username: user?.id === transactionData.user_id ? (players.find(p => p.id === user?.id)?.username || '') : '',
+            player_type: players.find(p => p.id === user?.id)?.status || 'main',
+          }}
+          transferInfo={{
+            sender: user?.id === transactionData.user_id ? (players.find(p => p.id === user?.id)?.ign || 'Me') : '',
+            recipient: recipient,
+            recipientPlayerType: selectedPlayer?.status || 'main',
+          }}
+        />
+      )}
     </div>
   );
 };

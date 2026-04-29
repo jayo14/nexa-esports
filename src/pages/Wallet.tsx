@@ -463,6 +463,8 @@ const Wallet: React.FC = () => {
           const status = (payload.new as { status?: string } | null)?.status;
           const walletState = (payload.new as { wallet_state?: string } | null)?.wallet_state;
           if (status === 'success' || status === 'completed' || walletState === 'success') {
+            sessionStorage.removeItem('payment_in_progress');
+            setPaymentInProgress(false);
             void refreshWallet();
             void fetchWalletData(currentPage);
           }

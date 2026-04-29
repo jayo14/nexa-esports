@@ -622,7 +622,7 @@ serve(async (req) => {
     await supabaseAdmin
       .from("transactions")
       .update({
-        wallet_state: providerState === "success" ? "completed" : (providerState === "processing" ? "processing" : "pending"),
+        wallet_state: providerState === "success" ? "success" : (providerState === "processing" ? "processing" : "pending"),
         status: providerState === "success" ? "completed" : (providerState === "processing" ? "processing" : "pending"),
         paga_reference: referenceNumber,
         paga_status: providerState,

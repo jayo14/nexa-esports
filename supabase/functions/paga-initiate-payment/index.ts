@@ -161,7 +161,8 @@ serve(async (req) => {
 
     const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
     const normalizeRedirectUrl = (candidate?: string | null): string | null => {
-      if (!candidate || !candidate.startsWith("https://")) return null;
+      if (!candidate) return null;
+      if (!candidate.startsWith("https://") && !candidate.startsWith("http://localhost") && !candidate.startsWith("http://127.0.0.1")) return null;
       try {
         const parsed = new URL(candidate);
         if (!parsed.pathname || parsed.pathname === "/") {
