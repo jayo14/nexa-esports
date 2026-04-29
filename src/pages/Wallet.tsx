@@ -308,6 +308,16 @@ const Wallet: React.FC = () => {
         clearInterval(refreshInterval.current);
         refreshInterval.current = null;
       }
+
+      // If we have the payment flag set but no pending deposits on the first page, 
+      // check if we should clear it to avoid the alert being stuck.
+      if (sessionStorage.getItem('payment_in_progress') === 'true' && !hasPending && page === 1) {
+        // Only clear if we actually have some transactions to be sure
+        if (enriched.length > 0) {
+          sessionStorage.removeItem('payment_in_progress');
+          setPaymentInProgress(false);
+        }
+      }
     } catch (err) {
       console.error(err);
     }

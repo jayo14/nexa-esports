@@ -622,8 +622,8 @@ serve(async (req) => {
     await supabaseAdmin
       .from("transactions")
       .update({
-        wallet_state: providerState === "processing" ? "processing" : "pending",
-        status: providerState === "processing" ? "processing" : "pending",
+        wallet_state: providerState === "success" ? "completed" : (providerState === "processing" ? "processing" : "pending"),
+        status: providerState === "success" ? "completed" : (providerState === "processing" ? "processing" : "pending"),
         paga_reference: referenceNumber,
         paga_status: providerState,
         paga_raw_response: pagaData,
@@ -646,13 +646,14 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         status: providerState !== "failed",
-        state: providerState === "success" ? "processing" : providerState,
+        state: providerState === "success" ? "completed" : providerState,
         message:
           providerState === "failed"
             ? "Provider reported failure. Settlement is queued."
             : "Withdrawal accepted and queued for settlement.",
         referenceNumber,
         netAmount,
+        transactionId,
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );

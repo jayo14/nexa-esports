@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWalletSettings } from '@/hooks/useWalletSettings';
+import { TransactionReceipt } from '@/components/TransactionReceipt';
 
 type Step = 'amount' | 'review' | 'processing';
 
@@ -31,6 +32,8 @@ const Withdraw = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isBankVerified, setIsBankVerified] = useState(false);
   const [isVerifyingBank, setIsVerifyingBank] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
 
   // Get wallet type from navigation state (default to 'clan')
   const walletType = (() => {
@@ -179,8 +182,20 @@ const Withdraw = () => {
     setIsProcessing(true);
 
     try {
-      await performWithdrawal(Number(amount));
-      setWithdrawalSuccess(true);
+      const data = await performWithdrawal(Number(amount));
+      if (data) {
+        setReceiptData({
+          id: data.transactionId || 'pending',
+          type: 'withdrawal',
+          amount: Number(amount),
+          status: data.state || 'completed',
+          reference: data.referenceNumber,
+          created_at: new Date().toISOString(),
+          currency: 'NGN'
+        });
+        setWithdrawalSuccess(true);
+        setReceiptOpen(true);
+      }
       await refreshWallet();
     } catch (error) {
       console.error(error);
@@ -241,6 +256,8 @@ const Withdraw = () => {
       title: "Withdrawal Submitted",
       description: `Your request to withdraw ₦${withdrawAmount.toLocaleString()} has been submitted.`,
     });
+
+    return transferData;
   };
 
   return (
@@ -413,12 +430,21 @@ const Withdraw = () => {
                       Your withdrawal request has been submitted successfully. Funds will be sent to your account shortly.
                     </p>
                   </div>
-                  <Button
-                    className="w-full h-14 text-lg font-bold mt-4"
-                    onClick={() => navigate('/wallet')}
-                  >
-                    Back to Wallet
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="w-full h-14 text-lg font-bold mt-4"
+                      onClick={() => setReceiptOpen(true)}
+                    >
+                      View Receipt
+                    </Button>
+                    <Button
+                      className="w-full h-14 text-lg font-bold mt-4"
+                      onClick={() => navigate('/wallet')}
+                    >
+                      Back to Wallet
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -448,6 +474,19 @@ const Withdraw = () => {
         description="Enter your 4-digit PIN to authorize this withdrawal."
         actionLabel="withdrawal"
       />
+
+      {receiptData && (
+        <TransactionReceipt
+          transaction={receiptData}
+          open={receiptOpen}
+          onOpenChange={setReceiptOpen}
+          userInfo={{
+            ign: profile?.ign,
+            username: profile?.username,
+            player_type: profile?.status === 'beta' ? 'beta' : 'main',
+          }}
+        />
+      )}
     </div>
   );
 };
