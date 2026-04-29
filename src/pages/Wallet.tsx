@@ -300,7 +300,7 @@ const Wallet: React.FC = () => {
 
       // Check for pending transactions to auto-refresh
       const hasPending = enriched.some(
-        t => (t.status === 'pending' || t.status === 'processing') && t.raw_type === 'deposit'
+        t => (t.status === 'pending' || t.status === 'processing') && (t.raw_type === 'deposit' || t.raw_type === 'withdrawal')
       );
       if (hasPending && !refreshInterval.current) {
         refreshInterval.current = setInterval(() => fetchWalletData(currentPage), 5000);

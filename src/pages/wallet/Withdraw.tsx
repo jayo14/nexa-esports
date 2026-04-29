@@ -17,6 +17,8 @@ import { TransactionReceipt } from '@/components/TransactionReceipt';
 
 type Step = 'amount' | 'review' | 'processing';
 
+const PAYMENT_IN_PROGRESS_KEY = 'payment_in_progress';
+
 const Withdraw = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -184,6 +186,13 @@ const Withdraw = () => {
     try {
       const data = await performWithdrawal(Number(amount));
       if (data) {
+        // Set progress flag if it's still processing
+        if (data.state === 'processing') {
+          sessionStorage.setItem(PAYMENT_IN_PROGRESS_KEY, 'true');
+        } else {
+          sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+        }
+
         setReceiptData({
           id: data.transactionId || 'pending',
           type: 'withdrawal',

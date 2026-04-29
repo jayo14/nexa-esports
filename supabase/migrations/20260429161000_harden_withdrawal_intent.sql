@@ -133,6 +133,12 @@ BEGIN
     p_user_id
   );
 
+  INSERT INTO public.wallet_reservations(transaction_id, wallet_id, amount, state)
+  VALUES (v_transaction_id, v_wallet_id, p_amount, 'open');
+
+  -- Atomically debit the wallet for the withdrawal
+  PERFORM public.wallet_debit(v_transaction_id, v_wallet_id, p_amount);
+
   IF p_idempotency_key IS NOT NULL AND LENGTH(TRIM(p_idempotency_key)) > 0 THEN
     UPDATE public.wallet_idempotency_keys
     SET transaction_id = v_transaction_id
@@ -147,7 +153,9 @@ BEGIN
     'wallet_id', v_wallet_id,
     'state', 'pending',
     'amount', p_amount,
-    'net_amount', v_net
+    'fee', v_fee,
+    'net_amount', v_net,
+    'new_balance', ROUND(v_balance - p_amount, 2)
   );
 EXCEPTION WHEN OTHERS THEN
   RETURN jsonb_build_object(
