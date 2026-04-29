@@ -291,7 +291,7 @@ serve(async (req) => {
       }
       console.error("wallet_create_withdrawal_intent error:", intentError || withdrawalIntent);
       return new Response(
-        JSON.stringify({ error: "Failed to process withdrawal" }),
+        JSON.stringify({ error: errMsg }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
       );
     }
