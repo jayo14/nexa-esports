@@ -31,7 +31,8 @@ const FundWallet = () => {
   
   const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
   const fee = Math.min(amount * 0.035, 5000);
-  const netAmount = Math.max(0, amount - fee);
+  const totalToPay = amount + fee;
+  const receiveAmount = amount;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -195,7 +196,9 @@ const FundWallet = () => {
                 'Authorization': `Bearer ${session.access_token}`,
             },
             body: {
-                amount: amount,
+                amount: totalToPay,
+                intended_amount: amount,
+                fee: fee,
             idempotency_key: crypto.randomUUID(),
                 customer: {
                     email: user?.email || '',
@@ -348,14 +351,18 @@ const FundWallet = () => {
                   <span className="text-base">Deposit Amount</span>
                   <span className="font-bold text-lg text-foreground">₦{amount.toLocaleString()}</span>
                 </div>
-                 <div className="flex justify-between items-center text-red-400">
+                 <div className="flex justify-between items-center text-primary">
                    <span className="text-base">Transaction Fee (3.5%)</span>
-                   <span className="font-bold">-₦{fee.toFixed(2)}</span>
+                   <span className="font-bold">+₦{fee.toFixed(2)}</span>
                  </div>
                  <div className="h-px bg-border my-2" />
                  <div className="flex justify-between items-center">
-                   <span className="font-bold text-lg">Total to Receive</span>
-                   <span className="text-3xl font-black text-green-500">₦{netAmount.toLocaleString()}</span>
+                   <span className="font-bold text-lg">Total to Pay</span>
+                   <span className="text-3xl font-black text-foreground">₦{totalToPay.toLocaleString()}</span>
+                 </div>
+                 <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-border/50">
+                   <span className="text-sm font-medium text-muted-foreground">Amount to Receive</span>
+                   <span className="font-bold text-green-500">₦{receiveAmount.toLocaleString()}</span>
                  </div>
               </div>
 
@@ -393,7 +400,7 @@ const FundWallet = () => {
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...
                         </>
                     ) : (
-                        `Pay ₦${amount.toLocaleString()}`
+                        `Pay ₦${totalToPay.toLocaleString()}`
                     )}
                 </Button>
               </div>

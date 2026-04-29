@@ -52,7 +52,7 @@ serve(async (req) => {
       );
     }
 
-    const { amount, customer, redirect_url, wallet_type, idempotency_key, client_reference } = await req.json();
+    const { amount, fee, intended_amount, customer, redirect_url, wallet_type, idempotency_key, client_reference } = await req.json();
     const walletType = wallet_type === "marketplace" ? "marketplace" : "clan";
 
     if (!amount || amount < 500) {
@@ -136,7 +136,13 @@ serve(async (req) => {
           paga_status: "pending",
           idempotency_key: idempotency_key || null,
           client_reference: client_reference || null,
-          metadata: { source: "paga", email: customer.email },
+          metadata: { 
+            source: "paga", 
+            email: customer.email,
+            intended_amount: intended_amount || amount,
+            fee: fee || 0,
+            is_fee_on_top: !!intended_amount 
+          },
           provider: "paga",
         })
         .select("id, reference")
