@@ -230,7 +230,7 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", transactionId)
-      .in("wallet_state", ["pending", "processing"]);
+      .in("wallet_state", ["pending", "processing", "credited"]);
 
     await supabaseAdmin.rpc("wallet_record_provider_operation", {
       p_transaction_id: transactionId,

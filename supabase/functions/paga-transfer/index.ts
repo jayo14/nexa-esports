@@ -116,8 +116,8 @@ serve(async (req) => {
           reason: !globalAllowed
             ? "Withdrawals are currently disabled by the clan master."
             : (isSunday && !allowSundays)
-            ? "Withdrawals are not allowed on Sundays."
-            : null,
+              ? "Withdrawals are not allowed on Sundays."
+              : null,
         }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
       );
@@ -308,52 +308,52 @@ serve(async (req) => {
     let bankName = "";
     let bankSample: any[] | string = "Empty list";
     try {
-        const getBanksRef = generateReferenceNumber("GB");
-        const getBanksHash = await generatePagaBusinessHash([getBanksRef], PAGA_HASH_KEY);
-        const getBanksResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
-            method: "POST",
-            headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, getBanksHash),
-            body: JSON.stringify({ referenceNumber: getBanksRef }),
-        });
-        
-        const banksData = await getBanksResponse.json();
-        const banksList = banksData.bank || banksData.banks || banksData.data || [];
-        bankSample = banksList.length > 0 ? banksList.slice(0, 3) : "Empty list";
-        
-        const target = String(account_bank || "").trim().toLowerCase();
-        const targetNoHyphen = target.replace(/-/g, "");
-        const matchedBank = banksList.find((b: any) => {
-            const values = [
-                b.uuid,
-                b.bankUUID,
-                b.bankUuid,
-                b.id,
-                b.code,
-                b.bankCode,
-                b.destinationBankCode,
-                b.interInstitutionCode,
-                b.sortCode,
-                b.name,
-            ]
-                .filter(v => typeof v === 'string')
-                .map(v => v.toLowerCase().trim());
-            const valuesNoHyphen = values.map(v => v.replace(/-/g, ""));
-            return values.includes(target) || valuesNoHyphen.includes(targetNoHyphen);
-        });
+      const getBanksRef = generateReferenceNumber("GB");
+      const getBanksHash = await generatePagaBusinessHash([getBanksRef], PAGA_HASH_KEY);
+      const getBanksResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
+        method: "POST",
+        headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, getBanksHash),
+        body: JSON.stringify({ referenceNumber: getBanksRef }),
+      });
 
-        if (matchedBank) {
-            bankCode =
-              matchedBank.destinationBankCode ||
-              matchedBank.bankCode ||
-              matchedBank.code ||
-              matchedBank.interInstitutionCode ||
-              matchedBank.sortCode ||
-              "";
-            bankUuid = matchedBank.uuid || matchedBank.bankUUID || matchedBank.bankUuid || "";
-            bankName = matchedBank.name || "";
-        }
+      const banksData = await getBanksResponse.json();
+      const banksList = banksData.bank || banksData.banks || banksData.data || [];
+      bankSample = banksList.length > 0 ? banksList.slice(0, 3) : "Empty list";
+
+      const target = String(account_bank || "").trim().toLowerCase();
+      const targetNoHyphen = target.replace(/-/g, "");
+      const matchedBank = banksList.find((b: any) => {
+        const values = [
+          b.uuid,
+          b.bankUUID,
+          b.bankUuid,
+          b.id,
+          b.code,
+          b.bankCode,
+          b.destinationBankCode,
+          b.interInstitutionCode,
+          b.sortCode,
+          b.name,
+        ]
+          .filter(v => typeof v === 'string')
+          .map(v => v.toLowerCase().trim());
+        const valuesNoHyphen = values.map(v => v.replace(/-/g, ""));
+        return values.includes(target) || valuesNoHyphen.includes(targetNoHyphen);
+      });
+
+      if (matchedBank) {
+        bankCode =
+          matchedBank.destinationBankCode ||
+          matchedBank.bankCode ||
+          matchedBank.code ||
+          matchedBank.interInstitutionCode ||
+          matchedBank.sortCode ||
+          "";
+        bankUuid = matchedBank.uuid || matchedBank.bankUUID || matchedBank.bankUuid || "";
+        bankName = matchedBank.name || "";
+      }
     } catch (e) {
-        console.warn("Failed to resolve bank code:", e);
+      console.warn("Failed to resolve bank code:", e);
     }
 
     if (!bankCode && /^\d{3,6}$/.test(String(account_bank || "").trim())) {
@@ -370,8 +370,8 @@ serve(async (req) => {
     const phoneIntl = phoneDigits.startsWith("234")
       ? phoneDigits
       : phoneDigits.length === 11 && phoneDigits.startsWith("0")
-      ? `234${phoneDigits.slice(1)}`
-      : `234${phoneLocal}`;
+        ? `234${phoneDigits.slice(1)}`
+        : `234${phoneLocal}`;
     const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/paga-webhook`;
     const recipientName = (beneficiary_name || "Nexa User").toUpperCase();
 
@@ -631,7 +631,7 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", transactionId)
-      .in("wallet_state", ["pending", "processing"]);
+      .in("wallet_state", ["pending", "processing", "debited"]);
 
     await supabaseAdmin.rpc("wallet_enqueue_settlement", {
       p_transaction_id: transactionId,
