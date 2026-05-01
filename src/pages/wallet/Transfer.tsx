@@ -29,7 +29,7 @@ type TransferRecipient = Pick<
 const Transfer = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, refreshWallet } = useAuth();
+  const { user, profile, refreshWallet } = useAuth();
 
   const { data: players = [] } = useQuery<TransferRecipient[]>({
     queryKey: ['transfer-recipients', user?.id],
@@ -526,15 +526,17 @@ const Transfer = () => {
             reference: transactionData.reference,
             created_at: transactionData.created_at,
             currency: transactionData.currency,
+            metadata: transactionData.metadata,
           }}
           userInfo={{
-            ign: user?.id === transactionData.user_id ? (players.find(p => p.id === user?.id)?.ign || '') : '',
-            username: user?.id === transactionData.user_id ? (players.find(p => p.id === user?.id)?.username || '') : '',
-            player_type: players.find(p => p.id === user?.id)?.status || 'main',
+            ign: profile?.ign || '',
+            username: profile?.username || '',
+            player_type: profile?.status || 'main',
           }}
           transferInfo={{
-            sender: user?.id === transactionData.user_id ? (players.find(p => p.id === user?.id)?.ign || 'Me') : '',
-            recipient: recipient,
+            sender: typeof transactionData.metadata?.sender_ign === 'string' ? transactionData.metadata.sender_ign : (profile?.ign || 'Me'),
+            recipient: typeof transactionData.metadata?.recipient_ign === 'string' ? transactionData.metadata.recipient_ign : recipient,
+            senderPlayerType: profile?.status || 'main',
             recipientPlayerType: selectedPlayer?.status || 'main',
           }}
         />

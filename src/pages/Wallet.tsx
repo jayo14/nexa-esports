@@ -138,6 +138,13 @@ type WalletTransaction = {
   reference?: string | null;
   created_at: string;
   currency: string;
+  metadata?: {
+    sender_ign?: string;
+    recipient_ign?: string;
+    transfer_reference?: string;
+    direction?: string;
+    [key: string]: unknown;
+  } | null;
 };
 
 type TransferInfo = {
@@ -274,13 +281,26 @@ const Wallet: React.FC = () => {
       };
       const enriched = await Promise.all(txData.map(async (tx) => {
         const isDebit = ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction', 'airtime_purchase', 'data_purchase', 'marketplace_purchase', 'fee'].includes(tx.type);
-        let displayName = '';
-        if (tx.type === 'transfer_in' || tx.type === 'transfer_out') {
-          const match = tx.reference.match(/transfer_(from|to)_(.+)_\d/);
-          if (match) displayName = match[2];
+        const metadata = (tx.metadata || {}) as Record<string, unknown>;
+        const senderIgn = typeof metadata.sender_ign === 'string' ? metadata.sender_ign : '';
+        const recipientIgn = typeof metadata.recipient_ign === 'string' ? metadata.recipient_ign : '';
+        let description = tx.description?.trim() || typeMapping[tx.type] || tx.type;
+        if (tx.type === 'transfer_in' && !description.includes('from')) {
+          if (senderIgn) {
+            description = `${description} from ${senderIgn}`;
+          } else {
+            const match = tx.reference?.match(/transfer_(?:from|to)_(.+)_\d/);
+            if (match) description = `${description} from ${match[1]}`;
+          }
         }
-        let description = typeMapping[tx.type] || tx.type;
-        if (displayName) description += tx.type === 'transfer_in' ? ` from ${displayName}` : ` to ${displayName}`;
+        if (tx.type === 'transfer_out' && !description.includes('to')) {
+          if (recipientIgn) {
+            description = `${description} to ${recipientIgn}`;
+          } else {
+            const match = tx.reference?.match(/transfer_(?:from|to)_(.+)_\d/);
+            if (match) description = `${description} to ${match[1]}`;
+          }
+        }
         return {
           id: tx.id,
           description: `${description}`,
@@ -293,6 +313,7 @@ const Wallet: React.FC = () => {
           reference: tx.reference,
           created_at: tx.created_at,
           currency: tx.currency || 'NGN',
+          metadata,
         };
       }));
       setTransactions(enriched);
@@ -333,21 +354,45 @@ const Wallet: React.FC = () => {
     if (!transaction?.reference) return null;
     const ref = transaction.reference;
     const type = transaction.raw_type;
-    if (type === 'transfer_out' && ref.startsWith('transfer_to_')) {
-      const parts = ref.split('_');
-      const recipient = parts.slice(2, -1).join('_');
-      try {
-        const { data } = await supabase.from('profiles').select('status').eq('ign', recipient).maybeSingle();
-        return { recipient, recipientPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
-      } catch { return { recipient }; }
+    const metadata = transaction.metadata || {};
+    const senderFromMetadata = typeof metadata.sender_ign === 'string' ? metadata.sender_ign : '';
+    const recipientFromMetadata = typeof metadata.recipient_ign === 'string' ? metadata.recipient_ign : '';
+
+    if (type === 'transfer_out') {
+      if (recipientFromMetadata) {
+        try {
+          const { data } = await supabase.from('profiles').select('status').eq('ign', recipientFromMetadata).maybeSingle();
+          return { recipient: recipientFromMetadata, recipientPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
+        } catch {
+          return { recipient: recipientFromMetadata };
+        }
+      }
+      if (ref.startsWith('transfer_to_')) {
+        const parts = ref.split('_');
+        const recipient = parts.slice(2, -1).join('_');
+        try {
+          const { data } = await supabase.from('profiles').select('status').eq('ign', recipient).maybeSingle();
+          return { recipient, recipientPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
+        } catch { return { recipient }; }
+      }
     }
-    if (type === 'transfer_in' && ref.startsWith('transfer_from_')) {
-      const parts = ref.split('_');
-      const sender = parts.slice(2, -1).join('_');
-      try {
-        const { data } = await supabase.from('profiles').select('status').eq('ign', sender).maybeSingle();
-        return { sender, senderPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
-      } catch { return { sender }; }
+    if (type === 'transfer_in') {
+      if (senderFromMetadata) {
+        try {
+          const { data } = await supabase.from('profiles').select('status').eq('ign', senderFromMetadata).maybeSingle();
+          return { sender: senderFromMetadata, senderPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
+        } catch {
+          return { sender: senderFromMetadata };
+        }
+      }
+      if (ref.startsWith('transfer_from_')) {
+        const parts = ref.split('_');
+        const sender = parts.slice(2, -1).join('_');
+        try {
+          const { data } = await supabase.from('profiles').select('status').eq('ign', sender).maybeSingle();
+          return { sender, senderPlayerType: data?.status === 'beta' ? 'beta' : 'main' };
+        } catch { return { sender }; }
+      }
     }
     return null;
   }, []);
@@ -360,6 +405,19 @@ const Wallet: React.FC = () => {
   }, [getTransferInfo]);
 
   useEffect(() => { fetchWalletData(currentPage); }, [user?.id, currentPage]);
+
+  useEffect(() => {
+    if (typeof profile?.wallet_balance === 'number') {
+      setWalletBalance(Number(profile.wallet_balance) || 0);
+    }
+  }, [profile?.wallet_balance]);
+
+  useEffect(() => {
+    if (!user?.id || walletId) return;
+    if (typeof profile?.wallet_balance === 'number') {
+      void fetchWalletData(currentPage);
+    }
+  }, [currentPage, profile?.wallet_balance, user?.id, walletId]);
 
   useEffect(() => {
     if (redeemCooldown > 0) {
@@ -411,14 +469,16 @@ const Wallet: React.FC = () => {
         if (!tx) {
           const { data: directTx } = await supabase
             .from('transactions')
-            .select('id, type, amount, status, reference, created_at, currency')
+            .select('id, type, amount, status, reference, created_at, currency, description, metadata')
             .eq('reference', showReceiptRef)
             .maybeSingle();
 
           if (directTx) {
+            const metadata = directTx.metadata || {};
+            const description = directTx.description?.trim() || directTx.type;
             tx = {
               id: directTx.id,
-              description: directTx.type,
+              description,
               date: new Date(directTx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
                 ' • ' + new Date(directTx.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
               amount: ['transfer_out', 'withdrawal', 'giveaway_created', 'tax_deduction', 'airtime_purchase', 'data_purchase', 'marketplace_purchase', 'fee'].includes(directTx.type) ? -Number(directTx.amount) : Number(directTx.amount),
@@ -428,6 +488,7 @@ const Wallet: React.FC = () => {
               reference: directTx.reference,
               created_at: directTx.created_at,
               currency: directTx.currency || 'NGN',
+              metadata,
             };
             fetchWalletData(currentPage);
           }

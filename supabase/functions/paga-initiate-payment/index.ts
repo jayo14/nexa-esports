@@ -168,9 +168,9 @@ serve(async (req) => {
     const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
     const normalizeRedirectUrl = (candidate?: string | null): string | null => {
       if (!candidate) return null;
-      if (!candidate.startsWith("https://") && !candidate.startsWith("http://localhost") && !candidate.startsWith("http://127.0.0.1")) return null;
       try {
         const parsed = new URL(candidate);
+        if (parsed.protocol !== "https:") return null;
         if (!parsed.pathname || parsed.pathname === "/") {
           parsed.pathname = "/payment-success";
         }
@@ -181,16 +181,16 @@ serve(async (req) => {
     };
 
     const callbackUrl =
-      normalizeRedirectUrl(redirect_url) ||
       normalizeRedirectUrl(PAGA_FRONTEND_URL) ||
-      normalizeRedirectUrl(PAGA_CALLBACK_URL);
+      normalizeRedirectUrl(PAGA_CALLBACK_URL) ||
+      normalizeRedirectUrl(redirect_url);
 
     if (!callbackUrl) {
       return new Response(
         JSON.stringify({
           error:
-            "Payment cannot be initiated: no valid HTTPS return URL is available. " +
-            "Set PAGA_FRONTEND_URL to your production frontend URL " +
+            "Payment cannot be initiated: no public HTTPS return URL is available. " +
+            "Set PAGA_FRONTEND_URL or PAGA_CALLBACK_URL to your production frontend URL " +
             "(e.g. https://your-domain.com/payment-success).",
         }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
