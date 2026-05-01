@@ -949,22 +949,31 @@ BEGIN
         v_job.evidence
       );
 
-      UPDATE public.wallet_settlement_jobs
-      SET state = 'completed',
-          last_error = NULL,
-          updated_at = NOW()
-      WHERE id = v_job.id;
+      IF COALESCE(v_res->>'state', '') IN ('success', 'failed', 'reversed', 'expired') THEN
+        UPDATE public.wallet_settlement_jobs
+        SET state = 'completed',
+            last_error = NULL,
+            updated_at = NOW()
+        WHERE id = v_job.id;
 
         IF v_job.provider_reference IS NOT NULL THEN
-        UPDATE public.wallet_webhook_events
-        SET handled = TRUE,
-          handled_at = NOW()
-        WHERE provider = 'paga'
-          AND provider_reference = v_job.provider_reference
-          AND handled = FALSE;
+          UPDATE public.wallet_webhook_events
+          SET handled = TRUE,
+              handled_at = NOW()
+          WHERE provider = 'paga'
+            AND provider_reference = v_job.provider_reference
+            AND handled = FALSE;
         END IF;
 
-      v_processed := v_processed + 1;
+        v_processed := v_processed + 1;
+      ELSE
+        UPDATE public.wallet_settlement_jobs
+        SET state = 'queued',
+            available_at = NOW() + INTERVAL '30 seconds',
+            last_error = NULL,
+            updated_at = NOW()
+        WHERE id = v_job.id;
+      END IF;
     EXCEPTION WHEN OTHERS THEN
       UPDATE public.wallet_settlement_jobs
       SET state = CASE WHEN attempts >= 5 THEN 'failed' ELSE 'queued' END,

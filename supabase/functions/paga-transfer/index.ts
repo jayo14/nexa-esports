@@ -16,15 +16,16 @@ function mapProviderState(payload: Record<string, unknown> | null | undefined): 
   const statusText = String(
     payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
   ).toUpperCase();
+  const normalized = [statusText, String(payload.statusCode || "").toUpperCase()];
 
   if (responseCode === 0 || responseCode === "0") return "success";
-  if (statusText.includes("SUCCESS")) return "success";
+  if (normalized.some((value) => ["SUCCESS", "SUCCESSFUL", "COMPLETED", "APPROVED", "PAID"].some((signal) => value.includes(signal)))) return "success";
 
   const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
-  if (failedSignals.some((signal) => statusText.includes(signal))) return "failed";
+  if (normalized.some((value) => failedSignals.some((signal) => value.includes(signal)))) return "failed";
 
   const processingSignals = ["PENDING", "PROCESS", "IN_PROGRESS", "QUEUED", "ACCEPTED", "INITIATED"];
-  if (processingSignals.some((signal) => statusText.includes(signal))) return "processing";
+  if (normalized.some((value) => processingSignals.some((signal) => value.includes(signal)))) return "processing";
 
   // Unknown non-zero responses are treated as processing and left for webhook reconciliation.
   return "processing";

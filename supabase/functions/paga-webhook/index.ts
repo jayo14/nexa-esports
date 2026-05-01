@@ -9,12 +9,13 @@ function mapProviderState(payload: Record<string, unknown>): ProviderState {
   const statusText = String(
     payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
   ).toUpperCase();
+  const normalized = [statusText, String(payload.statusCode || "").toUpperCase()];
 
   if (responseCode === 0 || responseCode === "0" || responseCode === "SUCCESS") return "success";
-  if (statusText.includes("SUCCESS") || statusText === "COMPLETED" || statusText === "APPROVED") return "success";
+  if (normalized.some((value) => ["SUCCESS", "SUCCESSFUL", "COMPLETED", "APPROVED", "PAID"].some((signal) => value.includes(signal)))) return "success";
 
   const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
-  if (failedSignals.some((signal) => statusText.includes(signal))) return "failed";
+  if (normalized.some((value) => failedSignals.some((signal) => value.includes(signal)))) return "failed";
 
   return "processing";
 }
