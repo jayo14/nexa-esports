@@ -613,6 +613,13 @@ serve(async (req) => {
       delaySeconds: 0,
     });
 
+    const immediateBalance =
+      typeof withdrawalIntent.new_balance === "number"
+        ? withdrawalIntent.new_balance
+        : typeof withdrawalIntent.newBalance === "number"
+          ? withdrawalIntent.newBalance
+          : null;
+
     return new Response(
       JSON.stringify({
         status: settled.state !== "failed",
@@ -626,7 +633,7 @@ serve(async (req) => {
         referenceNumber,
         netAmount,
         transactionId,
-        newBalance: settled.newBalance,
+        newBalance: immediateBalance ?? settled.newBalance,
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );
