@@ -254,7 +254,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         status: "success",
-        data: { link: checkoutUrl, referenceNumber: existingReference },
+        data: { link: checkoutUrl, referenceNumber: existingReference, transactionId },
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );

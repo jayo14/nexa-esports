@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { useWalletSettings } from '@/hooks/useWalletSettings';
+import { useTransactionMonitor } from '@/hooks/useTransactionMonitor';
 
 const PAYMENT_EVENT_KEY = 'nexa:wallet-payment-event';
 const PAYMENT_IN_PROGRESS_KEY = 'payment_in_progress';
@@ -27,13 +28,22 @@ const FundWallet = () => {
   
   const [amount, setAmount] = useState<number>(0);
   const [step, setStep] = useState<1 | 2>(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeTransactionId, setActiveTransactionId] = useState<string | null>(null);
+  const [activeReference, setActiveReference] = useState<string | null>(null);
   const [showPinVerify, setShowPinVerify] = useState(false);
+  const paymentResolvedRef = useRef(false);
   
   const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
   const fee = Math.min(amount * 0.035, 5000);
   const totalToPay = amount + fee;
   const receiveAmount = amount;
+  const monitor = useTransactionMonitor({
+    enabled: isProcessing,
+    transactionId: activeTransactionId,
+    reference: activeReference,
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -42,10 +52,17 @@ const FundWallet = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const handleSuccess = async (payload: { status?: string; reference?: string; message?: string }) => {
+  const handleSuccess = useCallback(
+    async (payload: { status?: string; reference?: string; message?: string }) => {
+      if (paymentResolvedRef.current) return;
+      paymentResolvedRef.current = true;
+      sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
+      setIsProcessing(false);
+      setIsSubmitting(false);
+      setActiveTransactionId(null);
+      setActiveReference(null);
+
       if (payload.status === 'success') {
-        sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
         await refreshWallet();
         toast({
           title: 'Payment Confirmed',
@@ -57,15 +74,17 @@ const FundWallet = () => {
           navigate('/wallet');
         }
       } else if (payload.status === 'error') {
-        sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
         toast({
           title: 'Payment Not Completed',
           description: payload.message || 'The payment window was closed before completion.',
           variant: 'destructive',
         });
       }
-    };
+    },
+    [navigate, refreshWallet, toast]
+  );
 
+  useEffect(() => {
     const handleStorageEvent = (event: StorageEvent) => {
       if (event.key !== PAYMENT_EVENT_KEY || !event.newValue) return;
       try {
@@ -89,7 +108,26 @@ const FundWallet = () => {
       window.removeEventListener('storage', handleStorageEvent);
       window.removeEventListener('message', handleMessageEvent);
     };
-  }, [navigate, refreshWallet, toast]);
+  }, [handleSuccess]);
+
+  useEffect(() => {
+    if (monitor.status === 'success') {
+      void (async () => {
+        await handleSuccess({
+          status: 'success',
+          reference: monitor.reference || activeReference || undefined,
+        });
+      })();
+    } else if (['failed', 'reversed', 'expired', 'error'].includes(monitor.status)) {
+      void (async () => {
+        await handleSuccess({
+          status: 'error',
+          reference: monitor.reference || activeReference || undefined,
+          message: monitor.message,
+        });
+      })();
+    }
+  }, [activeReference, handleSuccess, monitor.message, monitor.reference, monitor.status]);
 
   if (!settingsLoading && !walletSettings.deposits_enabled) {
     return (
@@ -156,7 +194,7 @@ const FundWallet = () => {
     if (Capacitor.isNativePlatform()) {
       await Haptics.impact({ style: ImpactStyle.Medium });
     }
-    setIsProcessing(true);
+    setIsSubmitting(true);
     let paymentWindow: Window | null = null;
     
     try {
@@ -231,6 +269,11 @@ const FundWallet = () => {
             return;
         }
 
+        paymentResolvedRef.current = false;
+        setActiveTransactionId(data.data?.transactionId || null);
+        setActiveReference(data.data?.referenceNumber || null);
+        setIsProcessing(true);
+
         toast({
           title: 'Opening Paga',
           description: 'Complete your payment in the new tab that opened.',
@@ -256,7 +299,7 @@ const FundWallet = () => {
             variant: 'destructive',
         });
     } finally {
-        setIsProcessing(false);
+        setIsSubmitting(false);
     }
   };
 
@@ -264,6 +307,28 @@ const FundWallet = () => {
     setShowPinVerify(false);
     await handlePayment();
   };
+
+  if (isProcessing) {
+    return (
+      <div className="container max-w-lg mx-auto py-12 px-4 text-center space-y-6">
+        <div className="inline-flex p-6 rounded-full bg-primary/10">
+          <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        </div>
+        <h1 className="text-2xl font-bold">Processing Payment</h1>
+        <p className="text-muted-foreground">
+          Keep the Paga tab open. We&apos;re waiting for confirmation and will update your wallet automatically.
+        </p>
+        <div className="rounded-2xl border bg-card p-4 text-left space-y-2">
+          <p className="text-sm text-muted-foreground">Reference</p>
+          <p className="font-medium break-all">{activeReference || 'Waiting for reference...'}</p>
+          <p className="text-sm text-muted-foreground pt-2">{monitor.message || 'Monitoring payment status...'}</p>
+        </div>
+        <Button variant="outline" onClick={() => navigate('/wallet')} className="w-full h-14 rounded-2xl">
+          Back to Wallet
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-lg mx-auto py-6 space-y-6 animate-fade-in">
@@ -396,9 +461,9 @@ const FundWallet = () => {
                 <Button 
                     className="flex-[2] h-16 rounded-2xl font-bold text-lg bg-green-600 hover:bg-green-700"
                     onClick={() => setShowPinVerify(true)}
-                    disabled={isProcessing}
+                    disabled={isSubmitting}
                 >
-                    {isProcessing ? (
+                    {isSubmitting ? (
                         <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...
                         </>
