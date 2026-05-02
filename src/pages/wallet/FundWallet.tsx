@@ -42,10 +42,10 @@ const FundWallet = () => {
   }, []);
 
   useEffect(() => {
-    const handleSuccess = (payload: { status?: string; reference?: string; message?: string }) => {
+    const handleSuccess = async (payload: { status?: string; reference?: string; message?: string }) => {
       if (payload.status === 'success') {
         sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
-        void refreshWallet();
+        await refreshWallet();
         toast({
           title: 'Payment Confirmed',
           description: 'Your wallet has been credited and updated.',
@@ -69,7 +69,7 @@ const FundWallet = () => {
       if (event.key !== PAYMENT_EVENT_KEY || !event.newValue) return;
       try {
         const payload = JSON.parse(event.newValue);
-        handleSuccess(payload);
+        void handleSuccess(payload);
       } catch (error) {
         console.error('Failed to parse payment event:', error);
       }
@@ -78,7 +78,7 @@ const FundWallet = () => {
     const handleMessageEvent = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'PAYMENT_COMPLETE') {
-        handleSuccess(event.data);
+        void handleSuccess(event.data);
       }
     };
 

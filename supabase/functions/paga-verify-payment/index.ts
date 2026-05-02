@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
+import { mapPagaProviderState, settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -42,6 +42,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const referenceNumber = String(body.referenceNumber || body.tx_ref || "");
     const pagaData = body.pagaData && typeof body.pagaData === "object" ? (body.pagaData as Record<string, unknown>) : null;
+    const providerState = mapPagaProviderState(pagaData);
 
     if (!referenceNumber) {
       return respond({ error: "referenceNumber or tx_ref is required" }, 400);
@@ -82,6 +83,7 @@ serve(async (req) => {
       operationKey: `verify:${referenceNumber}:${Date.now()}`,
       source: "verify_endpoint",
       delaySeconds: 0,
+      checkRemote: providerState === "processing" ? undefined : false,
     });
 
     return respond({

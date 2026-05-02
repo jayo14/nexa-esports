@@ -199,11 +199,11 @@ const PaymentSuccess: React.FC = () => {
                 }
                 setStatus('success');
                 setMessage('Deposit received successfully! Your wallet balance has been updated.');
-                setNewBalance(data.newBalance || null);
+                setNewBalance(typeof data.newBalance === 'number' ? data.newBalance : null);
                 publishPaymentEvent({
                     status: 'success',
                     reference: extractReference(location.search) || referenceNumber,
-                    newBalance: data.newBalance || null,
+                    newBalance: typeof data.newBalance === 'number' ? data.newBalance : null,
                 });
                 
                 // Refresh profile data and wallet balance immediately

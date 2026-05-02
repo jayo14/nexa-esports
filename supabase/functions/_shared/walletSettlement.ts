@@ -13,6 +13,22 @@ type TransactionRow = {
   paga_reference: string | null;
 };
 
+async function getWalletBalance(walletId: string | null): Promise<number | null> {
+  if (!walletId) return null;
+
+  const { data: wallet, error } = await supabaseAdmin
+    .from("wallets")
+    .select("balance")
+    .eq("id", walletId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return wallet?.balance ?? null;
+}
+
 export type PagaSettlementInput = {
   transactionId?: string | null;
   reference?: string | null;
@@ -187,15 +203,7 @@ export async function settlePagaWalletTransaction(input: PagaSettlementInput): P
     refreshedTransaction = data as TransactionRow | null;
   }
 
-  let newBalance: number | null = null;
-  if (refreshedTransaction?.wallet_id) {
-    const { data: wallet } = await supabaseAdmin
-      .from("wallets")
-      .select("balance")
-      .eq("id", refreshedTransaction.wallet_id)
-      .maybeSingle();
-    newBalance = wallet?.balance ?? null;
-  }
+  const newBalance = await getWalletBalance(refreshedTransaction?.wallet_id ?? transaction?.wallet_id ?? null);
 
   const settledState = refreshedTransaction?.wallet_state || refreshedTransaction?.status || finalDecision;
 
