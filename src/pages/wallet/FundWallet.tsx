@@ -316,7 +316,7 @@ const FundWallet = () => {
         </div>
         <h1 className="text-2xl font-bold">Processing Payment</h1>
         <p className="text-muted-foreground">
-          Keep the Paga tab open. We&apos;re waiting for confirmation and will update your wallet automatically.
+          Verifying payment with Paga... keep the checkout tab open while we confirm your deposit.
         </p>
         <div className="rounded-2xl border bg-card p-4 text-left space-y-2">
           <p className="text-sm text-muted-foreground">Reference</p>

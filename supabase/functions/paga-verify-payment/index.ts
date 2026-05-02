@@ -59,7 +59,7 @@ serve(async (req) => {
       return respond({ status: "processing", message: "Transaction not found yet. Retry shortly.", reference: referenceNumber });
     }
 
-    if (["success", "failed", "reversed", "expired"].includes(String(tx.wallet_state || tx.status))) {
+    if (["success", "completed", "failed", "reversed", "expired"].includes(String(tx.wallet_state || tx.status))) {
       let walletBalance: number | null = null;
       if (tx.wallet_id) {
         const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("id", tx.wallet_id).maybeSingle();
@@ -74,28 +74,50 @@ serve(async (req) => {
       });
     }
 
-    const settled = await settlePagaWalletTransaction({
-      transactionId: tx.id,
-      reference: referenceNumber,
-      providerPayload: pagaData,
-      providerRequest: { referenceNumber },
-      operationType: "status_check",
-      operationKey: `verify:${referenceNumber}:${Date.now()}`,
-      source: "verify_endpoint",
-      delaySeconds: 0,
-      checkRemote: providerState === "processing" ? undefined : false,
-    });
+    const settled =
+      providerState === "success"
+        ? await (async () => {
+            const { data, error } = await supabaseAdmin.rpc("force_verify_deposit", {
+              reference: referenceNumber,
+            });
+
+            if (error) {
+              throw error;
+            }
+
+            return data as Record<string, unknown>;
+          })()
+        : await settlePagaWalletTransaction({
+            transactionId: tx.id,
+            reference: referenceNumber,
+            providerPayload: pagaData,
+            providerRequest: { referenceNumber },
+            operationType: "status_check",
+            operationKey: `verify:${referenceNumber}:${Date.now()}`,
+            source: "verify_endpoint",
+            delaySeconds: 0,
+            checkRemote: providerState === "processing" ? undefined : false,
+          });
+
+    const settledRecord = settled as Record<string, unknown>;
+    const settledState = String(settledRecord.state || "processing");
+    const settledBalance =
+      typeof settledRecord.new_balance === "number"
+        ? settledRecord.new_balance
+        : typeof settledRecord.newBalance === "number"
+        ? settledRecord.newBalance
+        : null;
 
     return respond({
-      status: settled.state,
+      status: settledState,
       message:
-        settled.state === "success"
+        settledState === "success"
           ? "Payment settled successfully."
-          : settled.state === "failed" || settled.state === "reversed" || settled.state === "expired"
+          : ["failed", "reversed", "expired"].includes(settledState)
           ? "Payment finalized with non-success status."
           : "Transaction is still processing.",
-      reference: settled.reference || referenceNumber,
-      newBalance: settled.newBalance,
+      reference: String(settledRecord.reference || referenceNumber),
+      newBalance: settledBalance,
     });
   } catch (error) {
     console.error("Error in paga-verify-payment:", error);

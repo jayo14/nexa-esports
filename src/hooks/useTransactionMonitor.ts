@@ -19,7 +19,7 @@ const DEFAULT_STATE: TransactionMonitorState = {
   transactionId: null,
 };
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 3000;
 const MAX_WAIT_MS = 15 * 60 * 1000;
 
 export function useTransactionMonitor({
@@ -82,7 +82,7 @@ export function useTransactionMonitor({
         return;
       }
 
-      if (data?.status === 'success') {
+      if (data?.status === 'success' || data?.status === 'completed') {
         finish({
           status: 'success',
           message: 'Deposit confirmed.',
@@ -134,7 +134,7 @@ export function useTransactionMonitor({
           (payload) => {
             const nextRow = payload.new as Record<string, unknown> | undefined;
             const nextState = String(nextRow?.wallet_state || nextRow?.status || '').toLowerCase();
-            if (nextState === 'success') {
+            if (nextState === 'success' || nextState === 'completed') {
               finish({
                 status: 'success',
                 message: 'Deposit confirmed.',
