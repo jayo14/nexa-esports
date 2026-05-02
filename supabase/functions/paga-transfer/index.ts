@@ -4,6 +4,7 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
 import { settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
+import { getWalletMinimums } from "../_shared/walletLimits.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
@@ -61,6 +62,7 @@ serve(async (req) => {
     }
 
     const { endpoint, account_bank, account_number, amount, narration, beneficiary_name, wallet_type, idempotency_key } = await req.json();
+    const { minWithdrawalAmount } = await getWalletMinimums();
 
     // Check withdrawal availability
     if (endpoint === "check-withdrawal-availability") {
@@ -184,8 +186,8 @@ serve(async (req) => {
     }
 
     // Validate amount
-    if (!amount || amount < 500) {
-      return new Response(JSON.stringify({ error: "Minimum withdrawal amount is ₦500" }), {
+    if (!amount || amount < minWithdrawalAmount) {
+      return new Response(JSON.stringify({ error: `Minimum withdrawal amount is ₦${minWithdrawalAmount.toLocaleString()}` }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });

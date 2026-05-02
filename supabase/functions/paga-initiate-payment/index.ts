@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { generateReferenceNumber } from "../_shared/pagaAuth.ts";
+import { getWalletMinimums } from "../_shared/walletLimits.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 serve(async (req) => {
@@ -52,11 +53,13 @@ serve(async (req) => {
       );
     }
 
+    const { minDepositAmount } = await getWalletMinimums();
+
     const { amount, fee, intended_amount, customer, redirect_url, wallet_type, idempotency_key, client_reference } = await req.json();
     const walletType = wallet_type === "marketplace" ? "marketplace" : "clan";
 
-    if (!amount || amount < 500) {
-      return new Response(JSON.stringify({ error: "Minimum amount is ₦500" }), {
+    if (!amount || amount < minDepositAmount) {
+      return new Response(JSON.stringify({ error: `Minimum amount is ₦${minDepositAmount.toLocaleString()}` }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 400,
       });

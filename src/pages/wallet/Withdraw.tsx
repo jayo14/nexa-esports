@@ -36,6 +36,7 @@ const Withdraw = () => {
   const { toast } = useToast();
   const { user, profile, refreshWallet } = useAuth();
   const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
+  const minWithdrawalAmount = walletSettings.min_withdrawal_amount || 500;
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [step, setStep] = useState<Step>('amount');
@@ -138,8 +139,8 @@ const Withdraw = () => {
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
 
-    if (amountNum < 500) {
-      toast({ title: "Minimum Withdrawal", description: "Minimum withdrawal amount is ₦500", variant: "destructive" });
+    if (amountNum < minWithdrawalAmount) {
+      toast({ title: "Minimum Withdrawal", description: `Minimum withdrawal amount is ₦${minWithdrawalAmount.toLocaleString()}`, variant: "destructive" });
       return;
     }
     if (amountNum > 30000) {
@@ -333,7 +334,7 @@ const Withdraw = () => {
                     autoFocus
                   />
                   <div className="flex justify-between text-sm text-muted-foreground px-2">
-                    <span>Min: ₦500</span>
+                    <span>Min: ₦{minWithdrawalAmount.toLocaleString()}</span>
                     <span>Max: ₦30,000</span>
                   </div>
                 </div>
@@ -346,7 +347,7 @@ const Withdraw = () => {
                       variant="outline"
                       onClick={() => setAmount(quickAmount.toString())}
                       className="h-16 text-base font-bold"
-                      disabled={quickAmount > walletBalance}
+                      disabled={quickAmount > walletBalance || quickAmount < minWithdrawalAmount}
                     >
                       ₦{quickAmount.toLocaleString()}
                     </Button>
@@ -364,7 +365,7 @@ const Withdraw = () => {
 
               <Button
                 onClick={handleAmountNext}
-                disabled={!amount || Number(amount) < 500 || Number(amount) > 30000 || Number(amount) > walletBalance || isVerifyingBank}
+                disabled={!amount || Number(amount) < minWithdrawalAmount || Number(amount) > 30000 || Number(amount) > walletBalance || isVerifyingBank}
                 className="w-full h-14 text-base font-bold"
                 size="lg"
               >

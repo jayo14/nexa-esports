@@ -7,6 +7,8 @@ export interface WalletSettings {
     deposits_enabled: boolean;
     allow_sunday_withdrawals: boolean;
     disable_withdrawal_cooldown?: boolean;
+    min_deposit_amount: number;
+    min_withdrawal_amount: number;
 }
 
 // Default settings object - used as source of truth for valid keys
@@ -15,17 +17,22 @@ const DEFAULT_WALLET_SETTINGS: WalletSettings = {
     deposits_enabled: true,
     allow_sunday_withdrawals: false,
     disable_withdrawal_cooldown: false,
+    min_deposit_amount: 500,
+    min_withdrawal_amount: 500,
 };
 
 type WalletSettingKey = keyof WalletSettings;
+type NumericSettingKey = 'min_deposit_amount' | 'min_withdrawal_amount';
+type BooleanSettingKey = Exclude<WalletSettingKey, NumericSettingKey>;
 
 // Type guard derived from the WalletSettings interface
 const isWalletSettingKey = (key: string): key is WalletSettingKey => {
     return key in DEFAULT_WALLET_SETTINGS;
 };
 
-// Get all wallet setting keys for database queries
-const WALLET_SETTING_KEYS = Object.keys(DEFAULT_WALLET_SETTINGS) as WalletSettingKey[];
+const isNumericSettingKey = (key: string): key is NumericSettingKey => {
+    return key === 'min_deposit_amount' || key === 'min_withdrawal_amount';
+};
 
 export const useWalletSettings = () => {
     const [settings, setSettings] = useState<WalletSettings>({ ...DEFAULT_WALLET_SETTINGS });
@@ -35,24 +42,36 @@ export const useWalletSettings = () => {
 
     const fetchSettings = useCallback(async () => {
         try {
-            const { data, error } = await supabase
+            const [{ data: walletData, error: walletError }, { data: appData, error: appError }] = await Promise.all([
+                supabase
                 .from('clan_settings')
                 .select('key, value')
-                .in('key', WALLET_SETTING_KEYS);
+                .in('key', ['withdrawals_enabled', 'deposits_enabled', 'allow_sunday_withdrawals', 'disable_withdrawal_cooldown']),
+                supabase
+                    .from('app_settings')
+                    .select('key, value')
+                    .in('key', ['min_deposit_amount', 'min_withdrawal_amount']),
+            ]);
 
-            if (error) {
-                throw error;
-            }
+            if (walletError) throw walletError;
+            if (appError) throw appError;
 
-            if (data) {
+            if (walletData || appData) {
                 const settingsMap: WalletSettings = { ...DEFAULT_WALLET_SETTINGS };
-                
-                data.forEach((item) => {
+
+                (walletData || []).forEach((item) => {
                     if (isWalletSettingKey(item.key)) {
-                        settingsMap[item.key] = item.value;
+                        settingsMap[item.key] = Boolean(item.value);
                     }
                 });
-                
+
+                (appData || []).forEach((item) => {
+                    if (isNumericSettingKey(item.key)) {
+                        const parsed = Number(item.value);
+                        settingsMap[item.key] = Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_WALLET_SETTINGS[item.key];
+                    }
+                });
+
                 setSettings(settingsMap);
             }
         } catch (error) {
@@ -67,7 +86,7 @@ export const useWalletSettings = () => {
         fetchSettings();
     }, [fetchSettings]);
 
-    const updateSetting = async (key: keyof WalletSettings, value: boolean) => {
+    const updateSetting = async (key: BooleanSettingKey, value: boolean) => {
         setIsUpdating(true);
         try {
             const { data: session } = await supabase.auth.getSession();
@@ -113,5 +132,48 @@ export const useWalletSettings = () => {
         }
     };
 
-    return { settings, loading, isUpdating, updateSetting, refetch: fetchSettings };
+    const updateLimit = async (key: NumericSettingKey, value: number) => {
+        setIsUpdating(true);
+        try {
+            const { data: session } = await supabase.auth.getSession();
+            const userId = session?.session?.user?.id;
+
+            const sanitized = Number.isFinite(value) && value > 0 ? Math.round(value) : DEFAULT_WALLET_SETTINGS[key];
+            const { error } = await supabase
+                .from('app_settings')
+                .upsert(
+                    {
+                        key,
+                        value: String(sanitized),
+                        updated_by: userId || null,
+                    },
+                    { onConflict: 'key' }
+                );
+
+            if (error) {
+                throw error;
+            }
+
+            setSettings((prev) => ({
+                ...prev,
+                [key]: sanitized,
+            }));
+
+            toast({
+                title: 'Success',
+                description: `${key === 'min_deposit_amount' ? 'Minimum deposit' : 'Minimum withdrawal'} updated successfully.`,
+            });
+        } catch (error) {
+            console.error('Error updating wallet limit:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to update limit.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    return { settings, loading, isUpdating, updateSetting, updateLimit, refetch: fetchSettings };
 };

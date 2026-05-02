@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -254,7 +255,28 @@ const ThemeCarousel = () => {
 export const AdminConfig: React.FC = () => {
   const { toast } = useToast();
   const [isResetting, setIsResetting] = useState<string | null>(null);
-  const { settings, loading: walletSettingsLoading, isUpdating, updateSetting } = useWalletSettings();
+  const { settings, loading: walletSettingsLoading, isUpdating, updateSetting, updateLimit } = useWalletSettings();
+  const [depositMin, setDepositMin] = useState('500');
+  const [withdrawalMin, setWithdrawalMin] = useState('500');
+
+  React.useEffect(() => {
+    setDepositMin(String(settings.min_deposit_amount || 500));
+    setWithdrawalMin(String(settings.min_withdrawal_amount || 500));
+  }, [settings.min_deposit_amount, settings.min_withdrawal_amount]);
+
+  const saveLimit = async (key: 'min_deposit_amount' | 'min_withdrawal_amount', rawValue: string) => {
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      toast({
+        title: 'Invalid amount',
+        description: 'Enter a valid minimum amount greater than 0.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await updateLimit(key, parsed);
+  };
 
   const handleReset = async (type: 'kills' | 'attendance') => {
     setIsResetting(type);
@@ -353,6 +375,50 @@ export const AdminConfig: React.FC = () => {
                       </div>
                     </div>
                     <Switch id="sunday-withdrawals-toggle" checked={settings.allow_sunday_withdrawals || false} onCheckedChange={(c) => updateSetting('allow_sunday_withdrawals', c)} disabled={isUpdating} />
+                  </div>
+                  <div className="grid gap-4 p-4 bg-background/50 rounded-lg border border-border/50">
+                    <div className="space-y-2">
+                      <Label htmlFor="min-deposit-amount" className="font-semibold text-foreground">Minimum Deposit Amount</Label>
+                      <p className="text-sm text-muted-foreground">Users cannot fund their wallet below this value.</p>
+                      <div className="flex gap-3">
+                        <Input
+                          id="min-deposit-amount"
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={depositMin}
+                          onChange={(e) => setDepositMin(e.target.value)}
+                          disabled={isUpdating}
+                        />
+                        <Button
+                          onClick={() => void saveLimit('min_deposit_amount', depositMin)}
+                          disabled={isUpdating}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="min-withdrawal-amount" className="font-semibold text-foreground">Minimum Withdrawal Amount</Label>
+                      <p className="text-sm text-muted-foreground">Users cannot withdraw below this value.</p>
+                      <div className="flex gap-3">
+                        <Input
+                          id="min-withdrawal-amount"
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={withdrawalMin}
+                          onChange={(e) => setWithdrawalMin(e.target.value)}
+                          disabled={isUpdating}
+                        />
+                        <Button
+                          onClick={() => void saveLimit('min_withdrawal_amount', withdrawalMin)}
+                          disabled={isUpdating}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </>
               )}

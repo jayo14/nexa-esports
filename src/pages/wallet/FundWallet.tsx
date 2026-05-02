@@ -23,6 +23,7 @@ const FundWallet = () => {
   const { toast } = useToast();
   const { user, profile, refreshWallet } = useAuth();
   const { settings: walletSettings, loading: settingsLoading } = useWalletSettings();
+  const minDepositAmount = walletSettings.min_deposit_amount || 500;
   
   const [amount, setAmount] = useState<number>(0);
   const [step, setStep] = useState<1 | 2>(1);
@@ -128,10 +129,10 @@ const FundWallet = () => {
   };
 
   const validateAndNext = async () => {
-    if (amount < 500) {
+    if (amount < minDepositAmount) {
       toast({
         title: 'Minimum Deposit Required',
-        description: 'Minimum deposit amount is ₦500.',
+        description: `Minimum deposit amount is ₦${minDepositAmount.toLocaleString()}.`,
         variant: 'destructive',
       });
       return;
@@ -291,6 +292,7 @@ const FundWallet = () => {
                       if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
                       setAmount(preset);
                     }}
+                    disabled={preset < minDepositAmount}
                   >
                     ₦{preset.toLocaleString()}
                   </Button>
@@ -313,19 +315,20 @@ const FundWallet = () => {
                 </div>
                 <div className="relative">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">₦</span>
-                  <Input 
-                    id="custom-amount"
-                    type="number"
-                    placeholder="Enter amount"
-                    className="h-16 pl-12 text-2xl font-bold rounded-2xl border-2 focus-visible:ring-green-500/20 focus-visible:border-green-500"
-                    value={amount || ''}
-                    onChange={(e) => setAmount(Number(e.target.value))}
-                    inputMode="numeric"
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground px-1">
-                  Min: ₦500 • Max: ₦50,000
-                </p>
+                   <Input 
+                     id="custom-amount"
+                     type="number"
+                     placeholder={`Enter amount (min ₦${minDepositAmount.toLocaleString()})`}
+                     className="h-16 pl-12 text-2xl font-bold rounded-2xl border-2 focus-visible:ring-green-500/20 focus-visible:border-green-500"
+                     value={amount || ''}
+                     onChange={(e) => setAmount(Number(e.target.value))}
+                     inputMode="numeric"
+                     min={minDepositAmount}
+                   />
+                 </div>
+                 <p className="text-sm text-muted-foreground px-1">
+                   Min: ₦{minDepositAmount.toLocaleString()} • Max: ₦50,000
+                 </p>
               </div>
 
               <Alert className="bg-blue-500/5 border-blue-500/20 rounded-2xl p-4">
@@ -339,7 +342,7 @@ const FundWallet = () => {
               <Button 
                 className="w-full h-16 rounded-2xl font-bold text-lg bg-primary hover:bg-primary/90"
                 onClick={validateAndNext}
-                disabled={amount < 500}
+                disabled={amount < minDepositAmount}
               >
                 Continue <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
