@@ -179,6 +179,30 @@ export async function settlePagaWalletTransaction(input: PagaSettlementInput): P
     });
   }
 
+  let directSettlementResult: Record<string, unknown> | null = null;
+  if (transactionId && finalDecision !== "processing") {
+    const { data, error } = await supabaseAdmin.rpc("wallet_settle_transaction", {
+      p_transaction_id: transactionId,
+      p_decision: finalDecision,
+      p_source: input.source,
+      p_evidence: {
+        source: input.source,
+        provider: providerRaw ?? input.providerPayload ?? {},
+      },
+    });
+
+    if (error) {
+      console.error("Direct settlement call failed", {
+        transactionId,
+        reference,
+        decision: finalDecision,
+        error,
+      });
+    } else {
+      directSettlementResult = (data as Record<string, unknown> | null) ?? null;
+    }
+  }
+
   await supabaseAdmin.rpc("wallet_enqueue_settlement", {
     p_transaction_id: transactionId,
     p_provider_reference: reference,
@@ -213,7 +237,7 @@ export async function settlePagaWalletTransaction(input: PagaSettlementInput): P
     reference,
     transactionId: refreshedTransaction?.id || transactionId,
     newBalance,
-    settlementResult: (settlement.data as Record<string, unknown> | null) ?? null,
+    settlementResult: directSettlementResult ?? (settlement.data as Record<string, unknown> | null) ?? null,
     providerState,
   };
 }
