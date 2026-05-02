@@ -19,6 +19,17 @@ type Step = 'amount' | 'review' | 'processing';
 
 const PAYMENT_IN_PROGRESS_KEY = 'payment_in_progress';
 
+type WithdrawReceiptData = {
+  id: string;
+  type: 'withdrawal';
+  amount: number;
+  status: string;
+  reference?: string;
+  created_at: string;
+  currency: string;
+  newBalance?: number | null;
+};
+
 const Withdraw = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,7 +45,7 @@ const Withdraw = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isBankVerified, setIsBankVerified] = useState(false);
   const [isVerifyingBank, setIsVerifyingBank] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
+  const [receiptData, setReceiptData] = useState<WithdrawReceiptData | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
 
   // Get wallet type from navigation state (default to 'clan')
@@ -95,6 +106,17 @@ const Withdraw = () => {
     fetchWalletBalance();
     setIsBankVerified(false);
   }, [user]);
+
+  useEffect(() => {
+    const balance =
+      walletType === 'marketplace'
+        ? profile?.marketplace_wallet_balance
+        : profile?.wallet_balance;
+
+    if (typeof balance === 'number') {
+      setWalletBalance(Number(balance) || 0);
+    }
+  }, [profile?.wallet_balance, profile?.marketplace_wallet_balance, walletType]);
 
   if (!settingsLoading && !walletSettings.withdrawals_enabled) {
     return (
@@ -186,6 +208,9 @@ const Withdraw = () => {
     try {
       const data = await performWithdrawal(Number(amount));
       if (data) {
+        if (typeof data.newBalance === 'number') {
+          setWalletBalance(Number(data.newBalance) || 0);
+        }
         // Set progress flag if it's still processing
         if (data.state === 'processing') {
           sessionStorage.setItem(PAYMENT_IN_PROGRESS_KEY, 'true');

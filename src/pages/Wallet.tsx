@@ -557,6 +557,61 @@ const Wallet: React.FC = () => {
   }, [refreshWallet, currentPage]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handlePaymentEvent = (payload: { status?: string; reference?: string; message?: string }) => {
+      if (payload.status === 'success') {
+        sessionStorage.removeItem('payment_in_progress');
+        setPaymentInProgress(false);
+        void refreshWallet();
+        toast({
+          title: 'Payment Confirmed',
+          description: 'Your wallet has been credited and updated.',
+        });
+        if (payload.reference) {
+          navigate(`/wallet?showReceipt=${payload.reference}`);
+        }
+        return;
+      }
+
+      if (payload.status === 'error') {
+        sessionStorage.removeItem('payment_in_progress');
+        setPaymentInProgress(false);
+        void refreshWallet();
+        toast({
+          title: 'Payment Not Completed',
+          description: payload.message || 'The payment window was closed before completion.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    const handleStorageEvent = (event: StorageEvent) => {
+      if (event.key !== 'nexa:wallet-payment-event' || !event.newValue) return;
+      try {
+        handlePaymentEvent(JSON.parse(event.newValue));
+      } catch (error) {
+        console.error('Failed to parse payment event:', error);
+      }
+    };
+
+    const handleMessageEvent = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'PAYMENT_COMPLETE') {
+        handlePaymentEvent(event.data);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+    window.addEventListener('message', handleMessageEvent);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageEvent);
+      window.removeEventListener('message', handleMessageEvent);
+    };
+  }, [navigate, refreshWallet, toast]);
+
+  useEffect(() => {
     return () => {
       if (refreshInterval.current) clearInterval(refreshInterval.current);
     };

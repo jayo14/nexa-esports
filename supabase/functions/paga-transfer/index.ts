@@ -9,6 +9,23 @@ const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secu
 
 type ProviderState = "success" | "failed" | "processing";
 
+type PagaBank = {
+  uuid?: string;
+  bankUUID?: string;
+  bankUuid?: string;
+  id?: string;
+  code?: string;
+  bankCode?: string;
+  destinationBankCode?: string;
+  interInstitutionCode?: string;
+  sortCode?: string;
+  name?: string;
+};
+
+type PagaResponse = Record<string, unknown> & {
+  debug_attempted_payload?: Record<string, unknown>;
+};
+
 function mapProviderState(payload: Record<string, unknown> | null | undefined): ProviderState {
   if (!payload) return "processing";
 
@@ -306,7 +323,7 @@ serve(async (req) => {
     let bankCode = "";
     let bankUuid = "";
     let bankName = "";
-    let bankSample: any[] | string = "Empty list";
+    let bankSample: PagaBank[] | string = "Empty list";
     try {
       const getBanksRef = generateReferenceNumber("GB");
       const getBanksHash = await generatePagaBusinessHash([getBanksRef], PAGA_HASH_KEY);
@@ -317,12 +334,12 @@ serve(async (req) => {
       });
 
       const banksData = await getBanksResponse.json();
-      const banksList = banksData.bank || banksData.banks || banksData.data || [];
+      const banksList = (banksData.bank || banksData.banks || banksData.data || []) as PagaBank[];
       bankSample = banksList.length > 0 ? banksList.slice(0, 3) : "Empty list";
 
       const target = String(account_bank || "").trim().toLowerCase();
       const targetNoHyphen = target.replace(/-/g, "");
-      const matchedBank = banksList.find((b: any) => {
+      const matchedBank = banksList.find((b: PagaBank) => {
         const values = [
           b.uuid,
           b.bankUUID,
@@ -480,7 +497,7 @@ serve(async (req) => {
     ];
 
     let pagaResponse: Response | null = null;
-    let pagaData: any = null;
+    let pagaData: PagaResponse | null = null;
     const attemptTrace: Array<Record<string, unknown>> = [];
 
     for (let attemptIndex = 0; attemptIndex < requestAttempts.length; attemptIndex++) {
@@ -644,17 +661,46 @@ serve(async (req) => {
 
     await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 5 });
 
+    const { data: refreshed } = await supabaseAdmin
+      .from("transactions")
+      .select("wallet_state, status, wallet_id")
+      .eq("id", transactionId)
+      .maybeSingle();
+
+    const settledState = String(refreshed?.wallet_state || refreshed?.status || providerState);
+    const normalizedState =
+      settledState === "completed" ? "success" :
+      settledState === "success" ? "success" :
+      settledState === "failed" ? "failed" :
+      settledState === "reversed" ? "failed" :
+      settledState === "expired" ? "failed" :
+      settledState === "processing" ? "processing" :
+      providerState;
+
+    let newBalance: number | null = null;
+    if (refreshed?.wallet_id && normalizedState === "success") {
+      const { data: wallet } = await supabaseAdmin
+        .from("wallets")
+        .select("balance")
+        .eq("id", refreshed.wallet_id)
+        .maybeSingle();
+      newBalance = wallet?.balance ?? null;
+    }
+
     return new Response(
       JSON.stringify({
-        status: providerState !== "failed",
-        state: providerState === "success" ? "completed" : providerState,
+        status: normalizedState !== "failed",
+        state: normalizedState === "success" ? "completed" : normalizedState,
         message:
-          providerState === "failed"
+          normalizedState === "failed"
             ? "Provider reported failure. Settlement is queued."
-            : "Withdrawal accepted and queued for settlement.",
+            : normalizedState === "success"
+              ? "Withdrawal settled successfully."
+              : "Withdrawal accepted and queued for settlement.",
         referenceNumber,
         netAmount,
         transactionId,
+        newBalance,
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );

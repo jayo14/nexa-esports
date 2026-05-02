@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle2, XCircle, Loader2, Wallet, ArrowRight } from 'lucide-react';
@@ -56,17 +56,42 @@ const PaymentSuccess: React.FC = () => {
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
     const [message, setMessage] = useState('Verifying your payment secure transaction...');
     const [newBalance, setNewBalance] = useState<number | null>(null);
-    const [paymentRef, setPaymentRef] = useState<string | null>(null);
-    const [countdown, setCountdown] = useState(5);
-    const location = useLocation();
-    const navigate = useNavigate();
+  const [paymentRef, setPaymentRef] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
+  const location = useLocation();
+  const navigate = useNavigate();
   const { refreshWallet } = useAuth();
+  const paymentResolvedRef = useRef(false);
 
-  const clearPaymentFlag = () => {
-    if (typeof window !== 'undefined') {
+    const clearPaymentFlag = () => {
+      if (typeof window !== 'undefined') {
             sessionStorage.removeItem('payment_in_progress');
-    }
-  };
+      }
+    };
+
+    useEffect(() => {
+        const handleWindowClose = () => {
+            if (paymentResolvedRef.current) return;
+            if (typeof window === 'undefined') return;
+
+            if (sessionStorage.getItem('payment_in_progress') === 'true') {
+                publishPaymentEvent({
+                    status: 'error',
+                    reference: extractReference(location.search) || undefined,
+                    message: 'Payment window was closed before completion.',
+                });
+                clearPaymentFlag();
+            }
+        };
+
+        window.addEventListener('beforeunload', handleWindowClose);
+        window.addEventListener('pagehide', handleWindowClose);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleWindowClose);
+            window.removeEventListener('pagehide', handleWindowClose);
+        };
+    }, [location.search]);
 
     const publishPaymentEvent = (payload: {
         status: 'success' | 'error';
@@ -168,6 +193,7 @@ const PaymentSuccess: React.FC = () => {
             }
 
             if (data.status === 'success' || data.message === 'Transaction already processed') {
+                paymentResolvedRef.current = true;
                 if (Capacitor.isNativePlatform()) {
                     await Haptics.notification({ type: NotificationType.Success });
                 }
@@ -201,6 +227,7 @@ const PaymentSuccess: React.FC = () => {
                 }, 2000);
             } else {
                 if (data.status === 'failed' || data.status === 'reversed' || data.status === 'expired') {
+                    paymentResolvedRef.current = true;
                     publishPaymentEvent({
                         status: 'error',
                         reference: extractReference(location.search) || referenceNumber,
@@ -211,6 +238,7 @@ const PaymentSuccess: React.FC = () => {
                     clearPaymentFlag();
                     return;
                 }
+                paymentResolvedRef.current = true;
                 publishPaymentEvent({
                     status: 'error',
                     reference: extractReference(location.search) || referenceNumber,
@@ -222,6 +250,7 @@ const PaymentSuccess: React.FC = () => {
             }
         } catch (err: unknown) {
             console.error('Unexpected error during verification:', err);
+            paymentResolvedRef.current = true;
             publishPaymentEvent({
                 status: 'error',
                 reference: extractReference(location.search) || referenceNumber,
@@ -304,7 +333,9 @@ const PaymentSuccess: React.FC = () => {
                                     variant="outline"
                                     onClick={() => {
                                         clearPaymentFlag();
-                                        try { window.close(); } catch(e) {}
+                                        try { window.close(); } catch {
+                                            // Ignore browsers that block programmatic closing.
+                                        }
                                         setTimeout(() => navigate('/wallet'), 500);
                                     }}
                                     className="w-full h-14 rounded-2xl border-2 font-bold text-base"
