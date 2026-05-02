@@ -40,6 +40,9 @@ const glassButton: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.1)',
 };
 
+const VERIFY_RETRY_DELAY_MS = 5000;
+const MAX_VERIFY_RETRIES = 24;
+
 /* ─── Transaction type helpers ─── */
 const renderTransactionIcon = (type: string) => {
   const iconClass = 'w-4 h-4';
@@ -433,7 +436,11 @@ const Wallet: React.FC = () => {
 
     // Handle payment verification if landed directly
     if (referenceNumber && !showReceiptRef) {
-      const verifyPayment = async () => {
+      let cancelled = false;
+
+      const verifyPayment = async (attempt = 0): Promise<void> => {
+        if (cancelled) return;
+
         setIsVerifying(true);
         try {
           await supabase.auth.refreshSession();
@@ -442,23 +449,65 @@ const Wallet: React.FC = () => {
             headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
             body: { referenceNumber, tx_ref: referenceNumber }
           });
+
+          if (cancelled) return;
+
           if (data?.status === 'success' || data?.message === 'Transaction already processed') {
             toast({ title: 'Payment Confirmed', description: 'Your deposit has been verified and credited.' });
             await refreshWallet();
             fetchWalletData(currentPage);
+            sessionStorage.removeItem('payment_in_progress');
+            setPaymentInProgress(false);
+            const ns = new URLSearchParams(location.search);
+            ns.delete('referenceNumber');
+            ns.delete('reference');
+            navigate(location.pathname + (ns.toString() ? '?' + ns.toString() : ''), { replace: true });
+            return;
           }
+
+          if (data?.status === 'failed' || data?.status === 'reversed' || data?.status === 'expired') {
+            toast({
+              title: 'Payment Not Completed',
+              description: data?.message || 'The payment was not completed successfully.',
+              variant: 'destructive',
+            });
+            sessionStorage.removeItem('payment_in_progress');
+            setPaymentInProgress(false);
+            const ns = new URLSearchParams(location.search);
+            ns.delete('referenceNumber');
+            ns.delete('reference');
+            navigate(location.pathname + (ns.toString() ? '?' + ns.toString() : ''), { replace: true });
+            return;
+          }
+
+          if (data?.status === 'processing' && attempt < MAX_VERIFY_RETRIES) {
+            setPaymentInProgress(true);
+            sessionStorage.setItem('payment_in_progress', 'true');
+            setTimeout(() => {
+              void verifyPayment(attempt + 1);
+            }, VERIFY_RETRY_DELAY_MS);
+            return;
+          }
+
+          setPaymentInProgress(true);
+          sessionStorage.setItem('payment_in_progress', 'true');
+          toast({
+            title: 'Payment Still Processing',
+            description: 'We will keep checking in the background until Paga confirms it.',
+          });
+          await refreshWallet();
         } catch (err) {
           console.error('Auto-verification failed:', err);
         } finally {
           setIsVerifying(false);
-          // Clean up URL
-          const ns = new URLSearchParams(location.search);
-          ns.delete('referenceNumber');
-          ns.delete('reference');
-          navigate(location.pathname + (ns.toString() ? '?' + ns.toString() : ''), { replace: true });
         }
       };
-      verifyPayment();
+
+      void verifyPayment();
+
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (showReceiptRef && receiptShownRef.current !== showReceiptRef) {

@@ -49,7 +49,8 @@ const glassMorphism: React.CSSProperties = {
     border: '1px solid rgba(255,255,255,0.08)',
 };
 
-const MAX_VERIFY_RETRIES = 5;
+const MAX_VERIFY_RETRIES = 24;
+const VERIFY_RETRY_DELAY_MS = 5000;
 const PAYMENT_EVENT_KEY = 'nexa:wallet-payment-event';
 
 const PaymentSuccess: React.FC = () => {
@@ -187,7 +188,7 @@ const PaymentSuccess: React.FC = () => {
                 setMessage('Payment is still processing. We will update your wallet automatically once confirmed.');
 
                 if (attempt < MAX_VERIFY_RETRIES) {
-                    setTimeout(() => verifyPayment(referenceNumber, attempt + 1), 3000);
+                    setTimeout(() => verifyPayment(referenceNumber, attempt + 1), VERIFY_RETRY_DELAY_MS);
                 }
                 return;
             }
