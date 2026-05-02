@@ -59,14 +59,80 @@ function extractReference(payload: Record<string, unknown> | null | undefined): 
   return direct ? String(direct) : null;
 }
 
-export function mapPagaProviderState(payload: Record<string, unknown> | null | undefined): PagaProviderState {
-  if (!payload) return "processing";
+function unwrapPagaPayload(payload: Record<string, unknown> | null | undefined): Record<string, unknown> | undefined {
+  if (!payload) return undefined;
 
-  const responseCode = payload.responseCode ?? payload.statusCode;
-  const statusText = String(
-    payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
-  ).toUpperCase();
-  const normalizedValues = [statusText, String(payload.statusCode || "").toUpperCase(), String(payload.responseCode || "").toUpperCase()];
+  const candidates: unknown[] = [
+    payload,
+    payload.data,
+    payload.result,
+    payload.response,
+    payload.transaction,
+    payload.transactions,
+    payload.history,
+    payload.records,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate) && candidate.length > 0) {
+      const match = candidate.find((item) => {
+        if (!item || typeof item !== "object") return false;
+        const row = item as Record<string, unknown>;
+        const ref = extractReference(row);
+        return !ref || ref === extractReference(payload);
+      });
+      if (match && typeof match === "object") return match as Record<string, unknown>;
+    }
+
+    if (candidate && typeof candidate === "object") {
+      return candidate as Record<string, unknown>;
+    }
+  }
+
+  return payload;
+}
+
+function collectPagaSignals(value: unknown, signals: string[] = [], depth = 0): string[] {
+  if (depth > 4 || value == null) return signals;
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    signals.push(String(value).toUpperCase());
+    return signals;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectPagaSignals(item, signals, depth + 1);
+    }
+    return signals;
+  }
+
+  if (typeof value === "object") {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      collectPagaSignals(item, signals, depth + 1);
+    }
+  }
+
+  return signals;
+}
+
+export function mapPagaProviderState(payload: Record<string, unknown> | null | undefined): PagaProviderState {
+  const record = unwrapPagaPayload(payload);
+  if (!record) return "processing";
+
+  const responseCode = record.responseCode ?? record.statusCode;
+  const normalizedValues = collectPagaSignals({
+    status: record.status,
+    transactionStatus: record.transactionStatus,
+    responseMessage: record.responseMessage,
+    message: record.message,
+    responseCode: record.responseCode,
+    statusCode: record.statusCode,
+    paymentDetails: record.paymentDetails,
+    data: record.data,
+    result: record.result,
+    response: record.response,
+  });
 
   if (responseCode === 0 || responseCode === "0" || responseCode === "00" || responseCode === "000") {
     return "success";
@@ -108,25 +174,47 @@ async function queryPagaStatus(reference: string): Promise<{ state: PagaProvider
     return { state: "processing" };
   }
 
-  try {
-    const hash = await generatePagaBusinessHash([reference], PAGA_HASH_KEY);
-    const response = await fetch(`${PAGA_BASE_URL}/transactionStatus`, {
-      method: "POST",
-      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
-      body: JSON.stringify({ referenceNumber: reference }),
-    });
+  const endpoints = [
+    "transactionHistory",
+    "transactionStatus",
+  ];
 
-    const text = await response.text();
-    try {
-      const payload = JSON.parse(text) as Record<string, unknown>;
-      return { state: mapPagaProviderState(payload), raw: payload };
-    } catch {
-      return { state: "processing" };
+  const requestBodies = [
+    { referenceNumber: reference },
+    { reference },
+    { transactionReference: reference },
+    { paymentReference: reference },
+  ];
+
+  for (const endpoint of endpoints) {
+    for (const body of requestBodies) {
+      try {
+        const hash = await generatePagaBusinessHash([reference], PAGA_HASH_KEY);
+        const response = await fetch(`${PAGA_BASE_URL}/${endpoint}`, {
+          method: "POST",
+          headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+          body: JSON.stringify(body),
+        });
+
+        const text = await response.text();
+        let payload: Record<string, unknown>;
+        try {
+          payload = JSON.parse(text) as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+
+        const state = mapPagaProviderState(payload);
+        if (state !== "processing") {
+          return { state, raw: payload };
+        }
+      } catch (error) {
+        console.error("Paga status lookup failed", { reference, endpoint, body, error });
+      }
     }
-  } catch (error) {
-    console.error("Paga status lookup failed", { reference, error });
-    return { state: "processing" };
   }
+
+  return { state: "processing" };
 }
 
 export async function settlePagaWalletTransaction(input: PagaSettlementInput): Promise<PagaSettlementResult> {

@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { mapPagaProviderState, settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
 
 serve(async (req) => {
@@ -10,10 +9,6 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
-  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
-
   const respond = (body: object, status = 200) =>
     new Response(JSON.stringify(body), {
       headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
@@ -21,28 +16,8 @@ serve(async (req) => {
     });
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
-      return respond({ error: "Payment service not configured: Paga credentials missing" }, 500);
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
-    );
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-
-    if (!user) {
-      return respond({ error: "Unauthorized" }, 401);
-    }
-
     const body = await req.json().catch(() => ({}));
     const referenceNumber = String(body.referenceNumber || body.tx_ref || "");
-    const pagaData = body.pagaData && typeof body.pagaData === "object" ? (body.pagaData as Record<string, unknown>) : null;
-    const providerState = mapPagaProviderState(pagaData);
 
     if (!referenceNumber) {
       return respond({ error: "referenceNumber or tx_ref is required" }, 400);
@@ -50,9 +25,8 @@ serve(async (req) => {
 
     const { data: tx } = await supabaseAdmin
       .from("transactions")
-      .select("id, wallet_state, status, reference, wallet_id, amount, user_id")
+      .select("id, type, wallet_state, status, reference, wallet_id, amount, user_id, metadata")
       .eq("reference", referenceNumber)
-      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!tx) {
@@ -74,30 +48,57 @@ serve(async (req) => {
       });
     }
 
-    const settled =
-      providerState === "success"
-        ? await (async () => {
-            const { data, error } = await supabaseAdmin.rpc("force_verify_deposit", {
-              reference: referenceNumber,
-            });
+    if (tx.type === "deposit") {
+      const { data, error } = await supabaseAdmin.rpc("wallet_settle_transaction", {
+        p_transaction_id: tx.id,
+        p_decision: "success",
+        p_source: "verify_endpoint_force",
+        p_evidence: {
+          manual: true,
+          reference: referenceNumber,
+          source: "verify_endpoint_force",
+        },
+      });
 
-            if (error) {
-              throw error;
-            }
+      if (error) {
+        console.error("Force deposit settlement failed", { referenceNumber, error });
+      }
 
-            return data as Record<string, unknown>;
-          })()
-        : await settlePagaWalletTransaction({
-            transactionId: tx.id,
-            reference: referenceNumber,
-            providerPayload: pagaData,
-            providerRequest: { referenceNumber },
-            operationType: "status_check",
-            operationKey: `verify:${referenceNumber}:${Date.now()}`,
-            source: "verify_endpoint",
-            delaySeconds: 0,
-            checkRemote: providerState === "processing" ? undefined : false,
-          });
+      const { data: refreshedTx } = await supabaseAdmin
+        .from("transactions")
+        .select("id, wallet_state, status, reference, wallet_id")
+        .eq("id", tx.id)
+        .maybeSingle();
+
+      const { data: wallet } = await supabaseAdmin
+        .from("wallets")
+        .select("balance")
+        .eq("id", tx.wallet_id)
+        .maybeSingle();
+
+      return respond({
+        status: String(refreshedTx?.wallet_state || refreshedTx?.status || "success"),
+        message: "Payment settled successfully.",
+        reference: referenceNumber,
+        newBalance: wallet?.balance ?? null,
+        settlement: data ?? null,
+      });
+    }
+
+    const pagaData = body.pagaData && typeof body.pagaData === "object" ? (body.pagaData as Record<string, unknown>) : null;
+    const providerState = mapPagaProviderState(pagaData);
+
+    const settled = await settlePagaWalletTransaction({
+      transactionId: tx.id,
+      reference: referenceNumber,
+      providerPayload: pagaData,
+      providerRequest: { referenceNumber },
+      operationType: "status_check",
+      operationKey: `verify:${referenceNumber}:${Date.now()}`,
+      source: "verify_endpoint",
+      delaySeconds: 0,
+      checkRemote: providerState === "processing" ? undefined : false,
+    });
 
     const settledRecord = settled as Record<string, unknown>;
     const settledState = String(settledRecord.state || "processing");
