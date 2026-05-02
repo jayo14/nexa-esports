@@ -32,7 +32,9 @@ const FundWallet = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTransactionId, setActiveTransactionId] = useState<string | null>(null);
   const [activeReference, setActiveReference] = useState<string | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [showPinVerify, setShowPinVerify] = useState(false);
+  const paymentWindowRef = useRef<Window | null>(null);
   const paymentResolvedRef = useRef(false);
   
   const presetAmounts = [500, 1000, 2000, 5000, 10000, 20000];
@@ -43,7 +45,20 @@ const FundWallet = () => {
     enabled: isProcessing,
     transactionId: activeTransactionId,
     reference: activeReference,
+    checkoutOpen,
   });
+
+  useEffect(() => {
+    if (!isProcessing || !checkoutOpen) return;
+
+    const interval = setInterval(() => {
+      if (paymentWindowRef.current?.closed) {
+        setCheckoutOpen(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [checkoutOpen, isProcessing]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -61,6 +76,8 @@ const FundWallet = () => {
       setIsSubmitting(false);
       setActiveTransactionId(null);
       setActiveReference(null);
+      setCheckoutOpen(false);
+      paymentWindowRef.current = null;
 
       if (payload.status === 'success') {
         await refreshWallet();
@@ -203,6 +220,8 @@ const FundWallet = () => {
         if (!paymentWindow) {
           throw new Error('Popup blocked. Please allow popups and try again.');
         }
+        paymentWindowRef.current = paymentWindow;
+        setCheckoutOpen(true);
 
         paymentWindow.document.title = 'Preparing payment...';
         paymentWindow.document.body.innerHTML = `
@@ -255,6 +274,7 @@ const FundWallet = () => {
                 variant: 'destructive',
             });
             sessionStorage.removeItem('payment_in_progress');
+            setCheckoutOpen(false);
             return;
         }
 
@@ -266,6 +286,7 @@ const FundWallet = () => {
             });
           sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
           paymentWindow?.close();
+          setCheckoutOpen(false);
             return;
         }
 
@@ -292,6 +313,7 @@ const FundWallet = () => {
         if (message.includes('network') || message.includes('fetch')) message = 'Network error. Please check your internet connection.';
         sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
         paymentWindow?.close();
+        setCheckoutOpen(false);
 
         toast({
             title: 'Payment Failed',

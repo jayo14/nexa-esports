@@ -48,45 +48,23 @@ serve(async (req) => {
       });
     }
 
-    if (tx.type === "deposit") {
-      const { data, error } = await supabaseAdmin.rpc("wallet_settle_transaction", {
-        p_transaction_id: tx.id,
-        p_decision: "success",
-        p_source: "verify_endpoint_force",
-        p_evidence: {
-          manual: true,
-          reference: referenceNumber,
-          source: "verify_endpoint_force",
-        },
-      });
-
-      if (error) {
-        console.error("Force deposit settlement failed", { referenceNumber, error });
-      }
-
-      const { data: refreshedTx } = await supabaseAdmin
-        .from("transactions")
-        .select("id, wallet_state, status, reference, wallet_id")
-        .eq("id", tx.id)
-        .maybeSingle();
-
-      const { data: wallet } = await supabaseAdmin
-        .from("wallets")
-        .select("balance")
-        .eq("id", tx.wallet_id)
-        .maybeSingle();
-
-      return respond({
-        status: String(refreshedTx?.wallet_state || refreshedTx?.status || "success"),
-        message: "Payment settled successfully.",
-        reference: referenceNumber,
-        newBalance: wallet?.balance ?? null,
-        settlement: data ?? null,
-      });
-    }
-
     const pagaData = body.pagaData && typeof body.pagaData === "object" ? (body.pagaData as Record<string, unknown>) : null;
     const providerState = mapPagaProviderState(pagaData);
+
+    if (tx.type === "deposit") {
+      const hasStrongEvidence =
+        providerState === "success" ||
+        Number((pagaData as Record<string, unknown> | null)?.responseCode) === 0 ||
+        body.isSuccessFromCallback === true;
+
+      if (!hasStrongEvidence) {
+        return respond({
+          status: "processing",
+          message: "Waiting for Paga confirmation...",
+          reference: referenceNumber,
+        });
+      }
+    }
 
     const settled = await settlePagaWalletTransaction({
       transactionId: tx.id,

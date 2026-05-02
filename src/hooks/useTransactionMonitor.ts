@@ -20,22 +20,37 @@ const DEFAULT_STATE: TransactionMonitorState = {
 };
 
 const POLL_INTERVAL_MS = 3000;
-const MAX_WAIT_MS = 15 * 60 * 1000;
+const MAX_WAIT_MS = 5 * 60 * 1000;
 
 export function useTransactionMonitor({
   enabled,
   transactionId,
   reference,
+  checkoutOpen = true,
 }: {
   enabled: boolean;
   transactionId: string | null;
   reference: string | null;
+  checkoutOpen?: boolean;
 }) {
   const [state, setState] = useState<TransactionMonitorState>(DEFAULT_STATE);
 
   useEffect(() => {
     if (!enabled || (!transactionId && !reference)) {
       setState(DEFAULT_STATE);
+      return;
+    }
+
+    if (!checkoutOpen) {
+      if (enabled) {
+        setState({
+          status: 'expired',
+          message: 'Checkout was closed before confirmation.',
+          newBalance: null,
+          reference,
+          transactionId,
+        });
+      }
       return;
     }
 
@@ -173,7 +188,7 @@ export function useTransactionMonitor({
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [enabled, reference, transactionId]);
+  }, [checkoutOpen, enabled, reference, transactionId]);
 
   return state;
 }
