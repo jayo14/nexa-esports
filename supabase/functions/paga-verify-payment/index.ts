@@ -2,61 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { generatePagaBusinessHash, pagaHeaders } from "../_shared/pagaAuth.ts";
-
-const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
-const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
-
-type ProviderState = "success" | "failed" | "processing";
-
-function mapProviderState(payload: Record<string, unknown> | undefined): ProviderState {
-  if (!payload) return "processing";
-
-  const responseCode = payload.responseCode;
-  const statusText = String(
-    payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
-  ).toUpperCase();
-  const normalized = [statusText, String(payload.statusCode || "").toUpperCase()];
-
-  if (responseCode === 0 || responseCode === "0") return "success";
-  if (normalized.some((value) => ["SUCCESS", "SUCCESSFUL", "COMPLETED", "APPROVED", "PAID"].some((signal) => value.includes(signal)))) return "success";
-
-  const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
-  if (normalized.some((value) => failedSignals.some((signal) => value.includes(signal)))) return "failed";
-
-  return "processing";
-}
-
-async function checkPagaTransactionStatus(
-  reference: string,
-  baseUrl: string,
-  publicKey: string,
-  apiPassword: string,
-  hashKey: string
-): Promise<{ state: ProviderState; raw?: Record<string, unknown> }> {
-  try {
-    const hash = await generatePagaBusinessHash([reference], hashKey);
-    const response = await fetch(`${baseUrl}/transactionStatus`, {
-      method: "POST",
-      headers: pagaHeaders(publicKey, apiPassword, hash),
-      body: JSON.stringify({ referenceNumber: reference }),
-    });
-
-    const text = await response.text();
-    let data: Record<string, unknown>;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error("Failed to parse transactionStatus response:", text);
-      return { state: "processing" };
-    }
-
-    return { state: mapProviderState(data), raw: data };
-  } catch (err) {
-    console.error("Paga transactionStatus error:", err);
-    return { state: "processing" };
-  }
-}
+import { settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -67,8 +13,6 @@ serve(async (req) => {
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
   const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
-  const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
-  const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   const respond = (body: object, status = 200) =>
     new Response(JSON.stringify(body), {
@@ -78,7 +22,6 @@ serve(async (req) => {
 
   try {
     if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
-      console.error("Payment service not configured");
       return respond({ error: "Payment service not configured: Paga credentials missing" }, 500);
     }
 
@@ -88,96 +31,69 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+
     if (!user) {
       return respond({ error: "Unauthorized" }, 401);
     }
 
-    const { referenceNumber, tx_ref } = await req.json();
-    const reference = referenceNumber || tx_ref;
-    if (!reference) {
+    const body = await req.json().catch(() => ({}));
+    const referenceNumber = String(body.referenceNumber || body.tx_ref || "");
+    const pagaData = body.pagaData && typeof body.pagaData === "object" ? (body.pagaData as Record<string, unknown>) : null;
+
+    if (!referenceNumber) {
       return respond({ error: "referenceNumber or tx_ref is required" }, 400);
     }
 
     const { data: tx } = await supabaseAdmin
       .from("transactions")
       .select("id, wallet_state, status, reference, wallet_id, amount, user_id")
-      .eq("reference", reference)
+      .eq("reference", referenceNumber)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (!tx) {
-      return respond({ status: "processing", message: "Transaction not found yet. Retry shortly.", reference });
+      return respond({ status: "processing", message: "Transaction not found yet. Retry shortly.", reference: referenceNumber });
     }
 
-    if (["success", "failed", "reversed", "expired"].includes(tx.wallet_state || tx.status)) {
+    if (["success", "failed", "reversed", "expired"].includes(String(tx.wallet_state || tx.status))) {
+      let walletBalance: number | null = null;
+      if (tx.wallet_id) {
+        const { data: wallet } = await supabaseAdmin.from("wallets").select("balance").eq("id", tx.wallet_id).maybeSingle();
+        walletBalance = wallet?.balance ?? null;
+      }
+
       return respond({
         status: tx.wallet_state || tx.status,
         message: "Transaction already finalized",
-        reference,
+        reference: referenceNumber,
+        newBalance: walletBalance,
       });
     }
 
-    const providerCheck = await checkPagaTransactionStatus(
-      reference,
-      PAGA_BASE_URL,
-      PAGA_PUBLIC_KEY,
-      PAGA_API_PASSWORD,
-      PAGA_HASH_KEY
-    );
-
-    const decision = providerCheck.state;
-
-    await supabaseAdmin.rpc("wallet_record_provider_operation", {
-      p_transaction_id: tx.id,
-      p_operation_type: "status_check",
-      p_operation_key: `verify:${reference}:${Date.now()}`,
-      p_provider_request: { referenceNumber: reference },
-      p_provider_response: providerCheck.raw ?? {},
-      p_provider_status_code: String(providerCheck.raw?.responseCode ?? ""),
-      p_signature_valid: null,
+    const settled = await settlePagaWalletTransaction({
+      transactionId: tx.id,
+      reference: referenceNumber,
+      providerPayload: pagaData,
+      providerRequest: { referenceNumber },
+      operationType: "status_check",
+      operationKey: `verify:${referenceNumber}:${Date.now()}`,
+      source: "verify_endpoint",
+      delaySeconds: 0,
     });
-
-    await supabaseAdmin.rpc("wallet_enqueue_settlement", {
-      p_transaction_id: tx.id,
-      p_provider_reference: reference,
-      p_decision_hint: decision,
-      p_evidence: { source: "verify", provider: providerCheck.raw ?? {} },
-      p_source: "verify_endpoint",
-      p_delay_seconds: 0,
-    });
-
-    await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 5 });
-
-    const { data: refreshed } = await supabaseAdmin
-      .from("transactions")
-      .select("wallet_state, status, wallet_id")
-      .eq("id", tx.id)
-      .maybeSingle();
-
-    const currentState = (refreshed?.wallet_state || refreshed?.status || "processing") as string;
-
-    // Fetch updated wallet balance for display
-    let newBalance: number | null = null;
-    if (refreshed?.wallet_id && (currentState === "success")) {
-      const { data: wallet } = await supabaseAdmin
-        .from("wallets")
-        .select("balance")
-        .eq("id", refreshed.wallet_id)
-        .maybeSingle();
-      newBalance = wallet?.balance ?? null;
-    }
 
     return respond({
-      status: currentState,
+      status: settled.state,
       message:
-        currentState === "success"
+        settled.state === "success"
           ? "Payment settled successfully."
-          : currentState === "failed" || currentState === "reversed" || currentState === "expired"
+          : settled.state === "failed" || settled.state === "reversed" || settled.state === "expired"
           ? "Payment finalized with non-success status."
           : "Transaction is still processing.",
-      reference,
-      newBalance,
+      reference: settled.reference || referenceNumber,
+      newBalance: settled.newBalance,
     });
   } catch (error) {
     console.error("Error in paga-verify-payment:", error);

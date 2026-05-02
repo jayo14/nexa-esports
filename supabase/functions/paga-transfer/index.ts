@@ -3,11 +3,10 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { generatePagaBusinessHash, pagaHeaders, generateReferenceNumber } from "../_shared/pagaAuth.ts";
+import { settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
 
 const LIVE_URL = "https://www.mypaga.com/paga-webservices/business-rest/secured";
 const SANDBOX_URL = "https://beta.mypaga.com/paga-webservices/business-rest/secured";
-
-type ProviderState = "success" | "failed" | "processing";
 
 type PagaBank = {
   uuid?: string;
@@ -25,28 +24,6 @@ type PagaBank = {
 type PagaResponse = Record<string, unknown> & {
   debug_attempted_payload?: Record<string, unknown>;
 };
-
-function mapProviderState(payload: Record<string, unknown> | null | undefined): ProviderState {
-  if (!payload) return "processing";
-
-  const responseCode = payload.responseCode;
-  const statusText = String(
-    payload.transactionStatus || payload.status || payload.responseMessage || payload.message || ""
-  ).toUpperCase();
-  const normalized = [statusText, String(payload.statusCode || "").toUpperCase()];
-
-  if (responseCode === 0 || responseCode === "0") return "success";
-  if (normalized.some((value) => ["SUCCESS", "SUCCESSFUL", "COMPLETED", "APPROVED", "PAID"].some((signal) => value.includes(signal)))) return "success";
-
-  const failedSignals = ["FAILED", "FAIL", "ERROR", "DECLINED", "REJECT", "REVERSED", "CANCEL"];
-  if (normalized.some((value) => failedSignals.some((signal) => value.includes(signal)))) return "failed";
-
-  const processingSignals = ["PENDING", "PROCESS", "IN_PROGRESS", "QUEUED", "ACCEPTED", "INITIATED"];
-  if (normalized.some((value) => processingSignals.some((signal) => value.includes(signal)))) return "processing";
-
-  // Unknown non-zero responses are treated as processing and left for webhook reconciliation.
-  return "processing";
-}
 
 serve(async (req) => {
   const origin = req.headers.get("Origin") || "";
@@ -625,82 +602,31 @@ serve(async (req) => {
 
     console.log("Paga depositToBank response:", JSON.stringify(pagaData));
 
-    const providerState = mapProviderState(pagaData);
-
-    await supabaseAdmin.rpc("wallet_record_provider_operation", {
-      p_transaction_id: transactionId,
-      p_operation_type: "transfer_request",
-      p_operation_key: `transfer:${referenceNumber}:${Date.now()}`,
-      p_provider_request: { amount, account_bank, account_number, beneficiary_name },
-      p_provider_response: pagaData,
-      p_provider_status_code: String(pagaData?.responseCode ?? ""),
-      p_signature_valid: null,
+    const settled = await settlePagaWalletTransaction({
+      transactionId,
+      reference: referenceNumber,
+      providerPayload: pagaData,
+      providerRequest: { amount, account_bank, account_number, beneficiary_name },
+      operationType: "transfer_request",
+      operationKey: `transfer:${referenceNumber}:${Date.now()}`,
+      source: "paga_transfer",
+      delaySeconds: 0,
     });
-
-    await supabaseAdmin
-      .from("transactions")
-      .update({
-        wallet_state: providerState === "success" ? "success" : (providerState === "processing" ? "processing" : "pending"),
-        status: providerState === "success" ? "completed" : (providerState === "processing" ? "processing" : "pending"),
-        paga_reference: referenceNumber,
-        paga_status: providerState,
-        paga_raw_response: pagaData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", transactionId)
-      .in("wallet_state", ["pending", "processing", "debited"]);
-
-    await supabaseAdmin.rpc("wallet_enqueue_settlement", {
-      p_transaction_id: transactionId,
-      p_provider_reference: referenceNumber,
-      p_decision_hint: providerState,
-      p_evidence: { source: "transfer_request", response: pagaData },
-      p_source: "paga_transfer",
-      p_delay_seconds: providerState === "processing" ? 20 : 0,
-    });
-
-    await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 5 });
-
-    const { data: refreshed } = await supabaseAdmin
-      .from("transactions")
-      .select("wallet_state, status, wallet_id")
-      .eq("id", transactionId)
-      .maybeSingle();
-
-    const settledState = String(refreshed?.wallet_state || refreshed?.status || providerState);
-    const normalizedState =
-      settledState === "completed" ? "success" :
-      settledState === "success" ? "success" :
-      settledState === "failed" ? "failed" :
-      settledState === "reversed" ? "failed" :
-      settledState === "expired" ? "failed" :
-      settledState === "processing" ? "processing" :
-      providerState;
-
-    let newBalance: number | null = null;
-    if (refreshed?.wallet_id && normalizedState === "success") {
-      const { data: wallet } = await supabaseAdmin
-        .from("wallets")
-        .select("balance")
-        .eq("id", refreshed.wallet_id)
-        .maybeSingle();
-      newBalance = wallet?.balance ?? null;
-    }
 
     return new Response(
       JSON.stringify({
-        status: normalizedState !== "failed",
-        state: normalizedState === "success" ? "completed" : normalizedState,
+        status: settled.state !== "failed",
+        state: settled.state === "success" ? "completed" : settled.state,
         message:
-          normalizedState === "failed"
+          settled.state === "failed"
             ? "Provider reported failure. Settlement is queued."
-            : normalizedState === "success"
+            : settled.state === "success"
               ? "Withdrawal settled successfully."
               : "Withdrawal accepted and queued for settlement.",
         referenceNumber,
         netAmount,
         transactionId,
-        newBalance,
+        newBalance: settled.newBalance,
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );
