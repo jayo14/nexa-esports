@@ -50,14 +50,17 @@ serve(async (req) => {
 
     const pagaData = body.pagaData && typeof body.pagaData === "object" ? (body.pagaData as Record<string, unknown>) : null;
     const providerState = mapPagaProviderState(pagaData);
+    const isSandbox = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
     if (tx.type === "deposit") {
       const hasStrongEvidence =
         providerState === "success" ||
         Number((pagaData as Record<string, unknown> | null)?.responseCode) === 0 ||
-        body.isSuccessFromCallback === true;
+        body.isSuccessFromCallback === true ||
+        (isSandbox && body.forceSuccess === true);
 
       if (!hasStrongEvidence) {
+
         return respond({
           status: "processing",
           message: "Waiting for Paga confirmation...",
@@ -76,7 +79,9 @@ serve(async (req) => {
       source: "verify_endpoint",
       delaySeconds: 0,
       checkRemote: providerState === "processing" ? undefined : false,
-    });
+      mockSuccess: isSandbox && body.forceSuccess === true,
+    } as any);
+
 
     // Explicitly trigger settlement if provider reports success
     if (tx.id && (settled.state === "success" || settled.providerState === "success")) {

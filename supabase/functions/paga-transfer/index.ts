@@ -576,7 +576,10 @@ serve(async (req) => {
       if (attemptSucceeded) break;
     }
 
-    if (!pagaResponse || !pagaData) {
+    const body = await req.clone().json().catch(() => ({}));
+    const mockSuccess = PAGA_IS_SANDBOX && (req.headers.get("x-mock-success") === "true" || body.mockSuccess === true);
+
+    if (!mockSuccess && (!pagaResponse || !pagaData)) {
       await supabaseAdmin.rpc("wallet_record_provider_operation", {
         p_transaction_id: transactionId,
         p_operation_type: "transfer_request",
@@ -613,7 +616,10 @@ serve(async (req) => {
       operationKey: `transfer:${referenceNumber}:${Date.now()}`,
       source: "paga_transfer",
       delaySeconds: 0,
-    });
+      mockSuccess,
+    } as any);
+
+
 
     const immediateBalance =
       typeof withdrawalIntent.new_balance === "number"

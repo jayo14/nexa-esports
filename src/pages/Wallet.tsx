@@ -447,8 +447,13 @@ const Wallet: React.FC = () => {
           const { data: { session } } = await supabase.auth.getSession();
           const { data } = await supabase.functions.invoke('paga-verify-payment', {
             headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-            body: { referenceNumber, tx_ref: referenceNumber }
+            body: { 
+              referenceNumber, 
+              tx_ref: referenceNumber,
+              forceSuccess: import.meta.env.VITE_PAGA_IS_SANDBOX === 'true'
+            }
           });
+
 
           if (cancelled) return;
 

@@ -245,7 +245,14 @@ export async function settlePagaWalletTransaction(input: PagaSettlementInput): P
   let providerState = providerSnapshot?.state ?? "processing";
   let providerRaw = providerSnapshot?.raw;
 
+  const isSandbox = Deno.env.get("PAGA_IS_SANDBOX") === "true";
+  if (isSandbox && (input as any).mockSuccess === true) {
+    providerState = "success";
+    providerRaw = { ...(providerRaw || {}), mock: true, note: "Forced success in sandbox" };
+  }
+
   if (input.checkRemote !== false && resolvedReference && providerState === "processing") {
+
     const remote = await queryPagaStatus(resolvedReference);
     providerState = remote.state;
     providerRaw = remote.raw ?? providerRaw;
