@@ -557,24 +557,35 @@ const Wallet: React.FC = () => {
   }, [location.search, transactions, navigate, handleViewReceipt, fetchWalletData, currentPage, toast]);
 
   useEffect(() => {
-    if (!walletId) return;
+    if (!user?.id) return;
 
     const channel = supabase
-      .channel(`wallet-transactions-${walletId}`)
+      .channel(`wallet-transactions-${user.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'transactions',
-          filter: `wallet_id=eq.${walletId}`,
+          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const status = (payload.new as { status?: string } | null)?.status;
-          const walletState = (payload.new as { wallet_state?: string } | null)?.wallet_state;
-          if (status === 'success' || status === 'completed' || walletState === 'success') {
+          const tx = payload.new as any;
+          const isDepositSuccess = 
+            tx.type === 'deposit' && 
+            (tx.wallet_state === 'success' || tx.status === 'completed' || tx.status === 'success');
+
+          if (isDepositSuccess) {
             sessionStorage.removeItem('payment_in_progress');
             setPaymentInProgress(false);
+            void refreshWallet();
+            void fetchWalletData(currentPage);
+            toast({
+              title: "Deposit Successful",
+              description: `₦${tx.amount} has been added to your wallet.`,
+            });
+          } else if (tx.wallet_state === 'success' || tx.status === 'completed') {
+            // General success for other transaction types
             void refreshWallet();
             void fetchWalletData(currentPage);
           }
@@ -585,7 +596,7 @@ const Wallet: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [walletId, refreshWallet, currentPage]);
+  }, [user?.id, refreshWallet, currentPage]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -101,6 +101,16 @@ serve(async (req) => {
       checkRemote: false,
     });
 
+    // Explicitly trigger settlement if provider reports success
+    if (tx?.id && (settled.state === "success" || settled.providerState === "success")) {
+      await supabaseAdmin.rpc("wallet_settle_transaction", {
+        p_transaction_id: tx.id,
+        p_decision: "success",
+        p_source: "paga_webhook",
+        p_evidence: payload
+      });
+    }
+
     console.log("Webhook processed successfully", {
       referenceNumber,
       state: settled.state,
