@@ -166,13 +166,36 @@ async function queryPagaStatus(reference: string): Promise<{ state: PagaProvider
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
   const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
-  const PAGA_BASE_URL = Deno.env.get("PAGA_IS_SANDBOX") === "true"
-    ? "https://beta.mypaga.com/paga-webservices/business-rest/secured"
-    : "https://www.mypaga.com/paga-webservices/business-rest/secured";
 
   if (!PAGA_PUBLIC_KEY || !PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
     return { state: "processing" };
   }
+
+  const PAGA_COLLECT_BASE = Deno.env.get("PAGA_IS_SANDBOX") === "true"
+    ? "https://beta-collect.paga.com"
+    : "https://collect.paga.com";
+
+  const collectHash = await generatePagaBusinessHash([reference], PAGA_HASH_KEY);
+  try {
+    const res = await fetch(`${PAGA_COLLECT_BASE}/status`, {
+      method: "POST",
+      headers: {
+        ...pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, collectHash),
+        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_API_PASSWORD}`)}`,
+      },
+      body: JSON.stringify({ referenceNumber: reference }),
+    });
+    const text = await res.text();
+    const payload = JSON.parse(text) as Record<string, unknown>;
+    const state = mapPagaProviderState(payload);
+    if (state !== "processing") return { state, raw: payload };
+  } catch (e) {
+    console.error("Paga Collect status check failed", e);
+  }
+
+  const PAGA_BASE_URL = Deno.env.get("PAGA_IS_SANDBOX") === "true"
+    ? "https://beta.mypaga.com/paga-webservices/business-rest/secured"
+    : "https://www.mypaga.com/paga-webservices/business-rest/secured";
 
   const endpoints = [
     "transactionHistory",

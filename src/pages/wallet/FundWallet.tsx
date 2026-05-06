@@ -32,6 +32,7 @@ const FundWallet = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTransactionId, setActiveTransactionId] = useState<string | null>(null);
   const [activeReference, setActiveReference] = useState<string | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<{accountNumber: string, bankName: string, amount: number, expiresAt: string} | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [showPinVerify, setShowPinVerify] = useState(false);
   const paymentWindowRef = useRef<Window | null>(null);
@@ -208,120 +209,52 @@ const FundWallet = () => {
   };
 
   const handlePayment = async () => {
-    if (Capacitor.isNativePlatform()) {
-      await Haptics.impact({ style: ImpactStyle.Medium });
-    }
     setIsSubmitting(true);
-    let paymentWindow: Window | null = null;
-    
     try {
-        sessionStorage.setItem(PAYMENT_IN_PROGRESS_KEY, 'true');
-        paymentWindow = window.open('', '_blank');
-        if (!paymentWindow) {
-          throw new Error('Popup blocked. Please allow popups and try again.');
-        }
-        paymentWindowRef.current = paymentWindow;
-        setCheckoutOpen(true);
-
-        paymentWindow.document.title = 'Preparing payment...';
-        paymentWindow.document.body.innerHTML = `
-          <div style="display:flex;min-height:100vh;align-items:center;justify-content:center;font-family:sans-serif;background:#0a0505;color:#fff;">
-            Preparing your Paga checkout...
-          </div>
-        `;
-
-        await supabase.auth.refreshSession();
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session || !session.access_token) {
-            toast({
-                title: 'Authentication Error',
-                description: 'Your session has expired. Please log out and log back in.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        // Show loading toast
+      sessionStorage.setItem(PAYMENT_IN_PROGRESS_KEY, 'true');
+      await supabase.auth.refreshSession();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { 
         toast({
-            title: 'Initiating Payment',
-            description: 'Please wait while we prepare your payment...',
-        });
-
-        // Call the edge function to initiate payment
-        const { data, error } = await supabase.functions.invoke('paga-initiate-payment', {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: {
-                amount: totalToPay,
-                intended_amount: amount,
-                fee: fee,
-            idempotency_key: crypto.randomUUID(),
-                customer: {
-                    email: user?.email || '',
-              phone: typeof profile?.banking_info?.phone === 'string' ? profile.banking_info.phone : '',
-                    name: profile?.username || profile?.ign || '',
-                },
-                redirect_url: `${window.location.origin}/payment-success`,
-            },
-        });
-
-        if (error) {
-            toast({
-                title: 'Payment Unavailable',
-                description: error.message || 'Failed to initiate payment. Please try again.',
-                variant: 'destructive',
-            });
-            sessionStorage.removeItem('payment_in_progress');
-            setCheckoutOpen(false);
-            return;
-        }
-
-        if (!data || data.status !== 'success') {
-            toast({
-                title: 'Payment Failed',
-                description: data?.error || 'Failed to initiate payment. Please try again.',
-                variant: 'destructive',
-            });
-          sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
-          paymentWindow?.close();
-          setCheckoutOpen(false);
-            return;
-        }
-
-        paymentResolvedRef.current = false;
-        setActiveTransactionId(data.data?.transactionId || null);
-        setActiveReference(data.data?.referenceNumber || null);
-        setIsProcessing(true);
-
-        toast({
-          title: 'Opening Paga',
-          description: 'Complete your payment in the new tab that opened.',
-        });
-        if (paymentWindow) {
-          paymentWindow.location.href = data.data.link;
-          paymentWindow.focus();
-        } else {
-          window.location.href = data.data.link;
-        }
-    } catch (error: unknown) {
-        // Try to extract a friendly message
-        let message = error instanceof Error ? error.message : 'An unexpected error occurred.';
-        if (message.includes('Minimum amount')) message = 'The minimum deposit amount is ₦500.';
-        if (message.includes('Maximum amount')) message = 'The maximum deposit amount is ₦50,000.';
-        if (message.includes('network') || message.includes('fetch')) message = 'Network error. Please check your internet connection.';
-        sessionStorage.removeItem(PAYMENT_IN_PROGRESS_KEY);
-        paymentWindow?.close();
-        setCheckoutOpen(false);
-
-        toast({
-            title: 'Payment Failed',
-            description: message,
+            title: 'Authentication Error',
+            description: 'Your session has expired. Please log out and log back in.',
             variant: 'destructive',
         });
+        return; 
+      }
+
+      const { data, error } = await supabase.functions.invoke('paga-initiate-payment', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        body: {
+          amount: totalToPay,
+          intended_amount: amount,
+          fee,
+          idempotency_key: crypto.randomUUID(),
+          customer: {
+            email: user?.email || '',
+            phone: typeof profile?.banking_info?.phone === 'string' ? profile.banking_info.phone : '',
+            name: profile?.username || profile?.ign || '',
+          },
+        },
+      });
+
+      if (error || data?.status !== 'success') {
+        toast({ title: 'Payment Unavailable', description: data?.error || 'Try again.', variant: 'destructive' });
+        return;
+      }
+
+      // Store bank transfer details and start monitoring
+      setActiveTransactionId(data.data.transactionId);
+      setActiveReference(data.data.referenceNumber);
+      setPaymentDetails({                             // ← new state
+        accountNumber: data.data.accountNumber,
+        bankName: data.data.bankName,
+        amount: data.data.amount,
+        expiresAt: data.data.expiresAt,
+      });
+      setIsProcessing(true);
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -330,21 +263,31 @@ const FundWallet = () => {
     await handlePayment();
   };
 
-  if (isProcessing) {
+  if (isProcessing && paymentDetails) {
     return (
-      <div className="container max-w-lg mx-auto py-12 px-4 text-center space-y-6">
-        <div className="inline-flex p-6 rounded-full bg-primary/10">
-          <Loader2 className="h-12 w-12 text-primary animate-spin" />
-        </div>
-        <h1 className="text-2xl font-bold">Processing Payment</h1>
-        <p className="text-muted-foreground">
-          Verifying payment with Paga... keep the checkout tab open while we confirm your deposit.
-        </p>
-        <div className="rounded-2xl border bg-card p-4 text-left space-y-2">
-          <p className="text-sm text-muted-foreground">Reference</p>
-          <p className="font-medium break-all">{activeReference || 'Waiting for reference...'}</p>
-          <p className="text-sm text-muted-foreground pt-2">{monitor.message || 'Monitoring payment status...'}</p>
-        </div>
+      <div className="container max-w-lg mx-auto py-12 px-4 space-y-6">
+        <h1 className="text-2xl font-bold text-center">Complete Your Transfer</h1>
+        <Card className="rounded-2xl border-2 border-green-500/30">
+          <CardContent className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">Transfer exactly this amount to:</p>
+            <div className="space-y-3">
+              <div className="flex justify-between"><span className="text-muted-foreground">Bank</span><span className="font-bold">Paga</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Account Number</span>
+                <span className="font-mono font-black text-xl">{paymentDetails.accountNumber}</span>
+              </div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Account Name</span><span className="font-bold">NeXa Esports</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span>
+                <span className="font-bold text-green-500">₦{paymentDetails.amount?.toLocaleString()}</span>
+              </div>
+              {paymentDetails.expiresAt && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Expires</span>
+                  <span className="text-orange-500 text-sm">{new Date(paymentDetails.expiresAt).toLocaleTimeString()}</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        <p className="text-sm text-center text-muted-foreground">{monitor.message || 'Waiting for your transfer...'}</p>
         <Button variant="outline" onClick={() => navigate('/wallet')} className="w-full h-14 rounded-2xl">
           Back to Wallet
         </Button>

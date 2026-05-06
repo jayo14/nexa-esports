@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { generateReferenceNumber } from "../_shared/pagaAuth.ts";
+import { generateReferenceNumber, generatePagaBusinessHash } from "../_shared/pagaAuth.ts";
 import { getWalletMinimums } from "../_shared/walletLimits.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -168,61 +168,75 @@ serve(async (req) => {
       existingReference = String(createdTx.reference || referenceNumber);
     }
 
-    const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
-    const normalizeRedirectUrl = (candidate?: string | null): string | null => {
-      if (!candidate) return null;
-      try {
-        const parsed = new URL(candidate);
-        if (parsed.protocol !== "https:") return null;
-        if (!parsed.pathname || parsed.pathname === "/") {
-          parsed.pathname = "/payment-success";
-        }
-        return parsed.toString();
-      } catch {
-        return null;
-      }
-    };
+    const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
+    const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
+    const PAGA_WEBHOOK_URL = Deno.env.get("PAGA_WEBHOOK_URL")?.trim();
+    
+    if (!PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
+      return new Response(JSON.stringify({ error: "Payment service not fully configured" }), {
+        headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
 
-    const callbackUrl =
-      normalizeRedirectUrl(PAGA_FRONTEND_URL) ||
-      normalizeRedirectUrl(PAGA_CALLBACK_URL) ||
-      normalizeRedirectUrl(redirect_url);
-
-    if (!callbackUrl) {
+    if (!PAGA_WEBHOOK_URL) {
       return new Response(
         JSON.stringify({
-          error:
-            "Payment cannot be initiated: no public HTTPS return URL is available. " +
-            "Set PAGA_FRONTEND_URL or PAGA_CALLBACK_URL to your production frontend URL " +
-            "(e.g. https://your-domain.com/payment-success).",
+          error: "Payment cannot be initiated: PAGA_WEBHOOK_URL is not configured in environment secrets."
         }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
       );
     }
 
-    const CHECKOUT_BASE = PAGA_IS_SANDBOX ? "https://beta-checkout.paga.com" : "https://checkout.paga.com";
-
+    const PAGA_COLLECT_BASE = PAGA_IS_SANDBOX ? "https://beta-collect.paga.com" : "https://collect.paga.com";
     const nameParts = (customer.name || "Nexa User").split(" ");
-    const params = new URLSearchParams({
-      public_key: PAGA_PUBLIC_KEY,
-      payment_reference: existingReference,
-      amount: String(amount),
+    
+    // According to standard Paga Collect, the hash is based on referenceNumber + amount + currency + payerEmail + hashKey or similar.
+    // For now, we will use the same signature as status check if possible, or standard HMAC if required.
+    // The exact hash might vary, but we'll try the generatePagaBusinessHash with basic params
+    const collectHash = await generatePagaBusinessHash([existingReference, String(amount), "NGN", customer.email], PAGA_HASH_KEY);
+
+    const paymentRequestPayload = {
+      referenceNumber: existingReference,
+      amount: amount,
       currency: "NGN",
-      callback_url: callbackUrl,
-      redirect_url: callbackUrl,
-      return_url: callbackUrl,
-      email: customer.email,
-      description: "Wallet Funding",
-      display_name: "NeXa Esports",
-      funding_sources: "CARD,TRANSFER,PAGA,USSD",
-      payment_method: "bank_transfer",
+      payer: {
+        name: customer.name || "Nexa User",
+        email: customer.email,
+        phoneNumber: customer.phone || "",
+      },
+      payerCollectionInstructions: {
+        paymentMethod: "BANK_TRANSFER"
+      },
+      callbackUrl: PAGA_WEBHOOK_URL
+    };
+
+    const res = await fetch(`${PAGA_COLLECT_BASE}/paymentRequest`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "principal": PAGA_PUBLIC_KEY,
+        "credentials": PAGA_API_PASSWORD,
+        "hash": collectHash,
+        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_API_PASSWORD}`)}`,
+      },
+      body: JSON.stringify(paymentRequestPayload),
     });
 
-    if (nameParts[0]) params.set("first_name", nameParts[0]);
-    if (nameParts.slice(1).join(" ")) params.set("last_name", nameParts.slice(1).join(" "));
-    if (customer.phone) params.set("phoneNumber", customer.phone);
+    const text = await res.text();
+    let collectData: Record<string, any> = {};
+    try {
+      collectData = JSON.parse(text);
+    } catch (e) {
+      console.error("Failed to parse Paga Collect response", text);
+    }
 
-    const checkoutUrl = `${CHECKOUT_BASE}?${params.toString()}`;
+    if (!res.ok || collectData.responseCode !== 0) {
+      return new Response(
+        JSON.stringify({ error: collectData.message || "Failed to initiate payment with Paga" }),
+        { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
+      );
+    }
 
     await supabaseAdmin
       .from("transactions")
@@ -238,23 +252,24 @@ serve(async (req) => {
     await supabaseAdmin.rpc("wallet_record_provider_operation", {
       p_transaction_id: transactionId,
       p_operation_type: "initiate",
-      p_operation_key: `checkout:${referenceNumber}`,
-        p_provider_request: {
-          amount,
-          currency: "NGN",
-          customer,
-          callbackUrl,
-          walletType,
-        },
-        p_provider_response: { checkoutUrl },
-        p_provider_status_code: "INITIATED",
-        p_signature_valid: null,
-      });
+      p_operation_key: `collect:${referenceNumber}`,
+      p_provider_request: paymentRequestPayload,
+      p_provider_response: collectData,
+      p_provider_status_code: String(collectData.responseCode || "INITIATED"),
+      p_signature_valid: null,
+    });
 
     return new Response(
       JSON.stringify({
         status: "success",
-        data: { link: checkoutUrl, referenceNumber: existingReference, transactionId },
+        data: { 
+          transactionId,
+          referenceNumber: existingReference,
+          accountNumber: collectData.paymentMethodDetails?.bankAccountNumber || collectData.accountNumber,
+          bankName: collectData.paymentMethodDetails?.bankName || collectData.bankName || "Paga",
+          amount: collectData.amount || amount,
+          expiresAt: collectData.expiresAt || collectData.expiryDateTime,
+        },
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }
     );

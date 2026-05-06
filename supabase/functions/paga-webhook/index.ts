@@ -25,7 +25,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
     }
 
-    const referenceNumber = String(payload.referenceNumber || payload.transactionId || payload.paymentReference || "");
+    const referenceNumber = String(payload.referenceNumber || payload.externalReferenceNumber || payload.transactionId || payload.paymentReference || "");
     if (!referenceNumber) {
       console.error("No reference number found in payload:", payload);
       return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });

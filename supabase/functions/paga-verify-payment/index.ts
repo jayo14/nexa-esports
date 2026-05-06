@@ -53,20 +53,7 @@ serve(async (req) => {
     const isSandbox = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
     if (tx.type === "deposit") {
-      const hasStrongEvidence =
-        providerState === "success" ||
-        Number((pagaData as Record<string, unknown> | null)?.responseCode) === 0 ||
-        body.isSuccessFromCallback === true ||
-        (isSandbox && body.forceSuccess === true);
-
-      if (!hasStrongEvidence) {
-
-        return respond({
-          status: "processing",
-          message: "Waiting for Paga confirmation...",
-          reference: referenceNumber,
-        });
-      }
+      // The hasStrongEvidence gate was removed here
     }
 
     const settled = await settlePagaWalletTransaction({
@@ -78,10 +65,9 @@ serve(async (req) => {
       operationKey: `verify:${referenceNumber}:${Date.now()}`,
       source: "verify_endpoint",
       delaySeconds: 0,
-      checkRemote: providerState === "processing" ? undefined : false,
+      checkRemote: true,
       mockSuccess: isSandbox && body.forceSuccess === true,
     } as any);
-
 
     // Explicitly trigger settlement if provider reports success
     if (tx.id && (settled.state === "success" || settled.providerState === "success")) {
