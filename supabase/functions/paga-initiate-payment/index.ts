@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { generateReferenceNumber, generatePagaBusinessHash, generateSHA512Hash } from "../_shared/pagaAuth.ts";
+import { generateReferenceNumber, generatePagaBusinessHash, generateSHA512Hash, pagaHeaders } from "../_shared/pagaAuth.ts";
 import { getWalletMinimums } from "../_shared/walletLimits.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -243,7 +243,8 @@ serve(async (req) => {
       isAllowPartialPayments: false,
       isAllowOverPayments: false,
       callBackUrl: PAGA_WEBHOOK_URL,
-      paymentMethods: ["BANK_TRANSFER"],
+      paymentMethods: ["BANK_TRANSFER", "FUNDING_USSD", "REQUEST_MONEY"],
+      redirectUrl: redirect_url || undefined,
       expiryDateTimeUTC: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "").split(".")[0], // 6 days (safer than 7)
     };
 
@@ -258,16 +259,7 @@ serve(async (req) => {
 
     const res = await fetch(`${PAGA_COLLECT_BASE}/paymentRequest`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "username": PAGA_PUBLIC_KEY!,
-        "password": PAGA_SECRET_KEY!,
-        "principal": PAGA_PUBLIC_KEY!,
-        "credentials": PAGA_SECRET_KEY!,
-        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
-        "hash": collectHash,
-      },
+      headers: pagaHeaders(PAGA_PUBLIC_KEY!, PAGA_SECRET_KEY!, collectHash),
       body: JSON.stringify(paymentRequestPayload),
     });
 
@@ -328,6 +320,8 @@ serve(async (req) => {
           referenceNumber: existingReference,
           accountNumber: collectData.paymentMethods?.find((m: any) => m.name === "BANK_TRANSFER")?.properties?.AccountNumber || collectData.accountNumber,
           bankName: collectData.paymentMethods?.find((m: any) => m.name === "BANK_TRANSFER")?.properties?.BankName || collectData.bankName || "Paga",
+          checkoutUrl: collectData.paymentMethods?.find((m: any) => m.name === "REQUEST_MONEY")?.properties?.WebPaymentLink || collectData.checkoutUrl || collectData.webPaymentLink,
+          ussdCode: collectData.paymentMethods?.find((m: any) => m.name === "FUNDING_USSD")?.properties?.USSDShortCode,
           amount: collectData.totalPaymentAmount || collectData.amount || amount,
           expiresAt: collectData.expiryDateTimeUTC || collectData.expiryDateTime,
         },

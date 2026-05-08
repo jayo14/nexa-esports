@@ -2,19 +2,25 @@
 const PAGA_PUBLIC_KEY = "462d79a2-404c-41eb-bc62-07b9689e8d6c";
 const PAGA_SECRET_KEY = "Bvi76QHvrfpfHUFhFdEnzVo82Ume8mPt";
 
+function pagaHeaders(principal, credentials, hash) {
+  const auth = btoa(`${principal}:${credentials}`);
+  return {
+    'Content-Type': 'application/json',
+    "Authorization": `Basic ${auth}`,
+    "username": principal,
+    "password": credentials,
+    'principal': principal,
+    'credentials': credentials,
+    ...(hash ? { "hash": hash } : {}),
+  };
+}
+
 async function test(url, name) {
   console.log(`Testing ${name} (${url})...`);
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "username": PAGA_PUBLIC_KEY,
-        "password": PAGA_SECRET_KEY,
-        "principal": PAGA_PUBLIC_KEY,
-        "credentials": PAGA_SECRET_KEY,
-        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
-      },
+      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_SECRET_KEY),
       body: JSON.stringify({ referenceNumber: "test_" + Date.now() }),
     });
     console.log(`${name} status: ${res.status}`);

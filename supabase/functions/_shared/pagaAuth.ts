@@ -47,12 +47,16 @@ export async function generatePagaHMAC(fields: string[], hmacKey: string): Promi
  * @param credentials - API Password
  * @param hash - Computed SHA-512 hash
  */
-export function pagaHeaders(principal: string, credentials: string, hash: string): Record<string, string> {
+export function pagaHeaders(principal: string, credentials: string, hash?: string): Record<string, string> {
+  const auth = btoa(`${principal}:${credentials}`);
   return {
     'Content-Type': 'application/json',
+    "Authorization": `Basic ${auth}`,
+    "username": principal,
+    "password": credentials,
     'principal': principal,
     'credentials': credentials,
-    'hash': hash,
+    ...(hash ? { "hash": hash } : {}),
   };
 }
 

@@ -246,11 +246,16 @@ const FundWallet = () => {
       // Store bank transfer details and start monitoring
       setActiveTransactionId(data.data.transactionId);
       setActiveReference(data.data.referenceNumber);
-      setPaymentDetails({                             // ← new state
+      if (data.data.checkoutUrl) {
+        window.open(data.data.checkoutUrl, '_blank');
+      }
+      setPaymentDetails({
         accountNumber: data.data.accountNumber,
         bankName: data.data.bankName,
         amount: data.data.amount,
         expiresAt: data.data.expiresAt,
+        checkoutUrl: data.data.checkoutUrl,
+        ussdCode: data.data.ussdCode,
       });
       setIsProcessing(true);
     } finally {
@@ -279,6 +284,19 @@ const FundWallet = () => {
               <div className="flex justify-between"><span className="text-muted-foreground">Amount</span>
                 <span className="font-bold text-green-500">₦{paymentDetails.amount?.toLocaleString()}</span>
               </div>
+              {paymentDetails.ussdCode && (
+                <div className="flex justify-between"><span className="text-muted-foreground">USSD Code</span>
+                  <span className="font-mono font-bold text-blue-500">{paymentDetails.ussdCode}</span>
+                </div>
+              )}
+              {paymentDetails.checkoutUrl && (
+                <Button
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700 font-bold"
+                  onClick={() => window.open(paymentDetails.checkoutUrl, '_blank')}
+                >
+                  Open Checkout Portal
+                </Button>
+              )}
               {paymentDetails.expiresAt && (
                 <div className="flex justify-between"><span className="text-muted-foreground">Expires</span>
                   <span className="text-orange-500 text-sm">{new Date(paymentDetails.expiresAt).toLocaleTimeString()}</span>
