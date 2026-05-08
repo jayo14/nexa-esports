@@ -32,7 +32,7 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
+  const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
   const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
@@ -44,7 +44,7 @@ serve(async (req) => {
     });
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
+    if (!PAGA_PUBLIC_KEY || !PAGA_SECRET_KEY || !PAGA_HASH_KEY) {
       console.error("Paga credentials not configured");
       return respond({ error: "Payment service not configured" }, 500);
     }
@@ -74,7 +74,7 @@ serve(async (req) => {
 
     const pagaResponse = await fetch(`${PAGA_BASE_URL}/getDataBundleByOperator`, {
       method: "POST",
-      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+      headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_SECRET_KEY, hash),
       body: JSON.stringify({
         referenceNumber,
         operatorPublicId,

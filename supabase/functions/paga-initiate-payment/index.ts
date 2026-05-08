@@ -168,11 +168,11 @@ serve(async (req) => {
       existingReference = String(createdTx.reference || referenceNumber);
     }
 
-    const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
+    const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim();
     const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
     const PAGA_WEBHOOK_URL = Deno.env.get("PAGA_WEBHOOK_URL")?.trim();
 
-    if (!PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
+    if (!PAGA_SECRET_KEY || !PAGA_HASH_KEY) {
       return new Response(JSON.stringify({ error: "Payment service not fully configured" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
@@ -234,7 +234,7 @@ serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_API_PASSWORD}`)}`,
+        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
         "hash": collectHash,
       },
       body: JSON.stringify(paymentRequestPayload),

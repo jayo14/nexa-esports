@@ -33,14 +33,14 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
+  const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
   const PAGA_BASE_URL = PAGA_IS_SANDBOX ? SANDBOX_URL : LIVE_URL;
 
   try {
-    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_API_PASSWORD) {
+    if (!PAGA_PUBLIC_KEY || !PAGA_HASH_KEY || !PAGA_SECRET_KEY) {
       return new Response(
         JSON.stringify({ error: "Transfer service not configured: Paga credentials missing" }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
@@ -308,7 +308,7 @@ serve(async (req) => {
       const getBanksHash = await generatePagaBusinessHash([getBanksRef], PAGA_HASH_KEY);
       const getBanksResponse = await fetch(`${PAGA_BASE_URL}/getBanks`, {
         method: "POST",
-        headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, getBanksHash),
+        headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_SECRET_KEY, getBanksHash),
         body: JSON.stringify({ referenceNumber: getBanksRef }),
       });
 
@@ -491,7 +491,7 @@ serve(async (req) => {
 
           pagaResponse = await fetch(`${PAGA_BASE_URL}/${attempt.endpoint}`, {
             method: "POST",
-            headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+            headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_SECRET_KEY, hash),
             body: JSON.stringify(payload),
           });
 

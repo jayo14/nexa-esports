@@ -168,10 +168,10 @@ export function mapPagaProviderState(payload: Record<string, unknown> | null | u
 
 async function queryPagaStatus(reference: string): Promise<{ state: PagaProviderState; raw?: Record<string, unknown> }> {
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
+  const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
 
-  if (!PAGA_PUBLIC_KEY || !PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
+  if (!PAGA_PUBLIC_KEY || !PAGA_SECRET_KEY || !PAGA_HASH_KEY) {
     return { state: "processing" };
   }
 
@@ -184,8 +184,8 @@ async function queryPagaStatus(reference: string): Promise<{ state: PagaProvider
     const res = await fetch(`${PAGA_COLLECT_BASE}/status`, {
       method: "POST",
       headers: {
-        ...pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, collectHash),
-        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_API_PASSWORD}`)}`,
+        ...pagaHeaders(PAGA_PUBLIC_KEY, PAGA_SECRET_KEY, collectHash),
+        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
       },
       body: JSON.stringify({ referenceNumber: reference }),
     });
@@ -219,7 +219,7 @@ async function queryPagaStatus(reference: string): Promise<{ state: PagaProvider
         const hash = await generatePagaBusinessHash([reference], PAGA_HASH_KEY);
         const response = await fetch(`${PAGA_BASE_URL}/${endpoint}`, {
           method: "POST",
-          headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, hash),
+          headers: pagaHeaders(PAGA_PUBLIC_KEY, PAGA_SECRET_KEY, hash),
           body: JSON.stringify(body),
         });
 

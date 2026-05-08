@@ -11,20 +11,20 @@ export interface PagaBank {
 
 export class PagaClient {
   private publicKey: string;
-  private apiPassword: string;
+  private secretKey: string;
   private hashKey: string;
   private baseUrl: string;
 
   constructor() {
     this.publicKey = Deno.env.get("PAGA_PUBLIC_KEY")?.trim() || "";
-    this.apiPassword = (Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim()) || "";
+    this.secretKey = Deno.env.get("PAGA_SECRET_KEY")?.trim() || "";
     this.hashKey = Deno.env.get("PAGA_HASH_KEY")?.trim() || "";
     const isSandbox = Deno.env.get("PAGA_IS_SANDBOX") === "true";
     this.baseUrl = isSandbox ? SANDBOX_URL : LIVE_URL;
   }
 
   async getBanks(): Promise<PagaBank[]> {
-    if (!this.publicKey || !this.hashKey || !this.apiPassword) {
+    if (!this.publicKey || !this.hashKey || !this.secretKey) {
       throw new Error("Paga credentials missing");
     }
 
@@ -33,7 +33,7 @@ export class PagaClient {
 
     const response = await fetch(`${this.baseUrl}/getBanks`, {
       method: "POST",
-      headers: pagaHeaders(this.publicKey, this.apiPassword, hash),
+      headers: pagaHeaders(this.publicKey, this.secretKey, hash),
       body: JSON.stringify({ referenceNumber }),
     });
 
@@ -46,7 +46,7 @@ export class PagaClient {
   }
 
   async validateDepositToBank(bankUuid: string, accountNumber: string): Promise<any> {
-    if (!this.publicKey || !this.hashKey || !this.apiPassword) {
+    if (!this.publicKey || !this.hashKey || !this.secretKey) {
       throw new Error("Paga credentials missing");
     }
 
@@ -59,7 +59,7 @@ export class PagaClient {
 
     const response = await fetch(`${this.baseUrl}/validateDepositToBank`, {
       method: "POST",
-      headers: pagaHeaders(this.publicKey, this.apiPassword, hash),
+      headers: pagaHeaders(this.publicKey, this.secretKey, hash),
       body: JSON.stringify({
         referenceNumber,
         amount,
