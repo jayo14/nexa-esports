@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { generateReferenceNumber, generatePagaBusinessHash } from "../_shared/pagaAuth.ts";
+import { generateReferenceNumber, generatePagaBusinessHash, generateSHA512Hash } from "../_shared/pagaAuth.ts";
 import { getWalletMinimums } from "../_shared/walletLimits.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -189,36 +189,53 @@ serve(async (req) => {
     }
 
     const PAGA_COLLECT_BASE = PAGA_IS_SANDBOX ? "https://beta-collect.paga.com" : "https://collect.paga.com";
-    const nameParts = (customer.name || "Nexa User").split(" ");
     
-    // According to standard Paga Collect, the hash is based on referenceNumber + amount + currency + payerEmail + hashKey or similar.
-    // For now, we will use the same signature as status check if possible, or standard HMAC if required.
-    // The exact hash might vary, but we'll try the generatePagaBusinessHash with basic params
-    const collectHash = await generatePagaBusinessHash([existingReference, String(amount), "NGN", customer.email], PAGA_HASH_KEY);
+    // Build hash exactly per docs: 
+    // referenceNumber + amount + currency + payer.phoneNumber + payer.email + payee.accountNumber + payee.phoneNumber + payee.bankId + payee.bankAccountNumber + hashkey
+    const hashStringParts = [
+      existingReference,
+      amount,
+      "NGN",
+      customer.phone || "",
+      customer.email || "",
+      "", // payee.accountNumber
+      "", // payee.phoneNumber
+      "", // payee.bankId
+      "", // payee.bankAccountNumber
+      PAGA_HASH_KEY
+    ];
+
+    const collectHash = await generateSHA512Hash(hashStringParts);
 
     const paymentRequestPayload = {
       referenceNumber: existingReference,
-      amount: amount,
+      amount: Number(amount),
       currency: "NGN",
       payer: {
         name: customer.name || "Nexa User",
         email: customer.email,
-        phoneNumber: customer.phone || "",
+        phoneNumber: customer.phone || undefined,
       },
-      payerCollectionInstructions: {
-        paymentMethod: "BANK_TRANSFER"
+      payee: {
+        name: "Nexa Esports",
       },
-      callbackUrl: PAGA_WEBHOOK_URL
+      isSuppressMessages: true,
+      payerCollectionFeeShare: 1.0,
+      payeeCollectionFeeShare: 0.0,
+      isAllowPartialPayments: false,
+      isAllowOverPayments: false,
+      callBackUrl: PAGA_WEBHOOK_URL,
+      paymentMethods: ["BANK_TRANSFER"],
+      expiryDateTimeUTC: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week
     };
 
     const res = await fetch(`${PAGA_COLLECT_BASE}/paymentRequest`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "principal": PAGA_PUBLIC_KEY,
-        "credentials": PAGA_API_PASSWORD,
-        "hash": collectHash,
+        "Accept": "application/json",
         "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_API_PASSWORD}`)}`,
+        "hash": collectHash,
       },
       body: JSON.stringify(paymentRequestPayload),
     });
@@ -265,10 +282,10 @@ serve(async (req) => {
         data: { 
           transactionId,
           referenceNumber: existingReference,
-          accountNumber: collectData.paymentMethodDetails?.bankAccountNumber || collectData.accountNumber,
-          bankName: collectData.paymentMethodDetails?.bankName || collectData.bankName || "Paga",
-          amount: collectData.amount || amount,
-          expiresAt: collectData.expiresAt || collectData.expiryDateTime,
+          accountNumber: collectData.paymentMethods?.find((m: any) => m.name === "BANK_TRANSFER")?.properties?.AccountNumber || collectData.accountNumber,
+          bankName: collectData.paymentMethods?.find((m: any) => m.name === "BANK_TRANSFER")?.properties?.BankName || collectData.bankName || "Paga",
+          amount: collectData.totalPaymentAmount || collectData.amount || amount,
+          expiresAt: collectData.expiryDateTimeUTC || collectData.expiryDateTime,
         },
       }),
       { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 200 }

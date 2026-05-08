@@ -1,6 +1,20 @@
 // Helper for Paga API authentication
 
 /**
+ * Generates a SHA-512 hash of concatenated values.
+ * @param parts - Array of values to concatenate. Null/undefined are treated as empty strings.
+ */
+export async function generateSHA512Hash(parts: (string | number | undefined | null)[]): Promise<string> {
+  const message = parts.map(p => p ?? "").join("");
+  const encoder = new TextEncoder();
+  const msgData = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-512', msgData);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
  * Generates a SHA-512 hash for Paga Business REST API.
  * Paga requires SHA-512 of concatenated parameter values + hash key.
  * @param params - Array of parameter values to concatenate
@@ -10,17 +24,7 @@ export async function generatePagaBusinessHash(
   params: (string | number | undefined | null)[],
   hashKey: string
 ): Promise<string> {
-  const message = params.filter(p => p !== undefined && p !== null).join('') + hashKey;
-  const encoder = new TextEncoder();
-  const msgData = encoder.encode(message);
-
-  // Use SubtleCrypto to generate SHA-512 hash
-  const hashBuffer = await crypto.subtle.digest('SHA-512', msgData);
-
-  // Convert buffer to hex string
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  return generateSHA512Hash([...params, hashKey]);
 }
 
 /**

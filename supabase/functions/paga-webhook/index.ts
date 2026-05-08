@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { generatePagaBusinessHash } from "../_shared/pagaAuth.ts";
+import { generatePagaBusinessHash, generateSHA512Hash } from "../_shared/pagaAuth.ts";
 import { settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
 
 serve(async (req) => {
@@ -35,23 +35,48 @@ serve(async (req) => {
     const statusCode = String(payload.statusCode || payload.responseCode || "");
 
     const receivedHash = req.headers.get("hash") || req.headers.get("x-paga-hash") || String(payload.hash || "");
+    const hashParamsHeader = req.headers.get("x-paga-hash-parameters");
     const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
     let signatureValid = false;
     if (IS_SANDBOX && !receivedHash) {
       signatureValid = true;
     } else if (receivedHash) {
-      const variants = [
-        [referenceNumber, amount, statusCode],
-        [referenceNumber, amount],
-        [referenceNumber],
-      ];
-
-      for (const variant of variants) {
-        const expectedHash = await generatePagaBusinessHash(variant, PAGA_HASH_KEY);
+      // If x-paga-hash-parameters is present, use it to determine the order
+      if (hashParamsHeader) {
+        const paramKeys = hashParamsHeader.split(",").map(k => k.trim());
+        const hashParts = paramKeys.map(key => {
+          if (key === "hashKey") return PAGA_HASH_KEY;
+          return String(payload[key] || "");
+        });
+        // If hashKey wasn't in the header list (some docs say it should be, some don't), append it
+        if (!paramKeys.includes("hashKey")) {
+          hashParts.push(PAGA_HASH_KEY);
+        }
+        const expectedHash = await generateSHA512Hash(hashParts);
         if (receivedHash.toLowerCase() === expectedHash.toLowerCase()) {
           signatureValid = true;
-          break;
+        }
+      }
+      
+      // Fallback/Alternative variants if header-based failed or missing
+      if (!signatureValid) {
+        const variants = [
+          [referenceNumber, amount, statusCode],
+          [referenceNumber, amount],
+          [referenceNumber],
+          [payload.transactionReference || referenceNumber, payload.accountNumber || "", payload.amount || "", PAGA_HASH_KEY],
+        ];
+
+        for (const variant of variants) {
+          const expectedHash = variant.includes(PAGA_HASH_KEY) 
+            ? await generateSHA512Hash(variant)
+            : await generatePagaBusinessHash(variant, PAGA_HASH_KEY);
+            
+          if (receivedHash.toLowerCase() === expectedHash.toLowerCase()) {
+            signatureValid = true;
+            break;
+          }
         }
       }
     }
@@ -102,7 +127,15 @@ serve(async (req) => {
     });
 
     // Explicitly trigger settlement if provider reports success
-    if (tx?.id && (settled.state === "success" || settled.providerState === "success")) {
+    const isSuccessful = 
+      settled.state === "success" || 
+      settled.providerState === "success" || 
+      payload.event === "PAYMENT_COMPLETE" || 
+      payload.state === "CONSUMED" ||
+      statusCode === "0" || 
+      statusCode === "00";
+
+    if (tx?.id && isSuccessful) {
       await supabaseAdmin.rpc("wallet_settle_transaction", {
         p_transaction_id: tx.id,
         p_decision: "success",
