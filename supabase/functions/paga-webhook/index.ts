@@ -8,8 +8,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
   }
 
-  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
-  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
+  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim() 
+    || Deno.env.get("PAGA_HMAC")?.trim()
+    || Deno.env.get("PAGA_API_KEY")?.trim();
+  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim() || Deno.env.get("PAGA_CLIENT_ID")?.trim();
 
   if (!PAGA_HASH_KEY || !PAGA_PUBLIC_KEY) {
     console.error("Paga credentials not configured");

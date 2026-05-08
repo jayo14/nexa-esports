@@ -11,9 +11,9 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
+  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim() || Deno.env.get("PAGA_CLIENT_ID")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
-  const PAGA_CALLBACK_URL = Deno.env.get("PAGA_CALLBACK_URL")?.trim();
+  const PAGA_CALLBACK_URL = Deno.env.get("PAGA_CALLBACK_URL")?.trim() || Deno.env.get("PAGA_WEBHOOK_URL")?.trim();
 
   try {
     if (!PAGA_PUBLIC_KEY) {
@@ -168,12 +168,17 @@ serve(async (req) => {
       existingReference = String(createdTx.reference || referenceNumber);
     }
 
-    const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim();
-    const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
-    const PAGA_WEBHOOK_URL = Deno.env.get("PAGA_WEBHOOK_URL")?.trim();
+    const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim() 
+      || Deno.env.get("PAGA_API_PASSWORD")?.trim()
+      || Deno.env.get("PAGA_SECRET")?.trim();
+    const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim() 
+      || Deno.env.get("PAGA_HMAC")?.trim()
+      || Deno.env.get("PAGA_API_KEY")?.trim();
+    const PAGA_WEBHOOK_URL = Deno.env.get("PAGA_WEBHOOK_URL")?.trim() || PAGA_CALLBACK_URL;
 
     if (!PAGA_SECRET_KEY || !PAGA_HASH_KEY) {
-      return new Response(JSON.stringify({ error: "Payment service not fully configured" }), {
+      console.error("Missing Paga secrets:", { hasSecret: !!PAGA_SECRET_KEY, hasHash: !!PAGA_HASH_KEY });
+      return new Response(JSON.stringify({ error: "Payment service not fully configured (missing secret/hash key)" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
         status: 500,
       });
@@ -190,18 +195,31 @@ serve(async (req) => {
 
     const PAGA_COLLECT_BASE = PAGA_IS_SANDBOX ? "https://beta-collect.paga.com" : "https://collect.paga.com";
 
-    // Build hash exactly per docs: 
+    // Clean phone number: remove non-digits, ensure 10 digits for local or 13 for intl
+    const cleanPhone = (phone: string) => {
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length >= 10) return digits.slice(-10);
+      return digits;
+    };
+
+    const payerPhone = customer.phone ? cleanPhone(customer.phone) : "";
+    const payerEmail = customer.email || "";
+
+    // Build hash exactly per docs/common-patterns for Collect API: 
     // referenceNumber + amount + currency + payer.phoneNumber + payer.email + payee.accountNumber + payee.phoneNumber + payee.bankId + payee.bankAccountNumber + hashkey
+    // Note: Use string representation of amount to match JSON payload exactly
+    const amountStr = Number(amount).toString(); 
+    
     const hashStringParts = [
       existingReference,
-      amount,
+      amountStr,
       "NGN",
-      customer.phone || "",
-      customer.email || "",
-      "", // payee.accountNumber
-      "", // payee.phoneNumber
-      "", // payee.bankId
-      "", // payee.bankAccountNumber
+      payerPhone,
+      payerEmail,
+      "", // payee.accountNumber (empty as we use dynamic identifier)
+      "", // payee.phoneNumber (empty)
+      "", // payee.bankId (empty)
+      "", // payee.bankAccountNumber (empty)
       PAGA_HASH_KEY
     ];
 
@@ -209,12 +227,12 @@ serve(async (req) => {
 
     const paymentRequestPayload = {
       referenceNumber: existingReference,
-      amount: Number(amount),
+      amount: Number(amount), // Ensure number type for JSON
       currency: "NGN",
       payer: {
         name: customer.name || "Nexa User",
-        email: customer.email,
-        phoneNumber: customer.phone || undefined,
+        email: payerEmail || undefined,
+        phoneNumber: payerPhone || undefined,
       },
       payee: {
         name: "Nexa Esports",
@@ -226,7 +244,7 @@ serve(async (req) => {
       isAllowOverPayments: false,
       callBackUrl: PAGA_WEBHOOK_URL,
       paymentMethods: ["BANK_TRANSFER"],
-      expiryDateTimeUTC: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "").split(".")[0], // 1 week, format: YYYY-MM-DDTHH:MM:SS
+      expiryDateTimeUTC: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "").split(".")[0], // 6 days (safer than 7)
     };
 
     const res = await fetch(`${PAGA_COLLECT_BASE}/paymentRequest`, {
@@ -236,7 +254,6 @@ serve(async (req) => {
         "Accept": "application/json",
         "principal": PAGA_PUBLIC_KEY!,
         "credentials": PAGA_SECRET_KEY!,
-        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
         "hash": collectHash,
       },
       body: JSON.stringify(paymentRequestPayload),

@@ -68,9 +68,13 @@ serve(async (req) => {
     });
   }
 
-  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim();
-  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
+  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim() || Deno.env.get("PAGA_CLIENT_ID")?.trim();
+  const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim() 
+    || Deno.env.get("PAGA_API_PASSWORD")?.trim()
+    || Deno.env.get("PAGA_SECRET")?.trim();
+  const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim() 
+    || Deno.env.get("PAGA_HMAC")?.trim()
+    || Deno.env.get("PAGA_API_KEY")?.trim();
   const PAGA_BASE_URL = Deno.env.get("PAGA_IS_SANDBOX") === "true" ? SANDBOX_URL : LIVE_URL;
 
   if (!PAGA_PUBLIC_KEY || !PAGA_SECRET_KEY || !PAGA_HASH_KEY) {
