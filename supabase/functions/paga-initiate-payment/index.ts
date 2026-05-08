@@ -234,6 +234,8 @@ serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
+        "principal": PAGA_PUBLIC_KEY!,
+        "credentials": PAGA_SECRET_KEY!,
         "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
         "hash": collectHash,
       },
