@@ -190,22 +190,26 @@ serve(async (req) => {
 
     const PAGA_COLLECT_BASE = PAGA_IS_SANDBOX ? "https://beta-collect.paga.com" : "https://collect.paga.com";
 
-    // Build hash exactly per docs: 
-    // referenceNumber + amount + currency + payer.phoneNumber + payer.email + payee.accountNumber + payee.phoneNumber + payee.bankId + payee.bankAccountNumber + hashkey
+    // Build hash per Paga Collect /paymentRequest docs (Hashindex order):
+    // referenceNumber + amount + currency + payer.phoneNumber + payer.email + hashkey
+    // ONLY include values that are actually sent — do NOT pad with empty payee fields.
+    const payerPhone = customer.phone || "";
+    const payerEmail = customer.email || "";
+
     const hashStringParts = [
-      existingReference,
-      amount,
-      "NGN",
-      customer.phone || "",
-      customer.email || "",
-      "", // payee.accountNumber
-      "", // payee.phoneNumber
-      "", // payee.bankId
-      "", // payee.bankAccountNumber
-      PAGA_HASH_KEY
+      existingReference,     // Hashindex-1: referenceNumber
+      Number(amount),        // Hashindex-2: amount
+      "NGN",                 // Hashindex-3: currency
+      payerPhone,            // Hashindex-4: payer.phoneNumber
+      payerEmail,            // Hashindex-5: payer.email
+      PAGA_HASH_KEY,         // HMAC key appended last
     ];
 
     const collectHash = await generateSHA512Hash(hashStringParts);
+
+    // Expiry: max 7 days, formatted as YYYY-MM-DDTHH:MM:SS (no Z, no ms)
+    const expiryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiryDateTimeUTC = expiryDate.toISOString().replace("Z", "").split(".")[0];
 
     const paymentRequestPayload = {
       referenceNumber: existingReference,
@@ -213,8 +217,8 @@ serve(async (req) => {
       currency: "NGN",
       payer: {
         name: customer.name || "Nexa User",
-        email: customer.email,
-        phoneNumber: customer.phone || undefined,
+        email: payerEmail || undefined,
+        phoneNumber: payerPhone || undefined,
       },
       payee: {
         name: "Nexa Esports",
@@ -226,9 +230,22 @@ serve(async (req) => {
       isAllowOverPayments: false,
       callBackUrl: PAGA_WEBHOOK_URL,
       paymentMethods: ["BANK_TRANSFER"],
-      expiryDateTimeUTC: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "").split(".")[0], // 1 week, format: YYYY-MM-DDTHH:MM:SS
+      expiryDateTimeUTC,
     };
 
+    console.log("Paga Collect /paymentRequest — debug info", {
+      endpoint: `${PAGA_COLLECT_BASE}/paymentRequest`,
+      isSandbox: PAGA_IS_SANDBOX,
+      referenceNumber: existingReference,
+      amount: Number(amount),
+      payerPhone,
+      payerEmail,
+      hashInputPreview: `${existingReference}${Number(amount)}NGN${payerPhone}${payerEmail}<HASH_KEY>`,
+      computedHash: collectHash.slice(0, 16) + "...", // partial for security
+    });
+
+    // Paga Collect API authenticates via `principal` + `credentials` headers (NOT HTTP Basic Auth).
+    // Sending an Authorization: Basic header causes "invalid username or password" / "Missing username attribute" errors.
     const res = await fetch(`${PAGA_COLLECT_BASE}/paymentRequest`, {
       method: "POST",
       headers: {
@@ -236,7 +253,6 @@ serve(async (req) => {
         "Accept": "application/json",
         "principal": PAGA_PUBLIC_KEY!,
         "credentials": PAGA_SECRET_KEY!,
-        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
         "hash": collectHash,
       },
       body: JSON.stringify(paymentRequestPayload),
