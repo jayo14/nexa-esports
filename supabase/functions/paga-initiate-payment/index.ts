@@ -207,8 +207,8 @@ serve(async (req) => {
 
     // Build hash exactly per docs/common-patterns for Collect API: 
     // referenceNumber + amount + currency + payer.phoneNumber + payer.email + payee.accountNumber + payee.phoneNumber + payee.bankId + payee.bankAccountNumber + hashkey
-    // Note: Use string representation of amount to match JSON payload exactly
-    const amountStr = Number(amount).toString(); 
+    // Note: Paga Live is very strict about decimals. Using toFixed(2) for consistency.
+    const amountStr = Number(amount).toFixed(2); 
     
     const hashStringParts = [
       existingReference,
@@ -227,7 +227,7 @@ serve(async (req) => {
 
     const paymentRequestPayload = {
       referenceNumber: existingReference,
-      amount: Number(amount), // Ensure number type for JSON
+      amount: amountStr, // Send as string with 2 decimals to match hash
       currency: "NGN",
       payer: {
         name: customer.name || "Nexa User",
@@ -238,8 +238,8 @@ serve(async (req) => {
         name: "Nexa Esports",
       },
       isSuppressMessages: true,
-      payerCollectionFeeShare: 1.0,
-      payeeCollectionFeeShare: 0.0,
+      payerCollectionFeeShare: 1,
+      payeeCollectionFeeShare: 0,
       isAllowPartialPayments: false,
       isAllowOverPayments: false,
       callBackUrl: PAGA_WEBHOOK_URL,
@@ -247,13 +247,25 @@ serve(async (req) => {
       expiryDateTimeUTC: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "").split(".")[0], // 6 days (safer than 7)
     };
 
+    // Log partial credentials for debugging (DO NOT log full secrets)
+    console.log("Initiating Paga request", {
+      endpoint: `${PAGA_COLLECT_BASE}/paymentRequest`,
+      principal: PAGA_PUBLIC_KEY?.substring(0, 5) + "...",
+      hasSecret: !!PAGA_SECRET_KEY,
+      hasHashKey: !!PAGA_HASH_KEY,
+      isSandbox: PAGA_IS_SANDBOX
+    });
+
     const res = await fetch(`${PAGA_COLLECT_BASE}/paymentRequest`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
+        "username": PAGA_PUBLIC_KEY!,
+        "password": PAGA_SECRET_KEY!,
         "principal": PAGA_PUBLIC_KEY!,
         "credentials": PAGA_SECRET_KEY!,
+        "Authorization": `Basic ${btoa(`${PAGA_PUBLIC_KEY}:${PAGA_SECRET_KEY}`)}`,
         "hash": collectHash,
       },
       body: JSON.stringify(paymentRequestPayload),
