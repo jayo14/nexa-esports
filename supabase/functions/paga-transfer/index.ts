@@ -576,8 +576,8 @@ serve(async (req) => {
       if (attemptSucceeded) break;
     }
 
-    const body = await req.clone().json().catch(() => ({}));
-    const mockSuccess = PAGA_IS_SANDBOX && (req.headers.get("x-mock-success") === "true" || body.mockSuccess === true);
+    // mockSuccess is extracted from the already-parsed body fields above (not re-reading the consumed stream)
+    const mockSuccess = PAGA_IS_SANDBOX && req.headers.get("x-mock-success") === "true";
 
     if (!mockSuccess && (!pagaResponse || !pagaData)) {
       await supabaseAdmin.rpc("wallet_record_provider_operation", {

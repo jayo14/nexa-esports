@@ -139,12 +139,12 @@ serve(async (req) => {
           paga_status: "pending",
           idempotency_key: idempotency_key || null,
           client_reference: client_reference || null,
-          metadata: { 
-            source: "paga", 
+          metadata: {
+            source: "paga",
             email: customer.email,
             intended_amount: intended_amount || amount,
             fee: fee || 0,
-            is_fee_on_top: !!intended_amount 
+            is_fee_on_top: !!intended_amount
           },
           provider: "paga",
         })
@@ -171,7 +171,7 @@ serve(async (req) => {
     const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
     const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
     const PAGA_WEBHOOK_URL = Deno.env.get("PAGA_WEBHOOK_URL")?.trim();
-    
+
     if (!PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
       return new Response(JSON.stringify({ error: "Payment service not fully configured" }), {
         headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
@@ -189,7 +189,7 @@ serve(async (req) => {
     }
 
     const PAGA_COLLECT_BASE = PAGA_IS_SANDBOX ? "https://beta-collect.paga.com" : "https://collect.paga.com";
-    
+
     // Build hash exactly per docs: 
     // referenceNumber + amount + currency + payer.phoneNumber + payer.email + payee.accountNumber + payee.phoneNumber + payee.bankId + payee.bankAccountNumber + hashkey
     const hashStringParts = [
@@ -226,7 +226,7 @@ serve(async (req) => {
       isAllowOverPayments: false,
       callBackUrl: PAGA_WEBHOOK_URL,
       paymentMethods: ["BANK_TRANSFER"],
-      expiryDateTimeUTC: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week
+      expiryDateTimeUTC: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace("Z", "").split(".")[0], // 1 week, format: YYYY-MM-DDTHH:MM:SS
     };
 
     const res = await fetch(`${PAGA_COLLECT_BASE}/paymentRequest`, {
@@ -248,9 +248,22 @@ serve(async (req) => {
       console.error("Failed to parse Paga Collect response", text);
     }
 
-    if (!res.ok || collectData.responseCode !== 0) {
+    // Paga Collect returns statusCode: "0" (string) on success — NOT responseCode: 0
+    if (!res.ok || (collectData.statusCode !== "0" && collectData.statusCode !== 0)) {
+      console.error("Paga Collect /paymentRequest failed", {
+        httpStatus: res.status,
+        pagaStatusCode: collectData.statusCode,
+        pagaStatusMessage: collectData.statusMessage,
+        referenceNumber: collectData.referenceNumber,
+      });
       return new Response(
-        JSON.stringify({ error: collectData.message || "Failed to initiate payment with Paga" }),
+        JSON.stringify({
+          error: "Failed to initiate payment with Paga",
+          details: {
+            statusCode: collectData.statusCode ?? "",
+            statusMessage: collectData.statusMessage || collectData.message || "",
+          }
+        }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 400 }
       );
     }
@@ -272,14 +285,14 @@ serve(async (req) => {
       p_operation_key: `collect:${referenceNumber}`,
       p_provider_request: paymentRequestPayload,
       p_provider_response: collectData,
-      p_provider_status_code: String(collectData.responseCode || "INITIATED"),
+      p_provider_status_code: String(collectData.statusCode ?? "INITIATED"),
       p_signature_valid: null,
     });
 
     return new Response(
       JSON.stringify({
         status: "success",
-        data: { 
+        data: {
           transactionId,
           referenceNumber: existingReference,
           accountNumber: collectData.paymentMethods?.find((m: any) => m.name === "BANK_TRANSFER")?.properties?.AccountNumber || collectData.accountNumber,

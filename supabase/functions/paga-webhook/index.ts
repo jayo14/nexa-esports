@@ -25,58 +25,56 @@ serve(async (req) => {
       return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
     }
 
-    const referenceNumber = String(payload.referenceNumber || payload.externalReferenceNumber || payload.transactionId || payload.paymentReference || "");
+    // For Dynamic Payment Identifier callbacks Paga sends externalReferenceNumber, NOT referenceNumber
+    const referenceNumber = String(
+      payload.externalReferenceNumber ||
+      payload.referenceNumber ||
+      payload.transactionReference ||
+      payload.paymentReference ||
+      ""
+    );
     if (!referenceNumber) {
       console.error("No reference number found in payload:", payload);
       return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
     }
 
-    const amount = payload.amount ? Number(payload.amount).toFixed(2) : "";
     const statusCode = String(payload.statusCode || payload.responseCode || "");
-
     const receivedHash = req.headers.get("hash") || req.headers.get("x-paga-hash") || String(payload.hash || "");
-    const hashParamsHeader = req.headers.get("x-paga-hash-parameters");
     const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
     let signatureValid = false;
     if (IS_SANDBOX && !receivedHash) {
+      // Sandbox may not send a hash — allow through
       signatureValid = true;
     } else if (receivedHash) {
-      // If x-paga-hash-parameters is present, use it to determine the order
-      if (hashParamsHeader) {
-        const paramKeys = hashParamsHeader.split(",").map(k => k.trim());
-        const hashParts = paramKeys.map(key => {
-          if (key === "hashKey") return PAGA_HASH_KEY;
-          return String(payload[key] || "");
-        });
-        // If hashKey wasn't in the header list (some docs say it should be, some don't), append it
-        if (!paramKeys.includes("hashKey")) {
-          hashParts.push(PAGA_HASH_KEY);
-        }
-        const expectedHash = await generateSHA512Hash(hashParts);
+      // Paga Collect payment request callback hash spec:
+      // notificationId + statusCode + externalReferenceNumber + state + outstandingBalance + hashKey
+      // outstandingBalance is OMITTED from concat entirely if null/missing.
+      // When present it must be formatted as "#.00" (two decimal places, no commas).
+      const notificationId = String(payload.notificationId || "");
+      const state = String(payload.state || "");
+      const outstandingBalanceRaw = payload.outstandingBalance;
+      const outstandingBalance =
+        outstandingBalanceRaw != null && outstandingBalanceRaw !== ""
+          ? Number(outstandingBalanceRaw).toFixed(2)
+          : null;
+
+      const hashVariants: (string | null)[][] = [
+        // Full spec with outstandingBalance present
+        ...(outstandingBalance !== null
+          ? [[notificationId, statusCode, referenceNumber, state, outstandingBalance]]
+          : []),
+        // Without outstandingBalance (null or missing)
+        [notificationId, statusCode, referenceNumber, state],
+        // Fallback: some sandbox payloads omit notificationId
+        [statusCode, referenceNumber, state],
+      ];
+
+      for (const variant of hashVariants) {
+        const expectedHash = await generateSHA512Hash([...variant, PAGA_HASH_KEY]);
         if (receivedHash.toLowerCase() === expectedHash.toLowerCase()) {
           signatureValid = true;
-        }
-      }
-      
-      // Fallback/Alternative variants if header-based failed or missing
-      if (!signatureValid) {
-        const variants = [
-          [referenceNumber, amount, statusCode],
-          [referenceNumber, amount],
-          [referenceNumber],
-          [payload.transactionReference || referenceNumber, payload.accountNumber || "", payload.amount || "", PAGA_HASH_KEY],
-        ];
-
-        for (const variant of variants) {
-          const expectedHash = variant.includes(PAGA_HASH_KEY) 
-            ? await generateSHA512Hash(variant)
-            : await generatePagaBusinessHash(variant, PAGA_HASH_KEY);
-            
-          if (receivedHash.toLowerCase() === expectedHash.toLowerCase()) {
-            signatureValid = true;
-            break;
-          }
+          break;
         }
       }
     }
@@ -127,12 +125,12 @@ serve(async (req) => {
     });
 
     // Explicitly trigger settlement if provider reports success
-    const isSuccessful = 
-      settled.state === "success" || 
-      settled.providerState === "success" || 
-      payload.event === "PAYMENT_COMPLETE" || 
+    const isSuccessful =
+      settled.state === "success" ||
+      settled.providerState === "success" ||
+      payload.event === "PAYMENT_COMPLETE" ||
       payload.state === "CONSUMED" ||
-      statusCode === "0" || 
+      statusCode === "0" ||
       statusCode === "00";
 
     if (tx?.id && isSuccessful) {

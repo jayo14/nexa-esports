@@ -123,6 +123,8 @@ export function mapPagaProviderState(payload: Record<string, unknown> | null | u
   const responseCode = record.responseCode ?? record.statusCode;
   const normalizedValues = collectPagaSignals({
     status: record.status,
+    event: record.event,         // "PAYMENT_COMPLETE" — Paga Collect callback event
+    state: record.state,         // "CONSUMED" — Paga Collect state for a fulfilled payment
     transactionStatus: record.transactionStatus,
     responseMessage: record.responseMessage,
     message: record.message,
@@ -143,6 +145,8 @@ export function mapPagaProviderState(payload: Record<string, unknown> | null | u
     "SUCCESSFUL",
     "COMPLETED",
     "COMPLETION",
+    "CONSUMED",           // Paga Collect: state value when a payment is fully fulfilled
+    "PAYMENT_COMPLETE",   // Paga Collect: event value in the payment request callback
     "APPROVED",
     "PAID",
     "SETTLED",
