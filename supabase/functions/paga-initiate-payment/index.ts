@@ -11,9 +11,9 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(origin) });
   }
 
-  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim() || Deno.env.get("PAGA_CLIENT_ID")?.trim();
+  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
   const PAGA_IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
-  const PAGA_CALLBACK_URL = Deno.env.get("PAGA_CALLBACK_URL")?.trim() || Deno.env.get("PAGA_WEBHOOK_URL")?.trim();
+  const PAGA_CALLBACK_URL = Deno.env.get("PAGA_WEBHOOK_URL")?.trim();
 
   try {
     if (!PAGA_PUBLIC_KEY) {
@@ -168,10 +168,10 @@ serve(async (req) => {
       existingReference = String(createdTx.reference || referenceNumber);
     }
 
-    const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim() 
+    const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim()
       || Deno.env.get("PAGA_API_PASSWORD")?.trim()
       || Deno.env.get("PAGA_SECRET")?.trim();
-    const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim() 
+    const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim()
       || Deno.env.get("PAGA_HMAC")?.trim()
       || Deno.env.get("PAGA_API_KEY")?.trim();
     const PAGA_WEBHOOK_URL = Deno.env.get("PAGA_WEBHOOK_URL")?.trim() || PAGA_CALLBACK_URL;
@@ -208,8 +208,8 @@ serve(async (req) => {
     // Build hash exactly per docs/common-patterns for Collect API: 
     // referenceNumber + amount + currency + payer.phoneNumber + payer.email + payee.accountNumber + payee.phoneNumber + payee.bankId + payee.bankAccountNumber + hashkey
     // Note: Paga Live is very strict about decimals. Using toFixed(2) for consistency.
-    const amountStr = Number(amount).toFixed(2); 
-    
+    const amountStr = Number(amount).toFixed(2);
+
     const hashStringParts = [
       existingReference,
       amountStr,
