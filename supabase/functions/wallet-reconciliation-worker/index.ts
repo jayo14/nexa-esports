@@ -69,11 +69,11 @@ serve(async (req) => {
   }
 
   const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-  const PAGA_API_PASSWORD = Deno.env.get("PAGA_API_PASSWORD")?.trim() || Deno.env.get("PAGA_SECRET_KEY")?.trim();
+  const PAGA_SECRET_KEY = Deno.env.get("PAGA_SECRET_KEY")?.trim();
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
   const PAGA_BASE_URL = Deno.env.get("PAGA_IS_SANDBOX") === "true" ? SANDBOX_URL : LIVE_URL;
 
-  if (!PAGA_PUBLIC_KEY || !PAGA_API_PASSWORD || !PAGA_HASH_KEY) {
+  if (!PAGA_PUBLIC_KEY || !PAGA_SECRET_KEY || !PAGA_HASH_KEY) {
     return new Response(JSON.stringify({ error: "Paga credentials missing" }), {
       headers: { "Content-Type": "application/json" },
       status: 500,
@@ -115,7 +115,7 @@ serve(async (req) => {
       if (!reference) continue;
       checked += 1;
 
-      const provider = await queryPagaStatus(reference, PAGA_BASE_URL, PAGA_PUBLIC_KEY, PAGA_API_PASSWORD, PAGA_HASH_KEY);
+      const provider = await queryPagaStatus(reference, PAGA_BASE_URL, PAGA_PUBLIC_KEY, PAGA_SECRET_KEY, PAGA_HASH_KEY);
 
       await supabaseAdmin.rpc("wallet_record_provider_operation", {
         p_transaction_id: tx.id,

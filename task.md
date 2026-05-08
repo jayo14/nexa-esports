@@ -584,7 +584,7 @@ Paga is a Nigerian payment gateway with a **Business API** (REST-based). Key end
 **Credentials needed (add to `.env` and Supabase Edge Function secrets)**:
 ```
 PAGA_API_KEY=your_paga_api_key
-PAGA_API_PASSWORD=your_paga_api_password
+PAGA_SECRET_KEY=your_PAGA_SECRET_KEY
 PAGA_PUBLIC_KEY=your_paga_public_key   # for client-side if needed
 PAGA_BASE_URL=https://www.mypaga.com   # or beta for sandbox
 PAGA_ORGANIZATION_NAME=NeXa Esports
@@ -671,7 +671,7 @@ export function generateReferenceNumber(prefix: string = 'NX'): string {
 ```typescript
 // File: supabase/functions/paga-webhook/index.ts
 // Paga will POST to this URL on payment completion
-// Verify the hash in the request against PAGA_API_PASSWORD
+// Verify the hash in the request against PAGA_SECRET_KEY
 // On success: call paga-verify-payment logic inline
 // Return 200 quickly; do heavy work async
 ```
@@ -775,7 +775,7 @@ Add to `.env.example` and Supabase project secrets:
 ```env
 # Paga Business API
 PAGA_API_KEY=your_paga_api_key
-PAGA_API_PASSWORD=your_paga_api_password
+PAGA_SECRET_KEY=your_PAGA_SECRET_KEY
 PAGA_BASE_URL=https://www.mypaga.com
 PAGA_ORGANIZATION_NAME=NeXa Esports
 

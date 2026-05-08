@@ -27,7 +27,7 @@ Ensure these environment variables are set in your Supabase project:
 
 ```
 PAGA_PUBLIC_KEY=<your-paga-public-key>
-PAGA_API_PASSWORD=<your-paga-api-password>
+PAGA_SECRET_KEY=<your-paga-api-password>
 PAGA_HASH_KEY=<your-paga-hash-key>
 PAGA_IS_SANDBOX=true  # Set to "false" for production
 ```
