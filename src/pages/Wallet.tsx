@@ -661,8 +661,8 @@ const Wallet: React.FC = () => {
     };
 
     const handleMessageEvent = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === 'PAYMENT_COMPLETE') {
+      // Accept PAYMENT_COMPLETE events from the payment popup regardless of origin.
+      if (event?.data?.type === 'PAYMENT_COMPLETE') {
         handlePaymentEvent(event.data);
       }
     };

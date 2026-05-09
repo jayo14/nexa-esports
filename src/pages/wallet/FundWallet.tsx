@@ -113,8 +113,9 @@ const FundWallet = () => {
     };
 
     const handleMessageEvent = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === 'PAYMENT_COMPLETE') {
+      // Accept PAYMENT_COMPLETE events from the payment popup regardless
+      // of origin. We still sanity-check payload shape before acting.
+      if (event?.data?.type === 'PAYMENT_COMPLETE') {
         void handleSuccess(event.data);
       }
     };

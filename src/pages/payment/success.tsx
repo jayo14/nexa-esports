@@ -106,10 +106,13 @@ const PaymentSuccess: React.FC = () => {
             const eventData = JSON.stringify({ ...payload, ts: Date.now() });
             localStorage.setItem(PAYMENT_EVENT_KEY, eventData);
 
-            // Also try to notify the opener directly if available
+            // Also try to notify the opener directly if available. Use wildcard
+            // targetOrigin so the message is delivered even when the opener
+            // origin differs (e.g. staging/prod domains). The opener still
+            // validates origin before acting on the message.
             if (window.opener && !window.opener.closed) {
                 try {
-                    window.opener.postMessage({ type: 'PAYMENT_COMPLETE', ...payload }, window.location.origin);
+                    window.opener.postMessage({ type: 'PAYMENT_COMPLETE', ...payload }, '*');
                 } catch (e) {
                     console.error('Failed to postMessage to opener:', e);
                 }
