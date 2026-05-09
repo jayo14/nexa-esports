@@ -169,6 +169,8 @@ serve(async (req) => {
     }
 
     const PAGA_FRONTEND_URL = Deno.env.get("PAGA_FRONTEND_URL")?.trim();
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")?.trim();
+
     const normalizeRedirectUrl = (candidate?: string | null): string | null => {
       if (!candidate) return null;
       try {
@@ -183,18 +185,35 @@ serve(async (req) => {
       }
     };
 
-    const callbackUrl =
-      normalizeRedirectUrl(PAGA_FRONTEND_URL) ||
-      normalizeRedirectUrl(PAGA_CALLBACK_URL) ||
-      normalizeRedirectUrl(redirect_url);
+    const normalizeWebhookUrl = (candidate?: string | null): string | null => {
+      if (!candidate) return null;
+      try {
+        const parsed = new URL(candidate);
+        if (parsed.protocol !== "https:") return null;
+        return parsed.toString();
+      } catch {
+        return null;
+      }
+    };
 
-    if (!callbackUrl) {
+    const frontendReturnUrl =
+      normalizeRedirectUrl(redirect_url) ||
+      normalizeRedirectUrl(PAGA_FRONTEND_URL);
+
+    const defaultWebhookFromSupabase = SUPABASE_URL
+      ? `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/paga-webhook`
+      : null;
+
+    const webhookCallbackUrl =
+      normalizeWebhookUrl(PAGA_CALLBACK_URL) ||
+      normalizeWebhookUrl(defaultWebhookFromSupabase);
+
+    if (!frontendReturnUrl || !webhookCallbackUrl) {
       return new Response(
         JSON.stringify({
           error:
-            "Payment cannot be initiated: no public HTTPS return URL is available. " +
-            "Set PAGA_FRONTEND_URL or PAGA_CALLBACK_URL to your production frontend URL " +
-            "(e.g. https://your-domain.com/payment-success).",
+            "Payment cannot be initiated: both frontend return URL and webhook callback URL must be configured over HTTPS. " +
+            "Set PAGA_FRONTEND_URL (or pass redirect_url) for redirect and PAGA_CALLBACK_URL for webhook notifications.",
         }),
         { headers: { ...corsHeaders(origin), "Content-Type": "application/json" }, status: 500 }
       );
@@ -203,14 +222,15 @@ serve(async (req) => {
     const CHECKOUT_BASE = PAGA_IS_SANDBOX ? "https://beta-checkout.paga.com" : "https://checkout.paga.com";
 
     const nameParts = (customer.name || "Nexa User").split(" ");
+    const checkoutAmount = Math.round(Number(amount));
     const params = new URLSearchParams({
       public_key: PAGA_PUBLIC_KEY,
       payment_reference: existingReference,
-      amount: String(amount),
+      amount: String(Number.isFinite(checkoutAmount) ? checkoutAmount : Math.round(Number(amount))),
       currency: "NGN",
-      callback_url: callbackUrl,
-      redirect_url: callbackUrl,
-      return_url: callbackUrl,
+      callback_url: webhookCallbackUrl,
+      redirect_url: frontendReturnUrl,
+      return_url: frontendReturnUrl,
       email: customer.email,
       description: "Wallet Funding",
       display_name: "NeXa Esports",
@@ -241,9 +261,11 @@ serve(async (req) => {
       p_operation_key: `checkout:${referenceNumber}`,
         p_provider_request: {
           amount,
+          checkoutAmount,
           currency: "NGN",
           customer,
-          callbackUrl,
+          callbackUrl: webhookCallbackUrl,
+          redirectUrl: frontendReturnUrl,
           walletType,
         },
         p_provider_response: { checkoutUrl },
