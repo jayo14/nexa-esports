@@ -121,9 +121,19 @@ export function mapPagaProviderState(payload: Record<string, unknown> | null | u
   if (!record) return "processing";
 
   const responseCode = record.responseCode ?? record.statusCode;
+  const transactionReference = record.transactionReference || record.transactionShortReference;
+  const transactionTimestamp = record.transactionTimestamp || record.paidAt || record.completedAt;
+  const paidAmount = Number(record.paidAmount);
+  const amount = Number(record.amount);
+  const hasReceiptEvidence =
+    Boolean(transactionReference) &&
+    Boolean(transactionTimestamp) &&
+    ((Number.isFinite(paidAmount) && paidAmount > 0) || (Number.isFinite(amount) && amount > 0));
   const normalizedValues = collectPagaSignals({
     status: record.status,
+    statusMessage: record.statusMessage,
     transactionStatus: record.transactionStatus,
+    paymentStatus: record.paymentStatus,
     responseMessage: record.responseMessage,
     message: record.message,
     responseCode: record.responseCode,
@@ -135,6 +145,10 @@ export function mapPagaProviderState(payload: Record<string, unknown> | null | u
   });
 
   if (responseCode === 0 || responseCode === "0" || responseCode === "00" || responseCode === "000") {
+    return "success";
+  }
+
+  if (hasReceiptEvidence) {
     return "success";
   }
 
