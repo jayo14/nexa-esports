@@ -1,46 +1,46 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { generatePagaBusinessHash } from "../_shared/pagaAuth.ts";
-import { settlePagaWalletTransaction } from "../_shared/walletSettlement.ts";
+import { mapPagaProviderState } from "../_shared/walletSettlement.ts";
 
 serve(async (req) => {
+  // 1. Reject non-POST requests
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
   }
 
   const PAGA_HASH_KEY = Deno.env.get("PAGA_HASH_KEY")?.trim();
-  const PAGA_PUBLIC_KEY = Deno.env.get("PAGA_PUBLIC_KEY")?.trim();
-
-  if (!PAGA_HASH_KEY || !PAGA_PUBLIC_KEY) {
-    console.error("Paga credentials not configured");
-    return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
-  }
+  const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
   try {
+    // 2. Read raw body as text (needed for hash)
     const rawBody = await req.text();
-    let payload: Record<string, unknown>;
+
+    // 3. Parse JSON from raw body
+    let payload: Record<string, any>;
     try {
       payload = JSON.parse(rawBody);
     } catch {
-      return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
+      return new Response(JSON.stringify({ received: true, ignored: true, reason: "invalid_json" }), { status: 200 });
     }
 
+    // 4. Extract referenceNumber from payload
     const referenceNumber = String(payload.referenceNumber || payload.transactionId || payload.paymentReference || "");
+
+    // 5. If no referenceNumber -> ignore
     if (!referenceNumber) {
-      console.error("No reference number found in payload:", payload);
-      return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
+      return new Response(JSON.stringify({ received: true, ignored: true, reason: "no_reference" }), { status: 200 });
     }
 
+    // 6. Validate Paga signature
+    const receivedHash = req.headers.get("hash") || req.headers.get("x-paga-hash") || String(payload.hash || "");
     const amount = payload.amount ? Number(payload.amount).toFixed(2) : "";
     const statusCode = String(payload.statusCode || payload.responseCode || "");
-
-    const receivedHash = req.headers.get("hash") || req.headers.get("x-paga-hash") || String(payload.hash || "");
-    const IS_SANDBOX = Deno.env.get("PAGA_IS_SANDBOX") === "true";
 
     let signatureValid = false;
     if (IS_SANDBOX && !receivedHash) {
       signatureValid = true;
-    } else if (receivedHash) {
+    } else if (receivedHash && PAGA_HASH_KEY) {
       const variants = [
         [referenceNumber, amount, statusCode],
         [referenceNumber, amount],
@@ -56,70 +56,65 @@ serve(async (req) => {
       }
     }
 
-    if (!signatureValid) {
-      console.error("Invalid webhook signature", { referenceNumber, receivedHash, isSandbox: IS_SANDBOX });
+    // 7. If signature invalid AND not sandbox -> ignore
+    if (!signatureValid && !IS_SANDBOX) {
+      console.warn("Invalid webhook signature", { referenceNumber, receivedHash });
       return new Response(JSON.stringify({ received: true, ignored: true, reason: "invalid_signature" }), { status: 200 });
     }
 
+    // 8. Compute payload_hash = SHA-256 of raw body
+    const encoder = new TextEncoder();
+    const data = encoder.encode(rawBody);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const payloadHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
     const providerEventId = String(payload.eventId || payload.id || payload.notificationId || "") || null;
 
-    const { data: existingEvent } = await supabaseAdmin
+    // 9. INSERT into wallet_webhook_events (ON CONFLICT DO NOTHING)
+    const { data: insertedEvent, error: insertError } = await supabaseAdmin
       .from("wallet_webhook_events")
-      .select("id, handled")
-      .eq("provider", "paga")
-      .eq("provider_reference", referenceNumber)
+      .insert({
+        provider: "paga",
+        provider_event_id: providerEventId,
+        provider_reference: referenceNumber,
+        signature_valid: signatureValid,
+        payload: payload,
+        payload_hash: payloadHash,
+      })
+      .select("id")
       .maybeSingle();
 
-    if (existingEvent?.handled) {
+    if (insertError) {
+      if (insertError.code === '23505') { // Unique violation
+        return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200 });
+      }
+      console.error("Failed to store webhook event:", insertError);
+      return new Response(JSON.stringify({ received: true, error: true }), { status: 200 });
+    }
+
+    if (!insertedEvent) {
       return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200 });
     }
 
-    await supabaseAdmin.rpc("wallet_store_webhook_event", {
-      p_provider: "paga",
-      p_provider_event_id: providerEventId,
+    // 10. Map provider state
+    const providerState = mapPagaProviderState(payload);
+
+    // 11. Call wallet_enqueue_settlement RPC
+    await supabaseAdmin.rpc("wallet_enqueue_settlement", {
+      p_transaction_id: null,
       p_provider_reference: referenceNumber,
-      p_signature_valid: signatureValid,
-      p_payload: payload,
+      p_decision_hint: providerState,
+      p_evidence: { source: "paga_webhook", provider: payload },
+      p_source: "paga_webhook",
+      p_delay_seconds: 0
     });
 
-    const { data: tx } = await supabaseAdmin
-      .from("transactions")
-      .select("id")
-      .or(`reference.eq.${referenceNumber},paga_reference.eq.${referenceNumber}`)
-      .maybeSingle();
+    // 12. Return 200
+    return new Response(JSON.stringify({ received: true, queued: true, state: providerState }), { status: 200 });
 
-    const settled = await settlePagaWalletTransaction({
-      transactionId: tx?.id || null,
-      reference: referenceNumber,
-      providerPayload: payload,
-      providerRequest: null,
-      operationType: "webhook_event",
-      operationKey: providerEventId ? `webhook:${providerEventId}` : `webhook:${referenceNumber}:${Date.now()}`,
-      source: "paga_webhook",
-      signatureValid,
-      delaySeconds: 0,
-      checkRemote: false,
-    });
-
-    // Explicitly trigger settlement if provider reports success
-    if (tx?.id && (settled.state === "success" || settled.providerState === "success")) {
-      await supabaseAdmin.rpc("wallet_settle_transaction", {
-        p_transaction_id: tx.id,
-        p_decision: "success",
-        p_source: "paga_webhook",
-        p_evidence: payload
-      });
-    }
-
-    console.log("Webhook processed successfully", {
-      referenceNumber,
-      state: settled.state,
-      transactionId: tx?.id,
-    });
-
-    return new Response(JSON.stringify({ received: true, settled: true, state: settled.state }), { status: 200 });
   } catch (error) {
-    console.error("Webhook processing failed:", error);
-    return new Response(JSON.stringify({ received: true, ignored: true }), { status: 200 });
+    console.error("Webhook processing error:", error);
+    return new Response(JSON.stringify({ received: true, error: true }), { status: 200 });
   }
 });

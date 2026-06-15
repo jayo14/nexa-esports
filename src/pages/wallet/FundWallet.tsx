@@ -258,7 +258,7 @@ const FundWallet = () => {
                 amount: totalToPay,
                 intended_amount: amount,
                 fee: fee,
-            idempotency_key: crypto.randomUUID(),
+
                 customer: {
                     email: user?.email || '',
               phone: typeof profile?.banking_info?.phone === 'string' ? profile.banking_info.phone : '',
