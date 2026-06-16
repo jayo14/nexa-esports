@@ -25,7 +25,7 @@ serve(async (req) => {
       });
     }
 
-    const { recipient_ign, amount } = await req.json();
+    const { recipient_ign, amount, idempotency_key } = await req.json();
 
     if (!recipient_ign || !amount || amount <= 0) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), {
@@ -51,11 +51,12 @@ serve(async (req) => {
       });
     }
 
-    // Execute transfer via atomic RPC
+    // Execute transfer via atomic RPC (idempotency_key prevents duplicate transfers on retry)
     const { data: result, error } = await supabaseAdmin.rpc('execute_user_transfer', {
       sender_id: user.id,
       recipient_ign,
       amount,
+      p_idempotency_key: idempotency_key ?? null,
     });
 
     if (error) {

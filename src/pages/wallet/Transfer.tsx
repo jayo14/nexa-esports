@@ -192,7 +192,7 @@ const Transfer = () => {
   };
 
   const recipientReceives = Math.max(0, Number(amount));
-  const transferFee = TRANSFER_FEE;
+  const transferFee = calculateFee(Number(amount));
   const totalDeductedFromSender = Number(amount) + transferFee;
 
   return (
