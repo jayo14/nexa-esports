@@ -389,27 +389,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const refreshWallet = useCallback(async () => {
+    const refreshWallet = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data } = await supabase
-        .from('wallets')
-        .select('balance, wallet_type')
-        .eq('user_id', user.id);
-      
-      if (data) {
-        const clanWallet = data.find(w => w.wallet_type === 'clan');
-        const marketplaceWallet = data.find(w => w.wallet_type === 'marketplace');
-        
-        setProfile(prev => prev ? { 
-          ...prev, 
-          wallet_balance: clanWallet?.balance ?? prev.wallet_balance ?? 0,
-          clan_wallet_balance: clanWallet?.balance ?? prev.clan_wallet_balance ?? 0,
-          marketplace_wallet_balance: marketplaceWallet?.balance ?? prev.marketplace_wallet_balance ?? 0 
-        } : prev);
-      }
+      const { data: clanBalanceData } = await supabase
+        .rpc('get_wallet_available_balance', {
+          p_user_id: user.id,
+          p_wallet_type: 'clan'
+        })
+        .single();
+
+      const { data: marketplaceBalanceData } = await supabase
+        .rpc('get_wallet_available_balance', {
+          p_user_id: user.id,
+          p_wallet_type: 'marketplace'
+        })
+        .single();
+
+      setProfile(prev => prev ? ({
+        ...prev,
+        wallet_balance: clanBalanceData?.available ?? prev?.wallet_balance ?? 0,
+        clan_wallet_balance: clanBalanceData?.available ?? prev?.clan_wallet_balance ?? 0,
+        marketplace_wallet_balance: marketplaceBalanceData?.available ?? prev?.marketplace_wallet_balance ?? 0
+      }) : prev);
     } catch (error) {
-      console.error("Error refreshing wallet:", error);
+      console.error('Error refreshing wallet:', error);
     }
   }, [user?.id]);
 

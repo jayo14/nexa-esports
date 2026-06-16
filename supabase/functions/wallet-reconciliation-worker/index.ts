@@ -103,7 +103,9 @@ serve(async (req) => {
     const { data: pendingTx, error: pendingErr } = await supabaseAdmin
       .from("transactions")
       .select("id, reference, paga_reference, wallet_state, updated_at")
-      .in("wallet_state", ["pending", "processing"])
+      .in("wallet_state", ["pending", "processing", "debited"])
+      .in("type", ["deposit", "withdrawal"])
+      .lt("updated_at", new Date(Date.now() - 30 * 60 * 1000).toISOString())
       .eq("provider", "paga")
       .order("updated_at", { ascending: true })
       .limit(100);
@@ -150,6 +152,19 @@ serve(async (req) => {
           p_details: { reference, provider: provider.raw ?? {} },
         });
       }
+    }
+
+    const stuckThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const stuckCount = (pendingTx || []).filter(
+      tx => tx.updated_at < stuckThreshold
+    ).length;
+
+    if (stuckCount > 0) {
+      console.warn(`ALERT: ${stuckCount} transactions stuck > 24 hours`, {
+        stuckTransactions: (pendingTx || [])
+          .filter(tx => tx.updated_at < stuckThreshold)
+          .map(tx => ({ id: tx.id, reference: tx.reference, state: tx.wallet_state, updated_at: tx.updated_at }))
+      });
     }
 
     const settleRes = await supabaseAdmin.rpc("wallet_process_settlement_jobs", { p_limit: 100 });

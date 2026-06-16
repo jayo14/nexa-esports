@@ -21,6 +21,10 @@ type Step = 'recipient' | 'amount' | 'review' | 'processing';
 const TRANSFER_FEE = 50;
 
 
+const calculateFee = (val: number) => {
+  return Math.min(Math.round(val * 0.035 * 100) / 100, 5000);
+};
+
 type TransferRecipient = Pick<
   Database['public']['Tables']['profiles']['Row'],
   'id' | 'ign' | 'username' | 'avatar_url' | 'status' | 'is_banned'
@@ -95,7 +99,7 @@ const Transfer = () => {
 
   const handleAmountNext = async () => {
     const amountNum = Number(amount);
-    const fee = TRANSFER_FEE;
+    const fee = calculateFee(Number(amount));
     const totalDeduction = amountNum + fee;
 
     if (amountNum <= 0) {
@@ -134,10 +138,12 @@ const Transfer = () => {
         throw new Error('You must be logged in to transfer funds.');
       }
 
+      const idempotencyKey = `transfer:${user?.id}:${recipient}:${amount}:${Date.now()}`;
       const { data, error } = await supabase.rpc('execute_user_transfer', {
-        sender_id: user.id,
+        sender_id: user?.id,
         recipient_ign: recipient,
         amount: Number(amount),
+        p_idempotency_key: idempotencyKey,
       });
 
       if (error) {
